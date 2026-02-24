@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
@@ -11,7 +11,7 @@ import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
 import styles from '../auth.module.css';
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, verify2FA } = useAuth();
@@ -160,5 +160,13 @@ export default function LoginPage() {
         <Link href="/register">Create one</Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className={styles.container} />}>
+      <LoginForm />
+    </Suspense>
   );
 }

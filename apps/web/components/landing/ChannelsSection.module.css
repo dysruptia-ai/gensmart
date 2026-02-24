@@ -1,0 +1,316 @@
+.section {
+  padding: var(--space-24) 0;
+  background: var(--color-bg-card);
+}
+
+.inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.header {
+  text-align: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.eyebrow {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: block;
+  margin-bottom: var(--space-3);
+}
+
+.title {
+  font-size: var(--font-4xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-4);
+}
+
+.subtitle {
+  font-size: var(--font-lg);
+  color: var(--color-text-secondary);
+  line-height: 1.7;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+}
+
+.channelCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  background: var(--color-bg-main);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.channelHeader {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.channelIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+.whatsappIcon {
+  background: #25D366;
+}
+
+.webIcon {
+  background: var(--color-info);
+}
+
+.channelTitle {
+  font-size: var(--font-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.channelDesc {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* Mockup containers */
+.mockup {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+/* WhatsApp mockup */
+.whatsappMockup {
+  background: #e5ddd5;
+}
+
+.waHeader {
+  background: #075e54;
+  color: #ffffff;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.waAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #25D366;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-sm);
+}
+
+.waName {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.waOnline {
+  font-size: var(--font-xs);
+  opacity: 0.8;
+}
+
+.waMessages {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.waMsg {
+  max-width: 80%;
+  font-size: var(--font-xs);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  position: relative;
+  line-height: 1.5;
+}
+
+.waContact {
+  background: #ffffff;
+  color: var(--color-text-primary);
+  align-self: flex-start;
+  border-top-left-radius: 4px;
+}
+
+.waOwn {
+  background: #dcf8c6;
+  color: var(--color-text-primary);
+  align-self: flex-end;
+  border-top-right-radius: 4px;
+}
+
+.waTime {
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  float: right;
+  margin-left: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.waTyping {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border-top-left-radius: 4px;
+  padding: var(--space-2) var(--space-3);
+  width: fit-content;
+}
+
+.waTyping span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9ca3af;
+  animation: typing 1.4s infinite;
+}
+
+.waTyping span:nth-child(2) { animation-delay: 0.2s; }
+.waTyping span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+
+/* Web widget mockup */
+.webMockup {
+  background: var(--color-bg-main);
+  position: relative;
+  min-height: 220px;
+}
+
+.widgetPanel {
+  background: #ffffff;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  margin: var(--space-3);
+}
+
+.widgetHeader {
+  background: var(--color-primary);
+  color: #ffffff;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.widgetAvatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-sm);
+}
+
+.widgetName {
+  font-size: var(--font-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.widgetStatus {
+  font-size: var(--font-xs);
+  opacity: 0.85;
+}
+
+.widgetMessages {
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.widgetMsg {
+  max-width: 82%;
+  font-size: var(--font-xs);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-lg);
+  line-height: 1.5;
+}
+
+.widgetBot {
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-primary);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.widgetUser {
+  background: var(--color-primary);
+  color: #ffffff;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.widgetInput {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+
+.widgetBubble {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-4);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .title {
+    font-size: var(--font-3xl);
+  }
+}
