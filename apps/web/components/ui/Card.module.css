@@ -1,0 +1,20 @@
+.card {
+  background-color: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+
+.hoverable {
+  cursor: pointer;
+}
+
+.hoverable:hover {
+  box-shadow: var(--shadow-md);
+  border-color: #d0cbc4;
+}
+
+.sm { padding: var(--space-3); }
+.md { padding: var(--space-4); }
+.lg { padding: var(--space-6); }

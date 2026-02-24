@@ -1,0 +1,55 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.sm {
+  font-size: var(--font-xs);
+  padding: 0.125rem var(--space-2);
+}
+
+.md {
+  font-size: var(--font-sm);
+  padding: 0.25rem var(--space-3);
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+.success .dot { background-color: #065f46; }
+
+.warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.warning .dot { background-color: #92400e; }
+
+.danger {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.danger .dot { background-color: #991b1b; }
+
+.info {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+.info .dot { background-color: #1e40af; }
+
+.neutral {
+  background-color: var(--color-bg-sidebar);
+  color: var(--color-text-secondary);
+}
+.neutral .dot { background-color: var(--color-text-secondary); }
