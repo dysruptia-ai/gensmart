@@ -16,9 +16,9 @@ const COMPANY_LINKS = [
 ];
 
 const LEGAL_LINKS = [
-  { label: 'Privacy Policy', href: '/privacy' },
-  { label: 'Terms of Service', href: '/terms' },
-  { label: 'Cookie Policy', href: '/cookies' },
+  { label: 'Privacy Policy', href: '/legal/privacy-policy' },
+  { label: 'Terms of Service', href: '/legal/terms-of-service' },
+  { label: 'Cookie Policy', href: '/legal/cookie-policy' },
 ];
 
 const SOCIAL_LINKS = [
