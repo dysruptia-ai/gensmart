@@ -1,0 +1,49 @@
+{
+  "name": "@gensmart/api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "migrate": "node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations up",
+    "migrate:down": "node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations down",
+    "seed": "tsx src/db/seeds/index.ts"
+  },
+  "dependencies": {
+    "@gensmart/shared": "*",
+    "express": "^5.0.0",
+    "pg": "^8.13.0",
+    "ioredis": "^5.4.0",
+    "bullmq": "^5.0.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.0",
+    "zod": "^3.23.0",
+    "speakeasy": "^2.0.0",
+    "qrcode": "^1.5.0",
+    "nodemailer": "^6.9.0",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "morgan": "^1.10.0",
+    "uuid": "^9.0.0",
+    "node-pg-migrate": "^7.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "@types/express": "^5.0.0",
+    "@types/pg": "^8.0.0",
+    "@types/bcryptjs": "^2.4.0",
+    "@types/jsonwebtoken": "^9.0.0",
+    "@types/nodemailer": "^6.4.0",
+    "@types/multer": "^1.4.0",
+    "@types/cors": "^2.8.0",
+    "@types/compression": "^1.7.0",
+    "@types/morgan": "^1.9.0",
+    "@types/uuid": "^9.0.0",
+    "@types/qrcode": "^1.5.0",
+    "typescript": "^5.5.0"
+  }
+}
