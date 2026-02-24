@@ -19,14 +19,12 @@ const PUBLIC_PREFIXES = [
   '/favicon',
 ];
 
-export function middleware(req: NextRequest): NextResponse {
+export function proxy(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
 
-  // Check if path is public
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return NextResponse.next();
 
-  // Protected: only /dashboard/* requires auth check
   if (pathname.startsWith('/dashboard')) {
     const refreshToken = req.cookies.get('refresh_token');
     if (!refreshToken) {
