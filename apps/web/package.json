@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@gensmart/shared": "*",
+    "gray-matter": "^4.0.3",
     "lucide-react": "^0.575.0",
+    "marked": "^17.0.3",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"
