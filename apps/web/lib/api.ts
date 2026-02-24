@@ -96,8 +96,8 @@ async function request<T>(
     if (refreshed) {
       return request<T>(path, options, true);
     }
-    // Redirect to login if refresh failed
-    if (typeof window !== 'undefined') {
+    // Only redirect to /login from protected routes — never from public pages
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
       window.location.href = '/login';
     }
     throw new ApiError(401, 'Session expired');
