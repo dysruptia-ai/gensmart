@@ -6,6 +6,7 @@ import {
   ToastProvider, useToast, Tabs, Avatar, Spinner, EmptyState,
   SearchInput, ProgressBar, Toggle, Tooltip, Skeleton, ColorPicker,
 } from '@/components/ui';
+import { Logo } from '@/components/ui/Logo/Logo';
 import {
   Plus, Trash2, Edit, Download, Settings, Bell, Users,
   MessageSquare, BarChart2, Package, Inbox,
@@ -50,6 +51,124 @@ function DesignSystemInner() {
       <p style={{ color: 'var(--color-text-secondary)', marginBottom: '3rem' }}>
         All UI components with variants. Phase 0.3 verification.
       </p>
+
+      {/* ===== LOGO ===== */}
+      <section style={{ marginBottom: '3rem' }}>
+        <h2 style={{ fontSize: 'var(--font-xl)', fontWeight: 600, marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--color-border)' }}>Logo</h2>
+
+        {/* Sizes */}
+        <h3 style={{ fontSize: 'var(--font-base)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--color-text-secondary)' }}>Sizes (variant="full", color="primary")</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'center', marginBottom: '2rem', padding: '1.25rem', background: 'var(--color-bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+          {([
+            { size: 'sm', label: 'sm (20px)' },
+            { size: 'md', label: 'md (24px)' },
+            { size: 'lg', label: 'lg (32px)' },
+            { size: 'xl', label: 'xl (40px)' },
+          ] as const).map(({ size, label }) => (
+            <div key={size} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+              <Logo size={size} variant="full" color="primary" />
+              <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>{label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Color variants */}
+        <h3 style={{ fontSize: 'var(--font-base)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--color-text-secondary)' }}>Color Variants (size="lg")</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+          {/* Primary */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ padding: '1.25rem 2rem', background: 'var(--color-bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+              <Logo size="lg" color="primary" />
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>color="primary"</span>
+          </div>
+          {/* Dark */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ padding: '1.25rem 2rem', background: 'var(--color-bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+              <Logo size="lg" color="dark" />
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>color="dark"</span>
+          </div>
+          {/* White */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ padding: '1.25rem 2rem', background: '#1A1A1A', borderRadius: 'var(--radius-md)' }}>
+              <Logo size="lg" color="white" />
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>color="white"</span>
+          </div>
+        </div>
+
+        {/* Icon variant */}
+        <h3 style={{ fontSize: 'var(--font-base)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--color-text-secondary)' }}>Icon Variant (variant="icon", size="lg")</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ padding: '1rem 1.5rem', background: 'var(--color-bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+              <Logo size="lg" variant="icon" color="primary" />
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>color="primary"</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ padding: '1rem 1.5rem', background: 'var(--color-bg-main)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+              <Logo size="lg" variant="icon" color="dark" />
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>color="dark"</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ padding: '1rem 1.5rem', background: '#1A1A1A', borderRadius: 'var(--radius-md)' }}>
+              <Logo size="lg" variant="icon" color="white" />
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)', fontFamily: 'monospace' }}>color="white"</span>
+          </div>
+        </div>
+
+        {/* Usage contexts */}
+        <h3 style={{ fontSize: 'var(--font-base)', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--color-text-secondary)' }}>Usage Contexts</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+          {/* Navbar mockup */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ maxWidth: '400px', background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Logo size="lg" color="primary" />
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                {['Features', 'Pricing', 'Blog'].map((l) => (
+                  <span key={l} style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)' }}>{l}</span>
+                ))}
+              </div>
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)' }}>Navbar — size="lg" color="primary"</span>
+          </div>
+
+          {/* Sidebar mockup */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ maxWidth: '160px', background: 'var(--color-bg-sidebar)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <Logo size="md" color="primary" />
+              {['Dashboard', 'Agents', 'Contacts'].map((l) => (
+                <span key={l} style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)' }}>{l}</span>
+              ))}
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)' }}>Sidebar — size="md" color="primary"</span>
+          </div>
+
+          {/* Auth mockup */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ maxWidth: '320px', background: 'var(--color-bg-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <Logo size="xl" color="primary" />
+              <div style={{ width: '100%', height: '36px', background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)' }} />
+              <div style={{ width: '100%', height: '36px', background: 'var(--color-bg-main)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)' }} />
+              <div style={{ width: '100%', height: '36px', background: 'var(--color-primary)', borderRadius: 'var(--radius-sm)' }} />
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)' }}>Auth card — size="xl" color="primary"</span>
+          </div>
+
+          {/* Footer mockup */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ maxWidth: '400px', background: '#1A1A1A', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Logo size="sm" color="white" />
+              <span style={{ fontSize: 'var(--font-xs)', color: '#6B7280' }}>© 2026 GenSmart</span>
+            </div>
+            <span style={{ fontSize: 'var(--font-xs)', color: 'var(--color-text-secondary)' }}>Footer — size="sm" color="white"</span>
+          </div>
+        </div>
+      </section>
 
       {/* ===== BUTTONS ===== */}
       <section style={{ marginBottom: '3rem' }}>
