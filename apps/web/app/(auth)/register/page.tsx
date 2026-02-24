@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
+import { useToast } from '@/components/ui/Toast';
 import styles from '../auth.module.css';
 
 function validateForm(
@@ -31,6 +32,7 @@ function validateForm(
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
+  const { success } = useToast();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -51,6 +53,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(email, password, name, orgName);
+      success('Account created!', 'Welcome to GenSmart. Setting up your dashboard…');
       router.replace('/dashboard');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Registration failed. Please try again.');

@@ -37,9 +37,9 @@ function setRefreshCookie(res: Response, token: string): void {
   res.cookie('refresh_token', token, {
     httpOnly: true,
     secure: process.env['NODE_ENV'] === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/api/auth',
+    path: '/',
   });
 }
 
@@ -109,7 +109,7 @@ router.post(
       if (refreshToken) {
         await authService.logout(refreshToken);
       }
-      res.clearCookie('refresh_token', { path: '/api/auth' });
+      res.clearCookie('refresh_token', { path: '/' });
       res.json({ message: 'Logged out successfully' });
     } catch (err) {
       next(err);
