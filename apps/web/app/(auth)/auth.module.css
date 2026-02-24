@@ -1,0 +1,154 @@
+.container {
+  width: 100%;
+}
+
+.logoCenter {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.75rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  text-decoration: none;
+}
+
+.logoText {
+  font-family: var(--font-logo, var(--font-family));
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: -0.5px;
+}
+
+.heading {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: center;
+  margin: 0 0 0.375rem 0;
+}
+
+.subheading {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin: 0 0 1.75rem 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.footer {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+}
+
+.footer a {
+  color: var(--color-primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.footer a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+.forgotLink {
+  display: block;
+  text-align: right;
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  margin-top: -0.5rem;
+}
+
+.forgotLink:hover {
+  color: var(--color-primary);
+}
+
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: var(--font-sm);
+  color: var(--color-danger);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.successBanner {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: var(--font-sm);
+  color: var(--color-success);
+  text-align: center;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--color-border);
+}
+
+.dividerText {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.twoFAWrapper {
+  text-align: center;
+}
+
+.twoFATitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.375rem 0;
+}
+
+.twoFADesc {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 1.25rem 0;
+}
+
+.backLink {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  margin-bottom: 1.25rem;
+}
+
+.backLink:hover {
+  color: var(--color-primary);
+}
