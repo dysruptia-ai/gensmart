@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 import express from 'express';
@@ -27,6 +28,11 @@ app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Static files — uploaded avatars and knowledge files
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+app.use('/uploads', express.static(uploadsDir));
 
 // Routes
 app.use('/api', router);

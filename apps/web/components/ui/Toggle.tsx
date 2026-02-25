@@ -4,7 +4,7 @@ import React from 'react';
 import styles from './Toggle.module.css';
 
 interface ToggleProps {
-  checked: boolean;
+  checked: boolean | undefined;
   onChange: (checked: boolean) => void;
   label?: string;
   disabled?: boolean;
@@ -13,6 +13,7 @@ interface ToggleProps {
 
 export default function Toggle({ checked, onChange, label, disabled = false, id }: ToggleProps) {
   const inputId = id ?? (label ? `toggle-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined);
+  const isChecked = checked ?? false;
 
   return (
     <label
@@ -24,13 +25,13 @@ export default function Toggle({ checked, onChange, label, disabled = false, id 
         role="switch"
         id={inputId}
         className={styles.input}
-        checked={checked}
+        checked={isChecked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        aria-checked={checked}
+        aria-checked={isChecked}
       />
       <div
-        className={[styles.track, checked ? styles.checked : ''].join(' ')}
+        className={[styles.track, isChecked ? styles.checked : ''].join(' ')}
         aria-hidden="true"
       >
         <div className={styles.thumb} />

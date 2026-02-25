@@ -189,3 +189,16 @@
   color: var(--color-text-secondary);
   flex: 1;
 }
+
+/* ── Overwrite warning ── */
+.overwriteWarning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  font-size: var(--font-xs);
+  color: var(--color-warning);
+}

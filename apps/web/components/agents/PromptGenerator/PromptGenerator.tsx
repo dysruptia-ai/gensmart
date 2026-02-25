@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Wand2, Variable, Wrench } from 'lucide-react';
+import { Wand2, Variable, Wrench, AlertTriangle } from 'lucide-react';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
@@ -26,6 +26,7 @@ interface PromptGeneratorProps {
   isOpen: boolean;
   onClose: () => void;
   onApply: (result: { prompt: string; variables: SuggestedVariable[]; tools: string[] }) => void;
+  currentPrompt?: string;
 }
 
 const LANGUAGES = [
@@ -33,7 +34,7 @@ const LANGUAGES = [
   { code: 'es', label: 'Español' },
 ];
 
-export function PromptGenerator({ isOpen, onClose, onApply }: PromptGeneratorProps) {
+export function PromptGenerator({ isOpen, onClose, onApply, currentPrompt }: PromptGeneratorProps) {
   const [description, setDescription] = useState('');
   const [language, setLanguage] = useState('en');
   const [loading, setLoading] = useState(false);
@@ -61,18 +62,24 @@ export function PromptGenerator({ isOpen, onClose, onApply }: PromptGeneratorPro
     }
   };
 
+  const hasExistingPrompt = !!(currentPrompt && currentPrompt.trim().length > 0);
+
   const handleApplyPrompt = () => {
     if (!result) return;
+    if (hasExistingPrompt && !confirm('This will replace your current prompt. Continue?')) return;
     onApply({ prompt: result.systemPrompt, variables: [], tools: [] });
+    onClose();
   };
 
   const handleApplyVariables = () => {
     if (!result) return;
     onApply({ prompt: '', variables: result.suggestedVariables, tools: [] });
+    onClose();
   };
 
   const handleApplyAll = () => {
     if (!result) return;
+    if (hasExistingPrompt && !confirm('This will replace your current prompt. Continue?')) return;
     onApply({
       prompt: result.systemPrompt,
       variables: result.suggestedVariables,
@@ -152,6 +159,14 @@ export function PromptGenerator({ isOpen, onClose, onApply }: PromptGeneratorPro
         {/* Result preview */}
         {result && (
           <div className={styles.resultSection}>
+            {/* Overwrite warning */}
+            {hasExistingPrompt && (
+              <div className={styles.overwriteWarning}>
+                <AlertTriangle size={14} aria-hidden="true" />
+                Applying a prompt will replace your current prompt
+              </div>
+            )}
+
             <p className={styles.resultTitle}>Generated System Prompt</p>
             <div className={styles.promptPreview}>{result.systemPrompt}</div>
 

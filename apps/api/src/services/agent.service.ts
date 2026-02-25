@@ -245,6 +245,7 @@ export async function updateAgent(
   const fieldMap: Record<string, string> = {
     name: 'name',
     description: 'description',
+    avatarUrl: 'avatar_url',
     systemPrompt: 'system_prompt',
     llmProvider: 'llm_provider',
     llmModel: 'llm_model',
@@ -553,4 +554,229 @@ async function verifyAgentOwnership(orgId: string, agentId: string) {
     [agentId, orgId]
   );
   if (!result.rows[0]) throw new AppError(404, 'Agent not found', 'AGENT_NOT_FOUND');
+}
+
+// ── Plan enforcement for tools ────────────────────────────────────────────────
+
+export async function countToolsByType(agentId: string, type: string): Promise<number> {
+  const result = await query<{ count: string }>(
+    'SELECT COUNT(*) as count FROM agent_tools WHERE agent_id = $1 AND type = $2',
+    [agentId, type]
+  );
+  return parseInt(result.rows[0]?.count ?? '0', 10);
+}
+
+// ── Knowledge Files ───────────────────────────────────────────────────────────
+
+interface KnowledgeFileRow {
+  id: string;
+  agent_id: string;
+  filename: string;
+  file_type: string;
+  source_url: string | null;
+  file_path: string | null;
+  file_size: number | null;
+  status: string;
+  error_message: string | null;
+  chunk_count: number;
+  last_processed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function formatKnowledgeFile(row: KnowledgeFileRow) {
+  return {
+    id: row.id,
+    agentId: row.agent_id,
+    filename: row.filename,
+    fileType: row.file_type,
+    sourceUrl: row.source_url,
+    fileSize: row.file_size,
+    status: row.status,
+    errorMessage: row.error_message,
+    chunkCount: row.chunk_count,
+    lastProcessedAt: row.last_processed_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function getKnowledgeFiles(orgId: string, agentId: string) {
+  await verifyAgentOwnership(orgId, agentId);
+  const result = await query<KnowledgeFileRow>(
+    'SELECT * FROM knowledge_files WHERE agent_id = $1 ORDER BY created_at DESC',
+    [agentId]
+  );
+  return result.rows.map(formatKnowledgeFile);
+}
+
+export async function createKnowledgeFile(
+  orgId: string,
+  agentId: string,
+  data: { filename: string; fileType: string; filePath?: string; fileSize?: number }
+) {
+  await verifyAgentOwnership(orgId, agentId);
+  const result = await query<KnowledgeFileRow>(
+    `INSERT INTO knowledge_files (agent_id, filename, file_type, file_path, file_size, status, created_at, updated_at)
+     VALUES ($1,$2,$3,$4,$5,'processing',NOW(),NOW()) RETURNING *`,
+    [agentId, data.filename, data.fileType, data.filePath ?? null, data.fileSize ?? null]
+  );
+  return formatKnowledgeFile(result.rows[0]!);
+}
+
+export async function createKnowledgeFileFromUrl(orgId: string, agentId: string, url: string) {
+  await verifyAgentOwnership(orgId, agentId);
+  // Extract filename from URL
+  const urlObj = new URL(url);
+  const filename = urlObj.pathname.split('/').pop() ?? 'web-page';
+  const result = await query<KnowledgeFileRow>(
+    `INSERT INTO knowledge_files (agent_id, filename, file_type, source_url, status, created_at, updated_at)
+     VALUES ($1,$2,'web',$3,'processing',NOW(),NOW()) RETURNING *`,
+    [agentId, filename || url, url]
+  );
+  return formatKnowledgeFile(result.rows[0]!);
+}
+
+export async function reprocessKnowledgeFile(orgId: string, agentId: string, fileId: string) {
+  await verifyAgentOwnership(orgId, agentId);
+  const result = await query<KnowledgeFileRow>(
+    `UPDATE knowledge_files SET status = 'processing', error_message = NULL, updated_at = NOW()
+     WHERE id = $1 AND agent_id = $2 RETURNING *`,
+    [fileId, agentId]
+  );
+  if (!result.rows[0]) throw new AppError(404, 'Knowledge file not found', 'FILE_NOT_FOUND');
+  return formatKnowledgeFile(result.rows[0]);
+}
+
+export async function deleteKnowledgeFile(orgId: string, agentId: string, fileId: string) {
+  await verifyAgentOwnership(orgId, agentId);
+  await query('DELETE FROM knowledge_files WHERE id = $1 AND agent_id = $2', [fileId, agentId]);
+}
+
+// ── Preview agent ─────────────────────────────────────────────────────────────
+
+export async function previewAgent(
+  orgId: string,
+  agentId: string,
+  message: string,
+  history: { role: string; content: string }[],
+  draftSystemPrompt?: string
+) {
+  const agentResult = await query<AgentRow>(
+    'SELECT * FROM agents WHERE id = $1 AND organization_id = $2',
+    [agentId, orgId]
+  );
+  const agent = agentResult.rows[0];
+  if (!agent) throw new AppError(404, 'Agent not found', 'AGENT_NOT_FOUND');
+
+  const { chat } = await import('./llm.service');
+
+  const systemPrompt = draftSystemPrompt ?? agent.system_prompt;
+  const messages = [
+    ...history.map((h) => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+    { role: 'user' as const, content: message },
+  ];
+
+  const response = await chat({
+    provider: agent.llm_provider as 'openai' | 'anthropic',
+    model: agent.llm_model,
+    system: systemPrompt,
+    messages,
+    temperature: parseFloat(agent.temperature),
+    maxTokens: Math.min(agent.max_tokens, 512), // limit preview to 512 tokens
+  });
+
+  return { message: response.content };
+}
+
+// ── Test tool ─────────────────────────────────────────────────────────────────
+
+export async function testTool(
+  orgId: string,
+  agentId: string,
+  toolId: string,
+  params: Record<string, unknown>
+) {
+  await verifyAgentOwnership(orgId, agentId);
+  const toolResult = await query<ToolRow>(
+    'SELECT * FROM agent_tools WHERE id = $1 AND agent_id = $2',
+    [toolId, agentId]
+  );
+  const tool = toolResult.rows[0];
+  if (!tool) throw new AppError(404, 'Tool not found', 'TOOL_NOT_FOUND');
+  if (tool.type !== 'custom_function') {
+    throw new AppError(400, 'Only custom functions can be tested', 'INVALID_TOOL_TYPE');
+  }
+
+  const cfg = tool.config as Record<string, unknown>;
+  const endpointUrl = cfg['endpointUrl'] as string;
+  const httpMethod = (cfg['httpMethod'] as string) ?? 'POST';
+  const headers = (cfg['headers'] as Record<string, string>) ?? {};
+  const auth = cfg['auth'] as { type?: string; token?: string; headerName?: string; apiKey?: string; queryParam?: string } | undefined;
+  const bodyTemplate = cfg['bodyTemplate'] as Record<string, unknown> | undefined;
+  const timeoutMs = (cfg['timeoutMs'] as number) ?? 10000;
+
+  if (!endpointUrl) throw new AppError(400, 'Tool has no endpoint URL configured', 'MISSING_CONFIG');
+
+  // Build headers
+  const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...headers };
+  if (auth?.type === 'bearer' && auth.token) {
+    requestHeaders['Authorization'] = `Bearer ${auth.token}`;
+  } else if (auth?.type === 'api_key_header' && auth.headerName && auth.apiKey) {
+    requestHeaders[auth.headerName] = auth.apiKey;
+  }
+
+  // Build URL (add query params for API key query type)
+  let url = endpointUrl;
+  if (auth?.type === 'api_key_query' && auth.queryParam && auth.apiKey) {
+    const u = new URL(url);
+    u.searchParams.set(auth.queryParam, auth.apiKey);
+    url = u.toString();
+  }
+
+  // Build body: substitute params into body template or use params directly
+  let body: unknown = params;
+  if (bodyTemplate) {
+    const bodyStr = JSON.stringify(bodyTemplate).replace(
+      /\{\{(\w+)\}\}/g,
+      (_: string, key: string) => String(params[key] ?? '')
+    );
+    try {
+      body = JSON.parse(bodyStr);
+    } catch {
+      body = params;
+    }
+  }
+
+  const startTime = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(url, {
+      method: httpMethod,
+      headers: requestHeaders,
+      body: httpMethod !== 'GET' ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    const latencyMs = Date.now() - startTime;
+    let responseData: unknown;
+    const contentType = res.headers.get('content-type') ?? '';
+    if (contentType.includes('application/json')) {
+      responseData = await res.json();
+    } else {
+      responseData = await res.text();
+    }
+
+    return { status: res.status, latencyMs, data: responseData };
+  } catch (err: unknown) {
+    clearTimeout(timeout);
+    const e = err as { name?: string; message?: string };
+    if (e.name === 'AbortError') {
+      throw new AppError(408, `Request timed out after ${timeoutMs}ms`, 'TIMEOUT');
+    }
+    throw new AppError(502, e.message ?? 'Request failed', 'REQUEST_FAILED');
+  }
 }

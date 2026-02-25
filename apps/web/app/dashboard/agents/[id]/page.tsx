@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  Save, Upload, Check, RotateCcw, AlertCircle, Rocket,
+  Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { PLAN_LIMITS } from '@gensmart/shared';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
@@ -19,6 +20,8 @@ import VariablesEditor from '@/components/agents/VariablesEditor';
 import ToolConfigurator from '@/components/agents/ToolConfigurator';
 import { PromptGenerator } from '@/components/agents/PromptGenerator';
 import styles from './editor.module.css';
+
+type PlanKey = keyof typeof PLAN_LIMITS;
 
 interface AgentVariable {
   name: string;
@@ -54,19 +57,21 @@ interface Agent {
   publishedAt?: string | null;
 }
 
+interface PreviewMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+const ALL_MODELS: { provider: string; value: string; label: string }[] = [
+  { provider: 'openai', value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+  { provider: 'openai', value: 'gpt-4o', label: 'GPT-4o' },
+  { provider: 'anthropic', value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku' },
+  { provider: 'anthropic', value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet' },
+];
+
 const LLM_PROVIDERS = [
   { value: 'openai', label: 'OpenAI' },
   { value: 'anthropic', label: 'Anthropic' },
-];
-
-const OPENAI_MODELS = [
-  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
-  { value: 'gpt-4o', label: 'GPT-4o' },
-];
-
-const ANTHROPIC_MODELS = [
-  { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku' },
-  { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet' },
 ];
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral'> = {
@@ -89,6 +94,9 @@ export default function AgentEditorPage() {
 
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const previewBottomRef = useRef<HTMLDivElement>(null);
+
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -101,6 +109,19 @@ export default function AgentEditorPage() {
   const [isDirty, setIsDirty] = useState(false);
   const [activeTab, setActiveTab] = useState('prompt');
 
+  // Plan state
+  const [orgPlan, setOrgPlan] = useState<PlanKey>('free');
+
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewMessages, setPreviewMessages] = useState<PreviewMessage[]>([]);
+  const [previewInput, setPreviewInput] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Avatar state
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   // Local editable fields
   const [name, setName] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');
@@ -108,10 +129,12 @@ export default function AgentEditorPage() {
   const [llmProvider, setLlmProvider] = useState('openai');
   const [llmModel, setLlmModel] = useState('gpt-4o-mini');
   const [temperature, setTemperature] = useState(0.7);
-  const [maxTokens, setMaxTokens] = useState(1024);
-  const [contextWindow, setContextWindow] = useState(15);
+  const [maxTokens, setMaxTokens] = useState(512);
+  const [contextWindow, setContextWindow] = useState(10);
   const [bufferSeconds, setBufferSeconds] = useState(5);
   const [channels, setChannels] = useState<string[]>([]);
+
+  const planLimits = PLAN_LIMITS[orgPlan];
 
   const loadAgent = useCallback(async () => {
     try {
@@ -128,6 +151,7 @@ export default function AgentEditorPage() {
       setContextWindow(a.contextWindowMessages);
       setBufferSeconds(a.messageBufferSeconds);
       setChannels(a.channels ?? []);
+      setAvatarUrl(a.avatarUrl ?? null);
     } catch {
       toastError('Failed to load agent');
       router.push('/dashboard/agents');
@@ -145,7 +169,28 @@ export default function AgentEditorPage() {
     }
   }, [agentId]);
 
-  useEffect(() => { loadAgent(); loadVersions(); }, [loadAgent, loadVersions]);
+  const loadOrgPlan = useCallback(async () => {
+    try {
+      const data = await api.get<{ organization: { plan: string } }>('/api/organization');
+      const plan = data.organization.plan as PlanKey;
+      setOrgPlan(plan);
+      // Clamp current values to plan limits after loading plan
+      const limits = PLAN_LIMITS[plan];
+      if (limits) {
+        setMaxTokens((prev) => Math.min(prev, limits.maxTokensPerResponse));
+        setContextWindow((prev) => Math.min(prev, limits.contextWindowMessages));
+      }
+    } catch {
+      // non-critical — default to free
+    }
+  }, []);
+
+  useEffect(() => { loadAgent(); loadVersions(); loadOrgPlan(); }, [loadAgent, loadVersions, loadOrgPlan]);
+
+  // Scroll preview to bottom when new messages arrive
+  useEffect(() => {
+    previewBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [previewMessages]);
 
   async function handleSave() {
     setSaving(true);
@@ -157,8 +202,8 @@ export default function AgentEditorPage() {
         llmProvider,
         llmModel,
         temperature,
-        maxTokens,
-        contextWindowMessages: contextWindow,
+        maxTokens: Math.min(maxTokens, planLimits.maxTokensPerResponse),
+        contextWindowMessages: Math.min(contextWindow, planLimits.contextWindowMessages),
         messageBufferSeconds: bufferSeconds,
         channels,
       });
@@ -175,10 +220,10 @@ export default function AgentEditorPage() {
   async function handlePublish() {
     setPublishing(true);
     try {
-      // Save first
       await api.put<{ agent: Agent }>(`/api/agents/${agentId}`, {
         name, systemPrompt, variables, llmProvider, llmModel,
-        temperature, maxTokens, contextWindowMessages: contextWindow,
+        temperature, maxTokens: Math.min(maxTokens, planLimits.maxTokensPerResponse),
+        contextWindowMessages: Math.min(contextWindow, planLimits.contextWindowMessages),
         messageBufferSeconds: bufferSeconds, channels,
       });
       const result = await api.post<{ agent: Agent; version: number }>(
@@ -230,7 +275,84 @@ export default function AgentEditorPage() {
     setIsDirty(true);
   }
 
-  const models = llmProvider === 'anthropic' ? ANTHROPIC_MODELS : OPENAI_MODELS;
+  // Avatar upload
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toastError('Image must be under 2MB');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toastError('File must be an image');
+      return;
+    }
+    setUploadingAvatar(true);
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      const data = await api.upload<{ avatarUrl: string }>(
+        `/api/agents/${agentId}/avatar`,
+        formData
+      );
+      setAvatarUrl(data.avatarUrl);
+      setAgent((prev) => prev ? { ...prev, avatarUrl: data.avatarUrl } : null);
+      success('Avatar updated');
+    } catch {
+      toastError('Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+      // Reset input so the same file can be selected again
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
+    }
+  }
+
+  // Preview
+  async function handlePreviewSend() {
+    const msg = previewInput.trim();
+    if (!msg || previewLoading) return;
+    setPreviewInput('');
+    const userMsg: PreviewMessage = { role: 'user', content: msg };
+    setPreviewMessages((prev) => [...prev, userMsg]);
+    setPreviewLoading(true);
+    try {
+      const data = await api.post<{ message: string }>(`/api/agents/${agentId}/preview`, {
+        message: msg,
+        history: previewMessages,
+        systemPrompt,
+      });
+      setPreviewMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+    } catch (err) {
+      const errMsg = err instanceof ApiError ? err.message : 'Error generating response';
+      setPreviewMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${errMsg}` }]);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  // Merge variables deduplicating by name (BUG-029)
+  function mergeVariables(existing: AgentVariable[], newVars: AgentVariable[]): AgentVariable[] {
+    const merged = [...existing];
+    for (const newVar of newVars) {
+      const idx = merged.findIndex((v) => v.name === newVar.name);
+      if (idx >= 0) {
+        merged[idx] = { ...merged[idx], ...newVar };
+      } else {
+        merged.push(newVar);
+      }
+    }
+    return merged;
+  }
+
+  // Computed: models filtered by plan
+  const allowedModels = (planLimits.allowedModels as readonly string[]);
+  const filteredModels = ALL_MODELS.filter(
+    (m) => m.provider === llmProvider && allowedModels.includes(m.value)
+  );
+  const modelWarning =
+    llmModel && !allowedModels.includes(llmModel)
+      ? `Model "${llmModel}" is not available in your current plan`
+      : null;
 
   if (loading) {
     return (
@@ -250,10 +372,30 @@ export default function AgentEditorPage() {
         </div>
       )}
 
+      {/* Hidden avatar file input */}
+      <input
+        ref={avatarInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        style={{ display: 'none' }}
+        onChange={handleAvatarChange}
+      />
+
       {/* Header */}
       <div className={styles.editorHeader}>
-        <div className={styles.agentAvatar}>
-          <Avatar name={agent.avatarInitials ?? agent.name} size="md" src={agent.avatarUrl ?? undefined} />
+        <div
+          className={styles.agentAvatarWrapper}
+          onClick={() => !uploadingAvatar && avatarInputRef.current?.click()}
+          title="Click to change avatar"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && avatarInputRef.current?.click()}
+          aria-label="Change agent avatar"
+        >
+          <Avatar name={agent.avatarInitials ?? agent.name} size="md" src={avatarUrl ?? undefined} />
+          <div className={styles.avatarOverlay}>
+            {uploadingAvatar ? <Spinner size="sm" /> : <Camera size={14} />}
+          </div>
         </div>
         <div className={styles.agentMeta}>
           <input
@@ -270,6 +412,14 @@ export default function AgentEditorPage() {
         <div className={styles.headerActions}>
           <Button variant="secondary" size="sm" icon={Save} onClick={handleSave} loading={saving}>
             Save
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Play}
+            onClick={() => { setPreviewMessages([]); setShowPreview(true); }}
+          >
+            Preview
           </Button>
           <Button size="sm" icon={Rocket} onClick={() => setShowPublishModal(true)}>
             Publish
@@ -318,7 +468,7 @@ export default function AgentEditorPage() {
 
         {activeTab === 'tools' && (
           <div className={styles.tabContent}>
-            <ToolConfigurator agentId={agentId} />
+            <ToolConfigurator agentId={agentId} orgPlan={orgPlan} />
           </div>
         )}
 
@@ -334,8 +484,13 @@ export default function AgentEditorPage() {
                     className={styles.select}
                     value={llmProvider}
                     onChange={(e) => {
-                      setLlmProvider(e.target.value);
-                      setLlmModel(e.target.value === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gpt-4o-mini');
+                      const p = e.target.value;
+                      setLlmProvider(p);
+                      // Pick first allowed model for this provider
+                      const firstAllowed = ALL_MODELS.find(
+                        (m) => m.provider === p && allowedModels.includes(m.value)
+                      );
+                      setLlmModel(firstAllowed?.value ?? (p === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gpt-4o-mini'));
                       setIsDirty(true);
                     }}
                   >
@@ -347,15 +502,30 @@ export default function AgentEditorPage() {
 
                 <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>Model</label>
+                  {modelWarning && (
+                    <div className={styles.planWarning}>
+                      <AlertCircle size={12} />
+                      {modelWarning}
+                    </div>
+                  )}
                   <select
                     className={styles.select}
-                    value={llmModel}
+                    value={allowedModels.includes(llmModel) ? llmModel : (filteredModels[0]?.value ?? '')}
                     onChange={(e) => { setLlmModel(e.target.value); setIsDirty(true); }}
                   >
-                    {models.map((m) => (
-                      <option key={m.value} value={m.value}>{m.label}</option>
-                    ))}
+                    {filteredModels.length > 0 ? (
+                      filteredModels.map((m) => (
+                        <option key={m.value} value={m.value}>{m.label}</option>
+                      ))
+                    ) : (
+                      <option value="" disabled>No models available for this provider in your plan</option>
+                    )}
                   </select>
+                  {filteredModels.length === 0 && (
+                    <span className={styles.fieldHint} style={{ color: 'var(--color-danger)' }}>
+                      Upgrade your plan to use {llmProvider === 'anthropic' ? 'Anthropic' : 'OpenAI GPT-4o'} models.
+                    </span>
+                  )}
                 </div>
 
                 <div className={styles.fieldGroup}>
@@ -380,10 +550,17 @@ export default function AgentEditorPage() {
                   <Input
                     type="number"
                     value={String(maxTokens)}
-                    onChange={(e) => { setMaxTokens(parseInt(e.target.value, 10) || 1024); setIsDirty(true); }}
+                    onChange={(e) => {
+                      const val = Math.min(parseInt(e.target.value, 10) || 1, planLimits.maxTokensPerResponse);
+                      setMaxTokens(val);
+                      setIsDirty(true);
+                    }}
                     min="1"
-                    max="4096"
+                    max={String(planLimits.maxTokensPerResponse)}
                   />
+                  <span className={styles.fieldHint}>
+                    Max for your plan: {planLimits.maxTokensPerResponse}
+                  </span>
                 </div>
               </div>
 
@@ -395,11 +572,17 @@ export default function AgentEditorPage() {
                   <Input
                     type="number"
                     value={String(contextWindow)}
-                    onChange={(e) => { setContextWindow(parseInt(e.target.value, 10) || 15); setIsDirty(true); }}
+                    onChange={(e) => {
+                      const val = Math.min(parseInt(e.target.value, 10) || 1, planLimits.contextWindowMessages);
+                      setContextWindow(val);
+                      setIsDirty(true);
+                    }}
                     min="1"
-                    max="50"
+                    max={String(planLimits.contextWindowMessages)}
                   />
-                  <span className={styles.fieldHint}>Number of past messages to include as context</span>
+                  <span className={styles.fieldHint}>
+                    Max for your plan: {planLimits.contextWindowMessages}
+                  </span>
                 </div>
 
                 <div className={styles.fieldGroup}>
@@ -509,23 +692,88 @@ export default function AgentEditorPage() {
         </div>
       </Modal>
 
+      {/* Preview Modal */}
+      <Modal
+        isOpen={showPreview}
+        onClose={() => setShowPreview(false)}
+        title="Agent Preview"
+        size="lg"
+      >
+        <div className={styles.previewContainer}>
+          <div className={styles.previewBanner}>
+            Preview mode — messages won&apos;t be saved
+          </div>
+          <div className={styles.previewMessages}>
+            {previewMessages.length === 0 && (
+              <p className={styles.previewEmpty}>Send a message to start chatting with your agent.</p>
+            )}
+            {previewMessages.map((msg, i) => (
+              <div
+                key={i}
+                className={[
+                  styles.previewMessage,
+                  msg.role === 'user' ? styles.previewMessageUser : styles.previewMessageAssistant,
+                ].join(' ')}
+              >
+                {msg.content}
+              </div>
+            ))}
+            {previewLoading && (
+              <div className={[styles.previewMessage, styles.previewMessageAssistant].join(' ')}>
+                <Spinner size="sm" />
+              </div>
+            )}
+            <div ref={previewBottomRef} />
+          </div>
+          <div className={styles.previewInputRow}>
+            <input
+              className={styles.previewInput}
+              value={previewInput}
+              onChange={(e) => setPreviewInput(e.target.value)}
+              placeholder="Type a message..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePreviewSend(); }
+              }}
+              disabled={previewLoading}
+            />
+            <Button
+              size="sm"
+              icon={SendHorizonal}
+              onClick={handlePreviewSend}
+              disabled={!previewInput.trim() || previewLoading}
+            >
+              Send
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Trash2}
+              onClick={() => setPreviewMessages([])}
+              disabled={previewMessages.length === 0}
+            >
+              Reset
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Prompt Generator Modal */}
       <PromptGenerator
         isOpen={showPromptGen}
         onClose={() => setShowPromptGen(false)}
+        currentPrompt={systemPrompt}
         onApply={({ prompt, variables: suggestedVars }) => {
           if (prompt) { setSystemPrompt(prompt); setIsDirty(true); }
           if (suggestedVars.length > 0) {
-            setVariables((prev) => [
-              ...prev,
-              ...suggestedVars.map((v) => ({
+            setVariables((prev) =>
+              mergeVariables(prev, suggestedVars.map((v) => ({
                 name: v.name,
                 type: (v.type as AgentVariable['type']) || 'string',
                 required: v.required ?? false,
                 description: v.description ?? '',
                 options: v.options,
-              })),
-            ]);
+              })))
+            );
             setIsDirty(true);
           }
         }}

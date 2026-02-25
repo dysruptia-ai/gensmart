@@ -123,4 +123,35 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PATCH', body: body !== undefined ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  upload: <T>(path: string, formData: FormData) => {
+    // Don't set Content-Type — browser sets it with boundary for multipart
+    const headers: Record<string, string> = {};
+    if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+    return fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: formData,
+    }).then(async (res) => {
+      if (res.status === 401) {
+        const refreshed = await tryRefresh();
+        if (refreshed) {
+          const headers2: Record<string, string> = {};
+          if (accessToken) headers2['Authorization'] = `Bearer ${accessToken}`;
+          return fetch(`${API_BASE}${path}`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: headers2,
+            body: formData,
+          }).then(async (r) => {
+            if (!r.ok) throw await parseError(r);
+            return r.json() as Promise<T>;
+          });
+        }
+        throw new ApiError(401, 'Session expired');
+      }
+      if (!res.ok) throw await parseError(res);
+      return res.json() as Promise<T>;
+    });
+  },
 };
