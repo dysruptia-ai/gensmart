@@ -310,7 +310,7 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
   useEffect(() => {
     if (activeType === 'scheduling') {
       api.get<{ calendars: Calendar[] }>('/api/calendars')
-        .then((data) => setCalendars(data.calendars))
+        .then((data) => setCalendars(data.calendars || []))
         .catch(() => setCalendars([]));
     }
   }, [activeType]);
@@ -825,7 +825,7 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
         </div>
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel}>Calendar</label>
-          {calendars.length === 0 ? (
+          {(!calendars || calendars.length === 0) ? (
             <p className={styles.fieldHint}>
               No calendars created yet. Create one in the Calendar section.
             </p>
