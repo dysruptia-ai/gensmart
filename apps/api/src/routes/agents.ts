@@ -9,6 +9,8 @@ import { validate } from '../middleware/validate';
 import { validateUUID } from '../middleware/validateUUID';
 import * as agentService from '../services/agent.service';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS } from '@gensmart/shared';
+import { ragQueue, scrapingQueue } from '../config/queues';
+import { query } from '../config/database';
 
 const router = Router();
 
@@ -396,6 +398,14 @@ router.post(
         filePath: file.path,
         fileSize: file.size,
       });
+
+      // Enqueue RAG processing job
+      await ragQueue.add('process-file', {
+        fileId: knowledgeFile.id,
+        agentId,
+        organizationId: req.org!.id,
+      }).catch((err) => console.error('[agents] Failed to enqueue RAG job:', err));
+
       res.status(201).json({ file: knowledgeFile });
     } catch (err) {
       next(err);
@@ -435,6 +445,15 @@ router.post(
       }
 
       const file = await agentService.createKnowledgeFileFromUrl(req.org!.id, agentId, url);
+
+      // Enqueue scraping job
+      await scrapingQueue.add('scrape-url', {
+        fileId: file.id,
+        agentId,
+        organizationId: req.org!.id,
+        url,
+      }).catch((err) => console.error('[agents] Failed to enqueue scraping job:', err));
+
       res.status(201).json({ file });
     } catch (err) {
       next(err);
@@ -453,6 +472,23 @@ router.post(
         String(req.params['id']),
         String(req.params['fileId'])
       );
+
+      // Re-enqueue appropriate processing job
+      if (file.fileType === 'web') {
+        await scrapingQueue.add('scrape-url', {
+          fileId: file.id,
+          agentId: String(req.params['id']),
+          organizationId: req.org!.id,
+          url: file.sourceUrl ?? '',
+        }).catch((err) => console.error('[agents] Failed to re-enqueue scraping job:', err));
+      } else {
+        await ragQueue.add('process-file', {
+          fileId: file.id,
+          agentId: String(req.params['id']),
+          organizationId: req.org!.id,
+        }).catch((err) => console.error('[agents] Failed to re-enqueue RAG job:', err));
+      }
+
       res.json({ file });
     } catch (err) {
       next(err);
@@ -583,29 +619,185 @@ router.post(
   }
 );
 
-// POST /api/agents/:id/preview
+// POST /api/agents/:id/preview — Enhanced with tools, RAG, variable capture, persistent history
 router.post(
   '/:id/preview',
   validateUUID('id'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { message, history = [], systemPrompt } = req.body as {
+      const agentId = String(req.params['id']);
+      const { message, systemPrompt } = req.body as {
         message: string;
-        history?: { role: string; content: string }[];
         systemPrompt?: string;
       };
-      if (!message || !message.trim()) {
+
+      if (!message?.trim()) {
         res.status(400).json({ error: { message: 'Message is required', code: 'MISSING_MESSAGE' } });
         return;
       }
-      const result = await agentService.previewAgent(
-        req.org!.id,
-        String(req.params['id']),
-        message.trim(),
-        history,
-        systemPrompt
+
+      const { redis } = await import('../config/redis');
+      const { chat } = await import('../services/llm.service');
+      const {
+        buildVariableCaptureInstructions,
+        captureVariableToolDef,
+      } = await import('../services/variable-capture.service');
+      const { queryKnowledgeBase, hasKnowledgeBase } = await import('../services/rag.service');
+      const { executeCustomFunction } = await import('../services/custom-function.service');
+
+      // Fetch agent
+      const agentResult = await agentService.getAgentById(req.org!.id, agentId);
+
+      const previewKey = `preview:${agentId}:${req.user!.userId}`;
+      const TTL = 30 * 60; // 30 minutes
+
+      // Load stored history
+      const rawHistory = await redis.get(previewKey);
+      const history: { role: 'user' | 'assistant'; content: string }[] =
+        rawHistory ? (JSON.parse(rawHistory) as { role: 'user' | 'assistant'; content: string }[]) : [];
+
+      // Build system prompt
+      const variables = Array.isArray(agentResult.variables) ? agentResult.variables : [];
+      const variableInstructions = buildVariableCaptureInstructions(
+        variables as Parameters<typeof buildVariableCaptureInstructions>[0]
       );
-      res.json(result);
+      let fullSystemPrompt = systemPrompt ?? agentResult.systemPrompt ?? '';
+      if (variableInstructions) fullSystemPrompt += '\n\n' + variableInstructions;
+
+      // RAG context
+      const hasRAG = await hasKnowledgeBase(agentId);
+      if (hasRAG) {
+        const ragContext = await queryKnowledgeBase(agentId, message.trim());
+        if (ragContext) fullSystemPrompt += '\n\n' + ragContext;
+      }
+
+      // Fetch tools
+      const toolsResult = await query<{
+        id: string;
+        type: string;
+        name: string;
+        description: string | null;
+        config: Record<string, unknown>;
+        is_enabled: boolean;
+      }>(
+        'SELECT id, type, name, description, config, is_enabled FROM agent_tools WHERE agent_id = $1 AND is_enabled = true',
+        [agentId]
+      );
+
+      const llmTools: Array<{ name: string; description: string; parameters: Record<string, unknown> }> = [];
+      if (variables.length > 0) llmTools.push(captureVariableToolDef);
+
+      for (const tool of toolsResult.rows) {
+        if (tool.type === 'custom_function') {
+          llmTools.push({
+            name: tool.name.replace(/\s+/g, '_').toLowerCase(),
+            description: tool.description ?? tool.name,
+            parameters: (tool.config['parameters'] as Record<string, unknown>) ?? {
+              type: 'object',
+              properties: {},
+              required: [],
+            },
+          });
+        }
+      }
+
+      // LLM call
+      const startTime = Date.now();
+      let capturedVars: Record<string, string> = {};
+      const toolsCalledLog: string[] = [];
+      let finalResponse = '';
+      let totalTokens = 0;
+
+      const messages: { role: 'user' | 'assistant'; content: string }[] = [
+        ...history,
+        { role: 'user', content: message.trim() },
+      ];
+
+      let currentMessages = [...messages];
+      const maxIter = 5;
+
+      for (let i = 0; i < maxIter; i++) {
+        const planLimits = PLAN_LIMITS[req.org!.plan as PlanKey];
+        const response = await chat({
+          provider: agentResult.llmProvider as 'openai' | 'anthropic',
+          model: agentResult.llmModel,
+          system: fullSystemPrompt,
+          messages: currentMessages,
+          tools: llmTools.length > 0 ? llmTools : undefined,
+          temperature: agentResult.temperature,
+          maxTokens: Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512),
+        });
+
+        totalTokens += response.usage.totalTokens;
+
+        if (!response.toolCalls?.length) {
+          finalResponse = response.content;
+          break;
+        }
+
+        for (const tc of response.toolCalls) {
+          toolsCalledLog.push(tc.name);
+          if (tc.name === 'capture_variable') {
+            const name = String(tc.arguments['variable_name'] ?? '');
+            const val = String(tc.arguments['variable_value'] ?? '');
+            capturedVars[name] = val;
+            currentMessages.push({ role: 'user', content: `[Tool result]: Variable '${name}' captured: ${val}` });
+          } else {
+            const toolDef = toolsResult.rows.find(
+              (t) => t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
+            );
+            if (toolDef) {
+              const result = await executeCustomFunction(
+                toolDef.config as unknown as Parameters<typeof executeCustomFunction>[0],
+                tc.arguments
+              );
+              currentMessages.push({ role: 'user', content: `[Tool result for ${tc.name}]: ${result}` });
+            }
+          }
+        }
+
+        if (response.content.trim()) finalResponse = response.content;
+      }
+
+      if (!finalResponse.trim()) finalResponse = '...';
+
+      // Persist updated history
+      const updatedHistory = [
+        ...history,
+        { role: 'user' as const, content: message.trim() },
+        { role: 'assistant' as const, content: finalResponse },
+      ];
+      await redis.set(previewKey, JSON.stringify(updatedHistory), 'EX', TTL);
+
+      const latencyMs = Date.now() - startTime;
+
+      res.json({
+        message: finalResponse,
+        metadata: {
+          tokensUsed: totalTokens,
+          toolsCalled: toolsCalledLog,
+          capturedVariables: capturedVars,
+          latencyMs,
+          model: agentResult.llmModel,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/agents/:id/preview/reset
+router.post(
+  '/:id/preview/reset',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const { redis } = await import('../config/redis');
+      const previewKey = `preview:${agentId}:${req.user!.userId}`;
+      await redis.del(previewKey);
+      res.json({ message: 'Preview history cleared' });
     } catch (err) {
       next(err);
     }

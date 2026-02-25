@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import http from 'http';
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 import express from 'express';
@@ -12,6 +13,10 @@ import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import router from './routes/index';
 import { errorHandler } from './middleware/errorHandler';
+import { initWebSocket } from './config/websocket';
+import { startMessageWorker } from './workers/message.worker';
+import { startRagWorker } from './workers/rag.worker';
+import { startScrapingWorker } from './workers/scraping.worker';
 
 const app = express();
 
@@ -45,9 +50,22 @@ app.use((_req, res) => {
 // Error handler
 app.use(errorHandler);
 
+// Create HTTP server (needed for Socket.IO)
+const httpServer = http.createServer(app);
+
+// Initialize WebSocket
+initWebSocket(httpServer);
+
+// Start BullMQ workers
+startMessageWorker();
+startRagWorker();
+startScrapingWorker();
+
 // Start server
-app.listen(env.PORT, () => {
+httpServer.listen(env.PORT, () => {
   console.log(`GenSmart API running on port ${env.PORT}`);
+  console.log(`WebSocket server ready`);
+  console.log(`Workers started: message, rag, scraping`);
 });
 
 export default app;
