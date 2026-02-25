@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Plus, Calendar, Database, Code2, Globe2, Wrench, Trash2, Settings, Upload, X,
+  Plus, Calendar, Database, Code2, Wrench, Trash2, Settings, Upload, X,
   Check, RefreshCw, ChevronDown, ChevronUp, Play,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -16,6 +16,7 @@ import styles from './ToolConfigurator.module.css';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
+// web_scraping kept for backwards compat with existing DB records; not creatable in UI
 type ToolType = 'scheduling' | 'rag' | 'web_scraping' | 'custom_function' | 'mcp';
 
 interface AgentTool {
@@ -129,17 +130,16 @@ const DEFAULT_FORM: ToolForm = {
 const TOOL_CATALOG: { type: ToolType; label: string; icon: React.ElementType; desc: string }[] = [
   { type: 'custom_function', label: 'Custom Function', icon: Code2, desc: 'Call any HTTP endpoint' },
   { type: 'scheduling', label: 'Scheduling', icon: Calendar, desc: 'Appointment / reminder booking' },
-  { type: 'rag', label: 'Knowledge Base', icon: Database, desc: 'Upload docs for retrieval' },
-  { type: 'web_scraping', label: 'Web Scraping', icon: Globe2, desc: 'Fetch content from URLs' },
+  { type: 'rag', label: 'Knowledge Base', icon: Database, desc: 'Upload docs & web pages for retrieval' },
   { type: 'mcp', label: 'MCP Server', icon: Wrench, desc: 'Model Context Protocol server' },
 ];
 
-const TOOL_ICONS: Record<ToolType, React.ElementType> = {
+const TOOL_ICONS: Partial<Record<ToolType, React.ElementType>> = {
   custom_function: Code2,
   scheduling: Calendar,
   rag: Database,
-  web_scraping: Globe2,
   mcp: Wrench,
+  // web_scraping: legacy type, falls back to Wrench
 };
 
 function formatBytes(bytes: number): string {
@@ -157,7 +157,12 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
         calendarId: form.calendarId || undefined,
       };
     case 'rag':
-      return { collectionName: form.collectionName };
+      return {
+        collectionName: form.collectionName,
+        allowedDomains: form.allowedDomains
+          ? form.allowedDomains.split(',').map((d) => d.trim()).filter(Boolean)
+          : [],
+      };
     case 'custom_function': {
       const headersObj = form.headers.reduce<Record<string, string>>(
         (acc, h) => (h.key ? { ...acc, [h.key]: h.value } : acc),
@@ -205,13 +210,6 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
         serverName: form.mcpServerName,
         apiKey: form.mcpApiKey,
         transport: form.mcpTransport,
-      };
-    case 'web_scraping':
-      return {
-        allowedDomains: form.allowedDomains
-          .split(',')
-          .map((d) => d.trim())
-          .filter(Boolean),
       };
     default:
       return {};
@@ -950,6 +948,11 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
               )}
             </div>
 
+            {/* Separator */}
+            <div className={styles.webSeparator}>
+              <span>— or index from the web —</span>
+            </div>
+
             {/* Web Pages */}
             <div className={styles.fieldGroup}>
               <label className={styles.fieldLabel}>Web Pages</label>
@@ -958,19 +961,37 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
                   className={styles.fieldInput}
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="https://docs.example.com/page"
+                  placeholder="https://example.com/docs"
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddUrl(); } }}
                 />
                 <button
                   className={styles.addUrlBtn}
                   onClick={handleAddUrl}
-                  disabled={urlAdding || !urlInput.trim()}
+                  disabled={urlAdding || !urlInput.trim() || limitReached}
                   type="button"
                 >
                   {urlAdding ? <Spinner size="sm" /> : <Plus size={14} />}
                   Add URL
                 </button>
               </div>
+              <span className={styles.fieldHint}>
+                Add URLs to scrape and index as knowledge. Each URL counts toward your document limit.
+              </span>
+            </div>
+
+            {/* Allowed Domains */}
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Allowed Domains <span className={styles.optionalTag}>(optional)</span></label>
+              <textarea
+                className={styles.fieldTextarea}
+                value={form.allowedDomains}
+                onChange={(e) => setField('allowedDomains', e.target.value)}
+                placeholder="example.com, docs.example.com"
+                rows={2}
+              />
+              <span className={styles.fieldHint}>
+                Restrict scraping to these domains. Leave empty to allow only the exact URLs added above.
+              </span>
             </div>
 
             {/* Knowledge files list */}
@@ -1074,21 +1095,6 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
     );
   }
 
-  function renderWebScrapingPanel() {
-    return (
-      <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel}>Allowed Domains</label>
-        <textarea
-          className={styles.fieldTextarea}
-          value={form.allowedDomains}
-          onChange={(e) => setField('allowedDomains', e.target.value)}
-          placeholder="example.com, docs.example.com"
-        />
-        <span className={styles.fieldHint}>Comma-separated list of domains the agent may scrape</span>
-      </div>
-    );
-  }
-
   function renderConfigPanel() {
     switch (activeType) {
       case 'custom_function':
@@ -1099,8 +1105,6 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
         return renderRagPanel();
       case 'mcp':
         return renderMcpPanel();
-      case 'web_scraping':
-        return renderWebScrapingPanel();
       default:
         return null;
     }

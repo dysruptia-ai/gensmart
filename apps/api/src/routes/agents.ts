@@ -74,7 +74,7 @@ const uploadKnowledge = multer({
 // ── Schemas ───────────────────────────────────────────────────────────────────
 
 const toolSchema = z.object({
-  type: z.enum(['scheduling', 'rag', 'web_scraping', 'custom_function', 'mcp']),
+  type: z.enum(['scheduling', 'rag', 'custom_function', 'mcp']),
   name: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
   config: z.record(z.unknown()),
