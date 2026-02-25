@@ -60,6 +60,13 @@ interface Agent {
 interface PreviewMessage {
   role: 'user' | 'assistant';
   content: string;
+  metadata?: {
+    tokensUsed?: number;
+    latencyMs?: number;
+    toolsCalled?: string[];
+    capturedVariables?: Record<string, string>;
+    model?: string;
+  };
 }
 
 const ALL_MODELS: { provider: string; value: string; label: string }[] = [
@@ -307,7 +314,7 @@ export default function AgentEditorPage() {
     }
   }
 
-  // Preview
+  // Preview — uses server-side history (Redis, TTL 30min)
   async function handlePreviewSend() {
     const msg = previewInput.trim();
     if (!msg || previewLoading) return;
@@ -316,17 +323,37 @@ export default function AgentEditorPage() {
     setPreviewMessages((prev) => [...prev, userMsg]);
     setPreviewLoading(true);
     try {
-      const data = await api.post<{ message: string }>(`/api/agents/${agentId}/preview`, {
+      const data = await api.post<{
+        message: string;
+        metadata?: {
+          tokensUsed?: number;
+          latencyMs?: number;
+          toolsCalled?: string[];
+          capturedVariables?: Record<string, string>;
+          model?: string;
+        };
+      }>(`/api/agents/${agentId}/preview`, {
         message: msg,
-        history: previewMessages,
         systemPrompt,
       });
-      setPreviewMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+      setPreviewMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: data.message, metadata: data.metadata },
+      ]);
     } catch (err) {
       const errMsg = err instanceof ApiError ? err.message : 'Error generating response';
       setPreviewMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${errMsg}` }]);
     } finally {
       setPreviewLoading(false);
+    }
+  }
+
+  async function handlePreviewReset() {
+    setPreviewMessages([]);
+    try {
+      await api.post(`/api/agents/${agentId}/preview/reset`);
+    } catch {
+      // ignore
     }
   }
 
@@ -701,21 +728,30 @@ export default function AgentEditorPage() {
       >
         <div className={styles.previewContainer}>
           <div className={styles.previewBanner}>
-            Preview mode — messages won&apos;t be saved
+            PREVIEW MODE — Messages are not counted towards your plan usage
           </div>
           <div className={styles.previewMessages}>
             {previewMessages.length === 0 && (
               <p className={styles.previewEmpty}>Send a message to start chatting with your agent.</p>
             )}
             {previewMessages.map((msg, i) => (
-              <div
-                key={i}
-                className={[
-                  styles.previewMessage,
-                  msg.role === 'user' ? styles.previewMessageUser : styles.previewMessageAssistant,
-                ].join(' ')}
-              >
-                {msg.content}
+              <div key={i}>
+                <div
+                  className={[
+                    styles.previewMessage,
+                    msg.role === 'user' ? styles.previewMessageUser : styles.previewMessageAssistant,
+                  ].join(' ')}
+                >
+                  {msg.content}
+                </div>
+                {msg.role === 'assistant' && msg.metadata && (
+                  <div className={[styles.previewMeta, msg.role === 'assistant' ? styles.previewMetaRight : ''].join(' ')}>
+                    {msg.metadata.latencyMs ? `${(msg.metadata.latencyMs / 1000).toFixed(1)}s` : ''}
+                    {msg.metadata.tokensUsed ? ` · ${msg.metadata.tokensUsed} tokens` : ''}
+                    {msg.metadata.toolsCalled?.length ? ` · tools: ${msg.metadata.toolsCalled.join(', ')}` : ''}
+                    {msg.metadata.model ? ` · ${msg.metadata.model}` : ''}
+                  </div>
+                )}
               </div>
             ))}
             {previewLoading && (
@@ -725,6 +761,22 @@ export default function AgentEditorPage() {
             )}
             <div ref={previewBottomRef} />
           </div>
+
+          {/* Captured variables from preview */}
+          {previewMessages.some((m) => m.metadata?.capturedVariables && Object.keys(m.metadata.capturedVariables).length > 0) && (
+            <div className={styles.previewVars}>
+              <strong>Captured Variables:</strong>{' '}
+              {Object.entries(
+                previewMessages.reduce<Record<string, string>>((acc, m) => {
+                  if (m.metadata?.capturedVariables) Object.assign(acc, m.metadata.capturedVariables);
+                  return acc;
+                }, {})
+              ).map(([k, v]) => (
+                <span key={k} className={styles.previewVarChip}>{k}: <em>{v}</em></span>
+              ))}
+            </div>
+          )}
+
           <div className={styles.previewInputRow}>
             <input
               className={styles.previewInput}
@@ -732,14 +784,14 @@ export default function AgentEditorPage() {
               onChange={(e) => setPreviewInput(e.target.value)}
               placeholder="Type a message..."
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePreviewSend(); }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handlePreviewSend(); }
               }}
               disabled={previewLoading}
             />
             <Button
               size="sm"
               icon={SendHorizonal}
-              onClick={handlePreviewSend}
+              onClick={() => void handlePreviewSend()}
               disabled={!previewInput.trim() || previewLoading}
             >
               Send
@@ -748,7 +800,7 @@ export default function AgentEditorPage() {
               variant="secondary"
               size="sm"
               icon={Trash2}
-              onClick={() => setPreviewMessages([])}
+              onClick={() => void handlePreviewReset()}
               disabled={previewMessages.length === 0}
             >
               Reset

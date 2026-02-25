@@ -1,0 +1,93 @@
+.wrapper {
+  display: flex;
+  margin-bottom: 0.75rem;
+}
+
+.incoming {
+  justify-content: flex-start;
+}
+
+.outgoing {
+  justify-content: flex-end;
+}
+
+.bubble {
+  max-width: 70%;
+  padding: 0.625rem 0.875rem;
+  border-radius: 1rem;
+  position: relative;
+  word-break: break-word;
+}
+
+.user {
+  background: var(--color-bg-sidebar);
+  border-bottom-left-radius: 0.25rem;
+  color: var(--color-text-primary);
+}
+
+.assistant {
+  background: var(--color-primary-light);
+  border-bottom-right-radius: 0.25rem;
+  color: var(--color-text-primary);
+}
+
+.human {
+  background: #dbeafe;
+  border-bottom-right-radius: 0.25rem;
+  color: var(--color-text-primary);
+}
+
+.humanLabel {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--color-info);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.content {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.time {
+  font-size: 0.625rem;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+.metaInfo {
+  font-size: 0.625rem;
+  color: var(--color-text-secondary);
+  opacity: 0.7;
+}
+
+/* Intervention summary divider */
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.dividerPill {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sidebar);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.25rem 0.875rem;
+  max-width: 80%;
+  text-align: center;
+}

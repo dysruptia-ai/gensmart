@@ -1,0 +1,153 @@
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sectionTitle {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin: 0 0 0.75rem;
+}
+
+.contactInfo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.contactAvatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.contactDetails {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.contactName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contactMeta {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stageBadge {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.125rem 0.375rem;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: 999px;
+  width: fit-content;
+}
+
+.score {
+  font-size: 1.25rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.noContact {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* Variables */
+.variableList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.variableItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.variableIcon {
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+}
+
+.variableContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.variableName {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.required {
+  color: var(--color-danger);
+  margin-left: 0.125rem;
+}
+
+.variableValue {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+.variablePending {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.noVars {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-style: italic;
+}

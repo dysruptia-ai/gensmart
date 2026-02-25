@@ -1,0 +1,214 @@
+.page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.pageHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.pageTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pageTitle h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.totalBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-secondary);
+}
+
+.select {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-card);
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.select:focus {
+  border-color: var(--color-primary);
+}
+
+.loadingState {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Conversation item */
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 0.875rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  text-decoration: none;
+  transition: background 0.1s;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--color-bg-main);
+}
+
+.itemAvatar {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.itemContent {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.itemName {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemTime {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.itemPreview {
+  display: flex;
+  align-items: center;
+}
+
+.itemMessage {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.itemMeta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.125rem;
+}
+
+.agentLabel {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sidebar);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.125rem 0.5rem;
+}
+
+.channelBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.125rem 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 999px;
+}
+
+.channelBadge.whatsapp {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.score {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+@media (max-width: 640px) {
+  .filters {
+    padding: 0.75rem 1rem;
+  }
+
+  .item {
+    padding: 0.75rem 1rem;
+  }
+
+  .pageHeader {
+    padding: 1rem;
+  }
+}
