@@ -10,7 +10,8 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "db:migrate": "npm run migrate --workspace=apps/api",
-    "db:seed": "npm run seed --workspace=apps/api"
+    "db:seed": "npm run seed --workspace=apps/api",
+    "db:seed:test-users": "npm run seed:test-users --workspace=apps/api"
   },
   "engines": {
     "node": ">=20.0.0"
