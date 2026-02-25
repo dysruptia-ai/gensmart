@@ -98,7 +98,7 @@ export function Footer() {
 
         <div className={styles.bottom}>
           <div className={styles.bottomLeft}>
-            <Logo size="sm" variant="full" color="white" href="/" />
+            <Logo size="md" variant="full" color="white" href="/" />
             <p className={styles.copyright}>
               © 2026 GenSmart. All rights reserved.
             </p>

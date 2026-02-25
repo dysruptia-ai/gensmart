@@ -1,0 +1,191 @@
+/* ── PromptGenerator Modal Content ── */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Language selector row ── */
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.topRowLabel {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.langGroup {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.langBtn {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-main);
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+
+.langBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.langBtnActive {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+/* ── Description textarea ── */
+.textareaWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.textareaLabel {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-sm);
+  line-height: 1.6;
+  resize: vertical;
+  transition: border-color 0.15s;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.textarea::placeholder {
+  color: var(--color-text-secondary);
+}
+
+.textareaHint {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+/* ── Generate button row ── */
+.generateRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ── Result preview ── */
+.resultSection {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.resultTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.promptPreview {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-main);
+  font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ── Variables chips ── */
+.chipsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chipsLabel {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.625rem;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: var(--font-xs);
+  font-weight: 500;
+  border: 1px solid rgba(37, 211, 102, 0.25);
+}
+
+.chipTool {
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--color-info);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.noChips {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+/* ── Apply actions ── */
+.applyActions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.applyHint {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  flex: 1;
+}

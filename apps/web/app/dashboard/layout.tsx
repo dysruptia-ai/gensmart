@@ -14,6 +14,8 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  Menu,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/ui/Avatar';
@@ -38,12 +40,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
 
   if (isLoading) {
     return (
@@ -69,9 +77,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className={styles.sidebarBackdrop}
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
           <Logo size="md" href="/dashboard" />
+          <button
+            className={styles.sidebarCloseBtn}
+            onClick={() => setSidebarOpen(false)}
+            aria-label="Close sidebar"
+          >
+            <X size={20} />
+          </button>
         </div>
 
         <nav className={styles.nav} aria-label="Main navigation">
@@ -95,7 +119,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <div className={styles.main}>
         <header className={styles.header}>
-          <div className={styles.headerLeft} />
+          <div className={styles.headerLeft}>
+            <button
+              className={styles.hamburger}
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open sidebar"
+              aria-expanded={sidebarOpen}
+            >
+              <Menu size={22} />
+            </button>
+          </div>
 
           <div className={styles.headerRight}>
             <div className={styles.userMenu}>

@@ -15,24 +15,45 @@ interface ModalProps {
 
 export default function Modal({ isOpen, onClose, title, size = 'md', children }: ModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  const wasOpenRef = useRef(false);
+
+  // Keep onClose ref current without triggering effect re-runs
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      return;
+    }
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
 
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
 
-    modalRef.current?.focus();
+    // Only focus the modal when it first opens, not on every re-render
+    if (!wasOpenRef.current) {
+      wasOpenRef.current = true;
+      const raf = requestAnimationFrame(() => {
+        modalRef.current?.focus();
+      });
+      return () => {
+        cancelAnimationFrame(raf);
+        document.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = '';
+      };
+    }
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -40,7 +61,7 @@ export default function Modal({ isOpen, onClose, title, size = 'md', children }:
     <div
       className={styles.backdrop}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        if (e.target === e.currentTarget) onCloseRef.current();
       }}
       role="dialog"
       aria-modal="true"
@@ -57,7 +78,7 @@ export default function Modal({ isOpen, onClose, title, size = 'md', children }:
             <button
               type="button"
               className={styles.closeBtn}
-              onClick={onClose}
+              onClick={() => onCloseRef.current()}
               aria-label="Close modal"
             >
               <X size={20} />

@@ -26,6 +26,7 @@ export interface AuthTokens {
     role: string;
     orgId: string;
     orgName: string;
+    totpEnabled: boolean;
   };
 }
 
@@ -87,6 +88,8 @@ function generateRandomCode(length = 8): string {
 }
 
 async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> {
+  // Note: user.totp_enabled is included in the returned user object so the frontend
+  // can correctly show the 2FA status without an extra API call
   const tokenId = crypto.randomUUID();
   const accessToken = generateAccessToken({
     userId: user.id,
@@ -120,6 +123,7 @@ async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> 
       role: user.role,
       orgId: user.organization_id,
       orgName: org.name,
+      totpEnabled: user.totp_enabled,
     },
   };
 }
@@ -199,6 +203,7 @@ export async function register(input: {
         role: user.role,
         orgId: user.organization_id,
         orgName: org.name,
+        totpEnabled: user.totp_enabled,
       },
     };
   } catch (err) {

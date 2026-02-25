@@ -18,6 +18,14 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const variableSchema = z.object({
+  name: z.string().min(1).max(50).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'Variable name must be a valid identifier'),
+  type: z.enum(['string', 'enum', 'number', 'boolean']),
+  required: z.boolean().default(false),
+  description: z.string().max(255),
+  options: z.array(z.string()).optional(),
+});
+
 export const agentCreateSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().max(1000).optional(),
@@ -29,6 +37,7 @@ export const agentCreateSchema = z.object({
   contextWindowMessages: z.number().int().min(1).max(100).default(15),
   channels: z.array(z.enum(['web', 'whatsapp'])).default([]),
   messageBufferSeconds: z.number().int().min(0).max(30).default(5),
+  variables: z.array(variableSchema).optional(),
 });
 
 export const agentUpdateSchema = agentCreateSchema.partial();
@@ -41,14 +50,6 @@ export const contactUpdateSchema = z.object({
   funnelStage: z.enum(['lead', 'opportunity', 'customer']).optional(),
   tags: z.array(z.string()).optional(),
   customVariables: z.record(z.unknown()).optional(),
-});
-
-export const variableSchema = z.object({
-  name: z.string().min(1).max(50).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'Variable name must be a valid identifier'),
-  type: z.enum(['string', 'enum', 'number', 'boolean']),
-  required: z.boolean().default(false),
-  description: z.string().max(255),
-  options: z.array(z.string()).optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

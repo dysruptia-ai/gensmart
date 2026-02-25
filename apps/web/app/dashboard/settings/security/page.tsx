@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShieldCheck, ShieldOff, Check, Lock, AlertTriangle, Copy } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +27,13 @@ export default function SecurityPage() {
   const { success, error: toastError } = useToast();
   // We don't have totp_enabled in AuthUser, so we manage local state
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+
+  // Sync 2FA state from the user context (set after login/refresh)
+  useEffect(() => {
+    if (user?.totpEnabled !== undefined) {
+      setTwoFAEnabled(user.totpEnabled);
+    }
+  }, [user?.totpEnabled]);
   const [step, setStep] = useState<TwoFAStep>('idle');
   const [qrCode, setQrCode] = useState('');
   const [secret, setSecret] = useState('');
