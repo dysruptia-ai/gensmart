@@ -504,7 +504,13 @@ export default function AgentEditorPage() {
 
         {activeTab === 'tools' && (
           <div className={styles.tabContent}>
-            <ToolConfigurator agentId={agentId} orgPlan={orgPlan} orgPlanLoaded={orgPlanLoaded} />
+            {!orgPlanLoaded ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+                <Spinner />
+              </div>
+            ) : (
+              <ToolConfigurator agentId={agentId} orgPlan={orgPlan} orgPlanLoaded={orgPlanLoaded} />
+            )}
           </div>
         )}
 

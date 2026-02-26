@@ -293,24 +293,24 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     }
   }, [agentId]);
 
-  // Initial load when edit modal opens in RAG mode
+  // Load knowledge files whenever the RAG panel is visible (add OR edit mode)
   useEffect(() => {
-    if (editTool && activeType === 'rag') {
+    if (showAddModal && activeType === 'rag') {
       setKnowledgeLoading(true);
       loadKnowledgeFiles().finally(() => setKnowledgeLoading(false));
     }
-  }, [editTool, activeType, loadKnowledgeFiles]);
+  }, [showAddModal, activeType, loadKnowledgeFiles]);
 
-  // Polling — always polls every 5s when modal is open in RAG mode (stable interval)
+  // Poll for status updates whenever the RAG panel is open (add OR edit mode)
   useEffect(() => {
-    if (!editTool || activeType !== 'rag') return;
+    if (!showAddModal || activeType !== 'rag') return;
     pollRef.current = setInterval(() => {
       void loadKnowledgeFiles();
     }, 5000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [editTool, activeType, loadKnowledgeFiles]);
+  }, [showAddModal, activeType, loadKnowledgeFiles]);
 
   // Load calendars when scheduling panel opens
   useEffect(() => {
