@@ -15,7 +15,6 @@ const widgetCors = cors({
 });
 
 router.use(widgetCors);
-router.options('*', widgetCors);
 
 // ── Rate limiting helpers ─────────────────────────────────────────────────────
 
