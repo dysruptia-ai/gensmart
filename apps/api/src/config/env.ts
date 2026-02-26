@@ -31,6 +31,12 @@ export const env = {
   STRIPE_WEBHOOK_SECRET: process.env['STRIPE_WEBHOOK_SECRET'] ?? '',
   META_APP_SECRET: process.env['META_APP_SECRET'] ?? '',
   META_VERIFY_TOKEN: process.env['META_VERIFY_TOKEN'] ?? '',
+  // WhatsApp (alias of META_* for clarity — falls back to META_* if not set)
+  WHATSAPP_APP_SECRET: process.env['WHATSAPP_APP_SECRET'] ?? process.env['META_APP_SECRET'] ?? '',
+  WHATSAPP_VERIFY_TOKEN: process.env['WHATSAPP_VERIFY_TOKEN'] ?? process.env['META_VERIFY_TOKEN'] ?? '',
+  // Facebook Embedded Signup
+  FACEBOOK_APP_ID: process.env['FACEBOOK_APP_ID'] ?? '',
+  FACEBOOK_APP_SECRET: process.env['FACEBOOK_APP_SECRET'] ?? '',
   SMTP_HOST: process.env['SMTP_HOST'] ?? '',
   SMTP_PORT: parseInt(optionalEnv('SMTP_PORT', '587'), 10),
   SMTP_USER: process.env['SMTP_USER'] ?? '',

@@ -14,6 +14,7 @@ import {
 import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
 import { getIO } from '../config/websocket';
+import { sendTextMessage, decryptAccessToken } from '../services/whatsapp.service';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -353,8 +354,33 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // Step 14: Send via channel
   if (conv.channel === 'whatsapp') {
-    // WhatsApp stub — will be implemented in Phase 5
-    console.log(`[msg-worker] WhatsApp send stub — conv: ${conversationId}, message: ${finalResponse.slice(0, 50)}...`);
+    try {
+      const agentWaResult = await query<{ whatsapp_config: Record<string, unknown> }>(
+        'SELECT whatsapp_config FROM agents WHERE id = $1',
+        [agentId]
+      );
+      const waConfig = agentWaResult.rows[0]?.whatsapp_config;
+
+      if (waConfig?.connected && waConfig?.phone_number_id && waConfig?.access_token_encrypted) {
+        const contactResult = await query<{ phone: string | null }>(
+          'SELECT phone FROM contacts WHERE id = $1',
+          [conv.contact_id]
+        );
+        const phone = contactResult.rows[0]?.phone;
+
+        if (phone) {
+          const accessToken = decryptAccessToken(String(waConfig.access_token_encrypted));
+          await sendTextMessage(String(waConfig.phone_number_id), accessToken, phone, finalResponse);
+          console.log(`[msg-worker] WhatsApp message sent to ${phone.slice(0, 4)}*** conv: ${conversationId}`);
+        } else {
+          console.warn(`[msg-worker] No phone for contact — conv: ${conversationId}`);
+        }
+      } else {
+        console.warn(`[msg-worker] WhatsApp not configured for agent ${agentId}`);
+      }
+    } catch (err) {
+      console.error(`[msg-worker] WhatsApp send error for conv ${conversationId}:`, (err as Error).message);
+    }
   } else if (conv.channel === 'web') {
     // Web widget notification via WebSocket (room per session)
     try {
