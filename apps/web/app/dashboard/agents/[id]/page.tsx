@@ -180,8 +180,8 @@ export default function AgentEditorPage() {
 
   const loadOrgPlan = useCallback(async () => {
     try {
-      const data = await api.get<{ organization: { plan: string } }>('/api/organization');
-      const plan = data.organization.plan as PlanKey;
+      const data = await api.get<{ plan: string }>('/api/organization');
+      const plan = data.plan as PlanKey;
       setOrgPlan(plan);
       // Clamp current values to plan limits after loading plan
       const limits = PLAN_LIMITS[plan];

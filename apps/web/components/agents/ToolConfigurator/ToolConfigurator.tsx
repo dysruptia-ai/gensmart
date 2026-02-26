@@ -477,9 +477,9 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
 
   async function handleFiles(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
-    // Reset input so the same file can be re-selected
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    // Snapshot FileList BEFORE resetting the input (resetting clears the live FileList)
     const files = Array.from(fileList);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     let uploaded = 0;
     for (const file of files) {
       const fd = new FormData();
