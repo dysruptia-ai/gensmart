@@ -19,6 +19,8 @@ import Modal from '@/components/ui/Modal';
 import VariablesEditor from '@/components/agents/VariablesEditor';
 import ToolConfigurator from '@/components/agents/ToolConfigurator';
 import { PromptGenerator } from '@/components/agents/PromptGenerator';
+import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomizer';
+import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
 import styles from './editor.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -38,6 +40,13 @@ interface AgentVersion {
   publisher_name?: string | null;
 }
 
+interface WebConfig {
+  primary_color: string;
+  welcome_message: string;
+  bubble_text: string;
+  position: 'bottom-right' | 'bottom-left';
+}
+
 interface Agent {
   id: string;
   name: string;
@@ -54,6 +63,7 @@ interface Agent {
   channels: string[];
   messageBufferSeconds: number;
   variables: AgentVariable[];
+  webConfig?: WebConfig | null;
   publishedAt?: string | null;
 }
 
@@ -92,6 +102,7 @@ const EDITOR_TABS = [
   { id: 'variables', label: 'Variables' },
   { id: 'tools', label: 'Tools' },
   { id: 'settings', label: 'Settings' },
+  { id: 'channels', label: 'Channels' },
   { id: 'versions', label: 'Versions' },
 ];
 
@@ -142,6 +153,12 @@ export default function AgentEditorPage() {
   const [contextWindow, setContextWindow] = useState(10);
   const [bufferSeconds, setBufferSeconds] = useState(5);
   const [channels, setChannels] = useState<string[]>([]);
+  const [webConfig, setWebConfig] = useState<WebConfig>({
+    primary_color: '#25D366',
+    welcome_message: 'Hello! How can I help you?',
+    bubble_text: 'Chat with us',
+    position: 'bottom-right',
+  });
 
   const planLimits = PLAN_LIMITS[orgPlan];
 
@@ -161,6 +178,14 @@ export default function AgentEditorPage() {
       setBufferSeconds(a.messageBufferSeconds);
       setChannels(a.channels ?? []);
       setAvatarUrl(a.avatarUrl ?? null);
+      if (a.webConfig) {
+        setWebConfig({
+          primary_color: a.webConfig.primary_color ?? '#25D366',
+          welcome_message: a.webConfig.welcome_message ?? 'Hello! How can I help you?',
+          bubble_text: a.webConfig.bubble_text ?? 'Chat with us',
+          position: (a.webConfig.position as 'bottom-right' | 'bottom-left') ?? 'bottom-right',
+        });
+      }
     } catch {
       toastError('Failed to load agent');
       router.push('/dashboard/agents');
@@ -662,6 +687,62 @@ export default function AgentEditorPage() {
                     />
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'channels' && (
+          <div className={styles.tabContent}>
+            <div className={styles.channelsGrid}>
+              {/* Web Widget */}
+              <div className={styles.channelSection}>
+                <div className={styles.channelHeader}>
+                  <div className={styles.channelToggleRow}>
+                    <div>
+                      <div className={styles.settingsSectionTitle}>Web Widget</div>
+                      <span className={styles.channelDesc}>Embed a chat widget on any website</span>
+                    </div>
+                    <Toggle
+                      checked={channels.includes('web')}
+                      onChange={(_checked) => toggleChannel('web')}
+                    />
+                  </div>
+                </div>
+                {channels.includes('web') && orgPlanLoaded && (
+                  <div className={styles.channelBody}>
+                    <WidgetCustomizer
+                      agentId={agentId}
+                      initialConfig={webConfig}
+                      onSaved={(cfg: WebConfig) => setWebConfig(cfg)}
+                    />
+                  </div>
+                )}
+                {!channels.includes('web') && (
+                  <p className={styles.channelOffHint}>Enable Web Widget to configure and get your embed code.</p>
+                )}
+              </div>
+
+              {/* WhatsApp */}
+              <div className={styles.channelSection}>
+                <div className={styles.channelHeader}>
+                  <div className={styles.channelToggleRow}>
+                    <div>
+                      <div className={styles.settingsSectionTitle}>WhatsApp</div>
+                      <span className={styles.channelDesc}>Connect to WhatsApp Business via Meta Cloud API</span>
+                    </div>
+                    <Toggle
+                      checked={channels.includes('whatsapp')}
+                      onChange={(_checked) => toggleChannel('whatsapp')}
+                      disabled={orgPlan === 'free'}
+                    />
+                  </div>
+                </div>
+                {orgPlanLoaded && (
+                  <div className={styles.channelBody}>
+                    <WhatsAppConfig agentId={agentId} orgPlan={orgPlan} />
+                  </div>
+                )}
               </div>
             </div>
           </div>

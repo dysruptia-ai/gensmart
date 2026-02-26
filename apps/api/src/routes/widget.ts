@@ -1,9 +1,327 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import { query } from '../config/database';
+import { redis } from '../config/redis';
+import { AppError } from '../middleware/errorHandler';
+import { pushToBuffer } from '../services/message-buffer.service';
 
 const router = Router();
 
-router.get('/:agentId/config', (_req, res) => res.json({ message: 'Widget config - Phase 5' }));
-router.post('/:agentId/session', (_req, res) => res.json({ message: 'Widget session - Phase 5' }));
-router.post('/:agentId/message', (_req, res) => res.json({ message: 'Widget message - Phase 5' }));
+// Widget routes are public (no auth) and allow cross-origin access for embeds
+const widgetCors = cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
+
+router.use(widgetCors);
+router.options('*', widgetCors);
+
+// ── Rate limiting helpers ─────────────────────────────────────────────────────
+
+async function checkSessionRateLimit(ip: string): Promise<boolean> {
+  const key = `rl:widget:session:${ip}`;
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, 3600); // 1 hour window
+  return count <= 10; // max 10 sessions per IP per hour
+}
+
+async function checkMessageRateLimit(sessionId: string): Promise<boolean> {
+  const key = `rl:widget:msg:${sessionId}`;
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, 86400); // 24 hour window
+  return count <= 100; // max 100 messages per session per day
+}
+
+function getClientIp(req: Request): string {
+  return (
+    (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+    req.socket.remoteAddress ||
+    'unknown'
+  );
+}
+
+// ── GET /api/widget/:agentId/config ──────────────────────────────────────────
+router.get(
+  '/:agentId/config',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = req.params['agentId'];
+
+      // Try Redis cache first
+      const cacheKey = `widget:config:${agentId}`;
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        res.json(JSON.parse(cached));
+        return;
+      }
+
+      // Fetch from DB
+      const result = await query<{
+        id: string;
+        name: string;
+        avatar_url: string | null;
+        avatar_initials: string | null;
+        status: string;
+        channels: string[];
+        web_config: Record<string, unknown>;
+      }>(
+        `SELECT id, name, avatar_url, avatar_initials, status, channels, web_config
+         FROM agents
+         WHERE id = $1`,
+        [agentId]
+      );
+
+      const agent = result.rows[0];
+      if (!agent) {
+        throw new AppError(404, 'Agent not found', 'NOT_FOUND');
+      }
+
+      if (agent.status !== 'active') {
+        throw new AppError(404, 'Agent is not published', 'AGENT_NOT_PUBLISHED');
+      }
+
+      if (!(agent.channels ?? []).includes('web')) {
+        throw new AppError(403, 'Web widget is not enabled for this agent', 'CHANNEL_DISABLED');
+      }
+
+      const webCfg = agent.web_config ?? {};
+      const config = {
+        agentId: agent.id,
+        name: agent.name,
+        avatar_url: agent.avatar_url,
+        avatar_initials: agent.avatar_initials ?? (agent.name.charAt(0).toUpperCase()),
+        primary_color: (webCfg['primary_color'] as string) ?? '#25D366',
+        welcome_message: (webCfg['welcome_message'] as string) ?? 'Hello! How can I help you?',
+        bubble_text: (webCfg['bubble_text'] as string) ?? 'Chat with us',
+        position: (webCfg['position'] as string) ?? 'bottom-right',
+      };
+
+      // Cache for 5 minutes
+      await redis.set(cacheKey, JSON.stringify(config), 'EX', 300);
+
+      res.json(config);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/widget/:agentId/session ─────────────────────────────────────────
+router.post(
+  '/:agentId/session',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = req.params['agentId'];
+      const ip = getClientIp(req);
+
+      // Rate limit: max 10 sessions per IP per hour
+      const allowed = await checkSessionRateLimit(ip);
+      if (!allowed) {
+        throw new AppError(429, 'Too many sessions created. Please try again later.', 'RATE_LIMIT');
+      }
+
+      // Fetch agent
+      const agentResult = await query<{
+        id: string;
+        organization_id: string;
+        status: string;
+        channels: string[];
+        web_config: Record<string, unknown>;
+        message_buffer_seconds: number;
+      }>(
+        `SELECT id, organization_id, status, channels, web_config, message_buffer_seconds
+         FROM agents WHERE id = $1`,
+        [agentId]
+      );
+
+      const agent = agentResult.rows[0];
+      if (!agent || agent.status !== 'active') {
+        throw new AppError(404, 'Agent not found or not published', 'NOT_FOUND');
+      }
+
+      if (!(agent.channels ?? []).includes('web')) {
+        throw new AppError(403, 'Web widget is not enabled for this agent', 'CHANNEL_DISABLED');
+      }
+
+      const { fingerprint, referrer, userAgent } = req.body as {
+        fingerprint?: string;
+        referrer?: string;
+        userAgent?: string;
+      };
+
+      // Create anonymous contact
+      const contactResult = await query<{ id: string }>(
+        `INSERT INTO contacts (organization_id, source_channel, custom_variables, created_at, updated_at)
+         VALUES ($1, 'web', $2::jsonb, NOW(), NOW())
+         RETURNING id`,
+        [
+          agent.organization_id,
+          JSON.stringify({ fingerprint: fingerprint ?? null, referrer: referrer ?? null }),
+        ]
+      );
+      const contactId = contactResult.rows[0]!.id;
+
+      // Create conversation
+      const convResult = await query<{ id: string }>(
+        `INSERT INTO conversations (organization_id, agent_id, contact_id, channel, status,
+                                    channel_metadata, created_at, updated_at)
+         VALUES ($1, $2, $3, 'web', 'active', $4::jsonb, NOW(), NOW())
+         RETURNING id`,
+        [
+          agent.organization_id,
+          agent.id,
+          contactId,
+          JSON.stringify({
+            ip: ip.slice(0, 15),
+            userAgent: (userAgent ?? '').slice(0, 200),
+            referrer: (referrer ?? '').slice(0, 500),
+          }),
+        ]
+      );
+      const sessionId = convResult.rows[0]!.id;
+
+      const webCfg = agent.web_config ?? {};
+      const welcomeMessage = (webCfg['welcome_message'] as string) ?? 'Hello! How can I help you?';
+
+      res.json({ sessionId, welcomeMessage });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/widget/:agentId/message ─────────────────────────────────────────
+router.post(
+  '/:agentId/message',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['agentId'] ?? '');
+      const { sessionId, message } = req.body as { sessionId: string; message: string };
+
+      if (!sessionId || !message?.trim()) {
+        throw new AppError(400, 'sessionId and message are required', 'VALIDATION_ERROR');
+      }
+
+      // Sanitize message (basic XSS prevention)
+      const sanitizedMessage = message.trim().slice(0, 4000);
+
+      // Rate limit per session
+      const allowed = await checkMessageRateLimit(sessionId);
+      if (!allowed) {
+        throw new AppError(429, 'Message limit reached for this session', 'RATE_LIMIT');
+      }
+
+      // Validate session (conversation) belongs to this agent
+      const convResult = await query<{
+        id: string;
+        agent_id: string;
+        organization_id: string;
+        status: string;
+        contact_id: string;
+      }>(
+        `SELECT id, agent_id, organization_id, status, contact_id
+         FROM conversations
+         WHERE id = $1 AND agent_id = $2 AND channel = 'web'`,
+        [sessionId, agentId]
+      );
+
+      const conv = convResult.rows[0];
+      if (!conv) {
+        throw new AppError(404, 'Session not found', 'SESSION_NOT_FOUND');
+      }
+
+      if (conv.status === 'closed') {
+        throw new AppError(400, 'This conversation has ended', 'SESSION_CLOSED');
+      }
+
+      // Get agent's message buffer setting
+      const agentResult = await query<{ message_buffer_seconds: number }>(
+        'SELECT message_buffer_seconds FROM agents WHERE id = $1',
+        [agentId]
+      );
+      const bufferSeconds = agentResult.rows[0]?.message_buffer_seconds ?? 5;
+
+      // Push to message buffer
+      await pushToBuffer(sessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
+
+      res.json({ messageId: null, status: 'queued' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── GET /api/widget/:agentId/messages ─────────────────────────────────────────
+// Long-poll endpoint: returns messages after a given timestamp
+// Waits up to 30s if no messages available
+router.get(
+  '/:agentId/messages',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = req.params['agentId'];
+      const sessionId = req.query['sessionId'] as string;
+      const afterParam = req.query['after'] as string;
+
+      if (!sessionId) {
+        throw new AppError(400, 'sessionId is required', 'VALIDATION_ERROR');
+      }
+
+      // Validate session
+      const convResult = await query<{ id: string; agent_id: string }>(
+        'SELECT id, agent_id FROM conversations WHERE id = $1 AND agent_id = $2 AND channel = $3',
+        [sessionId, agentId, 'web']
+      );
+
+      if (!convResult.rows[0]) {
+        throw new AppError(404, 'Session not found', 'SESSION_NOT_FOUND');
+      }
+
+      const after = afterParam ? new Date(afterParam) : new Date(0);
+      const POLL_INTERVAL_MS = 1500;
+      const MAX_WAIT_MS = 28000; // 28s — give buffer before server timeout
+
+      const startTime = Date.now();
+
+      const fetchMessages = async () => {
+        const result = await query<{
+          id: string;
+          role: string;
+          content: string;
+          created_at: string;
+        }>(
+          `SELECT id, role, content, created_at
+           FROM messages
+           WHERE conversation_id = $1
+             AND role IN ('assistant', 'human')
+             AND created_at > $2
+           ORDER BY created_at ASC
+           LIMIT 20`,
+          [sessionId, after.toISOString()]
+        );
+        return result.rows;
+      };
+
+      // Long poll loop
+      while (true) {
+        const messages = await fetchMessages();
+        if (messages.length > 0) {
+          res.json({ messages });
+          return;
+        }
+
+        const elapsed = Date.now() - startTime;
+        if (elapsed >= MAX_WAIT_MS) {
+          res.json({ messages: [] });
+          return;
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+      }
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 export default router;
