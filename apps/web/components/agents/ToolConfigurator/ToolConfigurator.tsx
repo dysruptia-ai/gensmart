@@ -221,9 +221,10 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
 interface ToolConfiguratorProps {
   agentId: string;
   orgPlan: string;
+  orgPlanLoaded?: boolean;
 }
 
-export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorProps) {
+export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = true }: ToolConfiguratorProps) {
   const { success, error: toastError } = useToast();
   const [tools, setTools] = useState<AgentTool[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,9 +256,17 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
     ? (orgPlan as keyof typeof PLAN_LIMITS)
     : 'free';
   const limits = PLAN_LIMITS[planKey];
-  const canUseCustomFunction = limits.customFunctions > 0;
-  const canUseMcp = limits.mcpServers > 0;
-  const knowledgeLimit = limits.knowledgeFiles;
+  const cfLimit = limits.customFunctions as number;
+  const mcpLimit = limits.mcpServers as number;
+  const knowledgeLimit = limits.knowledgeFiles as number;
+  // Count current tools by type for limit checking
+  const customFnCount = tools.filter((t) => t.type === 'custom_function').length;
+  const mcpCount = tools.filter((t) => t.type === 'mcp').length;
+  // Plan says 0 → must upgrade; plan > 0 but count reached → limit hit
+  const customFnNeedsUpgrade = cfLimit === 0;
+  const mcpNeedsUpgrade = mcpLimit === 0;
+  const customFnLimitReached = !customFnNeedsUpgrade && cfLimit !== Infinity && customFnCount >= cfLimit;
+  const mcpLimitReached = !mcpNeedsUpgrade && mcpLimit !== Infinity && mcpCount >= mcpLimit;
 
   const loadTools = useCallback(async () => {
     try {
@@ -272,9 +281,8 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
 
   useEffect(() => { loadTools(); }, [loadTools]);
 
-  // Knowledge files polling
+  // Knowledge files — stable callback (no editTool dep), always fetches by agentId
   const loadKnowledgeFiles = useCallback(async () => {
-    if (!editTool) return;
     try {
       const data = await api.get<{ files: KnowledgeFile[] }>(
         `/api/agents/${agentId}/knowledge`
@@ -283,8 +291,9 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
     } catch {
       // ignore
     }
-  }, [agentId, editTool]);
+  }, [agentId]);
 
+  // Initial load when edit modal opens in RAG mode
   useEffect(() => {
     if (editTool && activeType === 'rag') {
       setKnowledgeLoading(true);
@@ -292,19 +301,16 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
     }
   }, [editTool, activeType, loadKnowledgeFiles]);
 
+  // Polling — always polls every 5s when modal is open in RAG mode (stable interval)
   useEffect(() => {
-    if (editTool && activeType === 'rag') {
-      pollRef.current = setInterval(() => {
-        const hasProcessing = knowledgeFiles.some((f) => f.status === 'processing');
-        if (hasProcessing) {
-          loadKnowledgeFiles();
-        }
-      }, 5000);
-    }
+    if (!editTool || activeType !== 'rag') return;
+    pollRef.current = setInterval(() => {
+      void loadKnowledgeFiles();
+    }, 5000);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
-  }, [editTool, activeType, knowledgeFiles, loadKnowledgeFiles]);
+  }, [editTool, activeType, loadKnowledgeFiles]);
 
   // Load calendars when scheduling panel opens
   useEffect(() => {
@@ -1214,12 +1220,20 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
                 const CatIcon = cat.icon;
                 const isCustomFn = cat.type === 'custom_function';
                 const isMcp = cat.type === 'mcp';
-                const isDisabled = !!editTool ||
-                  (isCustomFn && !canUseCustomFunction) ||
-                  (isMcp && !canUseMcp);
-                const needsUpgrade =
-                  (isCustomFn && !canUseCustomFunction) ||
-                  (isMcp && !canUseMcp);
+                // Only apply plan restrictions after orgPlan has loaded (avoids flash on 'free' default)
+                const planNeedsUpgrade = orgPlanLoaded && (
+                  (isCustomFn && customFnNeedsUpgrade) ||
+                  (isMcp && mcpNeedsUpgrade)
+                );
+                const planLimitReached = orgPlanLoaded && (
+                  (isCustomFn && customFnLimitReached) ||
+                  (isMcp && mcpLimitReached)
+                );
+                const isDisabled = !!editTool || planNeedsUpgrade || planLimitReached;
+                const badgeLabel = !orgPlanLoaded ? null
+                  : planNeedsUpgrade ? 'Upgrade'
+                  : planLimitReached ? 'Limit'
+                  : null;
 
                 return (
                   <button
@@ -1227,7 +1241,7 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
                     className={[
                       styles.catalogBtn,
                       activeType === cat.type ? styles.catalogBtnActive : '',
-                      needsUpgrade ? styles.catalogBtnDisabled : '',
+                      isDisabled && !editTool ? styles.catalogBtnDisabled : '',
                     ]
                       .filter(Boolean)
                       .join(' ')}
@@ -1237,12 +1251,16 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
                       setField('type', cat.type);
                     }}
                     disabled={isDisabled}
-                    title={needsUpgrade ? 'Upgrade your plan to use this tool' : undefined}
+                    title={
+                      planNeedsUpgrade ? 'Upgrade your plan to use this tool'
+                      : planLimitReached ? 'Tool limit reached for your plan'
+                      : undefined
+                    }
                   >
                     <CatIcon size={15} className={styles.catalogBtnIcon} aria-hidden="true" />
                     <span className={styles.catalogBtnLabel}>{cat.label}</span>
-                    {needsUpgrade && (
-                      <span className={styles.upgradeBadge}>Upgrade</span>
+                    {badgeLabel && (
+                      <span className={styles.upgradeBadge}>{badgeLabel}</span>
                     )}
                   </button>
                 );

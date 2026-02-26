@@ -119,12 +119,13 @@ export default function AgentEditorPage() {
 
   // Plan state
   const [orgPlan, setOrgPlan] = useState<PlanKey>('free');
+  const [orgPlanLoaded, setOrgPlanLoaded] = useState(false);
 
-  // Preview state
+  // Preview state — previewPending counts concurrent in-flight requests
   const [showPreview, setShowPreview] = useState(false);
   const [previewMessages, setPreviewMessages] = useState<PreviewMessage[]>([]);
   const [previewInput, setPreviewInput] = useState('');
-  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewPending, setPreviewPending] = useState(0);
 
   // Avatar state
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -190,6 +191,8 @@ export default function AgentEditorPage() {
       }
     } catch {
       // non-critical — default to free
+    } finally {
+      setOrgPlanLoaded(true);
     }
   }, []);
 
@@ -315,40 +318,43 @@ export default function AgentEditorPage() {
     }
   }
 
-  // Preview — uses server-side history (Redis, TTL 30min)
-  async function handlePreviewSend() {
+  // Preview — fire-and-forget: input is never blocked while AI responds
+  function handlePreviewSend() {
     const msg = previewInput.trim();
-    if (!msg || previewLoading) return;
+    if (!msg) return;
+
+    // 1. Add user message and clear input immediately
+    setPreviewMessages((prev) => [...prev, { role: 'user', content: msg }]);
     setPreviewInput('');
     previewInputRef.current?.focus();
-    const userMsg: PreviewMessage = { role: 'user', content: msg };
-    setPreviewMessages((prev) => [...prev, userMsg]);
-    setPreviewLoading(true);
-    try {
-      const data = await api.post<{
-        message: string;
-        metadata?: {
-          tokensUsed?: number;
-          latencyMs?: number;
-          toolsCalled?: string[];
-          capturedVariables?: Record<string, string>;
-          model?: string;
-        };
-      }>(`/api/agents/${agentId}/preview`, {
-        message: msg,
-        systemPrompt,
+
+    // 2. Increment pending counter (shows typing indicator)
+    setPreviewPending((n) => n + 1);
+
+    // 3. Fire API call — does NOT block the input
+    api.post<{
+      message: string;
+      metadata?: {
+        tokensUsed?: number;
+        latencyMs?: number;
+        toolsCalled?: string[];
+        capturedVariables?: Record<string, string>;
+        model?: string;
+      };
+    }>(`/api/agents/${agentId}/preview`, { message: msg, systemPrompt })
+      .then((data) => {
+        setPreviewMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: data.message, metadata: data.metadata },
+        ]);
+      })
+      .catch((err) => {
+        const errMsg = err instanceof ApiError ? err.message : 'Error generating response';
+        setPreviewMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${errMsg}` }]);
+      })
+      .finally(() => {
+        setPreviewPending((n) => n - 1);
       });
-      setPreviewMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: data.message, metadata: data.metadata },
-      ]);
-    } catch (err) {
-      const errMsg = err instanceof ApiError ? err.message : 'Error generating response';
-      setPreviewMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${errMsg}` }]);
-    } finally {
-      setPreviewLoading(false);
-      setTimeout(() => previewInputRef.current?.focus(), 0);
-    }
   }
 
   async function handlePreviewReset() {
@@ -498,7 +504,7 @@ export default function AgentEditorPage() {
 
         {activeTab === 'tools' && (
           <div className={styles.tabContent}>
-            <ToolConfigurator agentId={agentId} orgPlan={orgPlan} />
+            <ToolConfigurator agentId={agentId} orgPlan={orgPlan} orgPlanLoaded={orgPlanLoaded} />
           </div>
         )}
 
@@ -771,7 +777,7 @@ export default function AgentEditorPage() {
                 )}
               </div>
             ))}
-            {previewLoading && (
+            {previewPending > 0 && (
               <div className={[styles.previewMessage, styles.previewMessageAssistant].join(' ')}>
                 <Spinner size="sm" />
               </div>
@@ -802,15 +808,14 @@ export default function AgentEditorPage() {
               onChange={(e) => setPreviewInput(e.target.value)}
               placeholder="Type a message..."
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void handlePreviewSend(); }
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePreviewSend(); }
               }}
-              disabled={previewLoading}
             />
             <Button
               size="sm"
               icon={SendHorizonal}
-              onClick={() => void handlePreviewSend()}
-              disabled={!previewInput.trim() || previewLoading}
+              onClick={handlePreviewSend}
+              disabled={!previewInput.trim()}
             >
               Send
             </Button>

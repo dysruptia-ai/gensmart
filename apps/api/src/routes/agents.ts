@@ -400,12 +400,20 @@ router.post(
       });
 
       // Enqueue RAG processing job
-      await ragQueue.add('process-file', {
+      const ragEnqueued = await ragQueue.add('process-file', {
         fileId: knowledgeFile.id,
         agentId,
         organizationId: req.org!.id,
-      }).catch((err) => console.error('[agents] Failed to enqueue RAG job:', err));
+      }).catch(async (err) => {
+        console.error('[agents] Failed to enqueue RAG job:', err);
+        await query(
+          `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
+          ['Processing queue unavailable. Click reprocess to retry.', knowledgeFile.id]
+        ).catch(() => {});
+        return null;
+      });
 
+      console.log(`[agents] File ${knowledgeFile.id} uploaded, RAG job: ${ragEnqueued ? String(ragEnqueued.id) : 'FAILED'}`);
       res.status(201).json({ file: knowledgeFile });
     } catch (err) {
       next(err);
@@ -447,13 +455,21 @@ router.post(
       const file = await agentService.createKnowledgeFileFromUrl(req.org!.id, agentId, url);
 
       // Enqueue scraping job
-      await scrapingQueue.add('scrape-url', {
+      const scrapeEnqueued = await scrapingQueue.add('scrape-url', {
         fileId: file.id,
         agentId,
         organizationId: req.org!.id,
         url,
-      }).catch((err) => console.error('[agents] Failed to enqueue scraping job:', err));
+      }).catch(async (err) => {
+        console.error('[agents] Failed to enqueue scraping job:', err);
+        await query(
+          `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
+          ['Processing queue unavailable. Click reprocess to retry.', file.id]
+        ).catch(() => {});
+        return null;
+      });
 
+      console.log(`[agents] URL ${file.id} added, scraping job: ${scrapeEnqueued ? String(scrapeEnqueued.id) : 'FAILED'}`);
       res.status(201).json({ file });
     } catch (err) {
       next(err);
@@ -480,13 +496,25 @@ router.post(
           agentId: String(req.params['id']),
           organizationId: req.org!.id,
           url: file.sourceUrl ?? '',
-        }).catch((err) => console.error('[agents] Failed to re-enqueue scraping job:', err));
+        }).catch(async (err) => {
+          console.error('[agents] Failed to re-enqueue scraping job:', err);
+          await query(
+            `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
+            ['Processing queue unavailable. Try again later.', file.id]
+          ).catch(() => {});
+        });
       } else {
         await ragQueue.add('process-file', {
           fileId: file.id,
           agentId: String(req.params['id']),
           organizationId: req.org!.id,
-        }).catch((err) => console.error('[agents] Failed to re-enqueue RAG job:', err));
+        }).catch(async (err) => {
+          console.error('[agents] Failed to re-enqueue RAG job:', err);
+          await query(
+            `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
+            ['Processing queue unavailable. Try again later.', file.id]
+          ).catch(() => {});
+        });
       }
 
       res.json({ file });
