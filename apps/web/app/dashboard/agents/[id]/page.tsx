@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import {
-  Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2,
+  Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { PLAN_LIMITS } from '@gensmart/shared';
@@ -103,6 +103,7 @@ export default function AgentEditorPage() {
   const { success, error: toastError } = useToast();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const previewBottomRef = useRef<HTMLDivElement>(null);
+  const previewInputRef = useRef<HTMLInputElement>(null);
 
   const [agent, setAgent] = useState<Agent | null>(null);
   const [loading, setLoading] = useState(true);
@@ -319,6 +320,7 @@ export default function AgentEditorPage() {
     const msg = previewInput.trim();
     if (!msg || previewLoading) return;
     setPreviewInput('');
+    previewInputRef.current?.focus();
     const userMsg: PreviewMessage = { role: 'user', content: msg };
     setPreviewMessages((prev) => [...prev, userMsg]);
     setPreviewLoading(true);
@@ -345,6 +347,7 @@ export default function AgentEditorPage() {
       setPreviewMessages((prev) => [...prev, { role: 'assistant', content: `Error: ${errMsg}` }]);
     } finally {
       setPreviewLoading(false);
+      setTimeout(() => previewInputRef.current?.focus(), 0);
     }
   }
 
@@ -735,7 +738,13 @@ export default function AgentEditorPage() {
               <p className={styles.previewEmpty}>Send a message to start chatting with your agent.</p>
             )}
             {previewMessages.map((msg, i) => (
-              <div key={i}>
+              <div
+                key={i}
+                className={[
+                  styles.messageRow,
+                  msg.role === 'user' ? styles.messageRowUser : styles.messageRowAssistant,
+                ].join(' ')}
+              >
                 <div
                   className={[
                     styles.previewMessage,
@@ -745,11 +754,19 @@ export default function AgentEditorPage() {
                   {msg.content}
                 </div>
                 {msg.role === 'assistant' && msg.metadata && (
-                  <div className={[styles.previewMeta, msg.role === 'assistant' ? styles.previewMetaRight : ''].join(' ')}>
-                    {msg.metadata.latencyMs ? `${(msg.metadata.latencyMs / 1000).toFixed(1)}s` : ''}
-                    {msg.metadata.tokensUsed ? ` · ${msg.metadata.tokensUsed} tokens` : ''}
-                    {msg.metadata.toolsCalled?.length ? ` · tools: ${msg.metadata.toolsCalled.join(', ')}` : ''}
-                    {msg.metadata.model ? ` · ${msg.metadata.model}` : ''}
+                  <div className={styles.previewMeta}>
+                    <span>
+                      {[
+                        msg.metadata.latencyMs ? `${(msg.metadata.latencyMs / 1000).toFixed(1)}s` : '',
+                        msg.metadata.tokensUsed ? `${msg.metadata.tokensUsed} tokens` : '',
+                        msg.metadata.model ?? '',
+                      ].filter(Boolean).join(' · ')}
+                    </span>
+                    {msg.metadata.toolsCalled?.map((t, ti) => (
+                      <span key={ti} className={styles.previewMetaTool}>
+                        <Wrench size={9} aria-hidden="true" />{t}
+                      </span>
+                    ))}
                   </div>
                 )}
               </div>
@@ -779,6 +796,7 @@ export default function AgentEditorPage() {
 
           <div className={styles.previewInputRow}>
             <input
+              ref={previewInputRef}
               className={styles.previewInput}
               value={previewInput}
               onChange={(e) => setPreviewInput(e.target.value)}

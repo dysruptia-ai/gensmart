@@ -400,15 +400,40 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
           { name: form.name, description: form.description, config: buildConfig(form) }
         );
         setTools((prev) => prev.map((t) => (t.id === editTool.id ? updated.tool : t)));
-        success('Tool updated');
       } else {
         const created = await api.post<{ tool: AgentTool }>(
           `/api/agents/${agentId}/tools`,
           { type: form.type, name: form.name, description: form.description, config: buildConfig(form) }
         );
         setTools((prev) => [...prev, created.tool]);
-        success('Tool added');
+        // Switch to edit mode so polling works if modal stays open
+        if (form.type === 'rag') setEditTool(created.tool);
       }
+
+      // Upload pending knowledge files for RAG tools
+      if (form.type === 'rag' && form.files.length > 0) {
+        let uploaded = 0;
+        for (const file of form.files) {
+          const fd = new FormData();
+          fd.append('file', file);
+          try {
+            await api.upload(`/api/agents/${agentId}/knowledge`, fd);
+            uploaded++;
+          } catch (err) {
+            toastError(err instanceof ApiError ? err.message : `Failed to upload ${file.name}`);
+          }
+        }
+        setField('files', []);
+        // Refresh knowledge files list directly (bypasses stale editTool ref)
+        const data = await api
+          .get<{ files: KnowledgeFile[] }>(`/api/agents/${agentId}/knowledge`)
+          .catch(() => ({ files: [] as KnowledgeFile[] }));
+        setKnowledgeFiles(data.files);
+        success(`Saved · ${uploaded} file(s) queued for processing`);
+      } else {
+        success(editTool ? 'Tool updated' : 'Tool added');
+      }
+
       setShowAddModal(false);
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : 'Failed to save tool');
@@ -886,10 +911,7 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
           <span className={styles.fieldHint}>A unique name for this knowledge base</span>
         </div>
 
-        {!editTool ? (
-          <p className={styles.fieldHint}>Save the tool first to upload documents.</p>
-        ) : (
-          <>
+        <>
             {/* File limit indicator */}
             <div className={styles.fileLimitBar}>
               <span className={styles.fileLimitLabel}>
@@ -1043,8 +1065,7 @@ export default function ToolConfigurator({ agentId, orgPlan }: ToolConfiguratorP
                 ))}
               </div>
             ) : null}
-          </>
-        )}
+        </>
       </>
     );
   }

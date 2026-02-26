@@ -306,6 +306,20 @@
   background: var(--color-bg-main);
 }
 
+/* Message row wrappers — control bubble alignment */
+.messageRow {
+  display: flex;
+  flex-direction: column;
+}
+
+.messageRowUser {
+  align-items: flex-end;
+}
+
+.messageRowAssistant {
+  align-items: flex-start;
+}
+
 .previewEmpty {
   text-align: center;
   font-size: var(--font-sm);
@@ -365,15 +379,27 @@
 }
 
 .previewMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.625rem;
   color: var(--color-text-secondary);
   margin-top: -0.375rem;
   padding: 0 0.5rem 0.25rem;
 }
 
-.previewMetaRight {
-  text-align: left;
-  padding-left: 0.5rem;
+.previewMetaTool {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(37, 211, 102, 0.08);
+  border: 1px solid rgba(37, 211, 102, 0.2);
+  border-radius: 999px;
+  padding: 1px 5px;
+  color: var(--color-primary-dark);
+  font-size: 0.5625rem;
+  white-space: nowrap;
 }
 
 .previewVars {
