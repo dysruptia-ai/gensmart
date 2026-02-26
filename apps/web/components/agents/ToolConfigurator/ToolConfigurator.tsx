@@ -416,29 +416,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
         if (form.type === 'rag') setEditTool(created.tool);
       }
 
-      // Upload pending knowledge files for RAG tools
-      if (form.type === 'rag' && form.files.length > 0) {
-        let uploaded = 0;
-        for (const file of form.files) {
-          const fd = new FormData();
-          fd.append('file', file);
-          try {
-            await api.upload(`/api/agents/${agentId}/knowledge`, fd);
-            uploaded++;
-          } catch (err) {
-            toastError(err instanceof ApiError ? err.message : `Failed to upload ${file.name}`);
-          }
-        }
-        setField('files', []);
-        // Refresh knowledge files list directly (bypasses stale editTool ref)
-        const data = await api
-          .get<{ files: KnowledgeFile[] }>(`/api/agents/${agentId}/knowledge`)
-          .catch(() => ({ files: [] as KnowledgeFile[] }));
-        setKnowledgeFiles(data.files);
-        success(`Saved · ${uploaded} file(s) queued for processing`);
-      } else {
-        success(editTool ? 'Tool updated' : 'Tool added');
-      }
+      success(editTool ? 'Tool updated' : 'Tool added');
 
       setShowAddModal(false);
     } catch (err) {
@@ -497,10 +475,24 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     setField('headers', form.headers.filter((_, i) => i !== idx));
   }
 
-  function handleFiles(fileList: FileList | null) {
-    if (!fileList) return;
-    const newFiles = Array.from(fileList);
-    setField('files', [...form.files, ...newFiles]);
+  async function handleFiles(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+    // Reset input so the same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    const files = Array.from(fileList);
+    let uploaded = 0;
+    for (const file of files) {
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        await api.upload(`/api/agents/${agentId}/knowledge`, fd);
+        uploaded++;
+      } catch (err) {
+        toastError(err instanceof ApiError ? err.message : `Failed to upload ${file.name}`);
+      }
+    }
+    await loadKnowledgeFiles();
+    if (uploaded > 0) success(`${uploaded} file(s) queued for processing`);
   }
 
   async function handleAddUrl() {
@@ -939,7 +931,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
-                  if (!limitReached) handleFiles(e.dataTransfer.files);
+                  if (!limitReached) void handleFiles(e.dataTransfer.files);
                 }}
               >
                 <Upload size={20} style={{ color: 'var(--color-text-secondary)' }} aria-hidden="true" />
@@ -954,26 +946,9 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 className={styles.fileInput}
                 multiple
                 accept=".pdf,.docx,.txt,.md"
-                onChange={(e) => handleFiles(e.target.files)}
+                onChange={(e) => { void handleFiles(e.target.files); }}
                 disabled={limitReached}
               />
-              {form.files.length > 0 && (
-                <div className={styles.fileList}>
-                  {form.files.map((f, i) => (
-                    <div key={i} className={styles.fileRow}>
-                      <span className={styles.fileName}>{f.name}</span>
-                      <span className={styles.fileSize}>{formatBytes(f.size)}</span>
-                      <button
-                        className={[styles.iconBtn, styles.iconBtnDanger].join(' ')}
-                        onClick={() => setField('files', form.files.filter((_, fi) => fi !== i))}
-                        aria-label={`Remove ${f.name}`}
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Separator */}
