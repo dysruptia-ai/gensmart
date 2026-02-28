@@ -19,6 +19,7 @@ interface WebConfig {
 interface WidgetCustomizerProps {
   agentId: string;
   initialConfig: WebConfig;
+  channels: string[];
   onSaved?: (config: WebConfig) => void;
 }
 
@@ -29,7 +30,7 @@ const DEFAULT_CONFIG: WebConfig = {
   position: 'bottom-right',
 };
 
-export default function WidgetCustomizer({ agentId, initialConfig, onSaved }: WidgetCustomizerProps) {
+export default function WidgetCustomizer({ agentId, initialConfig, channels, onSaved }: WidgetCustomizerProps) {
   const { success, error: toastError } = useToast();
 
   const [config, setConfig] = useState<WebConfig>({
@@ -46,7 +47,7 @@ export default function WidgetCustomizer({ agentId, initialConfig, onSaved }: Wi
   async function handleSave() {
     setSaving(true);
     try {
-      await api.put(`/api/agents/${agentId}`, { webConfig: config });
+      await api.put(`/api/agents/${agentId}`, { webConfig: config, channels });
       success('Widget settings saved');
       onSaved?.(config);
     } catch (err) {

@@ -1,0 +1,50 @@
+.logo {
+  font-family: var(--font-logo), monospace;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  user-select: none;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  line-height: 1;
+}
+
+.logo:hover {
+  transform: scale(1.03);
+  opacity: 0.9;
+}
+
+/* Sizes */
+.sm {
+  font-size: 1.25rem;
+}
+
+.md {
+  font-size: 1.5rem;
+}
+
+.lg {
+  font-size: 2rem;
+}
+
+.xl {
+  font-size: 2.5rem;
+}
+
+/* Color variants */
+.primaryGen {
+  color: var(--color-text-primary);
+}
+
+.primarySmart {
+  color: var(--color-primary);
+}
+
+.darkText {
+  color: var(--color-text-primary);
+}
+
+.whiteText {
+  color: #ffffff;
+}

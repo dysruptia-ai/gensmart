@@ -4,7 +4,7 @@
   --widget-primary: #25D366;
 }
 
-* {
+.widget * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;

@@ -242,8 +242,10 @@ export default function AgentEditorPage() {
         contextWindowMessages: Math.min(contextWindow, planLimits.contextWindowMessages),
         messageBufferSeconds: bufferSeconds,
         channels,
+        webConfig,
       });
       setAgent(updated.agent);
+      setChannels(updated.agent.channels ?? []);
       setIsDirty(false);
       success('Changes saved');
     } catch (err) {
@@ -260,13 +262,14 @@ export default function AgentEditorPage() {
         name, systemPrompt, variables, llmProvider, llmModel,
         temperature, maxTokens: Math.min(maxTokens, planLimits.maxTokensPerResponse),
         contextWindowMessages: Math.min(contextWindow, planLimits.contextWindowMessages),
-        messageBufferSeconds: bufferSeconds, channels,
+        messageBufferSeconds: bufferSeconds, channels, webConfig,
       });
       const result = await api.post<{ agent: Agent; version: number }>(
         `/api/agents/${agentId}/publish`,
         {}
       );
       setAgent(result.agent);
+      setChannels(result.agent.channels ?? []);
       setIsDirty(false);
       setShowPublishModal(false);
       success(`Agent published as v${result.version}`, 'Your agent is now live.');
@@ -304,11 +307,25 @@ export default function AgentEditorPage() {
     }
   }
 
-  function toggleChannel(ch: string) {
-    setChannels((prev) =>
-      prev.includes(ch) ? prev.filter((c) => c !== ch) : [...prev, ch]
+  async function toggleChannel(ch: string) {
+    const newChannels = channels.includes(ch)
+      ? channels.filter((c) => c !== ch)
+      : [...channels, ch];
+
+    setChannels(newChannels);
+    setAgent((prev) =>
+      prev ? { ...prev, channels: newChannels } : prev
     );
-    setIsDirty(true);
+
+    // Auto-save channels immediately so the toggle persists without requiring Save
+    try {
+      await api.put(`/api/agents/${agentId}`, { channels: newChannels });
+    } catch {
+      // Revert on error
+      setChannels(channels);
+      setAgent((prev) => prev ? { ...prev, channels } : prev);
+      toastError('Failed to update channel');
+    }
   }
 
   // Avatar upload
@@ -714,6 +731,7 @@ export default function AgentEditorPage() {
                     <WidgetCustomizer
                       agentId={agentId}
                       initialConfig={webConfig}
+                      channels={channels}
                       onSaved={(cfg: WebConfig) => setWebConfig(cfg)}
                     />
                   </div>

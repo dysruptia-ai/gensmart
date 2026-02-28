@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Check, Minus } from 'lucide-react';
 import styles from './pricing.module.css';
@@ -239,8 +239,8 @@ export default function PricingPage() {
               </thead>
               <tbody>
                 {FEATURE_GROUPS.map((group) => (
-                  <>
-                    <tr key={group.groupTitle} className={styles.groupRow}>
+                  <React.Fragment key={group.groupTitle}>
+                    <tr className={styles.groupRow}>
                       <td colSpan={5} className={styles.groupLabel}>
                         {group.groupTitle}
                       </td>
@@ -251,14 +251,14 @@ export default function PricingPage() {
                         {row.values.map((v, i) => (
                           <td
                             key={i}
-                            className={`${styles.featureCell} ${PLANS[i].highlight ? styles.cellHighlight : ''}`}
+                            className={`${styles.featureCell} ${PLANS[i]!.highlight ? styles.cellHighlight : ''}`}
                           >
                             <CellValue value={v} />
                           </td>
                         ))}
                       </tr>
                     ))}
-                  </>
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

@@ -36,7 +36,7 @@ export default function WidgetPage() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastMessageTime, setLastMessageTime] = useState<string>(new Date(0).toISOString());
@@ -51,7 +51,7 @@ export default function WidgetPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isTyping, scrollToBottom]);
+  }, [messages, pendingCount, scrollToBottom]);
 
   // Load config and init session
   useEffect(() => {
@@ -159,16 +159,17 @@ export default function WidgetPage() {
         });
         const last = data.messages[data.messages.length - 1];
         setLastMessageTime(last.created_at ?? new Date().toISOString());
-        setIsTyping(false);
+        setPendingCount(0);
       }
     } catch {
       // Ignore poll errors — will retry
     }
   }, [agentId]);
 
-  // Start / stop polling when typing indicator is on
+  // Start / stop polling based on whether there are pending (unanswered) messages
+  const isPending = pendingCount > 0;
   useEffect(() => {
-    if (!sessionId || !isTyping) {
+    if (!sessionId || !isPending) {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
@@ -186,42 +187,37 @@ export default function WidgetPage() {
         pollingRef.current = null;
       }
     };
-  }, [sessionId, isTyping, lastMessageTime, pollMessages]);
+  }, [sessionId, isPending, lastMessageTime, pollMessages]);
 
-  async function handleSend() {
+  function handleSend() {
     const text = input.trim();
-    if (!text || !sessionId || isTyping) return;
+    if (!text || !sessionId) return;
 
-    const userMsg: ChatMessage = {
+    // 1. Show user message immediately
+    setMessages((prev) => [...prev, {
       id: `user-${Date.now()}`,
       role: 'user',
       content: text,
       created_at: new Date().toISOString(),
-    };
+    }]);
 
-    setMessages((prev) => [...prev, userMsg]);
+    // 2. Clear input and keep focus so the user can keep typing
     setInput('');
-    setIsTyping(true);
+    inputRef.current?.focus();
+
+    // 3. Increment pending counter (shows typing indicator, activates polling)
+    setPendingCount((n) => n + 1);
     setLastMessageTime(new Date().toISOString());
 
-    try {
-      await fetch(`${API_BASE}/api/widget/${agentId}/message`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, message: text }),
-      });
-    } catch {
-      setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `err-${Date.now()}`,
-          role: 'assistant',
-          content: 'Sorry, there was an error sending your message. Please try again.',
-          created_at: new Date().toISOString(),
-        },
-      ]);
-    }
+    // 4. Fire-and-forget — do NOT await
+    fetch(`${API_BASE}/api/widget/${agentId}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, message: text }),
+    }).catch(() => {
+      // POST failed — message never reached the buffer, decrement to unblock the indicator
+      setPendingCount((n) => Math.max(0, n - 1));
+    });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -330,7 +326,7 @@ export default function WidgetPage() {
           </div>
         ))}
 
-        {isTyping && (
+        {pendingCount > 0 && (
           <div className={[styles.messageRow, styles.messageRowAssistant].join(' ')}>
             <div className={styles.msgAvatar}>
               {config.avatar_url ? (
@@ -361,14 +357,14 @@ export default function WidgetPage() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={!sessionId || isTyping}
+          disabled={!sessionId}
           maxLength={4000}
           autoComplete="off"
         />
         <button
           className={styles.sendBtn}
           onClick={handleSend}
-          disabled={!input.trim() || !sessionId || isTyping}
+          disabled={!input.trim() || !sessionId}
           aria-label="Send message"
           type="button"
           style={{ backgroundColor: config.primary_color }}

@@ -1,0 +1,13 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.sm { font-size: 0.7rem; padding: 0.1rem 0.5rem; }
+.md { font-size: 0.75rem; padding: 0.2rem 0.65rem; }
+
+.lead        { background: #F3F4F6; color: #374151; }
+.opportunity { background: #FEF3C7; color: #92400E; }
+.customer    { background: #D1FAE5; color: #065F46; }
