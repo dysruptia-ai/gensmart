@@ -16,11 +16,12 @@ async function extractText(filePath: string, fileType: string): Promise<string> 
   }
 
   if (fileType === 'pdf') {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+    // pdf-parse v2: class-based API — new PDFParse({ data }) then .getText()
+    const { PDFParse } = await import('pdf-parse');
     const dataBuffer = fs.readFileSync(filePath);
-    const pdfData = await pdfParse(dataBuffer);
-    return pdfData.text;
+    const parser = new PDFParse({ data: dataBuffer });
+    const result = await parser.getText();
+    return result.text;
   }
 
   if (fileType === 'docx') {

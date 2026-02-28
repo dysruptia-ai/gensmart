@@ -191,12 +191,17 @@ async function chatAnthropic(params: ChatParams): Promise<ChatResponse> {
 }
 
 export async function generateEmbedding(text: string): Promise<number[]> {
-  const client = getOpenAIClient();
-  const response = await client.embeddings.create({
-    model: 'text-embedding-ada-002',
-    input: text,
-  });
-  return response.data[0]?.embedding ?? [];
+  try {
+    const client = getOpenAIClient();
+    const response = await client.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: text,
+    });
+    return response.data[0]?.embedding ?? [];
+  } catch (err) {
+    console.error('[llm] generateEmbedding failed:', err);
+    return [];
+  }
 }
 
 export async function generatePrompt(

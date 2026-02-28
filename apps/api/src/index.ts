@@ -17,6 +17,7 @@ import { initWebSocket } from './config/websocket';
 import { startMessageWorker } from './workers/message.worker';
 import { startRagWorker } from './workers/rag.worker';
 import { startScrapingWorker } from './workers/scraping.worker';
+import { startScoringWorker } from './workers/scoring.worker';
 
 const app = express();
 
@@ -60,12 +61,13 @@ initWebSocket(httpServer);
 startMessageWorker();
 startRagWorker();
 startScrapingWorker();
+startScoringWorker();
 
 // Start server
 httpServer.listen(env.PORT, () => {
   console.log(`GenSmart API running on port ${env.PORT}`);
   console.log(`WebSocket server ready`);
-  console.log(`Workers started: message, rag, scraping`);
+  console.log(`Workers started: message, rag, scraping, scoring`);
 });
 
 export default app;

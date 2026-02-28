@@ -352,6 +352,27 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // Step 13: Emit WebSocket events
   notifyClients(organizationId, conversationId, userMessage, finalResponse);
 
+  // Step 14b: Trigger AI scoring after enough messages (threshold: 6)
+  const updatedMessageCount = (conv.message_count ?? 0) + bufferedMessages.length + 1;
+  if (updatedMessageCount >= 6) {
+    try {
+      const scoreCheck = await query<{ ai_score: number | null }>(
+        'SELECT ai_score FROM conversations WHERE id = $1',
+        [conversationId]
+      );
+      if (scoreCheck.rows[0]?.ai_score === null) {
+        const { scoringQueue } = await import('../config/queues');
+        await scoringQueue.add(
+          'score-conversation',
+          { conversationId, organizationId, trigger: 'message_threshold' },
+          { delay: 5000, jobId: `score-${conversationId}` }
+        );
+      }
+    } catch (err) {
+      console.warn('[msg-worker] Could not enqueue scoring job:', (err as Error).message);
+    }
+  }
+
   // Step 14: Send via channel
   if (conv.channel === 'whatsapp') {
     try {

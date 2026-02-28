@@ -57,6 +57,20 @@ interface ToolRow {
   updated_at: string;
 }
 
+function formatTool(row: ToolRow) {
+  return {
+    id: row.id,
+    agentId: row.agent_id,
+    type: row.type,
+    name: row.name,
+    description: row.description,
+    config: row.config,
+    isEnabled: row.is_enabled,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
 interface TemplateRow {
   id: string;
   name: string;
@@ -167,7 +181,7 @@ export async function getAgentById(orgId: string, agentId: string) {
     [agentId]
   );
 
-  return { ...formatAgent(agent), tools: toolsResult.rows };
+  return { ...formatAgent(agent), tools: toolsResult.rows.map(formatTool) };
 }
 
 export async function createAgent(
@@ -446,7 +460,7 @@ export async function getTools(orgId: string, agentId: string) {
     'SELECT * FROM agent_tools WHERE agent_id = $1 ORDER BY created_at ASC',
     [agentId]
   );
-  return result.rows;
+  return result.rows.map(formatTool);
 }
 
 export async function createTool(
@@ -460,7 +474,7 @@ export async function createTool(
      VALUES ($1,$2,$3,$4,$5,NOW(),NOW()) RETURNING *`,
     [agentId, data.type, data.name, data.description ?? null, JSON.stringify(data.config)]
   );
-  return result.rows[0]!;
+  return formatTool(result.rows[0]!);
 }
 
 export async function updateTool(
@@ -498,7 +512,7 @@ export async function updateTool(
 
   if (setClauses.length === 0) {
     const existing = await query<ToolRow>('SELECT * FROM agent_tools WHERE id = $1', [toolId]);
-    return existing.rows[0];
+    return existing.rows[0] ? formatTool(existing.rows[0]) : undefined;
   }
 
   params.push(toolId, agentId);
@@ -508,7 +522,7 @@ export async function updateTool(
      RETURNING *`,
     params
   );
-  return result.rows[0]!;
+  return formatTool(result.rows[0]!);
 }
 
 export async function deleteTool(orgId: string, agentId: string, toolId: string) {
@@ -533,13 +547,12 @@ export async function duplicateAgent(orgId: string, agentId: string, plan: strin
     variables: source.variables as unknown[],
   });
 
-  // Copy tools from source agent
-  const toolsSource = source.tools as ToolRow[];
-  for (const tool of toolsSource) {
+  // Copy tools from source agent (source.tools is already formatted with camelCase)
+  for (const tool of source.tools) {
     await query(
       `INSERT INTO agent_tools (agent_id, type, name, description, config, is_enabled, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())`,
-      [newAgent.id, tool.type, tool.name, tool.description, JSON.stringify(tool.config), tool.is_enabled]
+      [newAgent.id, tool.type, tool.name, tool.description, JSON.stringify(tool.config), tool.isEnabled]
     );
   }
 

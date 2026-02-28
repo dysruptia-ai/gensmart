@@ -578,12 +578,12 @@ router.put(
         [conversationId]
       );
 
-      // Enqueue AI scoring job (Phase 6 will implement the scorer)
+      // Enqueue AI scoring job
       try {
         await scoringQueue.add('score-conversation', {
           conversationId,
-          agentId: conv.agent_id,
           organizationId: conv.organization_id,
+          trigger: 'conversation_close',
         });
       } catch (err) {
         console.error('[conversations] Failed to enqueue scoring job:', err);

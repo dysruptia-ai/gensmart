@@ -17,9 +17,14 @@ export async function queryKnowledgeBase(
   limit = 5
 ): Promise<string> {
   try {
-    // Generate embedding for the query
+    console.log('[rag] queryKnowledgeBase called for agent:', agentId);
+
     const embedding = await generateEmbedding(userMessage);
-    if (!embedding.length) return '';
+    console.log('[rag] embedding length:', embedding.length);
+    if (!embedding.length) {
+      console.warn('[rag] Empty embedding returned — check OPENAI_API_KEY and model availability');
+      return '';
+    }
 
     const vectorLiteral = `[${embedding.join(',')}]`;
 
@@ -31,6 +36,8 @@ export async function queryKnowledgeBase(
        LIMIT $3`,
       [agentId, vectorLiteral, limit]
     );
+
+    console.log('[rag] chunks found:', result.rows.length);
 
     if (!result.rows.length) return '';
 
@@ -49,7 +56,8 @@ export async function queryKnowledgeBase(
       'KNOWLEDGE BASE CONTEXT:',
       contextParts.join('\n\n'),
       '---',
-      "Use the above context to answer the user's question when relevant.",
+      'IMPORTANT: Always prioritize the KNOWLEDGE BASE CONTEXT above to answer user questions.',
+      'If the answer exists in the context, use it directly. Only fall back to your general knowledge if the context does not contain relevant information.',
     ].join('\n');
   } catch (err) {
     console.error('[rag] Query failed:', err);

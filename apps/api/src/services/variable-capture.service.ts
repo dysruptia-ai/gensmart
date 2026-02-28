@@ -163,9 +163,22 @@ async function syncVariableToContact(
   const nameLower = varName.toLowerCase();
 
   // Map well-known variable names to contact fields
-  const isName = ['name', 'nombre', 'full_name', 'fullname'].includes(nameLower);
-  const isEmail = ['email', 'correo', 'email_address'].includes(nameLower);
-  const isPhone = ['phone', 'telefono', 'whatsapp', 'mobile', 'phone_number'].includes(nameLower);
+  const isName = [
+    'name', 'nombre', 'full_name', 'fullname', 'user_name', 'username',
+    'first_name', 'customer_name', 'nombre_completo', 'client_name',
+    'contact_name', 'persona', 'nombre_cliente',
+  ].includes(nameLower);
+
+  const isEmail = [
+    'email', 'correo', 'email_address', 'user_email', 'customer_email',
+    'correo_electronico', 'mail', 'e_mail', 'contact_email', 'client_email',
+  ].includes(nameLower);
+
+  const isPhone = [
+    'phone', 'telefono', 'whatsapp', 'mobile', 'phone_number', 'user_phone',
+    'celular', 'numero', 'customer_phone', 'tel', 'cell', 'numero_telefono',
+    'contact_phone', 'client_phone', 'movil',
+  ].includes(nameLower);
 
   if (!contactId) {
     // Auto-create contact
