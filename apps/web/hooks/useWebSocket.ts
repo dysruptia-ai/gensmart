@@ -27,7 +27,16 @@ export interface WebSocketEvents {
   }) => void;
   'variables:update': (data: {
     conversationId: string;
+    contactId?: string | null;
     variables: Record<string, unknown>;
+  }) => void;
+  'contact:scored': (data: {
+    contactId: string | null;
+    conversationId: string;
+    score: number;
+    summary: string;
+    service: string;
+    funnelStage?: string;
   }) => void;
   'takeover:status': (data: {
     conversationId: string;

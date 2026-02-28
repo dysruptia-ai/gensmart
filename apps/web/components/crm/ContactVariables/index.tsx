@@ -7,7 +7,9 @@ interface ContactVariablesProps {
 }
 
 export default function ContactVariables({ variables }: ContactVariablesProps) {
-  const entries = Object.entries(variables ?? {});
+  const entries = Object.entries(variables ?? {}).filter(
+    ([, val]) => val !== null && val !== undefined && val !== ''
+  );
 
   return (
     <div className={styles.card}>

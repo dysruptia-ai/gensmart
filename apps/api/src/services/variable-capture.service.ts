@@ -140,6 +140,7 @@ export async function handleCaptureVariable(
   if (io) {
     io.to(`org:${conv.organization_id}`).emit('variables:update', {
       conversationId,
+      contactId: conv.contact_id,
       variables: updatedVars,
     });
   }

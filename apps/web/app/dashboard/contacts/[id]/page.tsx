@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import ContactHeader from '@/components/crm/ContactHeader';
 import ContactSummary from '@/components/crm/ContactSummary';
 import ContactNotes from '@/components/crm/ContactNotes';
@@ -59,10 +60,22 @@ export default function ContactDetailPage() {
   const id = String(params['id'] ?? '');
   const toast = useToast();
 
+  const { on, off } = useWebSocket();
+
   const [contact, setContact] = useState<Contact | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const fetchContact = useCallback(async () => {
+    const res = await api.get<{ contact: Contact }>(`/api/contacts/${id}`);
+    setContact(res.contact);
+  }, [id]);
+
+  const fetchTimeline = useCallback(async () => {
+    const res = await api.get<{ events: TimelineEvent[] }>(`/api/contacts/${id}/timeline`);
+    setTimeline(res.events);
+  }, [id]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -85,6 +98,42 @@ export default function ContactDetailPage() {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Real-time refresh via WebSocket
+  useEffect(() => {
+    const handleVarsUpdate = (data: {
+      conversationId: string;
+      contactId?: string | null;
+      variables: Record<string, unknown>;
+    }) => {
+      if (data.contactId === id) {
+        void fetchContact();
+        void fetchTimeline();
+      }
+    };
+
+    const handleScored = (data: {
+      contactId: string | null;
+      conversationId: string;
+      score: number;
+      summary: string;
+      service: string;
+      funnelStage?: string;
+    }) => {
+      if (data.contactId === id) {
+        void fetchContact();
+        void fetchTimeline();
+      }
+    };
+
+    on('variables:update', handleVarsUpdate);
+    on('contact:scored', handleScored);
+
+    return () => {
+      off('variables:update', handleVarsUpdate);
+      off('contact:scored', handleScored);
+    };
+  }, [id, on, off, fetchContact, fetchTimeline]);
 
   const handleUpdate = async (data: Partial<{ name: string; phone: string; email: string }>) => {
     try {
@@ -114,6 +163,12 @@ export default function ContactDetailPage() {
     } catch {
       toast.error('Failed to save notes');
     }
+  };
+
+  const handleDelete = async () => {
+    await api.delete(`/api/contacts/${id}`);
+    toast.success('Contact deleted');
+    router.push('/dashboard/contacts');
   };
 
   const handleReanalyze = async () => {
@@ -166,6 +221,7 @@ export default function ContactDetailPage() {
             contact={contact}
             onUpdate={handleUpdate}
             onStageChange={handleStageChange}
+            onDelete={handleDelete}
           />
           <ContactSummary
             summary={contact.ai_summary}

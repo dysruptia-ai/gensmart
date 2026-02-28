@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Edit2, Save, X, ChevronDown } from 'lucide-react';
+import { Edit2, Save, X, ChevronDown, Trash2 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
 import ScoreBadge from '@/components/crm/ScoreBadge';
 import styles from './ContactHeader.module.css';
 
@@ -23,11 +24,12 @@ interface ContactHeaderProps {
   };
   onUpdate: (data: Partial<{ name: string; phone: string; email: string }>) => Promise<void>;
   onStageChange: (stage: string) => Promise<void>;
+  onDelete: () => Promise<void>;
 }
 
 const STAGES = ['lead', 'opportunity', 'customer'];
 
-export default function ContactHeader({ contact, onUpdate, onStageChange }: ContactHeaderProps) {
+export default function ContactHeader({ contact, onUpdate, onStageChange, onDelete }: ContactHeaderProps) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     name: contact.name ?? '',
@@ -36,6 +38,8 @@ export default function ContactHeader({ contact, onUpdate, onStageChange }: Cont
   });
   const [saving, setSaving] = useState(false);
   const [stageChanging, setStageChanging] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
@@ -53,6 +57,16 @@ export default function ContactHeader({ contact, onUpdate, onStageChange }: Cont
       await onStageChange(e.target.value);
     } finally {
       setStageChanging(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
     }
   };
 
@@ -91,9 +105,14 @@ export default function ContactHeader({ contact, onUpdate, onStageChange }: Cont
               </Button>
             </>
           ) : (
-            <Button size="sm" variant="secondary" icon={Edit2} onClick={() => setEditing(true)}>
-              Edit
-            </Button>
+            <>
+              <Button size="sm" variant="secondary" icon={Edit2} onClick={() => setEditing(true)}>
+                Edit
+              </Button>
+              <Button size="sm" variant="danger" icon={Trash2} onClick={() => setShowDeleteModal(true)}>
+                Delete
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -164,6 +183,26 @@ export default function ContactHeader({ contact, onUpdate, onStageChange }: Cont
           ))}
         </div>
       )}
+
+      <Modal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        title="Delete Contact"
+        size="sm"
+      >
+        <p className={styles.deleteWarning}>
+          Are you sure you want to delete this contact? This action cannot be undone.
+          All conversations associated with this contact will also be deleted.
+        </p>
+        <div className={styles.deleteActions}>
+          <Button variant="ghost" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button variant="danger" icon={Trash2} loading={deleting} onClick={handleDelete}>
+            Delete Contact
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
