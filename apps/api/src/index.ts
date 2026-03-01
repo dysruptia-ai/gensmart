@@ -32,9 +32,16 @@ app.use(cors({
 // Parsing middleware
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-// Stripe webhook needs raw body — must be BEFORE express.json()
-app.use('/api/billing/webhook', express.raw({ type: '*/*' }));
-app.use(express.json({ limit: '10mb' }));
+// Preserve raw body for Stripe webhook signature verification.
+// The verify callback runs before JSON parsing, saving the raw Buffer on req.rawBody.
+app.use(express.json({
+  limit: '10mb',
+  verify: (req: any, _res, buf) => {
+    if (req.originalUrl === '/api/billing/webhook') {
+      req.rawBody = buf;
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 

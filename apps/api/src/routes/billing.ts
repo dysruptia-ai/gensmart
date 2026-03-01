@@ -29,7 +29,7 @@ router.post(
 
     let event: Stripe.Event;
     try {
-      event = stripeService.constructWebhookEvent(req.body as Buffer, String(sig));
+      event = stripeService.constructWebhookEvent((req as any).rawBody as Buffer, String(sig));
     } catch (err) {
       console.error('[webhook] Signature verification failed:', err);
       res.status(400).json({ error: 'Invalid signature' });
