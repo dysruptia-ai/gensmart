@@ -54,6 +54,12 @@ interface KnowledgeFile {
 interface Calendar {
   id: string;
   name: string;
+  timezone: string;
+  available_days: number[];
+  available_hours: { start: string; end: string };
+  slot_duration: number;
+  buffer_minutes: number;
+  max_advance_days: number;
 }
 
 interface TestResult {
@@ -246,6 +252,8 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
   // Scheduling calendars
   const [calendars, setCalendars] = useState<Calendar[]>([]);
   const [showCreateCal, setShowCreateCal] = useState(false);
+  const [showEditCal, setShowEditCal] = useState(false);
+  const [editingCalendar, setEditingCalendar] = useState<Calendar | null>(null);
   const [calForm, setCalForm] = useState({
     name: '',
     timezone: 'UTC',
@@ -257,6 +265,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     maxAdvanceDays: 30,
   });
   const [creatingCal, setCreatingCal] = useState(false);
+  const [updatingCal, setUpdatingCal] = useState(false);
 
   // Test panel state
   const [testOpen, setTestOpen] = useState(false);
@@ -840,6 +849,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     try {
       const res = await api.post<{ calendar: Calendar }>('/api/calendars', {
         name: calForm.name,
+        agentId,
         timezone: calForm.timezone,
         availableDays: calForm.availableDays,
         availableHours: { start: calForm.startHour, end: calForm.endHour },
@@ -856,6 +866,32 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       toastError(err instanceof ApiError ? err.message : 'Failed to create calendar');
     } finally {
       setCreatingCal(false);
+    }
+  }
+
+  async function handleUpdateCalendar() {
+    if (!editingCalendar) return;
+    if (!calForm.name.trim()) { toastError('Calendar name is required'); return; }
+    setUpdatingCal(true);
+    try {
+      await api.put(`/api/calendars/${editingCalendar.id}`, {
+        name: calForm.name,
+        timezone: calForm.timezone,
+        availableDays: calForm.availableDays,
+        availableHours: { start: calForm.startHour, end: calForm.endHour },
+        slotDuration: calForm.slotDuration,
+        bufferMinutes: calForm.bufferMinutes,
+        maxAdvanceDays: calForm.maxAdvanceDays,
+      });
+      const res = await api.get<{ calendars: Calendar[] }>('/api/calendars');
+      setCalendars(res.calendars || []);
+      setShowEditCal(false);
+      setEditingCalendar(null);
+      success('Calendar updated');
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : 'Failed to update calendar');
+    } finally {
+      setUpdatingCal(false);
     }
   }
 
@@ -876,7 +912,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
         {/* Calendar selector */}
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel}>Calendar</label>
-          {calendars.length > 0 && !showCreateCal ? (
+          {calendars.length > 0 && !showCreateCal && !showEditCal ? (
             <>
               <select
                 className={styles.fieldSelect}
@@ -892,8 +928,33 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 ))}
                 <option value="__new__">+ Create new calendar…</option>
               </select>
+              {form.calendarId && (
+                <button
+                  className={styles.addParamBtn}
+                  style={{ marginTop: '0.375rem' }}
+                  onClick={() => {
+                    const cal = calendars.find((c) => c.id === form.calendarId);
+                    if (cal) {
+                      setEditingCalendar(cal);
+                      setCalForm({
+                        name: cal.name,
+                        timezone: cal.timezone ?? 'UTC',
+                        availableDays: Array.isArray(cal.available_days) ? cal.available_days.map(Number) : [1,2,3,4,5],
+                        startHour: cal.available_hours?.start ?? '09:00',
+                        endHour: cal.available_hours?.end ?? '17:00',
+                        slotDuration: Number(cal.slot_duration) || 30,
+                        bufferMinutes: Number(cal.buffer_minutes) || 15,
+                        maxAdvanceDays: Number(cal.max_advance_days) || 30,
+                      });
+                      setShowEditCal(true);
+                    }
+                  }}
+                >
+                  <Settings size={12} /> Edit Calendar
+                </button>
+              )}
             </>
-          ) : !showCreateCal ? (
+          ) : !showCreateCal && !showEditCal ? (
             <div>
               <p className={styles.fieldHint} style={{ marginBottom: '0.5rem' }}>
                 No calendars yet. Create one below.
@@ -904,6 +965,100 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
             </div>
           ) : null}
         </div>
+
+        {/* Inline calendar edit form */}
+        {showEditCal && editingCalendar && (
+          <div className={styles.fieldGroup} style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: '1rem', background: 'var(--color-bg-sidebar)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <label className={styles.fieldLabel} style={{ margin: 0 }}>Edit Calendar</label>
+              <button className={styles.iconBtn} onClick={() => { setShowEditCal(false); setEditingCalendar(null); }} aria-label="Cancel">
+                <X size={14} />
+              </button>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Name *</label>
+              <input
+                className={styles.fieldInput}
+                value={calForm.name}
+                onChange={(e) => setCalForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Consultation Calendar"
+              />
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Timezone</label>
+              <input
+                className={styles.fieldInput}
+                value={calForm.timezone}
+                onChange={(e) => setCalForm((f) => ({ ...f, timezone: e.target.value }))}
+                placeholder="UTC"
+              />
+              <span className={styles.fieldHint}>e.g. America/New_York, Europe/Madrid</span>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Available Days</label>
+              <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                {DAY_LABELS.map((d, i) => {
+                  const dayNum = i + 1;
+                  const active = calForm.availableDays.includes(dayNum);
+                  return (
+                    <button key={d} type="button" onClick={() => toggleCalDay(dayNum)} style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--color-border)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer', background: active ? 'var(--color-primary)' : 'var(--color-bg-card)', color: active ? '#fff' : 'var(--color-text-secondary)' }}>
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>Start Time</label>
+                <input className={styles.fieldInput} type="time" value={calForm.startHour} onChange={(e) => setCalForm((f) => ({ ...f, startHour: e.target.value }))} />
+              </div>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>End Time</label>
+                <input className={styles.fieldInput} type="time" value={calForm.endHour} onChange={(e) => setCalForm((f) => ({ ...f, endHour: e.target.value }))} />
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>Slot Duration (min)</label>
+                <select className={styles.fieldSelect} value={calForm.slotDuration} onChange={(e) => setCalForm((f) => ({ ...f, slotDuration: Number(e.target.value) }))}>
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                  <option value={45}>45 min</option>
+                  <option value={60}>60 min</option>
+                </select>
+              </div>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>Buffer (min)</label>
+                <select className={styles.fieldSelect} value={calForm.bufferMinutes} onChange={(e) => setCalForm((f) => ({ ...f, bufferMinutes: Number(e.target.value) }))}>
+                  <option value={0}>0 min</option>
+                  <option value={5}>5 min</option>
+                  <option value={10}>10 min</option>
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Max Advance Days</label>
+              <input className={styles.fieldInput} type="number" min={1} max={365} value={calForm.maxAdvanceDays} onChange={(e) => setCalForm((f) => ({ ...f, maxAdvanceDays: Number(e.target.value) }))} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button className={styles.addParamBtn} onClick={() => { setShowEditCal(false); setEditingCalendar(null); }}>Cancel</button>
+              <button className={styles.testRunBtn} onClick={handleUpdateCalendar} disabled={updatingCal}>
+                {updatingCal ? <Spinner size="sm" /> : <Check size={13} />}
+                <span>{updatingCal ? 'Saving…' : 'Save Changes'}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Inline calendar creation form */}
         {showCreateCal && (

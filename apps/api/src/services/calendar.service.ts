@@ -151,29 +151,43 @@ export async function getAvailableSlots(
     [calendarId]
   );
   const cal = calResult.rows[0];
-  if (!cal) return [];
+  if (!cal) {
+    console.log(`[getAvailableSlots] Calendar not found: ${calendarId}`);
+    return [];
+  }
 
   const tz = cal.timezone || 'UTC';
+  // Normalize available_days to numbers (pg may return strings in some configs)
+  const availableDays = (Array.isArray(cal.available_days) ? cal.available_days : []).map(Number);
+  const slotDuration = Number(cal.slot_duration) || 30;
+  const bufferMinutes = Number(cal.buffer_minutes) || 0;
+  const maxAdvanceDays = Number(cal.max_advance_days) || 30;
 
-  // Parse date — compute day-of-week via UTC to avoid locale issues
+  // Parse date — compute day-of-week via UTC
   const dateParts = date.split('-').map(Number);
   if (dateParts.length !== 3) return [];
   const [year, month, day] = dateParts as [number, number, number];
   const targetDate = new Date(Date.UTC(year, month - 1, day));
 
-  // JS getDay() returns 0=Sun,1=Mon...6=Sat; spec uses 1=Mon...7=Sun
+  // JS getDay(): 0=Sun,1=Mon...6=Sat → spec: 1=Mon..7=Sun
   const jsDay = targetDate.getUTCDay();
   const specDay = jsDay === 0 ? 7 : jsDay;
 
-  if (!cal.available_days.includes(specDay)) return [];
+  if (!availableDays.includes(specDay)) {
+    console.log(`[getAvailableSlots] Day ${specDay} not in available_days [${availableDays.join(',')}] for ${date}`);
+    return [];
+  }
 
-  // Check max_advance_days (UTC-based approximation — good enough for this check)
+  // Check max_advance_days (UTC-date approximation)
   const todayUTC = new Date();
   todayUTC.setUTCHours(0, 0, 0, 0);
   const diffDays = Math.floor((targetDate.getTime() - todayUTC.getTime()) / 86400000);
-  if (diffDays < 0 || diffDays > cal.max_advance_days) return [];
+  if (diffDays < 0 || diffDays > maxAdvanceDays) {
+    console.log(`[getAvailableSlots] Date ${date} out of range: diffDays=${diffDays}, maxAdvanceDays=${maxAdvanceDays}`);
+    return [];
+  }
 
-  // Generate all slots (times are in calendar's local timezone)
+  // Generate all slots in calendar-local time
   const hours = cal.available_hours as { start: string; end: string };
   const [startH, startM] = hours.start.split(':').map(Number) as [number, number];
   const [endH, endM] = hours.end.split(':').map(Number) as [number, number];
@@ -182,15 +196,17 @@ export async function getAvailableSlots(
 
   const rawSlots: TimeSlot[] = [];
   let cursor = startMinutes;
-  while (cursor + cal.slot_duration <= endMinutes) {
+  while (cursor + slotDuration <= endMinutes) {
     rawSlots.push({
       start: minutesToHHMM(cursor),
-      end: minutesToHHMM(cursor + cal.slot_duration),
+      end: minutesToHHMM(cursor + slotDuration),
     });
-    cursor += cal.slot_duration + cal.buffer_minutes;
+    cursor += slotDuration + bufferMinutes;
   }
 
-  // Fetch booked appointments — filter by date in the calendar's timezone
+  console.log(`[getAvailableSlots] Generated ${rawSlots.length} raw slots for ${date} tz=${tz}`);
+
+  // Fetch booked appointments for this date in the calendar's timezone
   const bookedResult = await query<{ start_time: string; end_time: string }>(
     `SELECT start_time, end_time FROM appointments
      WHERE calendar_id = $1
@@ -199,28 +215,30 @@ export async function getAvailableSlots(
     [calendarId, date, tz]
   );
 
-  // Convert booked UTC times to calendar-local HH:MM for comparison
+  console.log(`[getAvailableSlots] Booked appointments count: ${bookedResult.rows.length}`);
+
+  // Convert booked UTC times to calendar-local HH:MM for overlap comparison
   const booked = bookedResult.rows.map((r) => ({
     start: timeToMinutes(toLocalHHMM(new Date(r.start_time), tz)),
     end: timeToMinutes(toLocalHHMM(new Date(r.end_time), tz)),
   }));
 
-  // Get current time in calendar's local timezone for "past slot" filtering
+  // Get current local time in the calendar's timezone for "past slot" filtering
   const now = new Date();
-  const todayLocalStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
-  const nowHHMM = toLocalHHMM(now, tz);
-  const nowMinutes = timeToMinutes(nowHHMM);
+  const todayLocalStr = toLocalDateStr(now, tz);
+  const nowMinutes = timeToMinutes(toLocalHHMM(now, tz));
 
-  return rawSlots.filter((slot) => {
+  console.log(`[getAvailableSlots] today in tz=${tz}: ${todayLocalStr}, now=${minutesToHHMM(nowMinutes)}`);
+
+  const available = rawSlots.filter((slot) => {
     const slotStartMin = timeToMinutes(slot.start);
     const slotEndMin = timeToMinutes(slot.end);
-
-    // Skip past slots for today (in calendar's timezone)
     if (date === todayLocalStr && slotStartMin <= nowMinutes) return false;
-
-    // Skip overlapping booked slots
     return !booked.some((b) => slotStartMin < b.end && slotEndMin > b.start);
   });
+
+  console.log(`[getAvailableSlots] Final available slots: ${available.length}`);
+  return available;
 }
 
 /**
@@ -239,17 +257,22 @@ export function localTimeToUTC(date: string, time: string, timezone: string): Da
   return new Date(naiveDate.getTime() + offsetMs);
 }
 
-/** Formats a UTC Date as HH:MM in the given timezone (24h). */
+/** Formats a UTC Date as HH:MM in the given timezone (24h).
+ *  Uses the locale-string trick for maximum Node.js compatibility. */
 function toLocalHHMM(date: Date, timezone: string): string {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: timezone,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(date);
-  const h = parts.find((p) => p.type === 'hour')?.value ?? '00';
-  const m = parts.find((p) => p.type === 'minute')?.value ?? '00';
-  return `${h === '24' ? '00' : h}:${m}`;
+  // Parse the date-time string as it appears in the target timezone
+  const localStr = date.toLocaleString('en-US', { timeZone: timezone });
+  // localStr format: "3/4/2026, 2:30:00 PM" or "3/4/2026, 14:30:00"
+  const localDate = new Date(localStr);
+  const h = localDate.getHours().toString().padStart(2, '0');
+  const m = localDate.getMinutes().toString().padStart(2, '0');
+  return `${h}:${m}`;
+}
+
+/** Returns the current date as YYYY-MM-DD in the given timezone. */
+function toLocalDateStr(date: Date, timezone: string): string {
+  // 'en-CA' locale reliably gives YYYY-MM-DD format
+  return new Intl.DateTimeFormat('en-CA', { timeZone: timezone }).format(date);
 }
 
 function minutesToHHMM(mins: number): string {
