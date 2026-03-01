@@ -9,7 +9,8 @@
     "migrate": "node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations up",
     "migrate:down": "node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations down",
     "seed": "tsx src/db/seeds/index.ts",
-    "seed:test-users": "tsx src/db/seeds/test-users.seed.ts"
+    "seed:test-users": "tsx src/db/seeds/test-users.seed.ts",
+    "stripe:seed": "tsx src/db/seeds/stripe-products.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
@@ -36,6 +37,7 @@
     "qrcode": "^1.5.0",
     "socket.io": "^4.8.3",
     "speakeasy": "^2.0.0",
+    "stripe": "^20.4.0",
     "uuid": "^9.0.0",
     "zod": "^3.23.0"
   },
