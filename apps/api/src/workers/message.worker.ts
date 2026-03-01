@@ -15,6 +15,8 @@ import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, decryptAccessToken } from '../services/whatsapp.service';
+import { getAvailableSlots } from '../services/calendar.service';
+import { createAppointment } from '../services/appointment.service';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -284,7 +286,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           toolCall,
           agentTools,
           variables,
-          conversationId
+          conversationId,
+          organizationId
         );
         toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
         toolResults.push({ toolCallId: toolCall.id, content: result });
@@ -420,7 +423,8 @@ async function executeTool(
   toolCall: ToolCall,
   agentTools: ToolRow[],
   variables: AgentVariable[],
-  conversationId: string
+  conversationId: string,
+  organizationId: string
 ): Promise<string> {
   const { name, arguments: args } = toolCall;
 
@@ -438,17 +442,92 @@ async function executeTool(
     }
   }
 
-  // Calendar stubs — Phase 7 will implement fully
+  // Scheduling tool — check available slots
   if (name === 'check_availability') {
-    const date = String(args['date'] ?? 'unspecified');
-    return `Available slots for ${date}: 9:00 AM, 10:00 AM, 2:00 PM, 3:00 PM, 4:00 PM. (Calendar integration coming soon)`;
+    const date = String(args['date'] ?? '');
+    if (!date) return 'Please provide a date in YYYY-MM-DD format.';
+
+    // Find scheduling tool to get calendar_id
+    const schedulingTool = agentTools.find((t) => t.type === 'scheduling');
+    const calendarId = schedulingTool ? String(schedulingTool.config['calendar_id'] ?? '') : '';
+
+    if (!calendarId) {
+      return 'No calendar configured for this agent.';
+    }
+
+    try {
+      const slots = await getAvailableSlots(calendarId, date);
+      if (!slots.length) {
+        return `No available slots found for ${date}. Please try a different date.`;
+      }
+      const slotList = slots.map((s) => s.start).join(', ');
+      return `Available slots for ${date}: ${slotList}. Which time works best for you?`;
+    } catch {
+      return `Could not check availability for ${date}. Please try again.`;
+    }
   }
 
+  // Scheduling tool — book appointment
   if (name === 'book_appointment') {
     const date = String(args['date'] ?? '');
     const time = String(args['time'] ?? '');
-    const service = String(args['service'] ?? 'appointment');
-    return `Appointment booked for ${date} at ${time} (${service}). Confirmation will be sent shortly. (Calendar integration coming soon)`;
+    const personName = String(args['name'] ?? 'Guest');
+
+    if (!date || !time) return 'Please provide both date and time for the appointment.';
+
+    const schedulingTool = agentTools.find((t) => t.type === 'scheduling');
+    const calendarId = schedulingTool ? String(schedulingTool.config['calendar_id'] ?? '') : '';
+
+    if (!calendarId) {
+      return 'No calendar configured for this agent.';
+    }
+
+    // Get slot duration from calendar config
+    let slotDuration = 30;
+    try {
+      const { query: dbQuery } = await import('../config/database');
+      const calResult = await dbQuery<{ slot_duration: number }>(
+        'SELECT slot_duration FROM calendars WHERE id = $1',
+        [calendarId]
+      );
+      if (calResult.rows[0]) {
+        slotDuration = calResult.rows[0].slot_duration;
+      }
+    } catch {
+      // use default
+    }
+
+    // Find or look up contact for this conversation
+    let contactId: string | null = null;
+    try {
+      const { query: dbQuery } = await import('../config/database');
+      const convResult = await dbQuery<{ contact_id: string | null }>(
+        'SELECT contact_id FROM conversations WHERE id = $1',
+        [conversationId]
+      );
+      contactId = convResult.rows[0]?.contact_id ?? null;
+    } catch {
+      // ignore
+    }
+
+    // Build start/end ISO strings
+    const startTime = new Date(`${date}T${time}:00.000Z`).toISOString();
+    const endMs = new Date(startTime).getTime() + slotDuration * 60000;
+    const endTime = new Date(endMs).toISOString();
+
+    try {
+      await createAppointment(organizationId, {
+        calendarId,
+        contactId,
+        conversationId,
+        title: `Appointment — ${personName}`,
+        startTime,
+        endTime,
+      });
+      return `Appointment confirmed for ${date} at ${time}. We look forward to seeing you, ${personName}!`;
+    } catch (err) {
+      return `Could not book the appointment: ${(err as Error).message}. Please choose another slot.`;
+    }
   }
 
   // Custom function tools
