@@ -7,6 +7,7 @@ import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { validate } from '../middleware/validate';
 import { validateUUID } from '../middleware/validateUUID';
+import { checkAgentLimit, checkKnowledgeLimit } from '../middleware/planLimits';
 import * as agentService from '../services/agent.service';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
@@ -166,6 +167,7 @@ router.get(
 // POST /api/agents
 router.post(
   '/',
+  checkAgentLimit(),
   validate(agentCreateSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -368,6 +370,7 @@ router.get(
 router.post(
   '/:id/knowledge',
   validateUUID('id'),
+  checkKnowledgeLimit(),
   uploadKnowledge.single('file'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -425,6 +428,7 @@ router.post(
 router.post(
   '/:id/knowledge/web',
   validateUUID('id'),
+  checkKnowledgeLimit(),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const agentId = String(req.params['id']);

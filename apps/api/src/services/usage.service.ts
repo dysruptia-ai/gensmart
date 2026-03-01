@@ -35,7 +35,15 @@ export async function checkLimit(
   plan: string
 ): Promise<{ allowed: boolean; current: number; limit: number }> {
   const planKey = plan as PlanKey;
-  const limit = PLAN_LIMITS[planKey]?.messagesPerMonth ?? 50;
+  const planLimit = PLAN_LIMITS[planKey]?.messagesPerMonth ?? 50;
+
+  // Add add-on messages to the effective limit
+  const now = new Date();
+  const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const addonKey = `usage:${orgId}:${yearMonth}:addon_messages`;
+  const addonMessages = parseInt((await redis.get(addonKey)) ?? '0', 10);
+  const limit = planLimit + addonMessages;
+
   const current = await getMessageCount(orgId);
   return { allowed: current < limit, current, limit };
 }
