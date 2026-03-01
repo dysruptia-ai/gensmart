@@ -154,7 +154,8 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
       return {
         schedulingType: form.schedulingType,
         timezone: form.timezone,
-        calendarId: form.calendarId || undefined,
+        calendar_id: form.calendarId || undefined,
+        calendarId: form.calendarId || undefined, // legacy compat
       };
     case 'rag':
       return {
@@ -244,6 +245,18 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
 
   // Scheduling calendars
   const [calendars, setCalendars] = useState<Calendar[]>([]);
+  const [showCreateCal, setShowCreateCal] = useState(false);
+  const [calForm, setCalForm] = useState({
+    name: '',
+    timezone: 'UTC',
+    availableDays: [1, 2, 3, 4, 5] as number[],
+    startHour: '09:00',
+    endHour: '17:00',
+    slotDuration: 30,
+    bufferMinutes: 15,
+    maxAdvanceDays: 30,
+  });
+  const [creatingCal, setCreatingCal] = useState(false);
 
   // Test panel state
   const [testOpen, setTestOpen] = useState(false);
@@ -367,7 +380,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       type: tool.type,
       schedulingType: (cfg['schedulingType'] as string) ?? 'appointment',
       timezone: (cfg['timezone'] as string) ?? 'UTC',
-      calendarId: (cfg['calendarId'] as string) ?? '',
+      calendarId: (cfg['calendar_id'] as string) ?? (cfg['calendarId'] as string) ?? '',
       collectionName: (cfg['collectionName'] as string) ?? '',
       endpointUrl: (cfg['endpointUrl'] as string) ?? '',
       httpMethod: (cfg['httpMethod'] as string) ?? 'POST',
@@ -821,50 +834,214 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     );
   }
 
+  async function handleCreateCalendar() {
+    if (!calForm.name.trim()) { toastError('Calendar name is required'); return; }
+    setCreatingCal(true);
+    try {
+      const res = await api.post<{ calendar: Calendar }>('/api/calendars', {
+        name: calForm.name,
+        timezone: calForm.timezone,
+        availableDays: calForm.availableDays,
+        availableHours: { start: calForm.startHour, end: calForm.endHour },
+        slotDuration: calForm.slotDuration,
+        bufferMinutes: calForm.bufferMinutes,
+        maxAdvanceDays: calForm.maxAdvanceDays,
+      });
+      const newCal = res.calendar;
+      setCalendars((prev) => [...prev, newCal]);
+      setField('calendarId', newCal.id);
+      setShowCreateCal(false);
+      success('Calendar created');
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : 'Failed to create calendar');
+    } finally {
+      setCreatingCal(false);
+    }
+  }
+
+  function toggleCalDay(day: number) {
+    setCalForm((f) => ({
+      ...f,
+      availableDays: f.availableDays.includes(day)
+        ? f.availableDays.filter((d) => d !== day)
+        : [...f.availableDays, day].sort((a, b) => a - b),
+    }));
+  }
+
   function renderSchedulingPanel() {
+    const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
     return (
       <>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Scheduling Type</label>
-          <select
-            className={styles.fieldSelect}
-            value={form.schedulingType}
-            onChange={(e) => setField('schedulingType', e.target.value)}
-          >
-            <option value="appointment">Appointment Booking</option>
-            <option value="reminder">Reminder</option>
-            <option value="follow_up">Follow-up</option>
-          </select>
-        </div>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Timezone</label>
-          <input
-            className={styles.fieldInput}
-            value={form.timezone}
-            onChange={(e) => setField('timezone', e.target.value)}
-            placeholder="UTC"
-          />
-          <span className={styles.fieldHint}>e.g. America/New_York, Europe/Madrid</span>
-        </div>
+        {/* Calendar selector */}
         <div className={styles.fieldGroup}>
           <label className={styles.fieldLabel}>Calendar</label>
-          {(!calendars || calendars.length === 0) ? (
-            <p className={styles.fieldHint}>
-              No calendars created yet. Create one in the Calendar section.
-            </p>
-          ) : (
-            <select
-              className={styles.fieldSelect}
-              value={form.calendarId}
-              onChange={(e) => setField('calendarId', e.target.value)}
-            >
-              <option value="">— Select a calendar —</option>
-              {calendars.map((cal) => (
-                <option key={cal.id} value={cal.id}>{cal.name}</option>
-              ))}
-            </select>
-          )}
+          {calendars.length > 0 && !showCreateCal ? (
+            <>
+              <select
+                className={styles.fieldSelect}
+                value={form.calendarId}
+                onChange={(e) => {
+                  if (e.target.value === '__new__') { setShowCreateCal(true); }
+                  else setField('calendarId', e.target.value);
+                }}
+              >
+                <option value="">— Select a calendar —</option>
+                {calendars.map((cal) => (
+                  <option key={cal.id} value={cal.id}>{cal.name}</option>
+                ))}
+                <option value="__new__">+ Create new calendar…</option>
+              </select>
+            </>
+          ) : !showCreateCal ? (
+            <div>
+              <p className={styles.fieldHint} style={{ marginBottom: '0.5rem' }}>
+                No calendars yet. Create one below.
+              </p>
+              <button className={styles.addParamBtn} onClick={() => setShowCreateCal(true)}>
+                <Plus size={12} /> Create Calendar
+              </button>
+            </div>
+          ) : null}
         </div>
+
+        {/* Inline calendar creation form */}
+        {showCreateCal && (
+          <div className={styles.fieldGroup} style={{ border: '1px solid var(--color-border)', borderRadius: 8, padding: '1rem', background: 'var(--color-bg-sidebar)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <label className={styles.fieldLabel} style={{ margin: 0 }}>New Calendar</label>
+              {calendars.length > 0 && (
+                <button className={styles.iconBtn} onClick={() => setShowCreateCal(false)} aria-label="Cancel">
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Name *</label>
+              <input
+                className={styles.fieldInput}
+                value={calForm.name}
+                onChange={(e) => setCalForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Consultation Calendar"
+              />
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Timezone</label>
+              <input
+                className={styles.fieldInput}
+                value={calForm.timezone}
+                onChange={(e) => setCalForm((f) => ({ ...f, timezone: e.target.value }))}
+                placeholder="UTC"
+              />
+              <span className={styles.fieldHint}>e.g. America/New_York, Europe/Madrid</span>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Available Days</label>
+              <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                {DAY_LABELS.map((d, i) => {
+                  const dayNum = i + 1;
+                  const active = calForm.availableDays.includes(dayNum);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => toggleCalDay(dayNum)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: 6,
+                        border: '1px solid var(--color-border)',
+                        fontSize: '0.75rem',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        background: active ? 'var(--color-primary)' : 'var(--color-bg-card)',
+                        color: active ? '#fff' : 'var(--color-text-secondary)',
+                      }}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>Start Time</label>
+                <input
+                  className={styles.fieldInput}
+                  type="time"
+                  value={calForm.startHour}
+                  onChange={(e) => setCalForm((f) => ({ ...f, startHour: e.target.value }))}
+                />
+              </div>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>End Time</label>
+                <input
+                  className={styles.fieldInput}
+                  type="time"
+                  value={calForm.endHour}
+                  onChange={(e) => setCalForm((f) => ({ ...f, endHour: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>Slot Duration (min)</label>
+                <select
+                  className={styles.fieldSelect}
+                  value={calForm.slotDuration}
+                  onChange={(e) => setCalForm((f) => ({ ...f, slotDuration: Number(e.target.value) }))}
+                >
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                  <option value={45}>45 min</option>
+                  <option value={60}>60 min</option>
+                </select>
+              </div>
+              <div className={styles.fieldGroup}>
+                <label className={styles.fieldLabelSmall}>Buffer (min)</label>
+                <select
+                  className={styles.fieldSelect}
+                  value={calForm.bufferMinutes}
+                  onChange={(e) => setCalForm((f) => ({ ...f, bufferMinutes: Number(e.target.value) }))}
+                >
+                  <option value={0}>0 min</option>
+                  <option value={5}>5 min</option>
+                  <option value={10}>10 min</option>
+                  <option value={15}>15 min</option>
+                  <option value={30}>30 min</option>
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Max Advance Days</label>
+              <input
+                className={styles.fieldInput}
+                type="number"
+                min={1}
+                max={365}
+                value={calForm.maxAdvanceDays}
+                onChange={(e) => setCalForm((f) => ({ ...f, maxAdvanceDays: Number(e.target.value) }))}
+              />
+              <span className={styles.fieldHint}>How many days ahead can appointments be booked</span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              {calendars.length > 0 && (
+                <button className={styles.addParamBtn} onClick={() => setShowCreateCal(false)}>Cancel</button>
+              )}
+              <button className={styles.testRunBtn} onClick={handleCreateCalendar} disabled={creatingCal}>
+                {creatingCal ? <Spinner size="sm" /> : <Check size={13} />}
+                <span>{creatingCal ? 'Creating…' : 'Create & Select'}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Agent Functions preview */}
         <div className={styles.agentFunctionsSection}>
@@ -881,8 +1058,8 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
             <div className={styles.agentFunctionRow}>
               <Check size={14} className={styles.agentFunctionIcon} aria-hidden="true" />
               <div>
-                <span className={styles.agentFunctionName}>book_appointment(date, time, name, email)</span>
-                <span className={styles.agentFunctionDesc}>Book an appointment</span>
+                <span className={styles.agentFunctionName}>book_appointment(date, time, name)</span>
+                <span className={styles.agentFunctionDesc}>Book an appointment in the configured calendar</span>
               </div>
             </div>
           </div>
