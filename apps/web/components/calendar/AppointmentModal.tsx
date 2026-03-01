@@ -18,18 +18,33 @@ interface Calendar {
 
 /**
  * Converts a wall-clock date+time in `timezone` to a UTC ISO string.
- * Works in the browser regardless of the browser's own timezone setting.
+ * Uses Date.UTC() + Intl.DateTimeFormat.formatToParts() so it is
+ * independent of both the server's and the browser's local timezone.
  */
 function localDateTimeToUTC(date: string, time: string, timezone: string): string {
-  const [yr, mo, dy] = date.split('-').map(Number) as [number, number, number];
-  const [hr, mn] = time.split(':').map(Number) as [number, number];
-  // Build a UTC timestamp treating the components as if they were UTC
-  const naiveDate = new Date(Date.UTC(yr, mo - 1, dy, hr, mn, 0));
-  // Measure the offset: how many ms ahead/behind UTC is `timezone` at this moment
-  const utcParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const tzParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: timezone }));
-  const offsetMs = utcParsed.getTime() - tzParsed.getTime();
-  return new Date(naiveDate.getTime() + offsetMs).toISOString();
+  const [year, month, day] = date.split('-').map(Number) as [number, number, number];
+  const [hour, minute] = time.split(':').map(Number) as [number, number];
+
+  const utcAnchor = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(utcAnchor);
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? '0');
+
+  const tzHour = get('hour') === 24 ? 0 : get('hour');
+  const tzAsUTC = new Date(Date.UTC(get('year'), get('month') - 1, get('day'), tzHour, get('minute'), 0));
+  const offsetMs = utcAnchor.getTime() - tzAsUTC.getTime();
+
+  return new Date(utcAnchor.getTime() + offsetMs).toISOString();
 }
 
 interface TimeSlot {

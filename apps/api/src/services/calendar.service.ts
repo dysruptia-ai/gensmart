@@ -243,18 +243,43 @@ export async function getAvailableSlots(
 
 /**
  * Converts a wall-clock date+time in the given timezone to a UTC Date.
- * Example: localTimeToUTC('2026-03-04', '14:00', 'America/Bogota')
- *          → 2026-03-04T19:00:00.000Z  (Bogota is UTC-5)
+ * Example: localTimeToUTC('2026-03-06', '09:00', 'America/Bogota')
+ *          → 2026-03-06T14:00:00.000Z  (Bogota is UTC-5, so 9AM local = 2PM UTC)
+ *
+ * Uses Date.UTC() as anchor to avoid server-local-timezone dependency,
+ * and Intl.DateTimeFormat.formatToParts() to read the offset without
+ * relying on locale-string parsing (which is ambiguous for non-ISO formats).
  */
 export function localTimeToUTC(date: string, time: string, timezone: string): Date {
-  const dateTimeStr = `${date}T${time}:00`;
-  // Parse the naive date-time (server runs UTC, so treated as UTC here)
-  const naiveDate = new Date(dateTimeStr);
-  // Compute the offset between UTC and the target timezone at this moment
-  const utcParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const tzParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: timezone }));
-  const offsetMs = utcParsed.getTime() - tzParsed.getTime();
-  return new Date(naiveDate.getTime() + offsetMs);
+  const [year, month, day] = date.split('-').map(Number) as [number, number, number];
+  const [hour, minute] = time.split(':').map(Number) as [number, number];
+
+  // Build a UTC anchor from the raw components (no server-tz interpretation)
+  const utcAnchor = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+
+  // Ask Intl: what does the target timezone show for this UTC instant?
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(utcAnchor);
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? '0');
+
+  // Reconstruct the "timezone representation" as a UTC Date for arithmetic
+  const tzHour = get('hour') === 24 ? 0 : get('hour'); // handle midnight edge-case
+  const tzAsUTC = new Date(Date.UTC(get('year'), get('month') - 1, get('day'), tzHour, get('minute'), 0));
+
+  // offsetMs = how far UTC is ahead of the timezone (positive for UTC-N zones)
+  const offsetMs = utcAnchor.getTime() - tzAsUTC.getTime();
+
+  // Shift the anchor by the offset: 09:00 UTC anchor + 5h offset = 14:00 UTC (= 9AM Bogota)
+  return new Date(utcAnchor.getTime() + offsetMs);
 }
 
 /** Formats a UTC Date as HH:MM in the given timezone (24h).
