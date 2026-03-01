@@ -193,6 +193,13 @@ export async function register(input: {
       console.error('[Email] Failed to send welcome email:', err)
     );
 
+    // Create Stripe customer async (don't block registration)
+    import('../services/stripe.service').then(({ createCustomer }) =>
+      createCustomer(org.id, input.email.toLowerCase(), input.name).catch(err =>
+        console.error('[Stripe] Failed to create customer on register:', err)
+      )
+    ).catch(() => {/* ignore import error */});
+
     return {
       accessToken,
       refreshToken: refreshTokenRaw,
