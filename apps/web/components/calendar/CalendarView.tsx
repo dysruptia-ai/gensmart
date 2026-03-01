@@ -4,6 +4,43 @@ import React, { useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import styles from './CalendarView.module.css';
 
+// ── Timezone-aware date helpers ────────────────────────────────────────────
+
+export function getDayInTimezone(isoString: string, timezone: string): number {
+  return parseInt(
+    new Intl.DateTimeFormat('en-US', { day: 'numeric', timeZone: timezone }).format(new Date(isoString))
+  );
+}
+
+export function getMonthInTimezone(isoString: string, timezone: string): number {
+  return (
+    parseInt(new Intl.DateTimeFormat('en-US', { month: 'numeric', timeZone: timezone }).format(new Date(isoString))) - 1
+  );
+}
+
+export function getYearInTimezone(isoString: string, timezone: string): number {
+  return parseInt(
+    new Intl.DateTimeFormat('en-US', { year: 'numeric', timeZone: timezone }).format(new Date(isoString))
+  );
+}
+
+function formatTimeInTimezone(isoString: string, timezone: string): string {
+  try {
+    return new Date(isoString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: timezone,
+    });
+  } catch {
+    return new Date(isoString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+}
+
 export interface Appointment {
   id: string;
   title: string;
@@ -70,13 +107,15 @@ export default function CalendarView({
     return result;
   }, [year, month]);
 
-  // Group appointments by day
+  // Group appointments by day (in each appointment's own calendar timezone)
   const apptsByDay = useMemo(() => {
     const map: Record<number, Appointment[]> = {};
     for (const a of appointments) {
-      const d = new Date(a.start_time);
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        const day = d.getDate();
+      const tz = a.calendar_timezone || 'UTC';
+      const aYear = getYearInTimezone(a.start_time, tz);
+      const aMonth = getMonthInTimezone(a.start_time, tz);
+      if (aYear === year && aMonth === month) {
+        const day = getDayInTimezone(a.start_time, tz);
         if (!map[day]) map[day] = [];
         map[day]!.push(a);
       }
@@ -137,12 +176,7 @@ export default function CalendarView({
                   let dotClass = styles.apptDot;
                   if (a.status === 'cancelled') dotClass += ` ${styles.apptDotCancelled}`;
                   else if (a.status === 'completed') dotClass += ` ${styles.apptDotCompleted}`;
-                  const time = new Date(a.start_time).toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                    timeZone: a.calendar_timezone || 'UTC',
-                  });
+                  const time = formatTimeInTimezone(a.start_time, a.calendar_timezone || 'UTC');
                   return (
                     <div key={a.id} className={dotClass} title={a.title}>
                       {time} {a.title}

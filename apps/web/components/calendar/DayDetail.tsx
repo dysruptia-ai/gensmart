@@ -26,6 +26,23 @@ function formatDayLabel(dateStr: string): string {
   return `${dayName}, ${MONTH_NAMES[m - 1]} ${d}`;
 }
 
+function formatTimeInTimezone(isoString: string, timezone: string): string {
+  try {
+    return new Date(isoString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+      timeZone: timezone,
+    });
+  } catch {
+    return new Date(isoString).toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  }
+}
+
 function getDuration(start: string, end: string): string {
   const diff = new Date(end).getTime() - new Date(start).getTime();
   const mins = Math.round(diff / 60000);
@@ -57,13 +74,7 @@ export default function DayDetail({ date, appointments, onNewAppointment, onSele
           </div>
         ) : (
           sorted.map((a) => {
-            const startDate = new Date(a.start_time);
-            const timeStart = startDate.toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true,
-              timeZone: a.calendar_timezone || 'UTC',
-            });
+            const timeStart = formatTimeInTimezone(a.start_time, a.calendar_timezone || 'UTC');
             const duration = getDuration(a.start_time, a.end_time);
 
             let colorBarClass = styles.colorBar;

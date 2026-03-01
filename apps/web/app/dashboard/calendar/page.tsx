@@ -6,7 +6,12 @@ import { api } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
-import CalendarView, { type Appointment } from '@/components/calendar/CalendarView';
+import CalendarView, {
+  type Appointment,
+  getDayInTimezone,
+  getMonthInTimezone,
+  getYearInTimezone,
+} from '@/components/calendar/CalendarView';
 import DayDetail from '@/components/calendar/DayDetail';
 import AppointmentModal from '@/components/calendar/AppointmentModal';
 import styles from './calendar.module.css';
@@ -114,11 +119,11 @@ export default function CalendarPage() {
   const dayAppointments = useMemo(() => {
     if (!selectedDay) return [];
     return appointments.filter((a) => {
-      const d = new Date(a.start_time);
+      const tz = a.calendar_timezone || 'UTC';
       return (
-        d.getFullYear() === year &&
-        d.getMonth() === month &&
-        d.getDate() === selectedDay
+        getYearInTimezone(a.start_time, tz) === year &&
+        getMonthInTimezone(a.start_time, tz) === month &&
+        getDayInTimezone(a.start_time, tz) === selectedDay
       );
     });
   }, [appointments, year, month, selectedDay]);
