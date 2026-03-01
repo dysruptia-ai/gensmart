@@ -1,0 +1,154 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.monthTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.navButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+.navBtn:hover {
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-primary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.dayHeader {
+  padding: 0.5rem 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dayCell {
+  min-height: 90px;
+  padding: 0.375rem;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.dayCell:hover {
+  background: var(--color-bg-sidebar);
+}
+.dayCell:nth-child(7n) {
+  border-right: none;
+}
+
+.dayCellEmpty {
+  background: var(--color-bg-sidebar);
+  opacity: 0.5;
+  cursor: default;
+}
+.dayCellEmpty:hover {
+  background: var(--color-bg-sidebar);
+}
+
+.dayCellSelected {
+  background: rgba(37, 211, 102, 0.06);
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.dayCellToday .dayNumber {
+  background: var(--color-primary);
+  color: #fff;
+  border-radius: 50%;
+}
+
+.dayNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  border-radius: 50%;
+  margin-bottom: 0.25rem;
+}
+
+.dayNumberOtherMonth {
+  color: var(--color-text-secondary);
+  opacity: 0.5;
+}
+
+.dots {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.apptDot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.68rem;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.apptDotCancelled {
+  background: #fee2e2;
+  color: var(--color-danger);
+  text-decoration: line-through;
+}
+
+.apptDotCompleted {
+  background: #d1fae5;
+  color: var(--color-success);
+}
+
+.moreBadge {
+  font-size: 0.65rem;
+  color: var(--color-text-secondary);
+  padding-left: 4px;
+}
