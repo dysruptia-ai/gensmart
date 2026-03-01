@@ -37,6 +37,7 @@ export interface ChatParams {
   temperature?: number;
   maxTokens?: number;
   system?: string;
+  byoApiKey?: string; // BYO key overrides system key (Enterprise)
 }
 
 export interface ChatResponse {
@@ -50,12 +51,12 @@ export interface ChatResponse {
   finishReason: string;
 }
 
-function getOpenAIClient(): OpenAI {
-  return new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
+function getOpenAIClient(byoKey?: string): OpenAI {
+  return new OpenAI({ apiKey: byoKey ?? process.env['OPENAI_API_KEY'] });
 }
 
-function getAnthropicClient(): Anthropic {
-  return new Anthropic({ apiKey: process.env['ANTHROPIC_API_KEY'] });
+function getAnthropicClient(byoKey?: string): Anthropic {
+  return new Anthropic({ apiKey: byoKey ?? process.env['ANTHROPIC_API_KEY'] });
 }
 
 async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
@@ -85,7 +86,7 @@ export async function chat(params: ChatParams): Promise<ChatResponse> {
 }
 
 async function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
-  const client = getOpenAIClient();
+  const client = getOpenAIClient(params.byoApiKey);
 
   const messages: OpenAI.ChatCompletionMessageParam[] = params.system
     ? [{ role: 'system', content: params.system }, ...params.messages]
@@ -136,7 +137,7 @@ async function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
 }
 
 async function chatAnthropic(params: ChatParams): Promise<ChatResponse> {
-  const client = getAnthropicClient();
+  const client = getAnthropicClient(params.byoApiKey);
 
   // Anthropic requires messages to alternate user/assistant
   const messages: Anthropic.MessageParam[] = params.messages

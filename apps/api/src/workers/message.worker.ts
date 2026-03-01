@@ -72,6 +72,8 @@ interface MessageRow {
 
 interface OrgRow {
   plan: string;
+  byo_openai_key_encrypted: string | null;
+  byo_anthropic_key_encrypted: string | null;
 }
 
 const MAX_TOOL_ITERATIONS = 5;
@@ -106,14 +108,31 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // Step 4: Fetch org plan and check usage limit
   const orgResult = await query<OrgRow>(
-    'SELECT plan FROM organizations WHERE id = $1',
+    'SELECT plan, byo_openai_key_encrypted, byo_anthropic_key_encrypted FROM organizations WHERE id = $1',
     [organizationId]
   );
   const org = orgResult.rows[0];
   const plan = (org?.plan ?? 'free') as PlanKey;
   const planLimits = PLAN_LIMITS[plan];
 
-  const usageCheck = await checkLimit(organizationId, plan);
+  // Resolve BYO key for Enterprise
+  let byoApiKey: string | undefined;
+  if (plan === 'enterprise') {
+    const { decrypt } = await import('../config/encryption');
+    // Will be resolved per provider when calling LLM
+    const byoOpenAI = org?.byo_openai_key_encrypted ? decrypt(org.byo_openai_key_encrypted) : undefined;
+    const byoAnthropic = org?.byo_anthropic_key_encrypted ? decrypt(org.byo_anthropic_key_encrypted) : undefined;
+    // Set temporarily — actual resolution happens below based on provider
+    byoApiKey = byoOpenAI ?? byoAnthropic;
+    void byoApiKey; // resolved per provider below
+  }
+
+  // If BYO key active, skip message limit check
+  const hasByoKey = plan === 'enterprise' && (org?.byo_openai_key_encrypted || org?.byo_anthropic_key_encrypted);
+  const usageCheck = hasByoKey
+    ? { allowed: true, current: 0, limit: 0 }
+    : await checkLimit(organizationId, plan);
+
   if (!usageCheck.allowed) {
     console.log(`[msg-worker] Usage limit reached for org ${organizationId}`);
     // Notify via WebSocket
@@ -254,6 +273,18 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     fullSystemPrompt += `\n\nToday's date is ${todayDate} (${todayDay}). Always use the current year (${currentYear}) when interpreting user-mentioned dates and always output dates in YYYY-MM-DD format.\n\nYou have access to a scheduling system. When the user wants to book an appointment:\n1. First call check_availability with the requested date (YYYY-MM-DD, year ${currentYear}) to see available time slots\n2. Present the available slots to the user\n3. When the user confirms a slot, call book_appointment with the date, time, and the user's name`;
   }
 
+  // Resolve BYO API key for this agent's provider (Enterprise only)
+  let resolvedByoKey: string | undefined;
+  if (plan === 'enterprise') {
+    const { decrypt: decryptKey } = await import('../config/encryption');
+    const provider = agent.llm_provider as 'openai' | 'anthropic';
+    if (provider === 'openai' && org?.byo_openai_key_encrypted) {
+      try { resolvedByoKey = decryptKey(org.byo_openai_key_encrypted); } catch { /* invalid key */ }
+    } else if (provider === 'anthropic' && org?.byo_anthropic_key_encrypted) {
+      try { resolvedByoKey = decryptKey(org.byo_anthropic_key_encrypted); } catch { /* invalid key */ }
+    }
+  }
+
   // Step 9: LLM call with tool loop
   const messages: ChatMessage[] = [...history, { role: 'user', content: userMessage }];
 
@@ -276,6 +307,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         tools: llmTools.length > 0 ? llmTools : undefined,
         temperature: parseFloat(agent.temperature),
         maxTokens,
+        byoApiKey: resolvedByoKey,
       });
 
       totalTokensUsed += response.usage.totalTokens;
@@ -325,6 +357,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         messages,
         temperature: parseFloat(agent.temperature),
         maxTokens,
+        byoApiKey: resolvedByoKey,
       });
       finalResponse = retryResponse.content;
       totalTokensUsed = retryResponse.usage.totalTokens;
@@ -357,8 +390,10 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // Step 11: Update conversation stats
   await updateConversation(conversationId, bufferedMessages.length + 1);
 
-  // Step 12: Increment usage counter
-  await incrementMessages(organizationId);
+  // Step 12: Increment usage counter (skip for Enterprise BYO key users)
+  if (!hasByoKey) {
+    await incrementMessages(organizationId);
+  }
 
   // Step 13: Emit WebSocket events
   notifyClients(organizationId, conversationId, userMessage, finalResponse);
