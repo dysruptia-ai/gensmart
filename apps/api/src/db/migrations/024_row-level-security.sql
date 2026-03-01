@@ -56,14 +56,17 @@ CREATE POLICY org_isolation_appointments ON appointments
 
 CREATE POLICY org_isolation_knowledge_files ON knowledge_files
   USING (
-    organization_id::text = COALESCE(current_setting('app.current_org_id', true), organization_id::text)
+    agent_id IN (
+      SELECT id FROM agents
+      WHERE organization_id::text = COALESCE(current_setting('app.current_org_id', true), organization_id::text)
+    )
   );
 
 CREATE POLICY org_isolation_knowledge_chunks ON knowledge_chunks
   USING (
-    organization_id IN (
-      SELECT id FROM organizations
-      WHERE id::text = COALESCE(current_setting('app.current_org_id', true), id::text)
+    agent_id IN (
+      SELECT id FROM agents
+      WHERE organization_id::text = COALESCE(current_setting('app.current_org_id', true), organization_id::text)
     )
   );
 
