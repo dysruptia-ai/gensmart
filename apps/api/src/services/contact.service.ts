@@ -220,6 +220,12 @@ export async function updateContact(
 }
 
 export async function deleteContact(orgId: string, contactId: string): Promise<boolean> {
+  // Unlink conversations first to avoid FK constraint violation
+  await query(
+    'UPDATE conversations SET contact_id = NULL WHERE contact_id = $1 AND organization_id = $2',
+    [contactId, orgId]
+  );
+
   const result = await query(
     'DELETE FROM contacts WHERE id = $1 AND organization_id = $2',
     [contactId, orgId]
