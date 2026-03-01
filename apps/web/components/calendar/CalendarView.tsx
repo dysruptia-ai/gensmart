@@ -137,10 +137,11 @@ export default function CalendarView({
                   let dotClass = styles.apptDot;
                   if (a.status === 'cancelled') dotClass += ` ${styles.apptDotCancelled}`;
                   else if (a.status === 'completed') dotClass += ` ${styles.apptDotCompleted}`;
-                  const time = new Date(a.start_time).toLocaleTimeString([], {
-                    hour: '2-digit',
+                  const time = new Date(a.start_time).toLocaleTimeString('en-US', {
+                    hour: 'numeric',
                     minute: '2-digit',
-                    ...(a.calendar_timezone ? { timeZone: a.calendar_timezone } : {}),
+                    hour12: true,
+                    timeZone: a.calendar_timezone || 'UTC',
                   });
                   return (
                     <div key={a.id} className={dotClass} title={a.title}>

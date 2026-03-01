@@ -58,10 +58,11 @@ export default function DayDetail({ date, appointments, onNewAppointment, onSele
         ) : (
           sorted.map((a) => {
             const startDate = new Date(a.start_time);
-            const timeStart = startDate.toLocaleTimeString([], {
-              hour: '2-digit',
+            const timeStart = startDate.toLocaleTimeString('en-US', {
+              hour: 'numeric',
               minute: '2-digit',
-              ...(a.calendar_timezone ? { timeZone: a.calendar_timezone } : {}),
+              hour12: true,
+              timeZone: a.calendar_timezone || 'UTC',
             });
             const duration = getDuration(a.start_time, a.end_time);
 
