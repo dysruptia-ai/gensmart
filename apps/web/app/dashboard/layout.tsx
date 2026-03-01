@@ -22,6 +22,8 @@ import Avatar from '@/components/ui/Avatar';
 import Spinner from '@/components/ui/Spinner';
 import Skeleton from '@/components/ui/Skeleton';
 import { Logo } from '@/components/ui/Logo';
+import UpgradeBanner from '@/components/billing/UpgradeBanner';
+import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 
 const NAV_ITEMS = [
@@ -35,18 +37,31 @@ const NAV_ITEMS = [
   { label: 'Settings', path: '/dashboard/settings', icon: Settings },
 ];
 
+interface UsageSummary {
+  messages: { used: number; limit: number | null; percent: number };
+}
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
+  const [usageSummary, setUsageSummary] = React.useState<UsageSummary | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Load usage summary for upgrade banner
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    api.get<UsageSummary>('/api/billing/usage').then((data) => {
+      setUsageSummary(data);
+    }).catch(() => { /* ignore — non-critical */ });
+  }, [isAuthenticated]);
 
   // Close sidebar on route change
   useEffect(() => {
@@ -186,6 +201,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         <main className={styles.content}>
+          {usageSummary && (
+            <UpgradeBanner
+              messagesPercent={usageSummary.messages.percent}
+              messagesUsed={usageSummary.messages.used}
+              messagesLimit={usageSummary.messages.limit}
+            />
+          )}
           {children}
         </main>
       </div>

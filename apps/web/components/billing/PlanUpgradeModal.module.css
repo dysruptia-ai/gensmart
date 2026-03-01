@@ -1,0 +1,192 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.header {
+  padding: 1.5rem 1.5rem 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.headerText h2 {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.headerText p {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  margin-top: 0.25rem;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+}
+
+.closeBtn:hover { color: var(--color-text-primary); }
+
+.intervalToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem 0;
+}
+
+.toggleBtn {
+  padding: 0.375rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: none;
+  font-size: var(--font-sm);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.toggleBtnActive {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.savingBadge {
+  font-size: var(--font-xs);
+  background: #dcfce7;
+  color: #15803d;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+@media (max-width: 540px) {
+  .plans { grid-template-columns: 1fr; }
+}
+
+.planCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  position: relative;
+  background: var(--color-bg-card);
+}
+
+.planCard:hover {
+  border-color: var(--color-primary);
+}
+
+.planCardSelected {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
+}
+
+.planCardCurrent {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.popularBadge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: var(--font-xs);
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.125rem 0.625rem;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.planCardName {
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.planCardPrice {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1.1;
+}
+
+.planCardPricePer {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+
+.planCardFeatures {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.planCardFeature {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+
+.planCardFeature svg { color: var(--color-success); flex-shrink: 0; }
+
+.footer {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.currentLabel {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  text-align: center;
+}

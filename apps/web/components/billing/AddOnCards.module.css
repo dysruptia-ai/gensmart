@@ -1,0 +1,80 @@
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.title {
+  font-size: var(--font-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.subtitle {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  margin-top: 0.125rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.addonCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  background: var(--color-bg-main);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.addonCard:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(37, 211, 102, 0.15);
+}
+
+.addonMessages {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1;
+}
+
+.addonUnit {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.addonPrice {
+  font-size: var(--font-xl);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.addonPerMessage {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}

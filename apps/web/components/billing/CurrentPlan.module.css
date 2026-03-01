@@ -1,0 +1,64 @@
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.planInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.planName {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+}
+
+.metaRow svg {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.statusActive { color: var(--color-success); }
+.statusCanceling { color: var(--color-warning); }
+.statusPastDue { color: var(--color-danger); }
+.statusFree { color: var(--color-text-secondary); }
+
+/* Plan badge colors */
+.badgeFree { background: #f3f4f6; color: #6b7280; }
+.badgeStarter { background: #dbeafe; color: #1d4ed8; }
+.badgePro { background: #dcfce7; color: #15803d; }
+.badgeEnterprise { background: #fef9c3; color: #854d0e; }
