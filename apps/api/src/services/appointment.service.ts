@@ -113,7 +113,7 @@ export async function getAppointments(
             c.name AS contact_name,
             c.phone AS contact_phone,
             cal.name AS calendar_name,
-            cal.timezone AS calendar_timezone,
+            COALESCE(cal.timezone, 'UTC') AS calendar_timezone,
             cal.agent_id,
             ag.name AS agent_name
      FROM appointments a
@@ -136,7 +136,7 @@ export async function getAppointment(
             c.name AS contact_name,
             c.phone AS contact_phone,
             cal.name AS calendar_name,
-            cal.timezone AS calendar_timezone,
+            COALESCE(cal.timezone, 'UTC') AS calendar_timezone,
             cal.agent_id,
             ag.name AS agent_name
      FROM appointments a

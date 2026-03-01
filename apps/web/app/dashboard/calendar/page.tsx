@@ -16,6 +16,7 @@ interface Calendar {
   name: string;
   slot_duration: number;
   agent_id: string | null;
+  timezone?: string;
 }
 
 interface Agent {

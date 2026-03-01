@@ -13,6 +13,23 @@ interface Calendar {
   id: string;
   name: string;
   slot_duration: number;
+  timezone?: string;
+}
+
+/**
+ * Converts a wall-clock date+time in `timezone` to a UTC ISO string.
+ * Works in the browser regardless of the browser's own timezone setting.
+ */
+function localDateTimeToUTC(date: string, time: string, timezone: string): string {
+  const [yr, mo, dy] = date.split('-').map(Number) as [number, number, number];
+  const [hr, mn] = time.split(':').map(Number) as [number, number];
+  // Build a UTC timestamp treating the components as if they were UTC
+  const naiveDate = new Date(Date.UTC(yr, mo - 1, dy, hr, mn, 0));
+  // Measure the offset: how many ms ahead/behind UTC is `timezone` at this moment
+  const utcParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const tzParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: timezone }));
+  const offsetMs = utcParsed.getTime() - tzParsed.getTime();
+  return new Date(naiveDate.getTime() + offsetMs).toISOString();
 }
 
 interface TimeSlot {
@@ -57,9 +74,18 @@ export default function AppointmentModal({
       setTitle(appointment.title);
       setDescription('');
       setStatus(appointment.status);
+      const apptTz = appointment.calendar_timezone || 'UTC';
       const d = new Date(appointment.start_time);
-      setDate(d.toISOString().slice(0, 10));
-      setTimeSlot(d.toISOString().slice(11, 16));
+      // Show date and time in the calendar's timezone, not UTC
+      const localDate = new Intl.DateTimeFormat('en-CA', { timeZone: apptTz }).format(d);
+      const localTime = d.toLocaleTimeString('en-GB', {
+        timeZone: apptTz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
+      setDate(localDate);
+      setTimeSlot(localTime.slice(0, 5));
       setCalendarId('');
     } else {
       setTitle('');
@@ -113,10 +139,11 @@ export default function AppointmentModal({
         });
         toast.success('Appointment updated');
       } else {
-        // Calculate end time using slot duration
+        // Calculate end time using slot duration; convert local slot time → UTC
         const cal = calendars.find((c) => c.id === calendarId);
         const slotDuration = cal?.slot_duration ?? 30;
-        const startISO = new Date(`${date}T${timeSlot}:00.000Z`).toISOString();
+        const calTz = cal?.timezone || 'UTC';
+        const startISO = localDateTimeToUTC(date, timeSlot, calTz);
         const endISO = new Date(new Date(startISO).getTime() + slotDuration * 60000).toISOString();
 
         await api.post('/api/appointments', {
