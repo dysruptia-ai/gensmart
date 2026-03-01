@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
 import { z } from 'zod';
 import Stripe from 'stripe';
 import { requireAuth } from '../middleware/auth';
@@ -16,46 +16,45 @@ type PlanKey = keyof typeof PLAN_LIMITS;
 
 const router = Router();
 
-// ── Webhook (NO auth — raw body, Stripe signature verification) ────────────
+// ── Webhook handler — exported and registered directly on the app in index.ts
+//    with express.raw() BEFORE express.json() to guarantee raw Buffer body. ──
 
-router.post(
-  '/webhook',
-  async (req: Request, res: Response): Promise<void> => {
-    const sig = req.headers['stripe-signature'];
-    if (!sig || !env.STRIPE_WEBHOOK_SECRET) {
-      res.status(400).json({ error: 'Missing signature or webhook secret' });
-      return;
-    }
-
-    let event: Stripe.Event;
-    try {
-      event = stripeService.constructWebhookEvent((req as any).rawBody as Buffer, String(sig));
-    } catch (err) {
-      console.error('[webhook] Signature verification failed:', err);
-      res.status(400).json({ error: 'Invalid signature' });
-      return;
-    }
-
-    // Idempotency: skip if already processed
-    const existing = await query<{ id: string }>(
-      'SELECT id FROM billing_events WHERE stripe_event_id = $1',
-      [event.id]
-    );
-    if (existing.rows.length > 0) {
-      res.json({ received: true });
-      return;
-    }
-
-    try {
-      await handleWebhookEvent(event);
-    } catch (err) {
-      console.error(`[webhook] Error handling ${event.type}:`, err);
-      // Still return 200 — Stripe will retry on 5xx
-    }
-
-    res.json({ received: true });
+export const stripeWebhookHandler: RequestHandler = async (req, res): Promise<void> => {
+  const sig = req.headers['stripe-signature'];
+  if (!sig || !env.STRIPE_WEBHOOK_SECRET) {
+    res.status(400).json({ error: 'Missing signature or webhook secret' });
+    return;
   }
-);
+
+  let event: Stripe.Event;
+  try {
+    // req.body is a raw Buffer thanks to express.raw() in index.ts
+    event = stripeService.constructWebhookEvent(req.body as Buffer, String(sig));
+  } catch (err) {
+    console.error('[webhook] Signature verification failed:', err);
+    res.status(400).json({ error: 'Invalid signature' });
+    return;
+  }
+
+  // Idempotency: skip if already processed
+  const existing = await query<{ id: string }>(
+    'SELECT id FROM billing_events WHERE stripe_event_id = $1',
+    [event.id]
+  );
+  if (existing.rows.length > 0) {
+    res.json({ received: true });
+    return;
+  }
+
+  try {
+    await handleWebhookEvent(event);
+  } catch (err) {
+    console.error(`[webhook] Error handling ${event.type}:`, err);
+    // Still return 200 — Stripe will retry on 5xx
+  }
+
+  res.json({ received: true });
+};
 
 // ── All other billing routes require auth ──────────────────────────────────
 

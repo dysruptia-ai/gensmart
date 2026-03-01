@@ -12,6 +12,7 @@ import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import router from './routes/index';
+import { stripeWebhookHandler } from './routes/billing';
 import { errorHandler } from './middleware/errorHandler';
 import { initWebSocket } from './config/websocket';
 import { startMessageWorker } from './workers/message.worker';
@@ -32,16 +33,17 @@ app.use(cors({
 // Parsing middleware
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-// Preserve raw body for Stripe webhook signature verification.
-// The verify callback runs before JSON parsing, saving the raw Buffer on req.rawBody.
-app.use(express.json({
-  limit: '10mb',
-  verify: (req: any, _res, buf) => {
-    if (req.originalUrl === '/api/billing/webhook') {
-      req.rawBody = buf;
-    }
-  },
-}));
+
+// Stripe webhook MUST be registered before express.json() so the body stream
+// is consumed as a raw Buffer. express.raw() is inline here — it only applies
+// to this specific route and runs before any other body-parsing middleware.
+app.post(
+  '/api/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  stripeWebhookHandler
+);
+
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
