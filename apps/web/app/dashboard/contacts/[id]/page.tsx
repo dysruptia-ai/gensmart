@@ -61,6 +61,7 @@ export default function ContactDetailPage() {
   const toast = useToast();
 
   const { on, off } = useWebSocket();
+  const isDeletingRef = React.useRef(false);
 
   const [contact, setContact] = useState<Contact | null>(null);
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
@@ -68,16 +69,19 @@ export default function ContactDetailPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchContact = useCallback(async () => {
+    if (isDeletingRef.current) return;
     const res = await api.get<{ contact: Contact }>(`/api/contacts/${id}`);
     setContact(res.contact);
   }, [id]);
 
   const fetchTimeline = useCallback(async () => {
+    if (isDeletingRef.current) return;
     const res = await api.get<{ events: TimelineEvent[] }>(`/api/contacts/${id}/timeline`);
     setTimeline(res.events);
   }, [id]);
 
   const fetchAll = useCallback(async () => {
+    if (isDeletingRef.current) return;
     setLoading(true);
     try {
       const [contactRes, convsRes, timelineRes] = await Promise.all([
@@ -166,6 +170,7 @@ export default function ContactDetailPage() {
   };
 
   const handleDelete = async () => {
+    isDeletingRef.current = true;
     await api.delete(`/api/contacts/${id}`);
     toast.success('Contact deleted');
     router.push('/dashboard/contacts');
