@@ -759,7 +759,10 @@ router.post(
 
       // Add scheduling instructions to system prompt if a scheduling tool is enabled
       if (toolsResult.rows.some((t) => t.type === 'scheduling')) {
-        fullSystemPrompt += '\n\nYou have access to a scheduling system. When the user wants to book an appointment:\n1. First call check_availability with the requested date to see available time slots\n2. Present the available slots to the user\n3. When the user confirms a slot, call book_appointment with the date, time, and the user\'s name';
+        const todayDate = new Date().toISOString().split('T')[0]; // e.g. "2026-03-01"
+        const todayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' }); // e.g. "Sunday"
+        const currentYear = new Date().getFullYear();
+        fullSystemPrompt += `\n\nToday's date is ${todayDate} (${todayDay}). Always use the current year (${currentYear}) when interpreting user-mentioned dates and always output dates in YYYY-MM-DD format.\n\nYou have access to a scheduling system. When the user wants to book an appointment:\n1. First call check_availability with the requested date (YYYY-MM-DD, year ${currentYear}) to see available time slots\n2. Present the available slots to the user\n3. When the user confirms a slot, call book_appointment with the date, time, and the user's name`;
       }
 
       // LLM call
