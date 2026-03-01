@@ -29,6 +29,7 @@ export interface AppointmentRow {
   contact_name?: string | null;
   contact_phone?: string | null;
   calendar_name?: string | null;
+  calendar_timezone?: string | null;
   agent_id?: string | null;
   agent_name?: string | null;
 }
@@ -112,6 +113,7 @@ export async function getAppointments(
             c.name AS contact_name,
             c.phone AS contact_phone,
             cal.name AS calendar_name,
+            cal.timezone AS calendar_timezone,
             cal.agent_id,
             ag.name AS agent_name
      FROM appointments a
@@ -134,6 +136,7 @@ export async function getAppointment(
             c.name AS contact_name,
             c.phone AS contact_phone,
             cal.name AS calendar_name,
+            cal.timezone AS calendar_timezone,
             cal.agent_id,
             ag.name AS agent_name
      FROM appointments a

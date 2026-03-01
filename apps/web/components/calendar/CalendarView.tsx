@@ -12,6 +12,7 @@ export interface Appointment {
   status: string;
   contact_name?: string | null;
   calendar_name?: string | null;
+  calendar_timezone?: string | null;
   agent_name?: string | null;
 }
 
@@ -139,6 +140,7 @@ export default function CalendarView({
                   const time = new Date(a.start_time).toLocaleTimeString([], {
                     hour: '2-digit',
                     minute: '2-digit',
+                    ...(a.calendar_timezone ? { timeZone: a.calendar_timezone } : {}),
                   });
                   return (
                     <div key={a.id} className={dotClass} title={a.title}>

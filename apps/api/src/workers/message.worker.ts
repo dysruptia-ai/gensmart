@@ -15,7 +15,7 @@ import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, decryptAccessToken } from '../services/whatsapp.service';
-import { getAvailableSlots } from '../services/calendar.service';
+import { getAvailableSlots, localTimeToUTC } from '../services/calendar.service';
 import { createAppointment } from '../services/appointment.service';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -487,19 +487,21 @@ async function executeTool(
       return 'No calendar configured for this agent.';
     }
 
-    // Get slot duration from calendar config
+    // Get slot duration and timezone from calendar
     let slotDuration = 30;
+    let calendarTimezone = 'UTC';
     try {
       const { query: dbQuery } = await import('../config/database');
-      const calResult = await dbQuery<{ slot_duration: number }>(
-        'SELECT slot_duration FROM calendars WHERE id = $1',
+      const calResult = await dbQuery<{ slot_duration: number; timezone: string }>(
+        'SELECT slot_duration, timezone FROM calendars WHERE id = $1',
         [calendarId]
       );
       if (calResult.rows[0]) {
         slotDuration = calResult.rows[0].slot_duration;
+        calendarTimezone = calResult.rows[0].timezone || 'UTC';
       }
     } catch {
-      // use default
+      // use defaults
     }
 
     // Find or look up contact for this conversation
@@ -515,10 +517,10 @@ async function executeTool(
       // ignore
     }
 
-    // Build start/end ISO strings
-    const startTime = new Date(`${date}T${time}:00.000Z`).toISOString();
-    const endMs = new Date(startTime).getTime() + slotDuration * 60000;
-    const endTime = new Date(endMs).toISOString();
+    // Convert local calendar time → UTC for storage
+    const startUTC = localTimeToUTC(date, time, calendarTimezone);
+    const startTime = startUTC.toISOString();
+    const endTime = new Date(startUTC.getTime() + slotDuration * 60000).toISOString();
 
     try {
       await createAppointment(organizationId, {

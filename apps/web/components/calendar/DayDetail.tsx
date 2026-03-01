@@ -58,7 +58,11 @@ export default function DayDetail({ date, appointments, onNewAppointment, onSele
         ) : (
           sorted.map((a) => {
             const startDate = new Date(a.start_time);
-            const timeStart = startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const timeStart = startDate.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              ...(a.calendar_timezone ? { timeZone: a.calendar_timezone } : {}),
+            });
             const duration = getDuration(a.start_time, a.end_time);
 
             let colorBarClass = styles.colorBar;

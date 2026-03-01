@@ -822,6 +822,7 @@ router.post(
             currentMessages.push({ role: 'user', content: `[Tool result for check_availability]: ${slotResult}` });
           } else if (tc.name === 'book_appointment') {
             const { createAppointment } = await import('../services/appointment.service');
+            const { localTimeToUTC } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
             const time = String(tc.arguments['time'] ?? '');
             const personName = String(tc.arguments['name'] ?? 'Guest');
@@ -830,13 +831,15 @@ router.post(
             let bookResult = 'Could not book appointment — missing information.';
             if (calendarId && date && time) {
               try {
-                const calResult = await query<{ slot_duration: number }>(
-                  'SELECT slot_duration FROM calendars WHERE id = $1',
+                const calResult = await query<{ slot_duration: number; timezone: string }>(
+                  'SELECT slot_duration, timezone FROM calendars WHERE id = $1',
                   [calendarId]
                 );
                 const slotDuration = calResult.rows[0]?.slot_duration ?? 30;
-                const startTime = new Date(`${date}T${time}:00.000Z`).toISOString();
-                const endTime = new Date(new Date(startTime).getTime() + slotDuration * 60000).toISOString();
+                const calTz = calResult.rows[0]?.timezone || 'UTC';
+                const startUTC = localTimeToUTC(date, time, calTz);
+                const startTime = startUTC.toISOString();
+                const endTime = new Date(startUTC.getTime() + slotDuration * 60000).toISOString();
                 await createAppointment(req.org!.id, {
                   calendarId,
                   contactId: null,

@@ -140,7 +140,8 @@ export async function deleteCalendar(orgId: string, calendarId: string): Promise
   return (result.rowCount ?? 0) > 0;
 }
 
-/** Returns available time slots for a calendar on a given date (YYYY-MM-DD). */
+/** Returns available time slots for a calendar on a given date (YYYY-MM-DD).
+ *  All slot times are in the calendar's local timezone. */
 export async function getAvailableSlots(
   calendarId: string,
   date: string
@@ -152,25 +153,27 @@ export async function getAvailableSlots(
   const cal = calResult.rows[0];
   if (!cal) return [];
 
-  // Parse date
+  const tz = cal.timezone || 'UTC';
+
+  // Parse date — compute day-of-week via UTC to avoid locale issues
   const dateParts = date.split('-').map(Number);
   if (dateParts.length !== 3) return [];
   const [year, month, day] = dateParts as [number, number, number];
   const targetDate = new Date(Date.UTC(year, month - 1, day));
 
   // JS getDay() returns 0=Sun,1=Mon...6=Sat; spec uses 1=Mon...7=Sun
-  const jsDay = targetDate.getUTCDay(); // 0=Sun
-  const specDay = jsDay === 0 ? 7 : jsDay; // convert to 1=Mon..7=Sun
+  const jsDay = targetDate.getUTCDay();
+  const specDay = jsDay === 0 ? 7 : jsDay;
 
   if (!cal.available_days.includes(specDay)) return [];
 
-  // Check max_advance_days
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const diffDays = Math.floor((targetDate.getTime() - today.getTime()) / 86400000);
+  // Check max_advance_days (UTC-based approximation — good enough for this check)
+  const todayUTC = new Date();
+  todayUTC.setUTCHours(0, 0, 0, 0);
+  const diffDays = Math.floor((targetDate.getTime() - todayUTC.getTime()) / 86400000);
   if (diffDays < 0 || diffDays > cal.max_advance_days) return [];
 
-  // Generate all slots
+  // Generate all slots (times are in calendar's local timezone)
   const hours = cal.available_hours as { start: string; end: string };
   const [startH, startM] = hours.start.split(':').map(Number) as [number, number];
   const [endH, endM] = hours.end.split(':').map(Number) as [number, number];
@@ -180,43 +183,73 @@ export async function getAvailableSlots(
   const rawSlots: TimeSlot[] = [];
   let cursor = startMinutes;
   while (cursor + cal.slot_duration <= endMinutes) {
-    const slotStart = minutesToHHMM(cursor);
-    const slotEnd = minutesToHHMM(cursor + cal.slot_duration);
-    rawSlots.push({ start: slotStart, end: slotEnd });
+    rawSlots.push({
+      start: minutesToHHMM(cursor),
+      end: minutesToHHMM(cursor + cal.slot_duration),
+    });
     cursor += cal.slot_duration + cal.buffer_minutes;
   }
 
-  // Fetch booked appointments
+  // Fetch booked appointments — filter by date in the calendar's timezone
   const bookedResult = await query<{ start_time: string; end_time: string }>(
     `SELECT start_time, end_time FROM appointments
      WHERE calendar_id = $1
-       AND DATE(start_time AT TIME ZONE 'UTC') = $2
+       AND (start_time AT TIME ZONE $3)::date = $2::date
        AND status != 'cancelled'`,
-    [calendarId, date]
+    [calendarId, date, tz]
   );
 
-  // Filter out overlapping slots
+  // Convert booked UTC times to calendar-local HH:MM for comparison
   const booked = bookedResult.rows.map((r) => ({
-    start: timeToMinutes(new Date(r.start_time).toISOString().slice(11, 16)),
-    end: timeToMinutes(new Date(r.end_time).toISOString().slice(11, 16)),
+    start: timeToMinutes(toLocalHHMM(new Date(r.start_time), tz)),
+    end: timeToMinutes(toLocalHHMM(new Date(r.end_time), tz)),
   }));
 
+  // Get current time in calendar's local timezone for "past slot" filtering
   const now = new Date();
-  const todayStr = now.toISOString().slice(0, 10);
-  const nowMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const todayLocalStr = new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(now);
+  const nowHHMM = toLocalHHMM(now, tz);
+  const nowMinutes = timeToMinutes(nowHHMM);
 
   return rawSlots.filter((slot) => {
     const slotStartMin = timeToMinutes(slot.start);
     const slotEndMin = timeToMinutes(slot.end);
 
-    // Skip past slots for today
-    if (date === todayStr && slotStartMin <= nowMinutes) return false;
+    // Skip past slots for today (in calendar's timezone)
+    if (date === todayLocalStr && slotStartMin <= nowMinutes) return false;
 
     // Skip overlapping booked slots
-    return !booked.some(
-      (b) => slotStartMin < b.end && slotEndMin > b.start
-    );
+    return !booked.some((b) => slotStartMin < b.end && slotEndMin > b.start);
   });
+}
+
+/**
+ * Converts a wall-clock date+time in the given timezone to a UTC Date.
+ * Example: localTimeToUTC('2026-03-04', '14:00', 'America/Bogota')
+ *          → 2026-03-04T19:00:00.000Z  (Bogota is UTC-5)
+ */
+export function localTimeToUTC(date: string, time: string, timezone: string): Date {
+  const dateTimeStr = `${date}T${time}:00`;
+  // Parse the naive date-time (server runs UTC, so treated as UTC here)
+  const naiveDate = new Date(dateTimeStr);
+  // Compute the offset between UTC and the target timezone at this moment
+  const utcParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const tzParsed = new Date(naiveDate.toLocaleString('en-US', { timeZone: timezone }));
+  const offsetMs = utcParsed.getTime() - tzParsed.getTime();
+  return new Date(naiveDate.getTime() + offsetMs);
+}
+
+/** Formats a UTC Date as HH:MM in the given timezone (24h). */
+function toLocalHHMM(date: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(date);
+  const h = parts.find((p) => p.type === 'hour')?.value ?? '00';
+  const m = parts.find((p) => p.type === 'minute')?.value ?? '00';
+  return `${h === '24' ? '00' : h}:${m}`;
 }
 
 function minutesToHHMM(mins: number): string {

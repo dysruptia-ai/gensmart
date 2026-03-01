@@ -45,9 +45,10 @@
 
 .layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: minmax(0, 1fr) 340px;
   gap: 1.5rem;
   align-items: start;
+  min-width: 0;
 }
 
 @media (max-width: 900px) {
