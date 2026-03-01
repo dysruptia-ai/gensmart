@@ -213,7 +213,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       });
     }
 
-    if (tool.type === 'scheduling') {
+    if (tool.type === 'scheduling' && tool.is_enabled) {
       llmTools.push(
         {
           name: 'check_availability',
@@ -244,6 +244,11 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         }
       );
     }
+  }
+
+  // Add scheduling instructions if a scheduling tool is enabled
+  if (agentTools.some((t) => t.type === 'scheduling')) {
+    fullSystemPrompt += '\n\nYou have access to a scheduling system. When the user wants to book an appointment:\n1. First call check_availability with the requested date to see available time slots\n2. Present the available slots to the user\n3. When the user confirms a slot, call book_appointment with the date, time, and the user\'s name';
   }
 
   // Step 9: LLM call with tool loop

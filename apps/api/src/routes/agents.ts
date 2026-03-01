@@ -727,6 +727,39 @@ router.post(
             },
           });
         }
+        if (tool.type === 'scheduling') {
+          llmTools.push(
+            {
+              name: 'check_availability',
+              description: 'Check available appointment slots for a given date. Use when the user wants to schedule or book an appointment.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  date: { type: 'string', description: 'Date to check availability (YYYY-MM-DD)' },
+                },
+                required: ['date'],
+              },
+            },
+            {
+              name: 'book_appointment',
+              description: 'Book an appointment at a specific date and time. Use after the user confirms a slot.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  date: { type: 'string', description: 'Appointment date (YYYY-MM-DD)' },
+                  time: { type: 'string', description: 'Appointment start time (HH:MM)' },
+                  name: { type: 'string', description: 'Name of the person booking' },
+                },
+                required: ['date', 'time'],
+              },
+            }
+          );
+        }
+      }
+
+      // Add scheduling instructions to system prompt if a scheduling tool is enabled
+      if (toolsResult.rows.some((t) => t.type === 'scheduling')) {
+        fullSystemPrompt += '\n\nYou have access to a scheduling system. When the user wants to book an appointment:\n1. First call check_availability with the requested date to see available time slots\n2. Present the available slots to the user\n3. When the user confirms a slot, call book_appointment with the date, time, and the user\'s name';
       }
 
       // LLM call
@@ -770,6 +803,53 @@ router.post(
             const val = String(tc.arguments['variable_value'] ?? '');
             capturedVars[name] = val;
             currentMessages.push({ role: 'user', content: `[Tool result]: Variable '${name}' captured: ${val}` });
+          } else if (tc.name === 'check_availability') {
+            const { getAvailableSlots } = await import('../services/calendar.service');
+            const date = String(tc.arguments['date'] ?? '');
+            const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
+            const calendarId = schedulingTool ? String(schedulingTool.config['calendar_id'] ?? '') : '';
+            let slotResult = 'No calendar configured for this agent.';
+            if (calendarId && date) {
+              try {
+                const slots = await getAvailableSlots(calendarId, date);
+                slotResult = slots.length
+                  ? `Available slots for ${date}: ${slots.map((s) => s.start).join(', ')}. Which time works best?`
+                  : `No available slots for ${date}. Please try another date.`;
+              } catch {
+                slotResult = `Could not check availability for ${date}.`;
+              }
+            }
+            currentMessages.push({ role: 'user', content: `[Tool result for check_availability]: ${slotResult}` });
+          } else if (tc.name === 'book_appointment') {
+            const { createAppointment } = await import('../services/appointment.service');
+            const date = String(tc.arguments['date'] ?? '');
+            const time = String(tc.arguments['time'] ?? '');
+            const personName = String(tc.arguments['name'] ?? 'Guest');
+            const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
+            const calendarId = schedulingTool ? String(schedulingTool.config['calendar_id'] ?? '') : '';
+            let bookResult = 'Could not book appointment — missing information.';
+            if (calendarId && date && time) {
+              try {
+                const calResult = await query<{ slot_duration: number }>(
+                  'SELECT slot_duration FROM calendars WHERE id = $1',
+                  [calendarId]
+                );
+                const slotDuration = calResult.rows[0]?.slot_duration ?? 30;
+                const startTime = new Date(`${date}T${time}:00.000Z`).toISOString();
+                const endTime = new Date(new Date(startTime).getTime() + slotDuration * 60000).toISOString();
+                await createAppointment(req.org!.id, {
+                  calendarId,
+                  contactId: null,
+                  title: `Appointment — ${personName}`,
+                  startTime,
+                  endTime,
+                });
+                bookResult = `Appointment confirmed for ${date} at ${time} for ${personName}.`;
+              } catch (err) {
+                bookResult = `Could not book appointment: ${(err as Error).message}`;
+              }
+            }
+            currentMessages.push({ role: 'user', content: `[Tool result for book_appointment]: ${bookResult}` });
           } else {
             const toolDef = toolsResult.rows.find(
               (t) => t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
