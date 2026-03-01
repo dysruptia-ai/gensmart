@@ -32,6 +32,8 @@ app.use(cors({
 // Parsing middleware
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+// Stripe webhook needs raw body — must be BEFORE express.json()
+app.use('/api/billing/webhook', express.raw({ type: '*/*' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
