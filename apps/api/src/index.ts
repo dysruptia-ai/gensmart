@@ -10,9 +10,11 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import Stripe from 'stripe';
+import { stripe } from './config/stripe';
 import { env } from './config/env';
 import router from './routes/index';
-import { stripeWebhookHandler } from './routes/billing';
+import { handleWebhookEvent } from './services/stripe.service';
 import { errorHandler } from './middleware/errorHandler';
 import { initWebSocket } from './config/websocket';
 import { startMessageWorker } from './workers/message.worker';
@@ -34,14 +36,47 @@ app.use(cors({
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Stripe webhook MUST be registered before express.json() so the body stream
-// is consumed as a raw Buffer. express.raw() is inline here — it only applies
-// to this specific route and runs before any other body-parsing middleware.
-app.post(
-  '/api/billing/webhook',
-  express.raw({ type: 'application/json' }),
-  stripeWebhookHandler
-);
+// Stripe webhook — registered BEFORE express.json() so the stream is consumed
+// as a raw Buffer by express.raw(). The handler is inline (not via a router)
+// to guarantee no other middleware intercepts the body first.
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), async (req, res): Promise<void> => {
+  const sig = req.headers['stripe-signature'] as string;
+  const secret = process.env['STRIPE_WEBHOOK_SECRET'];
+
+  // ── Debug (remove after confirming webhook works) ──
+  console.log('[webhook-debug] body type    :', typeof req.body);
+  console.log('[webhook-debug] isBuffer     :', Buffer.isBuffer(req.body));
+  console.log('[webhook-debug] body length  :', (req.body as Buffer)?.length ?? 'n/a');
+  console.log('[webhook-debug] sig          :', sig ? 'present' : 'MISSING');
+  console.log('[webhook-debug] secret       :', secret ? 'present' : 'MISSING');
+  // ────────────────────────────────────────────────────
+
+  if (!sig || !secret) {
+    res.status(400).json({ error: 'Missing stripe-signature header or STRIPE_WEBHOOK_SECRET' });
+    return;
+  }
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body as Buffer, sig, secret);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[webhook] Signature verification failed:', msg);
+    res.status(400).json({ error: msg });
+    return;
+  }
+
+  console.log('[webhook] Event received:', event.type);
+
+  try {
+    await handleWebhookEvent(event);
+  } catch (err) {
+    console.error(`[webhook] Error handling ${event.type}:`, err);
+    // Return 200 — Stripe retries on 5xx, not on 2xx
+  }
+
+  res.json({ received: true });
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));

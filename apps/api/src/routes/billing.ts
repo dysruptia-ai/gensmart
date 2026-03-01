@@ -1,13 +1,11 @@
-import { Router, Request, Response, NextFunction, RequestHandler } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import Stripe from 'stripe';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { validate } from '../middleware/validate';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { env } from '../config/env';
-import { getIO } from '../config/websocket';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import * as stripeService from '../services/stripe.service';
 import { getMessageCount } from '../services/usage.service';
@@ -15,46 +13,6 @@ import { getMessageCount } from '../services/usage.service';
 type PlanKey = keyof typeof PLAN_LIMITS;
 
 const router = Router();
-
-// ── Webhook handler — exported and registered directly on the app in index.ts
-//    with express.raw() BEFORE express.json() to guarantee raw Buffer body. ──
-
-export const stripeWebhookHandler: RequestHandler = async (req, res): Promise<void> => {
-  const sig = req.headers['stripe-signature'];
-  if (!sig || !env.STRIPE_WEBHOOK_SECRET) {
-    res.status(400).json({ error: 'Missing signature or webhook secret' });
-    return;
-  }
-
-  let event: Stripe.Event;
-  try {
-    // req.body is a raw Buffer thanks to express.raw() in index.ts
-    event = stripeService.constructWebhookEvent(req.body as Buffer, String(sig));
-  } catch (err) {
-    console.error('[webhook] Signature verification failed:', err);
-    res.status(400).json({ error: 'Invalid signature' });
-    return;
-  }
-
-  // Idempotency: skip if already processed
-  const existing = await query<{ id: string }>(
-    'SELECT id FROM billing_events WHERE stripe_event_id = $1',
-    [event.id]
-  );
-  if (existing.rows.length > 0) {
-    res.json({ received: true });
-    return;
-  }
-
-  try {
-    await handleWebhookEvent(event);
-  } catch (err) {
-    console.error(`[webhook] Error handling ${event.type}:`, err);
-    // Still return 200 — Stripe will retry on 5xx
-  }
-
-  res.json({ received: true });
-};
 
 // ── All other billing routes require auth ──────────────────────────────────
 
@@ -372,182 +330,5 @@ router.post(
   }
 );
 
-// ── Webhook event handler ──────────────────────────────────────────────────
-
-async function handleWebhookEvent(event: Stripe.Event): Promise<void> {
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const orgId = session.metadata?.['orgId'];
-      const type = session.metadata?.['type'];
-      if (!orgId) return;
-
-      if (type === 'addon') {
-        // Add-on purchase completed
-        const addonStr = session.metadata?.['addon'];
-        const messageCount = parseInt(session.metadata?.['messageCount'] ?? '0', 10);
-        if (addonStr && messageCount > 0) {
-          const now = new Date();
-          const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-          const addonKey = `usage:${orgId}:${yearMonth}:addon_messages`;
-          await redis.incrby(addonKey, messageCount);
-          await redis.expire(addonKey, 45 * 24 * 60 * 60);
-          console.log(`[webhook] Added ${messageCount} addon messages for org ${orgId}`);
-
-          // Notify via WebSocket
-          try {
-            getIO().to(`org:${orgId}`).emit('billing:addon_applied', {
-              addon: addonStr,
-              messageCount,
-            });
-          } catch { /* ignore */ }
-        }
-        await stripeService.saveBillingEvent(
-          orgId, event.id, event.type,
-          session.amount_total,
-          { addon: addonStr, messageCount, sessionId: session.id }
-        );
-        return;
-      }
-
-      if (type === 'subscription') {
-        // New subscription started
-        const plan = session.metadata?.['plan'] ?? 'starter';
-        const interval = session.metadata?.['interval'] ?? 'monthly';
-        const subscriptionId = typeof session.subscription === 'string'
-          ? session.subscription
-          : session.subscription?.id;
-
-        if (subscriptionId) {
-          try {
-            const sub = await stripeService.getSubscription(subscriptionId);
-            // In newer Stripe API, period is on subscription items
-            const item = sub.items.data[0];
-            const periodStartTs = item?.current_period_start ?? sub.billing_cycle_anchor;
-            const periodEndTs = item?.current_period_end;
-            const periodStart = new Date(periodStartTs * 1000);
-            const periodEnd = periodEndTs ? new Date(periodEndTs * 1000) : null;
-            await stripeService.updateOrgSubscription({
-              orgId,
-              plan,
-              subscriptionId,
-              status: sub.status,
-              periodStart,
-              periodEnd,
-            });
-            console.log(`[webhook] Subscription created: org=${orgId} plan=${plan}`);
-
-            try {
-              getIO().to(`org:${orgId}`).emit('billing:subscription_updated', { plan, status: sub.status });
-            } catch { /* ignore */ }
-          } catch (err) {
-            console.error('[webhook] Error fetching subscription:', err);
-          }
-        }
-
-        await stripeService.saveBillingEvent(
-          orgId, event.id, event.type,
-          session.amount_total,
-          { plan, interval, sessionId: session.id }
-        );
-      }
-      break;
-    }
-
-    case 'customer.subscription.updated': {
-      const sub = event.data.object as Stripe.Subscription;
-      const orgId = sub.metadata?.['orgId'];
-      if (!orgId) return;
-
-      const plan = sub.metadata?.['plan'] ?? 'starter';
-      const item = sub.items.data[0];
-      const periodStartTs = item?.current_period_start ?? sub.billing_cycle_anchor;
-      const periodEndTs = item?.current_period_end;
-      const periodStart = new Date(periodStartTs * 1000);
-      const periodEnd = periodEndTs ? new Date(periodEndTs * 1000) : null;
-
-      await stripeService.updateOrgSubscription({
-        orgId,
-        plan,
-        subscriptionId: sub.id,
-        status: sub.status,
-        periodStart,
-        periodEnd,
-      });
-      await stripeService.saveBillingEvent(orgId, event.id, event.type, null, { plan, status: sub.status });
-
-      try {
-        getIO().to(`org:${orgId}`).emit('billing:subscription_updated', { plan, status: sub.status });
-      } catch { /* ignore */ }
-      break;
-    }
-
-    case 'customer.subscription.deleted': {
-      const sub = event.data.object as Stripe.Subscription;
-      const orgId = sub.metadata?.['orgId'];
-      if (!orgId) return;
-
-      await stripeService.downgradeOrgToFree(orgId);
-      await stripeService.saveBillingEvent(orgId, event.id, event.type, null, { reason: 'subscription_deleted' });
-      console.log(`[webhook] Subscription deleted — org ${orgId} downgraded to free`);
-
-      try {
-        getIO().to(`org:${orgId}`).emit('billing:subscription_updated', { plan: 'free', status: 'canceled' });
-      } catch { /* ignore */ }
-      break;
-    }
-
-    case 'invoice.payment_succeeded': {
-      const invoice = event.data.object as Stripe.Invoice;
-      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
-      if (!customerId) return;
-
-      const orgResult = await query<{ id: string }>(
-        'SELECT id FROM organizations WHERE stripe_customer_id = $1',
-        [customerId]
-      );
-      const orgId = orgResult.rows[0]?.id;
-      if (!orgId) return;
-
-      await stripeService.saveBillingEvent(orgId, event.id, event.type, invoice.amount_paid, {
-        invoiceId: invoice.id,
-        invoiceNumber: invoice.number,
-      });
-      break;
-    }
-
-    case 'invoice.payment_failed': {
-      const invoice = event.data.object as Stripe.Invoice;
-      const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id;
-      if (!customerId) return;
-
-      const orgResult = await query<{ id: string }>(
-        'SELECT id FROM organizations WHERE stripe_customer_id = $1',
-        [customerId]
-      );
-      const orgId = orgResult.rows[0]?.id;
-      if (!orgId) return;
-
-      // Mark subscription as past_due
-      await query(
-        'UPDATE organizations SET subscription_status = $1, updated_at = NOW() WHERE id = $2',
-        ['past_due', orgId]
-      );
-      await stripeService.saveBillingEvent(orgId, event.id, event.type, invoice.amount_due, {
-        invoiceId: invoice.id,
-      });
-
-      try {
-        getIO().to(`org:${orgId}`).emit('billing:payment_failed', {
-          message: 'Your payment failed. Please update your payment method.',
-        });
-      } catch { /* ignore */ }
-      break;
-    }
-
-    default:
-      console.log(`[webhook] Unhandled event type: ${event.type}`);
-  }
-}
 
 export default router;
