@@ -49,6 +49,14 @@ export interface WebSocketEvents {
     current: number;
     limit: number;
   }) => void;
+  'notification:new': (data: {
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    data?: Record<string, unknown>;
+    createdAt: string;
+  }) => void;
 }
 
 type EventName = keyof WebSocketEvents;

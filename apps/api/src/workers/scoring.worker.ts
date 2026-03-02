@@ -3,6 +3,7 @@ import { createBullConnection } from '../config/queues';
 import { scoreConversation } from '../services/ai-scoring.service';
 import { query } from '../config/database';
 import { getIO } from '../config/websocket';
+import { createNotification } from '../services/notification.service';
 
 interface ScoringJobData {
   conversationId: string;
@@ -51,6 +52,23 @@ async function processScoring(job: Job<ScoringJobData>): Promise<void> {
   console.log(
     `[scoring-worker] Scored conversation ${conversationId}: score=${result.score}, service=${result.service}`
   );
+
+  // Notify all org members when a high-score lead is detected
+  if (result.score >= 8) {
+    createNotification({
+      organizationId,
+      type: 'high_score_lead',
+      title: `High-Score Lead: ${result.summary?.substring(0, 50) || 'New high-value lead'}`,
+      message: `Contact scored ${result.score}/10. Service: ${result.service}`,
+      data: {
+        contactId: contactId ?? undefined,
+        conversationId,
+        score: result.score,
+        service: result.service,
+      },
+      sendEmail: true,
+    }).catch((err) => console.error('[scoring-worker] Failed to create notification:', err));
+  }
 }
 
 export function startScoringWorker(): Worker<ScoringJobData> {

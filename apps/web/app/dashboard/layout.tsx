@@ -23,6 +23,7 @@ import Spinner from '@/components/ui/Spinner';
 import Skeleton from '@/components/ui/Skeleton';
 import { Logo } from '@/components/ui/Logo';
 import UpgradeBanner from '@/components/billing/UpgradeBanner';
+import NotificationBell from '@/components/notifications/NotificationBell';
 import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 
@@ -146,6 +147,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className={styles.headerRight}>
+            <NotificationBell />
             <div className={styles.userMenu}>
               <button
                 className={styles.userButton}
