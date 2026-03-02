@@ -13,6 +13,7 @@ interface BlogPost {
   description: string;
   date: string;
   tags: string[];
+  language: string;
 }
 
 const PLACEHOLDER_POSTS: BlogPost[] = [
@@ -22,6 +23,7 @@ const PLACEHOLDER_POSTS: BlogPost[] = [
     description: 'Step-by-step guide to creating and deploying your first AI-powered WhatsApp chatbot with GenSmart.',
     date: '2026-02-20',
     tags: ['whatsapp', 'tutorial'],
+    language: 'en',
   },
   {
     slug: 'ai-lead-scoring-explained',
@@ -29,6 +31,7 @@ const PLACEHOLDER_POSTS: BlogPost[] = [
     description: 'Learn how AI-powered lead scoring helps you focus on high-value prospects and close more deals.',
     date: '2026-02-15',
     tags: ['crm', 'ai-scoring'],
+    language: 'en',
   },
   {
     slug: 'n8n-vs-gensmart-comparison',
@@ -36,6 +39,31 @@ const PLACEHOLDER_POSTS: BlogPost[] = [
     description: "A practical comparison of building AI agents with N8N workflows versus GenSmart's integrated platform.",
     date: '2026-02-10',
     tags: ['comparison', 'automation'],
+    language: 'en',
+  },
+  {
+    slug: 'como-desplegar-agente-whatsapp-ia',
+    title: 'Cómo desplegar tu primer agente de IA en WhatsApp (sin código)',
+    description: 'Guía paso a paso para conectar GenSmart con WhatsApp Business y automatizar tus conversaciones desde el primer día.',
+    date: '2026-02-20',
+    tags: ['whatsapp', 'guía'],
+    language: 'es',
+  },
+  {
+    slug: 'lead-scoring-ia-crm',
+    title: 'Lead Scoring con IA: cómo priorizar tus mejores prospectos automáticamente',
+    description: 'Descubre cómo el scoring automático de leads con IA puede triplicar tu tasa de conversión sin aumentar tu equipo de ventas.',
+    date: '2026-02-25',
+    tags: ['crm', 'lead-scoring'],
+    language: 'es',
+  },
+  {
+    slug: 'gensmart-vs-n8n-automatizacion',
+    title: 'GenSmart vs n8n: ¿cuál elegir para automatizar tus conversaciones con IA?',
+    description: 'Comparativa honesta entre GenSmart y n8n para empresas que quieren automatizar su atención al cliente con IA.',
+    date: '2026-03-01',
+    tags: ['comparativa', 'automatización'],
+    language: 'es',
   },
 ];
 
@@ -45,7 +73,7 @@ interface BlogPreviewProps {
 
 export function BlogPreview({ posts = PLACEHOLDER_POSTS }: BlogPreviewProps) {
   const { t, language } = useTranslation();
-  const displayPosts = posts.slice(0, 3);
+  const displayPosts = posts.filter((p) => p.language === language).slice(0, 3);
 
   return (
     <section className={styles.section} aria-label="Blog preview">

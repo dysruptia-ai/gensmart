@@ -5,6 +5,7 @@ date: "2026-02-15"
 author: "GenSmart Team"
 tags: ["crm", "ai-scoring", "sales"]
 cover_image: "/blog/cover-placeholder.svg"
+language: "en"
 ---
 
 Most businesses treat all leads the same. They respond to inquiries in the order they arrive, follow up with everyone equally, and wonder why their conversion rate stays stuck at 3%.

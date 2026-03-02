@@ -5,6 +5,7 @@ date: "2026-02-20"
 author: "Equipo GenSmart"
 tags: ["whatsapp", "automatización", "guía"]
 cover_image: "/blog/cover-placeholder.svg"
+language: "es"
 ---
 
 WhatsApp tiene más de 2 mil millones de usuarios activos. Es el canal de comunicación más usado en Latinoamérica, España y gran parte del mundo. Sin embargo, la mayoría de las empresas aún responden manualmente, perdiendo tiempo valioso y perdiendo ventas fuera del horario de oficina.

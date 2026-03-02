@@ -13,6 +13,7 @@ interface Post {
   date: string;
   author: string;
   tags: string[];
+  language: string;
 }
 
 interface BlogContentProps {
@@ -21,6 +22,7 @@ interface BlogContentProps {
 
 export default function BlogContent({ posts }: BlogContentProps) {
   const { t, language } = useTranslation();
+  const filteredPosts = posts.filter((p) => p.language === language);
 
   return (
     <div className={styles.page}>
@@ -33,11 +35,11 @@ export default function BlogContent({ posts }: BlogContentProps) {
 
       <main className={styles.main}>
         <div className={styles.inner}>
-          {posts.length === 0 ? (
+          {filteredPosts.length === 0 ? (
             <p className={styles.empty}>{t('blog.noPosts')}</p>
           ) : (
             <div className={styles.grid}>
-              {posts.map((post) => (
+              {filteredPosts.map((post) => (
                 <article key={post.slug} className={styles.card}>
                   <div className={styles.cardCover} aria-hidden="true">
                     <div className={styles.coverGradient} />

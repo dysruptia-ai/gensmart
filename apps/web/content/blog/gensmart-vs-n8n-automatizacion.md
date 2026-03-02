@@ -5,6 +5,7 @@ date: "2026-03-01"
 author: "Equipo GenSmart"
 tags: ["comparativa", "automatización", "herramientas"]
 cover_image: "/blog/cover-placeholder.svg"
+language: "es"
 ---
 
 Cuando una empresa decide automatizar su atención al cliente con IA, inevitablemente llega a la misma pregunta: ¿construyo yo mismo la automatización o uso una herramienta especializada?

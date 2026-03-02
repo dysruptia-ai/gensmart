@@ -5,6 +5,7 @@ date: "2026-02-10"
 author: "GenSmart Team"
 tags: ["comparison", "n8n", "automation"]
 cover_image: "/blog/cover-placeholder.svg"
+language: "en"
 ---
 
 N8N is a powerful automation tool. We have genuine respect for what it does. But when it comes to building and managing AI conversational agents for WhatsApp and web, the DIY approach has real costs — in time, complexity, and ongoing maintenance.

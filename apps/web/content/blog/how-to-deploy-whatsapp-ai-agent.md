@@ -5,6 +5,7 @@ date: "2026-02-20"
 author: "GenSmart Team"
 tags: ["whatsapp", "ai-agents", "tutorial"]
 cover_image: "/blog/cover-placeholder.svg"
+language: "en"
 ---
 
 Getting a WhatsApp AI agent live used to mean hiring a developer, waiting weeks, and spending thousands on setup. With GenSmart, you can go from zero to a fully functional agent in a single coffee break.

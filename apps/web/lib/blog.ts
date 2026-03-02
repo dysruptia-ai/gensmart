@@ -13,6 +13,7 @@ export interface BlogPostMeta {
   author: string;
   tags: string[];
   cover_image: string;
+  language: string;
 }
 
 export interface BlogPost extends BlogPostMeta {
@@ -42,6 +43,7 @@ export function getAllPosts(): BlogPostMeta[] {
       author: data['author'] ?? 'GenSmart Team',
       tags: Array.isArray(data['tags']) ? data['tags'] : [],
       cover_image: data['cover_image'] ?? '/blog/cover-placeholder.svg',
+      language: data['language'] ?? 'en',
     } satisfies BlogPostMeta;
   });
 
@@ -70,6 +72,7 @@ export function getPostBySlug(slug: string): BlogPost | null {
     author: data['author'] ?? 'GenSmart Team',
     tags: Array.isArray(data['tags']) ? data['tags'] : [],
     cover_image: data['cover_image'] ?? '/blog/cover-placeholder.svg',
+    language: data['language'] ?? 'en',
     content,
     html,
   };

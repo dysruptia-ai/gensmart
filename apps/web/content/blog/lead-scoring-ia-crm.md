@@ -5,6 +5,7 @@ date: "2026-02-25"
 author: "Equipo GenSmart"
 tags: ["crm", "lead-scoring", "ventas", "ia"]
 cover_image: "/blog/cover-placeholder.svg"
+language: "es"
 ---
 
 El equipo de ventas promedio desperdicia el 67% de su tiempo persiguiendo leads que nunca van a comprar. Llaman a personas que no tienen presupuesto, hacen seguimiento a prospectos que ya compraron con la competencia, o ignoran oportunidades calientes porque parecían frías al principio.
