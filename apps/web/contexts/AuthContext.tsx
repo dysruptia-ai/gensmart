@@ -18,6 +18,7 @@ export interface AuthUser {
   orgId: string;
   orgName: string;
   totpEnabled: boolean;
+  language: string;
 }
 
 interface LoginResult {

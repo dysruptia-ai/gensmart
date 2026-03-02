@@ -118,6 +118,11 @@
   color: #ffffff;
 }
 
+.langBtnActive {
+  color: #25D366;
+  font-weight: 600;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .columns {

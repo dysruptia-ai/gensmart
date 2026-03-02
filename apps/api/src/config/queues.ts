@@ -45,4 +45,14 @@ export const scoringQueue = new Queue('ai-scoring', {
   },
 });
 
+export const exportQueue = new Queue('data-export', {
+  connection: createBullConnection(),
+  defaultJobOptions: {
+    removeOnComplete: 50,
+    removeOnFail: 25,
+    attempts: 2,
+    backoff: { type: 'exponential', delay: 5000 },
+  },
+});
+
 export { createBullConnection };

@@ -27,6 +27,7 @@ export interface AuthTokens {
     orgId: string;
     orgName: string;
     totpEnabled: boolean;
+    language: string;
   };
 }
 
@@ -45,6 +46,7 @@ interface UserRow {
   totp_enabled: boolean;
   totp_secret_encrypted: string | null;
   last_login_at: string | null;
+  language: string;
 }
 
 interface OrgRow {
@@ -124,6 +126,7 @@ async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> 
       orgId: user.organization_id,
       orgName: org.name,
       totpEnabled: user.totp_enabled,
+      language: user.language ?? 'en',
     },
   };
 }
@@ -160,7 +163,7 @@ export async function register(input: {
     const userResult = await client.query<UserRow>(
       `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
        VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), NOW())
-       RETURNING id, email, name, role, organization_id, password_hash, totp_enabled, totp_secret_encrypted, last_login_at`,
+       RETURNING id, email, name, role, organization_id, password_hash, totp_enabled, totp_secret_encrypted, last_login_at, language`,
       [org.id, input.email.toLowerCase(), input.name, passwordHash]
     );
     const user = userResult.rows[0];
@@ -211,6 +214,7 @@ export async function register(input: {
         orgId: user.organization_id,
         orgName: org.name,
         totpEnabled: user.totp_enabled,
+        language: user.language ?? 'en',
       },
     };
   } catch (err) {
@@ -227,7 +231,7 @@ export async function login(input: {
 }): Promise<AuthTokens | TwoFactorRequired> {
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
-            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at
+            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language
      FROM users u
      WHERE u.email = $1`,
     [input.email.toLowerCase()]
@@ -272,7 +276,7 @@ export async function verify2FA(input: {
 
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
-            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at
+            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language
      FROM users u WHERE u.id = $1`,
     [payload.userId]
   );
@@ -342,7 +346,7 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
 
   const userResult = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
-            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at
+            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language
      FROM users u WHERE u.id = $1`,
     [storedToken.user_id]
   );

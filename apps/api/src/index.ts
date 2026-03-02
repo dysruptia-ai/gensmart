@@ -22,6 +22,7 @@ import { startRagWorker } from './workers/rag.worker';
 import { startScrapingWorker } from './workers/scraping.worker';
 import { startScoringWorker } from './workers/scoring.worker';
 import { startReminderWorker } from './workers/reminder.worker';
+import { startExportWorker } from './workers/export.worker';
 
 const app = express();
 
@@ -102,12 +103,13 @@ startRagWorker();
 startScrapingWorker();
 startScoringWorker();
 startReminderWorker();
+startExportWorker();
 
 // Start server
 httpServer.listen(env.PORT, () => {
   console.log(`GenSmart API running on port ${env.PORT}`);
   console.log(`WebSocket server ready`);
-  console.log(`Workers started: message, rag, scraping, scoring, reminder`);
+  console.log(`Workers started: message, rag, scraping, scoring, reminder, export`);
 });
 
 export default app;

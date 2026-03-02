@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import Avatar from '@/components/ui/Avatar';
 import Spinner from '@/components/ui/Spinner';
 import Skeleton from '@/components/ui/Skeleton';
@@ -28,14 +29,14 @@ import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, exact: true },
-  { label: 'Agents', path: '/dashboard/agents', icon: Bot },
-  { label: 'Conversations', path: '/dashboard/conversations', icon: MessageSquare },
-  { label: 'Contacts', path: '/dashboard/contacts', icon: Users },
-  { label: 'Funnel', path: '/dashboard/funnel', icon: GitBranch },
-  { label: 'Calendar', path: '/dashboard/calendar', icon: Calendar },
-  { label: 'Billing', path: '/dashboard/billing', icon: CreditCard },
-  { label: 'Settings', path: '/dashboard/settings', icon: Settings },
+  { labelKey: 'nav.dashboard', path: '/dashboard', icon: LayoutDashboard, exact: true },
+  { labelKey: 'nav.agents', path: '/dashboard/agents', icon: Bot },
+  { labelKey: 'nav.conversations', path: '/dashboard/conversations', icon: MessageSquare },
+  { labelKey: 'nav.contacts', path: '/dashboard/contacts', icon: Users },
+  { labelKey: 'nav.funnel', path: '/dashboard/funnel', icon: GitBranch },
+  { labelKey: 'nav.calendar', path: '/dashboard/calendar', icon: Calendar },
+  { labelKey: 'nav.billing', path: '/dashboard/billing', icon: CreditCard },
+  { labelKey: 'nav.settings', path: '/dashboard/settings', icon: Settings },
 ];
 
 interface UsageSummary {
@@ -46,6 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
+  const { t } = useTranslation();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [usageSummary, setUsageSummary] = React.useState<UsageSummary | null>(null);
@@ -126,7 +128,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 aria-current={active ? 'page' : undefined}
               >
                 <Icon size={18} aria-hidden="true" />
-                {item.label}
+                {t(item.labelKey)}
               </Link>
             );
           })}
@@ -186,14 +188,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       role="menuitem"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      <Settings size={14} aria-hidden="true" /> Settings
+                      <Settings size={14} aria-hidden="true" /> {t('nav.settings')}
                     </Link>
                     <button
                       className={styles.userDropdownItem}
                       role="menuitem"
                       onClick={handleLogout}
                     >
-                      <LogOut size={14} aria-hidden="true" /> Sign out
+                      <LogOut size={14} aria-hidden="true" /> {t('nav.logout')}
                     </button>
                   </div>
                 </>

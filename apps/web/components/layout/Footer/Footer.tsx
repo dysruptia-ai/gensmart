@@ -1,24 +1,28 @@
+'use client';
+
 import Link from 'next/link';
 import { Twitter, Linkedin, Globe } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './Footer.module.css';
 
 const PRODUCT_LINKS = [
-  { label: 'Features', href: '/#features' },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'Docs', href: '/docs/whatsapp-setup' },
+  { labelKey: 'landing.footer.features', href: '/#features' },
+  { labelKey: 'landing.footer.pricing', href: '/pricing' },
+  { labelKey: 'landing.footer.blog', href: '/blog' },
+  { labelKey: 'landing.footer.docs', href: '/docs/whatsapp-setup' },
 ];
 
 const COMPANY_LINKS = [
-  { label: 'About', href: '/about' },
-  { label: 'Contact', href: '/contact' },
+  { labelKey: 'landing.footer.about', href: '/about' },
+  { labelKey: 'landing.footer.contact', href: '/contact' },
 ];
 
 const LEGAL_LINKS = [
-  { label: 'Privacy Policy', href: '/legal/privacy-policy' },
-  { label: 'Terms of Service', href: '/legal/terms-of-service' },
-  { label: 'Cookie Policy', href: '/legal/cookie-policy' },
+  { labelKey: 'landing.footer.privacy', href: '/legal/privacy-policy' },
+  { labelKey: 'landing.footer.terms', href: '/legal/terms-of-service' },
+  { labelKey: 'landing.footer.cookie', href: '/legal/cookie-policy' },
 ];
 
 const SOCIAL_LINKS = [
@@ -27,22 +31,25 @@ const SOCIAL_LINKS = [
 ];
 
 const LANGUAGES = [
-  { code: 'en', label: 'EN' },
-  { code: 'es', label: 'ES' },
+  { code: 'en' as const, label: 'EN' },
+  { code: 'es' as const, label: 'ES' },
 ];
 
 export function Footer() {
+  const { language, setLanguage } = useLanguage();
+  const { t } = useTranslation();
+
   return (
     <footer className={styles.footer}>
       <div className={styles.inner}>
         <div className={styles.columns}>
           <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Product</h3>
+            <h3 className={styles.columnTitle}>{t('landing.footer.product')}</h3>
             <ul className={styles.linkList}>
               {PRODUCT_LINKS.map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className={styles.link}>
-                    {l.label}
+                    {t(l.labelKey)}
                   </Link>
                 </li>
               ))}
@@ -50,12 +57,12 @@ export function Footer() {
           </div>
 
           <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Company</h3>
+            <h3 className={styles.columnTitle}>{t('landing.footer.company')}</h3>
             <ul className={styles.linkList}>
               {COMPANY_LINKS.map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className={styles.link}>
-                    {l.label}
+                    {t(l.labelKey)}
                   </Link>
                 </li>
               ))}
@@ -63,12 +70,12 @@ export function Footer() {
           </div>
 
           <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Legal</h3>
+            <h3 className={styles.columnTitle}>{t('landing.footer.legal')}</h3>
             <ul className={styles.linkList}>
               {LEGAL_LINKS.map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className={styles.link}>
-                    {l.label}
+                    {t(l.labelKey)}
                   </Link>
                 </li>
               ))}
@@ -76,7 +83,7 @@ export function Footer() {
           </div>
 
           <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Connect</h3>
+            <h3 className={styles.columnTitle}>{t('landing.footer.connect')}</h3>
             <ul className={styles.linkList}>
               {SOCIAL_LINKS.map((s) => (
                 <li key={s.href}>
@@ -100,7 +107,7 @@ export function Footer() {
           <div className={styles.bottomLeft}>
             <Logo size="md" variant="full" color="white" href="/" />
             <p className={styles.copyright}>
-              © 2026 GenSmart. All rights reserved.
+              {t('landing.footer.copyright', { year: new Date().getFullYear() })}
             </p>
           </div>
 
@@ -109,7 +116,11 @@ export function Footer() {
             {LANGUAGES.map((lang, i) => (
               <span key={lang.code} className={styles.langGroup}>
                 {i > 0 && <span className={styles.langDivider}>/</span>}
-                <button className={styles.langBtn} aria-label={`Switch to ${lang.label}`}>
+                <button
+                  className={`${styles.langBtn} ${language === lang.code ? styles.langBtnActive : ''}`}
+                  aria-label={`Switch to ${lang.label}`}
+                  onClick={() => setLanguage(lang.code)}
+                >
                   {lang.label}
                 </button>
               </span>

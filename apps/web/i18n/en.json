@@ -1,0 +1,871 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search...",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "of": "of",
+    "all": "All",
+    "none": "None",
+    "actions": "Actions",
+    "status": "Status",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "date": "Date",
+    "type": "Type",
+    "description": "Description",
+    "error": "Something went wrong",
+    "tryAgain": "Try again",
+    "learnMore": "Learn more",
+    "viewAll": "View all",
+    "copyToClipboard": "Copy to clipboard",
+    "copied": "Copied!",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "active": "Active",
+    "inactive": "Inactive",
+    "upgrade": "Upgrade",
+    "optional": "Optional"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "agents": "Agents",
+    "conversations": "Conversations",
+    "contacts": "Contacts",
+    "funnel": "Funnel",
+    "calendar": "Calendar",
+    "billing": "Billing",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "blog": "Blog",
+      "login": "Log in",
+      "getStarted": "Get Started Free"
+    },
+    "hero": {
+      "title": "Create & Deploy AI Agents in Minutes, Not Weeks",
+      "subtitle": "Build intelligent conversational agents for WhatsApp and Web. Capture leads, book appointments, and qualify prospects — automatically.",
+      "cta": "Start Free",
+      "ctaSecondary": "See Demo",
+      "noCard": "No credit card required",
+      "agentsActive": "AI agents active",
+      "leadsMonth": "Leads captured/mo",
+      "uptime": "Uptime"
+    },
+    "features": {
+      "title": "Everything you need to convert visitors into customers",
+      "subtitle": "GenSmart combines the power of AI with the channels your customers already use.",
+      "multiChannel": {
+        "title": "Multi-Channel Deployment",
+        "description": "Deploy to WhatsApp Business and web simultaneously. Meet your customers where they already are."
+      },
+      "leadCapture": {
+        "title": "Intelligent Lead Capture",
+        "description": "AI automatically captures and qualifies leads through natural conversation. No forms, no friction."
+      },
+      "ragKnowledge": {
+        "title": "Knowledge Base & RAG",
+        "description": "Upload documents and URLs. Your agent answers questions with accurate, context-aware responses."
+      },
+      "humanTakeover": {
+        "title": "Human Takeover",
+        "description": "Seamlessly transfer conversations to human agents when needed. Stay in control at all times."
+      },
+      "analytics": {
+        "title": "Analytics & Scoring",
+        "description": "AI scores every lead automatically. Focus your sales team on the highest-value prospects."
+      },
+      "appointments": {
+        "title": "Appointment Scheduling",
+        "description": "Let your AI agent book appointments directly in your calendar. No back-and-forth emails."
+      }
+    },
+    "howItWorks": {
+      "title": "Get started in minutes",
+      "subtitle": "From zero to deployed AI agent in less than 10 minutes.",
+      "step1": {
+        "title": "Create your agent",
+        "description": "Define your agent's persona, knowledge base, and goals. Use AI to generate the perfect system prompt."
+      },
+      "step2": {
+        "title": "Connect your channels",
+        "description": "Integrate with WhatsApp Business or embed the web widget on your site with a single line of code."
+      },
+      "step3": {
+        "title": "Capture leads automatically",
+        "description": "Your agent qualifies prospects, captures contact info, and books appointments — 24/7."
+      }
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "Start free, scale as you grow. No hidden fees.",
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly",
+      "save10": "Save 10%",
+      "save20": "Save 20%",
+      "perMonth": "/month",
+      "free": "Free",
+      "forever": "forever",
+      "startFree": "Start Free",
+      "getStarted": "Get Started",
+      "currentPlan": "Current Plan",
+      "contactSales": "Contact Sales",
+      "mostPopular": "Most Popular"
+    },
+    "testimonials": {
+      "title": "Trusted by businesses worldwide",
+      "subtitle": "See how GenSmart is transforming how businesses connect with customers."
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "subtitle": "Everything you need to know about GenSmart."
+    },
+    "finalCta": {
+      "title": "Ready to transform your customer conversations?",
+      "subtitle": "Join thousands of businesses using GenSmart to capture leads and grow revenue.",
+      "cta": "Start Free — No Credit Card Required",
+      "ctaSecondary": "Schedule a Demo"
+    },
+    "footer": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "connect": "Connect",
+      "language": "Language",
+      "copyright": "© {year} GenSmart. All rights reserved.",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "cookie": "Cookie Policy",
+      "features": "Features",
+      "pricing": "Pricing",
+      "blog": "Blog",
+      "docs": "Docs",
+      "about": "About",
+      "contact": "Contact"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account",
+      "email": "Email address",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up",
+      "invalidCredentials": "Invalid email or password",
+      "twoFactorRequired": "Enter your 2FA code"
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Start building AI agents for free",
+      "name": "Full name",
+      "orgName": "Organization name",
+      "email": "Email address",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in",
+      "terms": "By creating an account, you agree to our {terms} and {privacy}",
+      "termsLink": "Terms of Service",
+      "privacyLink": "Privacy Policy"
+    },
+    "forgotPassword": {
+      "title": "Forgot your password?",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "email": "Email address",
+      "submit": "Send reset link",
+      "backToLogin": "Back to login",
+      "successMessage": "Check your inbox! We've sent a password reset link.",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up"
+    },
+    "resetPassword": {
+      "title": "Reset your password",
+      "subtitle": "Choose a new password for your account",
+      "password": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password",
+      "success": "Password reset successfully. You can now sign in.",
+      "invalidToken": "This reset link is invalid or has expired."
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "subtitle": "Enter the 6-digit code from your authenticator app",
+      "code": "Verification code",
+      "submit": "Verify",
+      "backupCode": "Use backup code",
+      "backToLogin": "Back to login",
+      "invalidCode": "Invalid or expired code"
+    }
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back, {name}",
+    "stats": {
+      "leadsThisMonth": "Leads this month",
+      "activeConversations": "Active conversations",
+      "avgLeadScore": "Avg Lead Score",
+      "messagesUsed": "Messages used",
+      "vsLastMonth": "vs last month",
+      "today": "Today: {count}",
+      "thisWeek": "Week: {count}",
+      "currentlyOpen": "Currently open",
+      "acrossAllContacts": "Across all scored contacts",
+      "messagesCount": "{used} / {limit} messages"
+    },
+    "leadsChart": {
+      "title": "New Leads",
+      "noData": "No leads data for this period",
+      "lastDays": "Last {days} days"
+    },
+    "funnelOverview": {
+      "title": "Funnel Overview",
+      "totalContacts": "Total contacts",
+      "lead": "Lead",
+      "opportunity": "Opportunity",
+      "customer": "Customer"
+    },
+    "topAgents": {
+      "title": "Top Agents",
+      "agent": "Agent",
+      "convos": "Convos",
+      "contacts": "Contacts",
+      "score": "Score",
+      "noAgents": "No agents yet"
+    },
+    "recentLeads": {
+      "title": "Recent High-Score Leads",
+      "name": "Name",
+      "score": "Score",
+      "agent": "Agent",
+      "date": "Date",
+      "noLeads": "No high-score leads yet"
+    }
+  },
+  "agents": {
+    "title": "Agents",
+    "create": "Create Agent",
+    "search": "Search agents...",
+    "empty": {
+      "title": "No agents yet",
+      "description": "Create your first AI agent to start capturing leads and conversations",
+      "cta": "Create your first agent"
+    },
+    "card": {
+      "conversations": "{count} conversations",
+      "lastActive": "Last active {date}",
+      "draft": "Draft",
+      "published": "Published",
+      "paused": "Paused"
+    },
+    "editor": {
+      "tabs": {
+        "prompt": "Prompt",
+        "variables": "Variables",
+        "tools": "Tools",
+        "knowledge": "Knowledge",
+        "channels": "Channels",
+        "settings": "Settings"
+      },
+      "preview": "Preview",
+      "publish": "Publish",
+      "save": "Save",
+      "publishConfirm": "Publish this agent? It will be available on all configured channels.",
+      "publishSuccess": "Agent published successfully",
+      "saveSuccess": "Agent saved",
+      "generatePrompt": "Generate with AI",
+      "generatePromptPlaceholder": "Describe your agent in natural language. E.g.: A customer service agent for a dental clinic that captures patient data...",
+      "generatePromptCta": "Generate Prompt",
+      "generating": "Generating...",
+      "systemPrompt": "System Prompt",
+      "systemPromptPlaceholder": "You are a helpful AI assistant...",
+      "agentName": "Agent Name",
+      "agentNamePlaceholder": "My AI Agent",
+      "version": "Version {number}",
+      "rollback": "Rollback to this version",
+      "agentType": "Agent Type",
+      "model": "AI Model",
+      "temperature": "Temperature",
+      "maxTokens": "Max tokens per response",
+      "contextWindow": "Context window (messages)",
+      "language": "Language",
+      "deleteAgent": "Delete Agent",
+      "deleteConfirm": "Delete this agent? All conversations and configurations will be permanently removed.",
+      "applyPrompt": "Apply Prompt",
+      "overwriteWarning": "This will overwrite your current system prompt. Continue?",
+      "previewTitle": "Preview",
+      "previewPlaceholder": "Type a message to test your agent...",
+      "previewReset": "Reset conversation",
+      "previewSend": "Send"
+    },
+    "variables": {
+      "title": "Variables",
+      "add": "Add Variable",
+      "name": "Variable name",
+      "type": "Type",
+      "required": "Required",
+      "description": "Description",
+      "options": "Options (comma separated)",
+      "string": "Text",
+      "enum": "Options",
+      "noVariables": "No variables defined",
+      "addFirst": "Add your first variable to capture lead information",
+      "namePlaceholder": "e.g. customer_name",
+      "descriptionPlaceholder": "What information does this variable capture?"
+    },
+    "tools": {
+      "title": "Tools",
+      "add": "Add Tool",
+      "scheduling": "Scheduling",
+      "rag": "Knowledge Base Search",
+      "customFunction": "Custom Function",
+      "mcp": "MCP Server",
+      "webScraping": "Web Scraping",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "test": "Test",
+      "configure": "Configure",
+      "noTools": "No tools configured",
+      "addFirst": "Add tools to extend your agent's capabilities",
+      "testSuccess": "Tool test successful",
+      "testFailed": "Tool test failed"
+    },
+    "knowledge": {
+      "title": "Knowledge Base",
+      "upload": "Upload File",
+      "addUrl": "Add URL",
+      "dragDrop": "Drag and drop files here, or click to browse",
+      "supportedFormats": "Supported formats: PDF, MD, TXT",
+      "processing": "Processing...",
+      "ready": "Ready",
+      "failed": "Failed",
+      "chunks": "{count} chunks",
+      "reprocess": "Reprocess",
+      "noFiles": "No knowledge files yet",
+      "addFirst": "Upload documents or add URLs to give your agent specialized knowledge",
+      "fileLimit": "{used} of {limit} files used",
+      "urlPlaceholder": "https://example.com/docs"
+    },
+    "channels": {
+      "web": "Web Widget",
+      "whatsapp": "WhatsApp",
+      "webDescription": "Embed a chat widget on any website with a single line of code",
+      "whatsappDescription": "Connect your WhatsApp Business number to handle customer conversations",
+      "snippet": "Widget Code Snippet",
+      "copySnippet": "Copy snippet",
+      "snippetCopied": "Snippet copied!",
+      "customize": "Customize Widget",
+      "primaryColor": "Primary color",
+      "welcomeMessage": "Welcome message",
+      "welcomeMessagePlaceholder": "Hello! How can I help you today?",
+      "position": "Position",
+      "bottomRight": "Bottom right",
+      "bottomLeft": "Bottom left",
+      "bubbleText": "Bubble text",
+      "bubbleTextPlaceholder": "Chat with us",
+      "whatsappConnect": "Connect WhatsApp",
+      "whatsappConnected": "Connected",
+      "whatsappDisconnect": "Disconnect",
+      "whatsappStatus": "WhatsApp Status",
+      "requiresPro": "WhatsApp requires Pro plan or higher"
+    },
+    "templates": {
+      "title": "Start from a template",
+      "subtitle": "Choose a template or start from scratch",
+      "useTemplate": "Use this template",
+      "startFromScratch": "Start from scratch",
+      "orStartFromScratch": "Or start from scratch",
+      "backToTemplates": "Back to templates"
+    }
+  },
+  "conversations": {
+    "title": "Conversations",
+    "search": "Search conversations...",
+    "empty": {
+      "title": "No conversations yet",
+      "description": "Conversations will appear here when visitors chat with your agents"
+    },
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "closed": "Closed",
+      "takeover": "Human Takeover"
+    },
+    "chat": {
+      "typeMessage": "Type a message...",
+      "send": "Send",
+      "takeover": "Take Over",
+      "release": "Release to AI",
+      "takeoverBanner": "You are now controlling this conversation",
+      "releaseBanner": "The AI agent will resume when you release",
+      "close": "Close Conversation",
+      "closeConfirm": "Close this conversation? The AI agent will stop responding.",
+      "aiAgent": "AI Agent",
+      "humanAgent": "Human Agent",
+      "visitor": "Visitor",
+      "sendingAs": "Sending as human agent",
+      "interventionSummary": "Intervention summary generated"
+    },
+    "variables": {
+      "title": "Captured Variables",
+      "noVariables": "No variables captured yet",
+      "waitingForInfo": "The agent will capture information as the conversation progresses"
+    },
+    "contactInfo": {
+      "title": "Contact Info",
+      "noContact": "No contact linked yet",
+      "viewContact": "View contact",
+      "channel": "Channel",
+      "agent": "Agent",
+      "started": "Started",
+      "lastMessage": "Last message"
+    }
+  },
+  "contacts": {
+    "title": "Contacts",
+    "search": "Search contacts...",
+    "create": "Add Contact",
+    "export": "Export CSV",
+    "exportSuccess": "Export started — downloading...",
+    "empty": {
+      "title": "No contacts yet",
+      "description": "Contacts are created automatically when visitors interact with your agents"
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "agent": "Agent",
+      "score": "Score",
+      "stage": "Stage",
+      "service": "Service",
+      "date": "Created"
+    },
+    "detail": {
+      "aiSummary": "AI Summary",
+      "score": "Lead Score",
+      "service": "Service Interest",
+      "conversations": "Conversations",
+      "timeline": "Timeline",
+      "notes": "Notes",
+      "notesPlaceholder": "Add notes about this contact...",
+      "saveNotes": "Save notes",
+      "customVariables": "Captured Variables",
+      "deleteContact": "Delete Contact",
+      "deleteConfirm": "Delete this contact? All conversations, messages, and associated data will be permanently removed. This action cannot be undone.",
+      "noConversations": "No conversations yet",
+      "funnelStage": "Funnel Stage",
+      "moveTo": "Move to {stage}",
+      "reanalyze": "Re-analyze with AI",
+      "analyzing": "Analyzing...",
+      "back": "Back to Contacts",
+      "editContact": "Edit Contact",
+      "phone": "Phone",
+      "email": "Email",
+      "createdAt": "Created"
+    },
+    "stages": {
+      "lead": "Lead",
+      "opportunity": "Opportunity",
+      "customer": "Customer"
+    }
+  },
+  "funnel": {
+    "title": "Sales Funnel",
+    "stats": {
+      "total": "Total",
+      "conversion": "Conversion rate",
+      "topScore": "Top score"
+    },
+    "empty": {
+      "title": "No contacts in this stage",
+      "description": "Contacts move here automatically based on their AI score"
+    },
+    "filterByAgent": "Filter by agent",
+    "allAgents": "All agents",
+    "dragToMove": "Drag cards to move contacts between stages"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "create": "Create Calendar",
+    "noCalendars": "No calendars yet",
+    "noCalendarsDesc": "Create a calendar to enable appointment scheduling for your agents",
+    "empty": {
+      "title": "No appointments this day",
+      "description": "No appointments scheduled for the selected day"
+    },
+    "config": {
+      "name": "Calendar name",
+      "namePlaceholder": "Main Calendar",
+      "timezone": "Timezone",
+      "availableDays": "Available days",
+      "availableHours": "Available hours",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "slotDuration": "Slot duration (minutes)",
+      "bufferMinutes": "Buffer between appointments (minutes)",
+      "maxAdvanceDays": "Max days in advance",
+      "createCalendar": "Create Calendar",
+      "cancel": "Cancel"
+    },
+    "appointment": {
+      "title": "Appointment",
+      "new": "New Appointment",
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "noShow": "No Show",
+      "contact": "Contact",
+      "time": "Time",
+      "duration": "Duration",
+      "notes": "Notes",
+      "selectDate": "Select a date",
+      "selectSlot": "Select a time slot",
+      "noSlots": "No available slots for this date",
+      "book": "Book Appointment",
+      "cancel": "Cancel Appointment",
+      "cancelConfirm": "Cancel this appointment? This action cannot be undone.",
+      "minutes": "{count} minutes"
+    },
+    "days": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat",
+      "sun": "Sun"
+    },
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "currentPlan": {
+      "title": "Current Plan",
+      "free": "Free",
+      "starter": "Starter",
+      "pro": "Pro",
+      "enterprise": "Enterprise",
+      "renewsOn": "Renews on {date}",
+      "cancelsOn": "Cancels on {date}",
+      "changePlan": "Change Plan",
+      "manageSubscription": "Manage Subscription",
+      "cancelSubscription": "Cancel Subscription",
+      "subscriptionActive": "Active",
+      "subscriptionCancelled": "Cancelled",
+      "subscriptionPastDue": "Past Due"
+    },
+    "usage": {
+      "title": "Usage This Month",
+      "messages": "Messages",
+      "agents": "Agents",
+      "contacts": "Contacts",
+      "knowledgeFiles": "Knowledge Files",
+      "of": "{used} of {limit}",
+      "unlimited": "Unlimited",
+      "percentUsed": "{percent}% used"
+    },
+    "addons": {
+      "title": "Need more messages?",
+      "subtitle": "Buy additional messages that don't expire",
+      "messages500": "500 messages",
+      "messages2000": "2,000 messages",
+      "messages5000": "5,000 messages",
+      "oneTime": "One-time purchase",
+      "buy": "Buy"
+    },
+    "invoices": {
+      "title": "Invoice History",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status",
+      "paid": "Paid",
+      "pending": "Pending",
+      "download": "Download",
+      "noInvoices": "No invoices yet"
+    },
+    "upgrade": {
+      "title": "Upgrade your plan",
+      "description": "You've reached the limit of your current plan. Upgrade to continue.",
+      "limitReached": "Limit reached",
+      "upgradeNow": "Upgrade now",
+      "viewPlans": "View all plans"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "Perfect for getting started"
+      },
+      "starter": {
+        "name": "Starter",
+        "description": "For small businesses"
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "For growing teams"
+      },
+      "enterprise": {
+        "name": "Enterprise",
+        "description": "For large organizations"
+      }
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "general": {
+      "title": "General Settings",
+      "description": "Manage your organization details and preferences.",
+      "organization": "Organization",
+      "orgName": "Organization name",
+      "plan": "Plan",
+      "timezone": "Timezone",
+      "language": "Language",
+      "languages": {
+        "en": "English",
+        "es": "Español"
+      },
+      "save": "Save changes",
+      "saved": "Settings saved successfully",
+      "preferences": "Preferences"
+    },
+    "team": {
+      "title": "Team",
+      "description": "Manage your team members and their roles.",
+      "invite": "Invite Member",
+      "inviteEmail": "Email address",
+      "role": "Role",
+      "admin": "Admin",
+      "member": "Member",
+      "owner": "Owner",
+      "remove": "Remove",
+      "removeConfirm": "Remove this team member from your organization?",
+      "inviteSent": "Invitation sent successfully",
+      "noMembers": "No team members yet",
+      "addFirst": "Invite your first team member"
+    },
+    "security": {
+      "title": "Security",
+      "description": "Manage your account security settings.",
+      "twoFactor": "Two-Factor Authentication",
+      "twoFactorDescription": "Add an extra layer of security to your account using an authenticator app",
+      "twoFactorEnabled": "2FA is enabled",
+      "enable2fa": "Enable 2FA",
+      "disable2fa": "Disable 2FA",
+      "scanQr": "Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)",
+      "enterCode": "Enter the 6-digit code to confirm",
+      "backupCodes": "Backup Codes",
+      "backupCodesDescription": "Save these codes in a safe place. Each code can only be used once to sign in if you lose access to your authenticator.",
+      "verify": "Verify & Enable",
+      "changePassword": "Change Password",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmNewPassword": "Confirm new password",
+      "passwordChanged": "Password changed successfully",
+      "disablePassword": "Enter your password to disable 2FA"
+    },
+    "data": {
+      "title": "Data & Privacy",
+      "description": "Manage your data and account deletion.",
+      "export": {
+        "title": "Export My Data",
+        "description": "Download a complete copy of all your data including organization info, contacts, conversations, agents, and billing history. The export will be prepared as a ZIP file.",
+        "request": "Request Data Export",
+        "requesting": "Requesting export...",
+        "processing": "Preparing your data export...",
+        "processingSubtitle": "This may take a few minutes. You can leave this page and come back.",
+        "ready": "Your data export is ready",
+        "download": "Download ZIP",
+        "expiresIn": "Download expires in {days} days",
+        "expired": "Export expired",
+        "requestNew": "Request New Export",
+        "alreadyQueued": "An export is already being prepared",
+        "errorRequesting": "Failed to request export"
+      },
+      "deleteAccount": {
+        "title": "Delete Account",
+        "description": "Permanently delete your account, organization, and all associated data. This action cannot be undone.",
+        "warning": "This will permanently delete:",
+        "warningItems": {
+          "org": "Your organization and all settings",
+          "agents": "All AI agents and their configurations",
+          "conversations": "All conversations and messages",
+          "contacts": "All contacts and CRM data",
+          "subscription": "Your Stripe subscription (cancelled immediately)"
+        },
+        "gracePeriod": "You have a 30-day grace period to cancel the deletion before it takes effect.",
+        "scheduledFor": "Account scheduled for deletion on {date}",
+        "cancelDeletion": "Cancel Deletion",
+        "deletionCancelled": "Account deletion cancelled",
+        "confirmButton": "Delete My Account",
+        "confirmImmediately": "Delete Immediately",
+        "confirmImmediatelyWarning": "This will permanently delete everything RIGHT NOW. No grace period. This cannot be undone.",
+        "enterPassword": "Enter your password to confirm",
+        "reason": "Reason for leaving (optional)",
+        "reasonPlaceholder": "Tell us why you're leaving...",
+        "reasons": {
+          "tooExpensive": "Too expensive",
+          "notUseful": "Not useful for my needs",
+          "switchingProvider": "Switching to another provider",
+          "other": "Other"
+        },
+        "deleteModal": {
+          "title": "Delete Account",
+          "warning": "This will schedule your account for deletion in 30 days. Your Stripe subscription will be cancelled immediately.",
+          "immediateTitle": "Delete Everything Now",
+          "immediateWarning": "This is permanent. All data will be deleted immediately. No grace period.",
+          "cancelButton": "Cancel",
+          "confirmButton": "Delete My Account",
+          "confirmImmediateButton": "Delete Everything Now"
+        },
+        "deleting": "Deleting..."
+      }
+    },
+    "subAccounts": {
+      "title": "Sub-accounts",
+      "description": "Manage your sub-accounts for different brands or clients.",
+      "create": "Create Sub-account",
+      "name": "Sub-account name",
+      "label": "Label",
+      "switch": "Switch to",
+      "remove": "Remove",
+      "removeConfirm": "Remove this sub-account? This will not delete the organization.",
+      "noSubAccounts": "No sub-accounts yet",
+      "requiresEnterprise": "Sub-accounts require Enterprise plan"
+    },
+    "apiKeys": {
+      "title": "API Keys",
+      "description": "Bring your own API keys to remove message limits.",
+      "openai": "OpenAI API Key",
+      "anthropic": "Anthropic API Key",
+      "keyPlaceholder": "sk-...",
+      "save": "Save Keys",
+      "test": "Test Key",
+      "testSuccess": "Key is valid",
+      "testFailed": "Invalid key",
+      "requiresEnterprise": "BYO API Keys require Enterprise plan"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "empty": "No notifications",
+    "emptySubtitle": "You're all caught up!",
+    "types": {
+      "high_score_lead": "High-score lead detected",
+      "plan_usage_80": "Plan usage at 80%",
+      "plan_usage_100": "Plan limit reached",
+      "takeover_needed": "Human takeover requested",
+      "appointment_reminder": "Appointment reminder",
+      "data_export_ready": "Data export ready",
+      "account_deletion_scheduled": "Account deletion scheduled"
+    }
+  },
+  "widget": {
+    "poweredBy": "Powered by GenSmart",
+    "inputPlaceholder": "Type a message...",
+    "send": "Send",
+    "title": "Chat"
+  },
+  "errors": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email address",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordsNotMatch": "Passwords do not match",
+    "unauthorized": "Session expired. Please sign in again.",
+    "forbidden": "You don't have permission to perform this action",
+    "notFound": "Not found",
+    "serverError": "Server error. Please try again later.",
+    "networkError": "Network error. Check your internet connection.",
+    "rateLimited": "Too many requests. Please wait a moment.",
+    "planLimitReached": "You've reached the limit for your current plan. Upgrade to continue.",
+    "fileTooBig": "File is too large. Maximum size is {size}MB.",
+    "unsupportedFormat": "Unsupported file format",
+    "generic": "Something went wrong. Please try again."
+  },
+  "pricing": {
+    "title": "Simple, transparent pricing",
+    "subtitle": "Start free, scale as you grow",
+    "monthly": "Monthly",
+    "quarterly": "Quarterly",
+    "yearly": "Yearly",
+    "save10": "Save 10%",
+    "save20": "Save 20%",
+    "perMonth": "/month",
+    "free": "Free",
+    "forever": "forever",
+    "startFree": "Start Free",
+    "getStarted": "Get Started",
+    "currentPlan": "Current Plan",
+    "contactSales": "Contact Sales",
+    "mostPopular": "Most Popular",
+    "compareFeatures": "Compare all features",
+    "features": {
+      "agents": "{count} agent | {count} agents",
+      "messages": "{count} messages/month",
+      "contacts": "{count} contacts",
+      "webChannel": "Web chat widget",
+      "whatsappChannel": "WhatsApp Business",
+      "knowledgeFiles": "{count} knowledge file | {count} knowledge files",
+      "customFunctions": "Custom functions",
+      "mcpServers": "MCP servers",
+      "subAccounts": "Sub-accounts",
+      "humanTakeover": "Human takeover",
+      "allModels": "All AI models",
+      "byoKey": "BYO API Key (unlimited messages)",
+      "prioritySupport": "Priority support",
+      "dedicatedSupport": "Dedicated support"
+    },
+    "faq": {
+      "q1": "Can I change my plan at any time?",
+      "a1": "Yes, you can upgrade or downgrade your plan at any time. Changes take effect immediately.",
+      "q2": "What happens when I reach my message limit?",
+      "a2": "Your agents will stop responding until the next billing cycle, or you can purchase additional message packs.",
+      "q3": "Do you offer refunds?",
+      "a3": "We offer a 14-day money-back guarantee for all paid plans.",
+      "q4": "Can I use my own OpenAI or Anthropic API key?",
+      "a4": "Yes! Enterprise plan users can bring their own API keys to remove all message limits."
+    }
+  }
+}

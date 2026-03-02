@@ -5,6 +5,7 @@ import { validate } from '../middleware/validate';
 import { requireAuth } from '../middleware/auth';
 import * as authService from '../services/auth.service';
 import { registerSchema, loginSchema } from '@gensmart/shared';
+import { query } from '../config/database';
 
 const router = Router();
 
@@ -31,6 +32,11 @@ const enable2FASchema = z.object({
 
 const disable2FASchema = z.object({
   password: z.string().min(1),
+});
+
+const updateMeSchema = z.object({
+  language: z.enum(['en', 'es']).optional(),
+  name: z.string().min(1).max(255).optional(),
 });
 
 function setRefreshCookie(res: Response, token: string): void {
@@ -195,6 +201,47 @@ router.post(
       const tokens = await authService.verify2FA(req.body);
       setRefreshCookie(res, tokens.refreshToken);
       res.json({ accessToken: tokens.accessToken, user: tokens.user });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Update current user preferences (language, name)
+router.put(
+  '/me',
+  requireAuth,
+  validate(updateMeSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { language, name } = req.body as z.infer<typeof updateMeSchema>;
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let idx = 1;
+
+      if (language !== undefined) {
+        sets.push(`language = $${idx++}`);
+        params.push(language);
+      }
+      if (name !== undefined) {
+        sets.push(`name = $${idx++}`);
+        params.push(name);
+      }
+
+      if (sets.length === 0) {
+        res.json({ message: 'No changes' });
+        return;
+      }
+
+      sets.push(`updated_at = NOW()`);
+      params.push(req.user!.userId);
+
+      await query(
+        `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx}`,
+        params
+      );
+
+      res.json({ message: 'Profile updated' });
     } catch (err) {
       next(err);
     }

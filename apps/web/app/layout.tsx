@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Handjet } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ToastProvider } from '@/components/ui/Toast';
 
 const inter = Inter({
@@ -30,9 +31,11 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${handjet.variable}`}>
       <body>
         <AuthProvider>
-          <ToastProvider>
-            {children}
-          </ToastProvider>
+          <LanguageProvider>
+            <ToastProvider>
+              {children}
+            </ToastProvider>
+          </LanguageProvider>
         </AuthProvider>
       </body>
     </html>

@@ -53,7 +53,8 @@ export async function updateOrganization(
     params.push(data.name);
   }
   if (data.settings !== undefined) {
-    sets.push(`settings = $${idx++}::jsonb`);
+    // Merge into existing settings (|| operator in PostgreSQL JSONB merges top-level keys)
+    sets.push(`settings = COALESCE(settings, '{}'::jsonb) || $${idx++}::jsonb`);
     params.push(JSON.stringify(data.settings));
   }
 
