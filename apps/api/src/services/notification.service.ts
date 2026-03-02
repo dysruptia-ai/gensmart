@@ -59,7 +59,7 @@ function rowToNotification(row: NotificationRow): Notification {
 
 async function getOrgUsers(organizationId: string): Promise<Array<{ id: string; name: string; email: string }>> {
   const result = await query<{ id: string; name: string; email: string }>(
-    `SELECT id, name, email FROM users WHERE organization_id = $1 AND is_active = true`,
+    `SELECT id, name, email FROM users WHERE organization_id = $1`,
     [organizationId]
   );
   return result.rows;
