@@ -3,11 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Check, Minus } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './pricing.module.css';
-
-// Note: metadata can't be exported from 'use client' files in Next.js.
-// For SEO on this page, metadata is set via generateMetadata in a server wrapper.
-// Since this whole page needs the toggle (client state), we put metadata in layout or a parent server component.
 
 type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
 
@@ -17,7 +14,7 @@ const PLANS = [
     name: 'Free',
     monthlyPrice: 0,
     highlight: false,
-    cta: 'Get Started',
+    ctaKey: 'pricing.getStarted' as const,
     href: '/register',
   },
   {
@@ -25,7 +22,7 @@ const PLANS = [
     name: 'Starter',
     monthlyPrice: 29,
     highlight: false,
-    cta: 'Start Free Trial',
+    ctaKey: 'pricing.startFreeTrial' as const,
     href: '/register?plan=starter',
   },
   {
@@ -33,7 +30,7 @@ const PLANS = [
     name: 'Pro',
     monthlyPrice: 79,
     highlight: true,
-    cta: 'Start Free Trial',
+    ctaKey: 'pricing.startFreeTrial' as const,
     href: '/register?plan=pro',
   },
   {
@@ -41,28 +38,15 @@ const PLANS = [
     name: 'Enterprise',
     monthlyPrice: 199,
     highlight: false,
-    cta: 'Contact Sales',
+    ctaKey: 'pricing.contactSales' as const,
     href: 'mailto:sales@gensmart.ai',
   },
 ];
 
-function getDisplayPrice(monthly: number, cycle: BillingCycle) {
-  if (monthly === 0) return { price: '0', note: 'Forever free' };
-  if (cycle === 'quarterly') {
-    const monthly_discounted = Math.round(monthly * 0.9);
-    return { price: String(monthly_discounted), note: `$${monthly_discounted * 3} billed quarterly` };
-  }
-  if (cycle === 'yearly') {
-    const monthly_discounted = Math.round(monthly * 0.8);
-    return { price: String(monthly_discounted), note: `$${monthly_discounted * 12} billed yearly` };
-  }
-  return { price: String(monthly), note: 'Billed monthly' };
-}
-
 type FeatureValue = string | boolean | null;
 
 interface FeatureGroup {
-  groupTitle: string;
+  groupKey: string;
   rows: {
     label: string;
     values: [FeatureValue, FeatureValue, FeatureValue, FeatureValue];
@@ -71,7 +55,7 @@ interface FeatureGroup {
 
 const FEATURE_GROUPS: FeatureGroup[] = [
   {
-    groupTitle: 'Core',
+    groupKey: 'core',
     rows: [
       { label: 'AI Agents', values: ['1', '3', '10', 'Unlimited'] },
       { label: 'Messages / month', values: ['50', '1,000', '5,000', '25,000'] },
@@ -80,14 +64,14 @@ const FEATURE_GROUPS: FeatureGroup[] = [
     ],
   },
   {
-    groupTitle: 'Channels',
+    groupKey: 'channels',
     rows: [
       { label: 'Web widget', values: [true, true, true, true] },
       { label: 'WhatsApp Business', values: [false, true, true, true] },
     ],
   },
   {
-    groupTitle: 'AI',
+    groupKey: 'ai',
     rows: [
       { label: 'LLM Models', values: ['GPT-4o-mini', 'GPT-4o-mini + Haiku', 'All models', 'All models'] },
       { label: 'Context window', values: ['10 msgs', '15 msgs', '25 msgs', '50 msgs'] },
@@ -96,7 +80,7 @@ const FEATURE_GROUPS: FeatureGroup[] = [
     ],
   },
   {
-    groupTitle: 'CRM & Advanced',
+    groupKey: 'crmAdvanced',
     rows: [
       { label: 'Knowledge base files', values: ['1', '5', '20', 'Unlimited'] },
       { label: 'Custom functions', values: [false, '2', '10', 'Unlimited'] },
@@ -108,28 +92,9 @@ const FEATURE_GROUPS: FeatureGroup[] = [
 ];
 
 const ADD_ONS = [
-  { messages: '500 messages', price: '$10', period: 'one-time' },
-  { messages: '2,000 messages', price: '$30', period: 'one-time' },
-  { messages: '5,000 messages', price: '$60', period: 'one-time' },
-];
-
-const PRICING_FAQ = [
-  {
-    q: 'Can I change plans anytime?',
-    a: 'Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately; downgrades apply at the next billing cycle.',
-  },
-  {
-    q: 'What happens when I hit my message limit?',
-    a: "Your agents pause automatically. We'll notify you at 80% so you can upgrade or purchase add-on messages before hitting the limit.",
-  },
-  {
-    q: 'Do unused messages roll over?',
-    a: 'No, message limits reset on the 1st of each month. Add-on message packs are non-cumulative and expire at month end.',
-  },
-  {
-    q: 'What payment methods do you accept?',
-    a: 'We accept all major credit cards (Visa, Mastercard, American Express) via Stripe. Enterprise plans can also be paid by invoice.',
-  },
+  { messages: '500 messages', price: '$10' },
+  { messages: '2,000 messages', price: '$30' },
+  { messages: '5,000 messages', price: '$60' },
 ];
 
 function CellValue({ value }: { value: FeatureValue }) {
@@ -149,18 +114,37 @@ function CellValue({ value }: { value: FeatureValue }) {
 }
 
 export default function PricingPage() {
+  const { t } = useTranslation();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
+
+  function getDisplayPrice(monthly: number) {
+    if (monthly === 0) return { price: '0', note: t('pricing.foreverFree') };
+    if (cycle === 'quarterly') {
+      const d = Math.round(monthly * 0.9);
+      return { price: String(d), note: `$${d * 3} ${t('pricing.billedQuarterly')}` };
+    }
+    if (cycle === 'yearly') {
+      const d = Math.round(monthly * 0.8);
+      return { price: String(d), note: `$${d * 12} ${t('pricing.billedYearly')}` };
+    }
+    return { price: String(monthly), note: t('pricing.billedMonthly') };
+  }
+
+  const FAQ_ITEMS = [
+    { q: t('pricing.faqSection.q1'), a: t('pricing.faqSection.a1') },
+    { q: t('pricing.faqSection.q2'), a: t('pricing.faqSection.a2') },
+    { q: t('pricing.faqSection.q3'), a: t('pricing.faqSection.a3') },
+    { q: t('pricing.faqSection.q4'), a: t('pricing.faqSection.a4') },
+  ];
 
   return (
     <div className={styles.page}>
       {/* Header */}
       <section className={styles.header} aria-label="Pricing header">
         <div className={styles.headerInner}>
-          <h1 className={styles.pageTitle}>Simple, Transparent Pricing</h1>
-          <p className={styles.pageSubtitle}>
-            Start free. Upgrade when you&apos;re ready. No hidden fees.
-          </p>
+          <h1 className={styles.pageTitle}>{t('pricing.pageTitle')}</h1>
+          <p className={styles.pageSubtitle}>{t('pricing.pageSubtitle')}</p>
 
           <div className={styles.toggleGroup} role="group" aria-label="Billing cycle">
             {(['monthly', 'quarterly', 'yearly'] as BillingCycle[]).map((c) => (
@@ -170,12 +154,12 @@ export default function PricingPage() {
                 onClick={() => setCycle(c)}
                 aria-pressed={cycle === c}
               >
-                {c.charAt(0).toUpperCase() + c.slice(1)}
+                {t(`landing.pricing.${c}`)}
                 {c === 'quarterly' && (
-                  <span className={styles.discountBadge}>10% off</span>
+                  <span className={styles.discountBadge}>{t('pricing.save10')}</span>
                 )}
                 {c === 'yearly' && (
-                  <span className={styles.discountBadge}>20% off</span>
+                  <span className={styles.discountBadge}>{t('pricing.save20')}</span>
                 )}
               </button>
             ))}
@@ -187,28 +171,28 @@ export default function PricingPage() {
       <section className={styles.plansSection} aria-label="Pricing plans">
         <div className={styles.inner}>
           <div className={styles.plansGrid}>
-            {PLANS.map(({ id, name, monthlyPrice, highlight, cta, href }) => {
-              const { price, note } = getDisplayPrice(monthlyPrice, cycle);
+            {PLANS.map(({ id, name, monthlyPrice, highlight, ctaKey, href }) => {
+              const { price, note } = getDisplayPrice(monthlyPrice);
               return (
                 <div
                   key={id}
                   className={`${styles.planCard} ${highlight ? styles.planHighlight : ''}`}
                 >
                   {highlight && (
-                    <div className={styles.popularTag}>Most Popular</div>
+                    <div className={styles.popularTag}>{t('pricing.mostPopular')}</div>
                   )}
                   <h2 className={styles.planName}>{name}</h2>
                   <div className={styles.priceRow}>
                     <span className={styles.priceCurrency}>$</span>
                     <span className={styles.priceAmount}>{price}</span>
-                    <span className={styles.pricePeriod}>/mo</span>
+                    <span className={styles.pricePeriod}>{t('pricing.perMonth')}</span>
                   </div>
                   <p className={styles.priceNote}>{note}</p>
                   <Link
                     href={href}
                     className={highlight ? styles.ctaPrimary : styles.ctaOutline}
                   >
-                    {cta}
+                    {t(ctaKey)}
                   </Link>
                 </div>
               );
@@ -220,13 +204,13 @@ export default function PricingPage() {
       {/* Feature comparison table */}
       <section className={styles.tableSection} aria-label="Feature comparison">
         <div className={styles.inner}>
-          <h2 className={styles.sectionTitle}>Compare All Features</h2>
+          <h2 className={styles.sectionTitle}>{t('pricing.compareAll')}</h2>
 
           <div className={styles.tableWrapper}>
             <table className={styles.table} aria-label="Feature comparison table">
               <thead>
                 <tr>
-                  <th className={styles.thFeature}>Feature</th>
+                  <th className={styles.thFeature}>{t('pricing.feature')}</th>
                   {PLANS.map((p) => (
                     <th
                       key={p.id}
@@ -239,10 +223,10 @@ export default function PricingPage() {
               </thead>
               <tbody>
                 {FEATURE_GROUPS.map((group) => (
-                  <React.Fragment key={group.groupTitle}>
+                  <React.Fragment key={group.groupKey}>
                     <tr className={styles.groupRow}>
                       <td colSpan={5} className={styles.groupLabel}>
-                        {group.groupTitle}
+                        {t(`pricing.groups.${group.groupKey}`)}
                       </td>
                     </tr>
                     {group.rows.map((row) => (
@@ -269,16 +253,14 @@ export default function PricingPage() {
       {/* Add-ons */}
       <section className={styles.addonsSection} aria-label="Message add-ons">
         <div className={styles.inner}>
-          <h2 className={styles.sectionTitle}>Need More Messages?</h2>
-          <p className={styles.sectionSubtitle}>
-            Purchase one-time message packs when you need them. Non-cumulative, expires at month end.
-          </p>
+          <h2 className={styles.sectionTitle}>{t('pricing.addons.title')}</h2>
+          <p className={styles.sectionSubtitle}>{t('pricing.addons.subtitle')}</p>
           <div className={styles.addonsGrid}>
             {ADD_ONS.map((addon) => (
               <div key={addon.messages} className={styles.addonCard}>
                 <span className={styles.addonMessages}>{addon.messages}</span>
                 <span className={styles.addonPrice}>{addon.price}</span>
-                <span className={styles.addonPeriod}>{addon.period}</span>
+                <span className={styles.addonPeriod}>{t('pricing.addons.oneTime')}</span>
               </div>
             ))}
           </div>
@@ -288,11 +270,11 @@ export default function PricingPage() {
       {/* Pricing FAQ */}
       <section className={styles.faqSection} aria-label="Pricing FAQ">
         <div className={styles.faqInner}>
-          <h2 className={styles.sectionTitle}>Common Questions</h2>
+          <h2 className={styles.sectionTitle}>{t('pricing.faqSection.title')}</h2>
           <div className={styles.faqList}>
-            {PRICING_FAQ.map((item, i) => (
+            {FAQ_ITEMS.map((item, i) => (
               <div
-                key={item.q}
+                key={i}
                 className={`${styles.faqItem} ${faqOpen === i ? styles.faqOpen : ''}`}
               >
                 <button

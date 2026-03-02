@@ -9,6 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../settings.module.css';
 
 interface SubAccount {
@@ -23,6 +24,7 @@ interface SubAccount {
 export default function SubAccountsPage() {
   const { user } = useAuth();
   const { success, error: toastError } = useToast();
+  const { t } = useTranslation();
   const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -38,11 +40,11 @@ export default function SubAccountsPage() {
       const data = await api.get<SubAccount[]>('/api/organization/sub-accounts');
       setSubAccounts(data);
     } catch {
-      toastError('Failed to load sub-accounts');
+      toastError(t('settings.subAccounts.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [toastError]);
+  }, [toastError, t]);
 
   useEffect(() => { loadSubAccounts(); }, [loadSubAccounts]);
 
@@ -51,13 +53,13 @@ export default function SubAccountsPage() {
     setCreating(true);
     try {
       await api.post('/api/organization/sub-accounts', { name: subName, label: subLabel });
-      success('Sub-account created');
+      success(t('settings.subAccounts.created'));
       setCreateOpen(false);
       setSubName('');
       setSubLabel('');
       await loadSubAccounts();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to create sub-account');
+      toastError(err instanceof ApiError ? err.message : t('settings.subAccounts.createFailed'));
     } finally {
       setCreating(false);
     }
@@ -67,11 +69,11 @@ export default function SubAccountsPage() {
     setRemoving(true);
     try {
       await api.delete(`/api/organization/sub-accounts/${subAcc.childOrgId}`);
-      success('Sub-account removed');
+      success(t('settings.subAccounts.removed'));
       setConfirmRemove(null);
       await loadSubAccounts();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to remove sub-account');
+      toastError(err instanceof ApiError ? err.message : t('settings.subAccounts.removeFailed'));
     } finally {
       setRemoving(false);
     }
@@ -84,10 +86,10 @@ export default function SubAccountsPage() {
         `/api/organization/sub-accounts/${subAcc.childOrgId}/switch`
       );
       setAccessToken(result.accessToken);
-      success(`Switched to ${subAcc.name}`, 'Reloading dashboard...');
+      success(`Switched to ${subAcc.name}`, t('settings.subAccounts.switched'));
       setTimeout(() => window.location.replace('/dashboard'), 500);
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to switch account');
+      toastError(err instanceof ApiError ? err.message : t('settings.subAccounts.switchFailed'));
     } finally {
       setSwitching(null);
     }
@@ -99,12 +101,12 @@ export default function SubAccountsPage() {
     <div>
       <div className={styles.pageHeader} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 className={styles.pageTitle}>Sub-accounts</h1>
-          <p className={styles.pageDesc}>Manage child organizations linked to your account.</p>
+          <h1 className={styles.pageTitle}>{t('settings.subAccounts.title')}</h1>
+          <p className={styles.pageDesc}>{t('settings.subAccounts.description')}</p>
         </div>
         {isOwner && (
           <Button icon={Plus} onClick={() => setCreateOpen(true)} size="sm">
-            Create Sub-account
+            {t('settings.subAccounts.create')}
           </Button>
         )}
       </div>
@@ -115,7 +117,7 @@ export default function SubAccountsPage() {
         ) : subAccounts.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-secondary)', fontSize: 'var(--font-sm)' }}>
             <Building2 size={32} style={{ margin: '0 auto 0.75rem', display: 'block', opacity: 0.4 }} />
-            No sub-accounts yet. Create one to manage multiple organizations.
+            {t('settings.subAccounts.empty')}
           </div>
         ) : (
           subAccounts.map((subAcc) => (
@@ -123,7 +125,7 @@ export default function SubAccountsPage() {
               <div className={styles.subAccountInfo}>
                 <div className={styles.subAccountName}>{subAcc.name}</div>
                 <div className={styles.subAccountMeta}>
-                  {subAcc.label} · <span style={{ textTransform: 'capitalize' }}>{subAcc.plan}</span> plan
+                  {subAcc.label} · <span style={{ textTransform: 'capitalize' }}>{subAcc.plan}</span> {t('settings.subAccounts.plan')}
                 </div>
               </div>
               <div className={styles.subAccountActions}>
@@ -134,7 +136,7 @@ export default function SubAccountsPage() {
                   loading={switching === subAcc.id}
                   onClick={() => handleSwitch(subAcc)}
                 >
-                  Switch
+                  {t('settings.subAccounts.switch')}
                 </Button>
                 {isOwner && (
                   <Button
@@ -155,12 +157,12 @@ export default function SubAccountsPage() {
       <Modal
         isOpen={createOpen}
         onClose={() => { setCreateOpen(false); setSubName(''); setSubLabel(''); }}
-        title="Create Sub-account"
+        title={t('settings.subAccounts.createTitle')}
         size="sm"
       >
         <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <Input
-            label="Organization Name"
+            label={t('settings.subAccounts.orgName')}
             value={subName}
             onChange={(e) => setSubName(e.target.value)}
             placeholder="Branch Office Inc."
@@ -169,16 +171,16 @@ export default function SubAccountsPage() {
             icon={Building2}
           />
           <Input
-            label="Label"
+            label={t('settings.subAccounts.label')}
             value={subLabel}
             onChange={(e) => setSubLabel(e.target.value)}
             placeholder="branch-office"
             required
-            hint="A short identifier for this sub-account"
+            hint={t('settings.subAccounts.labelHint')}
           />
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-            <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={creating} icon={Plus}>Create</Button>
+            <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>{t('common.cancel')}</Button>
+            <Button type="submit" loading={creating} icon={Plus}>{t('common.create')}</Button>
           </div>
         </form>
       </Modal>
@@ -187,22 +189,22 @@ export default function SubAccountsPage() {
       <Modal
         isOpen={!!confirmRemove}
         onClose={() => setConfirmRemove(null)}
-        title="Remove Sub-account"
+        title={t('settings.subAccounts.removeTitle')}
         size="sm"
       >
         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', color: 'var(--color-warning)' }}>
           <AlertCircle size={16} />
           <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', margin: 0 }}>
-            This will only unlink the sub-account. The organization itself will not be deleted.
+            {t('settings.subAccounts.removeWarning')}
           </p>
         </div>
         <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
-          Remove <strong>{confirmRemove?.name}</strong> ({confirmRemove?.label}) from your sub-accounts?
+          {t('settings.subAccounts.removeConfirm', { name: confirmRemove?.name ?? '', label: confirmRemove?.label ?? '' })}
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <Button variant="secondary" onClick={() => setConfirmRemove(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setConfirmRemove(null)}>{t('common.cancel')}</Button>
           <Button variant="danger" loading={removing} icon={Trash2} onClick={() => confirmRemove && handleRemove(confirmRemove)}>
-            Remove
+            {t('common.delete')}
           </Button>
         </div>
       </Modal>

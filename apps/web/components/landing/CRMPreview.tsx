@@ -1,30 +1,8 @@
+'use client';
+
 import { ScrollReveal } from './ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './CRMPreview.module.css';
-
-const CONTACTS = [
-  { name: 'Sarah Chen', score: 9, stage: 'Customer', service: 'Enterprise Plan', initial: 'SC' },
-  { name: 'Carlos Mendoza', score: 8, stage: 'Opportunity', service: 'Pro Plan', initial: 'CM' },
-  { name: 'Emma Williams', score: 7, stage: 'Opportunity', service: 'Starter Plan', initial: 'EW' },
-  { name: 'James Nguyen', score: 5, stage: 'Lead', service: 'Free Plan', initial: 'JN' },
-];
-
-const FUNNEL_COLS = [
-  {
-    title: 'Lead',
-    color: '#6B7280',
-    cards: ['James Nguyen', 'Ana García'],
-  },
-  {
-    title: 'Opportunity',
-    color: '#F59E0B',
-    cards: ['Carlos Mendoza', 'Emma Williams'],
-  },
-  {
-    title: 'Customer',
-    color: '#25D366',
-    cards: ['Sarah Chen'],
-  },
-];
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
@@ -41,17 +19,41 @@ function ScoreBadge({ score }: { score: number }) {
 }
 
 export function CRMPreview() {
+  const { t } = useTranslation();
+
+  const CONTACTS = [
+    { name: 'Sarah Chen', score: 9, stageKey: 'customer', service: 'Enterprise Plan', initial: 'SC' },
+    { name: 'Carlos Mendoza', score: 8, stageKey: 'opportunity', service: 'Pro Plan', initial: 'CM' },
+    { name: 'Emma Williams', score: 7, stageKey: 'opportunity', service: 'Starter Plan', initial: 'EW' },
+    { name: 'James Nguyen', score: 5, stageKey: 'lead', service: 'Free Plan', initial: 'JN' },
+  ];
+
+  const FUNNEL_COLS = [
+    {
+      titleKey: 'lead' as const,
+      color: '#6B7280',
+      cards: ['James Nguyen', 'Ana García'],
+    },
+    {
+      titleKey: 'opportunity' as const,
+      color: '#F59E0B',
+      cards: ['Carlos Mendoza', 'Emma Williams'],
+    },
+    {
+      titleKey: 'customer' as const,
+      color: '#25D366',
+      cards: ['Sarah Chen'],
+    },
+  ];
+
   return (
     <section className={styles.section} aria-label="CRM preview">
       <div className={styles.inner}>
         <ScrollReveal>
           <div className={styles.header}>
-            <span className={styles.eyebrow}>Built-in CRM</span>
-            <h2 className={styles.title}>Smart CRM That Works While You Sleep</h2>
-            <p className={styles.subtitle}>
-              Every conversation automatically scored, summarized, and organized.
-              Your best leads are always front and center.
-            </p>
+            <span className={styles.eyebrow}>{t('landing.crmPreview.eyebrow')}</span>
+            <h2 className={styles.title}>{t('landing.crmPreview.title')}</h2>
+            <p className={styles.subtitle}>{t('landing.crmPreview.subtitle')}</p>
           </div>
         </ScrollReveal>
 
@@ -59,14 +61,14 @@ export function CRMPreview() {
           {/* CRM table */}
           <ScrollReveal delay={100}>
             <div className={styles.tableCard}>
-              <div className={styles.cardLabel}>Contact List</div>
+              <div className={styles.cardLabel}>{t('landing.crmPreview.contactList')}</div>
               <table className={styles.table} aria-label="CRM contacts preview">
                 <thead>
                   <tr>
-                    <th>Contact</th>
-                    <th>Score</th>
-                    <th>Stage</th>
-                    <th>Service</th>
+                    <th>{t('landing.crmPreview.table.contact')}</th>
+                    <th>{t('landing.crmPreview.table.score')}</th>
+                    <th>{t('landing.crmPreview.table.stage')}</th>
+                    <th>{t('landing.crmPreview.table.service')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -82,7 +84,7 @@ export function CRMPreview() {
                         <ScoreBadge score={c.score} />
                       </td>
                       <td>
-                        <span className={styles.stage}>{c.stage}</span>
+                        <span className={styles.stage}>{t(`landing.crmPreview.stages.${c.stageKey}`)}</span>
                       </td>
                       <td>
                         <span className={styles.service}>{c.service}</span>
@@ -97,17 +99,17 @@ export function CRMPreview() {
           {/* Kanban */}
           <ScrollReveal delay={200}>
             <div className={styles.kanbanCard}>
-              <div className={styles.cardLabel}>Sales Funnel</div>
+              <div className={styles.cardLabel}>{t('landing.crmPreview.salesFunnel')}</div>
               <div className={styles.kanban}>
                 {FUNNEL_COLS.map((col) => (
-                  <div key={col.title} className={styles.kanbanCol}>
+                  <div key={col.titleKey} className={styles.kanbanCol}>
                     <div className={styles.kanbanHeader}>
                       <span
                         className={styles.kanbanDot}
                         style={{ background: col.color }}
                         aria-hidden="true"
                       />
-                      <span className={styles.kanbanTitle}>{col.title}</span>
+                      <span className={styles.kanbanTitle}>{t(`landing.crmPreview.stages.${col.titleKey}`)}</span>
                       <span className={styles.kanbanCount}>{col.cards.length}</span>
                     </div>
                     <div className={styles.kanbanCards}>

@@ -52,7 +52,7 @@ export function PublicNavbar() {
 
   const SECTION_LINKS = [
     { label: t('landing.nav.features'), sectionId: 'features' },
-    { label: t('landing.nav.pricing'), sectionId: 'how-it-works' },
+    { label: t('landing.nav.howItWorks'), sectionId: 'how-it-works' },
   ];
 
   return (

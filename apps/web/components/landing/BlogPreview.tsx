@@ -1,6 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, Tag } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatDate } from '@/lib/formatters';
 import styles from './BlogPreview.module.css';
 
 interface BlogPost {
@@ -29,7 +33,7 @@ const PLACEHOLDER_POSTS: BlogPost[] = [
   {
     slug: 'n8n-vs-gensmart-comparison',
     title: 'N8N vs GenSmart: Why All-in-One Beats DIY for AI Agents',
-    description: 'A practical comparison of building AI agents with N8N workflows versus GenSmart\'s integrated platform.',
+    description: "A practical comparison of building AI agents with N8N workflows versus GenSmart's integrated platform.",
     date: '2026-02-10',
     tags: ['comparison', 'automation'],
   },
@@ -40,6 +44,7 @@ interface BlogPreviewProps {
 }
 
 export function BlogPreview({ posts = PLACEHOLDER_POSTS }: BlogPreviewProps) {
+  const { t, language } = useTranslation();
   const displayPosts = posts.slice(0, 3);
 
   return (
@@ -47,10 +52,8 @@ export function BlogPreview({ posts = PLACEHOLDER_POSTS }: BlogPreviewProps) {
       <div className={styles.inner}>
         <ScrollReveal>
           <div className={styles.header}>
-            <h2 className={styles.title}>Latest from Our Blog</h2>
-            <p className={styles.subtitle}>
-              Insights on AI agents, automation, and business growth.
-            </p>
+            <h2 className={styles.title}>{t('landing.blogPreview.title')}</h2>
+            <p className={styles.subtitle}>{t('landing.blogPreview.subtitle')}</p>
           </div>
         </ScrollReveal>
 
@@ -78,14 +81,10 @@ export function BlogPreview({ posts = PLACEHOLDER_POSTS }: BlogPreviewProps) {
                   <p className={styles.cardDesc}>{post.description}</p>
                   <div className={styles.cardFooter}>
                     <time className={styles.date} dateTime={post.date}>
-                      {new Date(post.date).toLocaleDateString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
+                      {formatDate(post.date, language)}
                     </time>
                     <Link href={`/blog/${post.slug}`} className={styles.readMore}>
-                      Read more
+                      {t('landing.blogPreview.readMore')}
                       <ArrowRight size={14} aria-hidden="true" />
                     </Link>
                   </div>
@@ -97,7 +96,7 @@ export function BlogPreview({ posts = PLACEHOLDER_POSTS }: BlogPreviewProps) {
 
         <div className={styles.footer}>
           <Link href="/blog" className={styles.viewAllLink}>
-            View all posts
+            {t('landing.blogPreview.viewAll')}
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>

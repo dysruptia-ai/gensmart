@@ -21,6 +21,8 @@ import ToolConfigurator from '@/components/agents/ToolConfigurator';
 import { PromptGenerator } from '@/components/agents/PromptGenerator';
 import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomizer';
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatDate } from '@/lib/formatters';
 import styles from './editor.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -97,21 +99,13 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral'> = {
   draft: 'neutral',
 };
 
-const EDITOR_TABS = [
-  { id: 'prompt', label: 'Prompt' },
-  { id: 'variables', label: 'Variables' },
-  { id: 'tools', label: 'Tools' },
-  { id: 'settings', label: 'Settings' },
-  { id: 'channels', label: 'Channels' },
-  { id: 'versions', label: 'Versions' },
-];
-
 export default function AgentEditorPage() {
   const routeParams = useParams();
   const agentId = routeParams['id'] as string;
 
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { t, language } = useTranslation();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const previewBottomRef = useRef<HTMLDivElement>(null);
   const previewInputRef = useRef<HTMLInputElement>(null);
@@ -187,7 +181,7 @@ export default function AgentEditorPage() {
         });
       }
     } catch {
-      toastError('Failed to load agent');
+      toastError(t('agents.editor.loadFailed'));
       router.push('/dashboard/agents');
     } finally {
       setLoading(false);
@@ -247,9 +241,9 @@ export default function AgentEditorPage() {
       setAgent(updated.agent);
       setChannels(updated.agent.channels ?? []);
       setIsDirty(false);
-      success('Changes saved');
+      success(t('agents.editor.saved'));
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to save');
+      toastError(err instanceof ApiError ? err.message : t('agents.editor.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -272,10 +266,10 @@ export default function AgentEditorPage() {
       setChannels(result.agent.channels ?? []);
       setIsDirty(false);
       setShowPublishModal(false);
-      success(`Agent published as v${result.version}`, 'Your agent is now live.');
+      success(t('agents.editor.published', { version: String(result.version) }), t('agents.editor.publishedLive'));
       loadVersions();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to publish');
+      toastError(err instanceof ApiError ? err.message : t('agents.editor.publishFailed'));
     } finally {
       setPublishing(false);
     }
@@ -299,9 +293,9 @@ export default function AgentEditorPage() {
       setContextWindow(a.contextWindowMessages);
       setIsDirty(false);
       setRollbackTarget(null);
-      success(`Rolled back to v${version.version}`);
+      success(t('agents.editor.rolledBack', { version: String(version.version) }));
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to rollback');
+      toastError(err instanceof ApiError ? err.message : t('agents.editor.rollbackFailed'));
     } finally {
       setRolling(false);
     }
@@ -324,7 +318,7 @@ export default function AgentEditorPage() {
       // Revert on error
       setChannels(channels);
       setAgent((prev) => prev ? { ...prev, channels } : prev);
-      toastError('Failed to update channel');
+      toastError(t('agents.editor.channelFailed'));
     }
   }
 
@@ -333,11 +327,11 @@ export default function AgentEditorPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      toastError('Image must be under 2MB');
+      toastError(t('agents.editor.avatarSizeFailed'));
       return;
     }
     if (!file.type.startsWith('image/')) {
-      toastError('File must be an image');
+      toastError(t('agents.editor.avatarTypeFailed'));
       return;
     }
     setUploadingAvatar(true);
@@ -350,9 +344,9 @@ export default function AgentEditorPage() {
       );
       setAvatarUrl(data.avatarUrl);
       setAgent((prev) => prev ? { ...prev, avatarUrl: data.avatarUrl } : null);
-      success('Avatar updated');
+      success(t('agents.editor.avatarUpdated'));
     } catch {
-      toastError('Failed to upload avatar');
+      toastError(t('agents.editor.avatarFailed'));
     } finally {
       setUploadingAvatar(false);
       // Reset input so the same file can be selected again
@@ -429,8 +423,17 @@ export default function AgentEditorPage() {
   );
   const modelWarning =
     llmModel && !allowedModels.includes(llmModel)
-      ? `Model "${llmModel}" is not available in your current plan`
+      ? t('agents.editor.settings.noModels')
       : null;
+
+  const EDITOR_TABS = [
+    { id: 'prompt', label: t('agents.editor.tabs.prompt') },
+    { id: 'variables', label: t('agents.editor.tabs.variables') },
+    { id: 'tools', label: t('agents.editor.tabs.tools') },
+    { id: 'settings', label: t('agents.editor.tabs.settings') },
+    { id: 'channels', label: t('agents.editor.tabs.channels') },
+    { id: 'versions', label: t('agents.editor.tabs.versions') },
+  ];
 
   if (loading) {
     return (
@@ -446,7 +449,7 @@ export default function AgentEditorPage() {
     <div className={styles.page}>
       {isDirty && (
         <div className={styles.unsavedBanner}>
-          <AlertCircle size={14} /> Unsaved changes
+          <AlertCircle size={14} /> {t('agents.editor.unsavedChanges')}
         </div>
       )}
 
@@ -485,11 +488,11 @@ export default function AgentEditorPage() {
           />
         </div>
         <Badge variant={STATUS_VARIANT[agent.status] ?? 'neutral'} size="sm">
-          {agent.status}
+          {t(`agents.editor.status.${agent.status}`)}
         </Badge>
         <div className={styles.headerActions}>
           <Button variant="secondary" size="sm" icon={Save} onClick={handleSave} loading={saving}>
-            Save
+            {t('agents.editor.save')}
           </Button>
           <Button
             variant="secondary"
@@ -497,10 +500,10 @@ export default function AgentEditorPage() {
             icon={Play}
             onClick={() => { setPreviewMessages([]); setShowPreview(true); }}
           >
-            Preview
+            {t('agents.editor.preview')}
           </Button>
           <Button size="sm" icon={Rocket} onClick={() => setShowPublishModal(true)}>
-            Publish
+            {t('agents.editor.publish')}
           </Button>
         </div>
       </div>
@@ -511,25 +514,25 @@ export default function AgentEditorPage() {
           <div className={styles.tabContent}>
             <div className={styles.promptSection}>
               <div className={styles.promptToolbar}>
-                <span className={styles.promptLabel}>System Prompt</span>
+                <span className={styles.promptLabel}>{t('agents.editor.prompt.label')}</span>
                 <Button
                   variant="secondary"
                   size="sm"
                   icon={Upload}
                   onClick={() => setShowPromptGen(true)}
                 >
-                  Generate with AI
+                  {t('agents.editor.prompt.generate')}
                 </Button>
               </div>
               <textarea
                 className={styles.promptTextarea}
                 value={systemPrompt}
                 onChange={(e) => { setSystemPrompt(e.target.value); setIsDirty(true); }}
-                placeholder="Enter the system prompt for your agent..."
+                placeholder={t('agents.editor.prompt.placeholder')}
                 spellCheck={false}
               />
               <div className={styles.promptMeta}>
-                {systemPrompt.length} characters
+                {t('agents.editor.prompt.characters', { count: String(systemPrompt.length) })}
               </div>
             </div>
           </div>
@@ -560,10 +563,10 @@ export default function AgentEditorPage() {
           <div className={styles.tabContent}>
             <div className={styles.settingsGrid}>
               <div className={styles.settingsSection}>
-                <div className={styles.settingsSectionTitle}>LLM Configuration</div>
+                <div className={styles.settingsSectionTitle}>{t('agents.editor.settings.llmConfig')}</div>
 
                 <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>Provider</label>
+                  <label className={styles.fieldLabel}>{t('agents.editor.settings.provider')}</label>
                   <select
                     className={styles.select}
                     value={llmProvider}
@@ -585,7 +588,7 @@ export default function AgentEditorPage() {
                 </div>
 
                 <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>Model</label>
+                  <label className={styles.fieldLabel}>{t('agents.editor.settings.model')}</label>
                   {modelWarning && (
                     <div className={styles.planWarning}>
                       <AlertCircle size={12} />
@@ -602,19 +605,19 @@ export default function AgentEditorPage() {
                         <option key={m.value} value={m.value}>{m.label}</option>
                       ))
                     ) : (
-                      <option value="" disabled>No models available for this provider in your plan</option>
+                      <option value="" disabled>{t('agents.editor.settings.noModels')}</option>
                     )}
                   </select>
                   {filteredModels.length === 0 && (
                     <span className={styles.fieldHint} style={{ color: 'var(--color-danger)' }}>
-                      Upgrade your plan to use {llmProvider === 'anthropic' ? 'Anthropic' : 'OpenAI GPT-4o'} models.
+                      {t('agents.editor.settings.upgradeModel', { provider: llmProvider === 'anthropic' ? 'Anthropic' : 'OpenAI GPT-4o' })}
                     </span>
                   )}
                 </div>
 
                 <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>
-                    Temperature: <span style={{ color: 'var(--color-primary)' }}>{temperature.toFixed(1)}</span>
+                    {t('agents.editor.settings.temperature')}: <span style={{ color: 'var(--color-primary)' }}>{temperature.toFixed(1)}</span>
                   </label>
                   <div className={styles.rangeWrapper}>
                     <input
@@ -626,11 +629,11 @@ export default function AgentEditorPage() {
                     />
                     <span className={styles.rangeValue}>{temperature.toFixed(1)}</span>
                   </div>
-                  <span className={styles.fieldHint}>Lower = more focused, Higher = more creative</span>
+                  <span className={styles.fieldHint}>{t('agents.editor.settings.temperatureHint')}</span>
                 </div>
 
                 <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>Max Tokens</label>
+                  <label className={styles.fieldLabel}>{t('agents.editor.settings.maxTokens')}</label>
                   <Input
                     type="number"
                     value={String(maxTokens)}
@@ -643,16 +646,16 @@ export default function AgentEditorPage() {
                     max={String(planLimits.maxTokensPerResponse)}
                   />
                   <span className={styles.fieldHint}>
-                    Max for your plan: {planLimits.maxTokensPerResponse}
+                    {t('agents.editor.settings.planMax', { max: String(planLimits.maxTokensPerResponse) })}
                   </span>
                 </div>
               </div>
 
               <div className={styles.settingsSection}>
-                <div className={styles.settingsSectionTitle}>Conversation</div>
+                <div className={styles.settingsSectionTitle}>{t('agents.editor.settings.conversation')}</div>
 
                 <div className={styles.fieldGroup}>
-                  <label className={styles.fieldLabel}>Context Window Messages</label>
+                  <label className={styles.fieldLabel}>{t('agents.editor.settings.contextWindow')}</label>
                   <Input
                     type="number"
                     value={String(contextWindow)}
@@ -665,13 +668,13 @@ export default function AgentEditorPage() {
                     max={String(planLimits.contextWindowMessages)}
                   />
                   <span className={styles.fieldHint}>
-                    Max for your plan: {planLimits.contextWindowMessages}
+                    {t('agents.editor.settings.planMax', { max: String(planLimits.contextWindowMessages) })}
                   </span>
                 </div>
 
                 <div className={styles.fieldGroup}>
                   <label className={styles.fieldLabel}>
-                    Message Buffer: <span style={{ color: 'var(--color-primary)' }}>{bufferSeconds}s</span>
+                    {t('agents.editor.settings.messageBuffer')}: <span style={{ color: 'var(--color-primary)' }}>{bufferSeconds}s</span>
                   </label>
                   <div className={styles.rangeWrapper}>
                     <input
@@ -683,21 +686,21 @@ export default function AgentEditorPage() {
                     />
                     <span className={styles.rangeValue}>{bufferSeconds}s</span>
                   </div>
-                  <span className={styles.fieldHint}>Wait time before processing a user&apos;s message</span>
+                  <span className={styles.fieldHint}>{t('agents.editor.settings.messageBufferHint')}</span>
                 </div>
 
-                <div className={styles.settingsSectionTitle} style={{ marginTop: '0.5rem' }}>Channels</div>
+                <div className={styles.settingsSectionTitle} style={{ marginTop: '0.5rem' }}>{t('agents.editor.settings.channels')}</div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span className={styles.fieldLabel}>Web Widget</span>
+                    <span className={styles.fieldLabel}>{t('agents.editor.channels.webWidget')}</span>
                     <Toggle
                       checked={channels.includes('web')}
                       onChange={(_checked) => toggleChannel('web')}
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span className={styles.fieldLabel}>WhatsApp</span>
+                    <span className={styles.fieldLabel}>{t('agents.editor.channels.whatsapp')}</span>
                     <Toggle
                       checked={channels.includes('whatsapp')}
                       onChange={(_checked) => toggleChannel('whatsapp')}
@@ -717,8 +720,8 @@ export default function AgentEditorPage() {
                 <div className={styles.channelHeader}>
                   <div className={styles.channelToggleRow}>
                     <div>
-                      <div className={styles.settingsSectionTitle}>Web Widget</div>
-                      <span className={styles.channelDesc}>Embed a chat widget on any website</span>
+                      <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.webWidget')}</div>
+                      <span className={styles.channelDesc}>{t('agents.editor.channels.webDesc')}</span>
                     </div>
                     <Toggle
                       checked={channels.includes('web')}
@@ -737,7 +740,7 @@ export default function AgentEditorPage() {
                   </div>
                 )}
                 {!channels.includes('web') && (
-                  <p className={styles.channelOffHint}>Enable Web Widget to configure and get your embed code.</p>
+                  <p className={styles.channelOffHint}>{t('agents.editor.channels.webOffHint')}</p>
                 )}
               </div>
 
@@ -746,8 +749,8 @@ export default function AgentEditorPage() {
                 <div className={styles.channelHeader}>
                   <div className={styles.channelToggleRow}>
                     <div>
-                      <div className={styles.settingsSectionTitle}>WhatsApp</div>
-                      <span className={styles.channelDesc}>Connect to WhatsApp Business via Meta Cloud API</span>
+                      <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.whatsapp')}</div>
+                      <span className={styles.channelDesc}>{t('agents.editor.channels.whatsappDesc')}</span>
                     </div>
                     <Toggle
                       checked={channels.includes('whatsapp')}
@@ -770,7 +773,7 @@ export default function AgentEditorPage() {
           <div className={styles.tabContent}>
             {versions.length === 0 ? (
               <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', textAlign: 'center', padding: '2rem' }}>
-                No versions yet. Publish your agent to create the first version.
+                {t('agents.editor.versions.noVersions')}
               </p>
             ) : (
               <div className={styles.versionsList}>
@@ -779,13 +782,10 @@ export default function AgentEditorPage() {
                     <span className={styles.versionNumber}>v{v.version}</span>
                     <div className={styles.versionMeta}>
                       <div className={styles.versionDate}>
-                        {new Date(v.published_at).toLocaleString('en-US', {
-                          month: 'short', day: 'numeric', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit',
-                        })}
+                        {formatDate(v.published_at, language)}
                       </div>
                       {v.publisher_name && (
-                        <div className={styles.versionPublisher}>by {v.publisher_name}</div>
+                        <div className={styles.versionPublisher}>{t('agents.editor.versions.by', { name: v.publisher_name })}</div>
                       )}
                     </div>
                     <Button
@@ -794,7 +794,7 @@ export default function AgentEditorPage() {
                       icon={RotateCcw}
                       onClick={() => setRollbackTarget(v)}
                     >
-                      Rollback
+                      {t('agents.editor.versions.rollback')}
                     </Button>
                   </div>
                 ))}
@@ -805,30 +805,29 @@ export default function AgentEditorPage() {
       </Tabs>
 
       {/* Publish Modal */}
-      <Modal isOpen={showPublishModal} onClose={() => setShowPublishModal(false)} title="Publish Agent" size="sm">
+      <Modal isOpen={showPublishModal} onClose={() => setShowPublishModal(false)} title={t('agents.editor.publishTitle')} size="sm">
         <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
-          Publishing will save your current changes and create a new version. Your agent will go live immediately.
+          {t('agents.editor.publishConfirm')}
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <Button variant="secondary" onClick={() => setShowPublishModal(false)}>Cancel</Button>
-          <Button icon={Check} loading={publishing} onClick={handlePublish}>Publish Now</Button>
+          <Button variant="secondary" onClick={() => setShowPublishModal(false)}>{t('common.cancel')}</Button>
+          <Button icon={Check} loading={publishing} onClick={handlePublish}>{t('agents.editor.publish')}</Button>
         </div>
       </Modal>
 
       {/* Rollback Modal */}
-      <Modal isOpen={!!rollbackTarget} onClose={() => setRollbackTarget(null)} title="Rollback Agent" size="sm">
+      <Modal isOpen={!!rollbackTarget} onClose={() => setRollbackTarget(null)} title={t('agents.editor.rollbackTitle', { version: String(rollbackTarget?.version ?? '') })} size="sm">
         <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
-          Restore the agent&apos;s prompt and configuration to{' '}
-          <strong>v{rollbackTarget?.version}</strong>? Your current unsaved changes will be replaced.
+          {t('agents.editor.rollbackConfirm', { version: String(rollbackTarget?.version ?? '') })}
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <Button variant="secondary" onClick={() => setRollbackTarget(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setRollbackTarget(null)}>{t('common.cancel')}</Button>
           <Button
             icon={RotateCcw}
             loading={rolling}
             onClick={() => rollbackTarget && handleRollback(rollbackTarget)}
           >
-            Rollback
+            {t('agents.editor.versions.rollback')}
           </Button>
         </div>
       </Modal>
@@ -837,16 +836,16 @@ export default function AgentEditorPage() {
       <Modal
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
-        title="Agent Preview"
+        title={t('agents.editor.preview')}
         size="lg"
       >
         <div className={styles.previewContainer}>
           <div className={styles.previewBanner}>
-            PREVIEW MODE — Messages are not counted towards your plan usage
+            {t('agents.editor.previewModal.banner')}
           </div>
           <div className={styles.previewMessages}>
             {previewMessages.length === 0 && (
-              <p className={styles.previewEmpty}>Send a message to start chatting with your agent.</p>
+              <p className={styles.previewEmpty}>{t('agents.editor.previewModal.empty')}</p>
             )}
             {previewMessages.map((msg, i) => (
               <div
@@ -893,7 +892,7 @@ export default function AgentEditorPage() {
           {/* Captured variables from preview */}
           {previewMessages.some((m) => m.metadata?.capturedVariables && Object.keys(m.metadata.capturedVariables).length > 0) && (
             <div className={styles.previewVars}>
-              <strong>Captured Variables:</strong>{' '}
+              <strong>{t('agents.editor.previewModal.capturedVars')}</strong>{' '}
               {Object.entries(
                 previewMessages.reduce<Record<string, string>>((acc, m) => {
                   if (m.metadata?.capturedVariables) Object.assign(acc, m.metadata.capturedVariables);
@@ -911,7 +910,7 @@ export default function AgentEditorPage() {
               className={styles.previewInput}
               value={previewInput}
               onChange={(e) => setPreviewInput(e.target.value)}
-              placeholder="Type a message..."
+              placeholder={t('agents.editor.previewModal.inputPlaceholder')}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePreviewSend(); }
               }}
@@ -922,7 +921,7 @@ export default function AgentEditorPage() {
               onClick={handlePreviewSend}
               disabled={!previewInput.trim()}
             >
-              Send
+              {t('agents.editor.previewModal.send')}
             </Button>
             <Button
               variant="secondary"
@@ -931,7 +930,7 @@ export default function AgentEditorPage() {
               onClick={() => void handlePreviewReset()}
               disabled={previewMessages.length === 0}
             >
-              Reset
+              {t('agents.editor.previewModal.reset')}
             </Button>
           </div>
         </div>

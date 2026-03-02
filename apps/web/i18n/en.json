@@ -58,7 +58,8 @@
       "pricing": "Pricing",
       "blog": "Blog",
       "login": "Log in",
-      "getStarted": "Get Started Free"
+      "getStarted": "Get Started Free",
+      "howItWorks": "How It Works"
     },
     "hero": {
       "title": "Create & Deploy AI Agents in Minutes, Not Weeks",
@@ -226,6 +227,53 @@
       "docs": "Docs",
       "about": "About",
       "contact": "Contact"
+    },
+    "problemSolution": {
+      "title": "Stop Fighting with Complex Tools",
+      "subtitle": "You shouldn't need a developer to automate your customer conversations.",
+      "oldWay": "The Old Way",
+      "newWay": "The GenSmart Way",
+      "problems": {
+        "setup": "Weeks of setup with complex tools",
+        "disconnected": "Multiple disconnected platforms",
+        "expensive": "Expensive developer resources"
+      },
+      "solutions": {
+        "deploy": "Deploy in minutes, not weeks",
+        "allInOne": "All-in-one platform",
+        "noCode": "No coding required"
+      }
+    },
+    "channels": {
+      "eyebrow": "Multi-channel deployment",
+      "title": "Meet Your Customers Where They Are",
+      "subtitle": "Deploy the same AI agent across WhatsApp and your website simultaneously — from a single dashboard.",
+      "whatsappDesc": "Connect via Meta Cloud API. Reach 2B+ WhatsApp users instantly.",
+      "webDesc": "Embed with one line of code. Customizable to match your brand."
+    },
+    "crmPreview": {
+      "eyebrow": "Built-in CRM",
+      "title": "Smart CRM That Works While You Sleep",
+      "subtitle": "Every conversation automatically scored, summarized, and organized. Your best leads are always front and center.",
+      "contactList": "Contact List",
+      "salesFunnel": "Sales Funnel",
+      "table": {
+        "contact": "Contact",
+        "score": "Score",
+        "stage": "Stage",
+        "service": "Service"
+      },
+      "stages": {
+        "lead": "Lead",
+        "opportunity": "Opportunity",
+        "customer": "Customer"
+      }
+    },
+    "blogPreview": {
+      "title": "Latest from Our Blog",
+      "subtitle": "Insights on AI agents, automation, and business growth.",
+      "readMore": "Read more",
+      "viewAll": "View all posts"
     }
   },
   "auth": {
@@ -366,40 +414,80 @@
         "prompt": "Prompt",
         "variables": "Variables",
         "tools": "Tools",
-        "knowledge": "Knowledge",
+        "settings": "Settings",
         "channels": "Channels",
-        "settings": "Settings"
+        "versions": "Versions"
       },
+      "save": "Save",
       "preview": "Preview",
       "publish": "Publish",
-      "save": "Save",
-      "publishConfirm": "Publish this agent? It will be available on all configured channels.",
-      "publishSuccess": "Agent published successfully",
-      "saveSuccess": "Agent saved",
-      "generatePrompt": "Generate with AI",
-      "generatePromptPlaceholder": "Describe your agent in natural language. E.g.: A customer service agent for a dental clinic that captures patient data...",
-      "generatePromptCta": "Generate Prompt",
-      "generating": "Generating...",
-      "systemPrompt": "System Prompt",
-      "systemPromptPlaceholder": "You are a helpful AI assistant...",
-      "agentName": "Agent Name",
-      "agentNamePlaceholder": "My AI Agent",
-      "version": "Version {number}",
-      "rollback": "Rollback to this version",
-      "agentType": "Agent Type",
-      "model": "AI Model",
-      "temperature": "Temperature",
-      "maxTokens": "Max tokens per response",
-      "contextWindow": "Context window (messages)",
-      "language": "Language",
-      "deleteAgent": "Delete Agent",
-      "deleteConfirm": "Delete this agent? All conversations and configurations will be permanently removed.",
-      "applyPrompt": "Apply Prompt",
-      "overwriteWarning": "This will overwrite your current system prompt. Continue?",
-      "previewTitle": "Preview",
-      "previewPlaceholder": "Type a message to test your agent...",
-      "previewReset": "Reset conversation",
-      "previewSend": "Send"
+      "publishTitle": "Publish Agent",
+      "publishConfirm": "Publishing will save current changes and make this version live. Continue?",
+      "published": "Agent published as v{version}",
+      "publishedLive": "Your agent is now live.",
+      "publishFailed": "Failed to publish",
+      "loadFailed": "Failed to load agent",
+      "saveFailed": "Failed to save",
+      "saved": "Changes saved",
+      "unsavedChanges": "Unsaved changes",
+      "rollbackTitle": "Rollback to v{version}",
+      "rollbackConfirm": "This will restore the agent to version {version}. Current changes will be saved first.",
+      "rolledBack": "Rolled back to v{version}",
+      "rollbackFailed": "Failed to rollback",
+      "avatarUpdated": "Avatar updated",
+      "avatarSizeFailed": "Image must be under 2MB",
+      "avatarTypeFailed": "File must be an image",
+      "avatarFailed": "Failed to upload avatar",
+      "channelFailed": "Failed to update channel",
+      "status": {
+        "active": "Active",
+        "draft": "Draft",
+        "paused": "Paused"
+      },
+      "prompt": {
+        "label": "System Prompt",
+        "generate": "Generate with AI",
+        "placeholder": "Enter the system prompt for your agent...",
+        "characters": "{count} characters"
+      },
+      "settings": {
+        "llmConfig": "LLM Configuration",
+        "provider": "Provider",
+        "model": "Model",
+        "temperature": "Temperature",
+        "temperatureHint": "Lower = more focused, Higher = more creative",
+        "maxTokens": "Max Tokens",
+        "planMax": "Max for your plan: {max}",
+        "noModels": "No models available for this provider in your plan",
+        "upgradeModel": "Upgrade your plan to use {provider} models.",
+        "conversation": "Conversation",
+        "contextWindow": "Context Window Messages",
+        "messageBuffer": "Message Buffer",
+        "messageBufferHint": "Wait time before processing a user's message",
+        "channels": "Channels"
+      },
+      "channels": {
+        "webWidget": "Web Widget",
+        "webDesc": "Embed a chat widget on any website",
+        "webOffHint": "Enable Web Widget to configure and get your embed code.",
+        "whatsapp": "WhatsApp",
+        "whatsappDesc": "Connect your WhatsApp Business number",
+        "whatsappOffHint": "Enable WhatsApp to configure your WhatsApp Business integration."
+      },
+      "versions": {
+        "noVersions": "No published versions yet.",
+        "publishedAt": "Published {date}",
+        "by": "by {name}",
+        "rollback": "Rollback"
+      },
+      "previewModal": {
+        "banner": "PREVIEW MODE — Messages are not counted towards your plan usage",
+        "empty": "Send a message to start chatting with your agent.",
+        "capturedVars": "Captured Variables:",
+        "inputPlaceholder": "Type a message...",
+        "send": "Send",
+        "reset": "Reset"
+      }
     },
     "variables": {
       "title": "Variables",
@@ -870,39 +958,66 @@
       "preferences": "Preferences"
     },
     "team": {
-      "title": "Team",
-      "description": "Manage your team members and their roles.",
-      "invite": "Invite Member",
-      "inviteEmail": "Email address",
-      "role": "Role",
-      "admin": "Admin",
-      "member": "Member",
-      "owner": "Owner",
-      "remove": "Remove",
-      "removeConfirm": "Remove this team member from your organization?",
-      "inviteSent": "Invitation sent successfully",
-      "noMembers": "No team members yet",
-      "addFirst": "Invite your first team member"
+      "title": "Team Members",
+      "description": "Manage who has access to your workspace.",
+      "inviteMember": "Invite Member",
+      "inviteTitle": "Invite Team Member",
+      "emailLabel": "Email address",
+      "roleLabel": "Role",
+      "sendInvite": "Send Invite",
+      "inviteSent": "Invitation sent!",
+      "inviteFailed": "Failed to send invitation",
+      "memberRemoved": "Member removed",
+      "removeFailed": "Failed to remove member",
+      "loadFailed": "Failed to load team members",
+      "roleUpdated": "Role updated",
+      "roleFailed": "Failed to update role",
+      "changeToMember": "Change to Member",
+      "changeToAdmin": "Change to Admin",
+      "removeMember": "Remove Member",
+      "removeTitle": "Remove Member",
+      "removeConfirm": "Are you sure you want to remove {name} from the team? They will lose access immediately.",
+      "roles": {
+        "member": "Member",
+        "memberDesc": "Member — Use agents, view CRM",
+        "admin": "Admin",
+        "adminDesc": "Admin — Manage agents, team, CRM"
+      }
     },
     "security": {
       "title": "Security",
       "description": "Manage your account security settings.",
-      "twoFactor": "Two-Factor Authentication",
-      "twoFactorDescription": "Add an extra layer of security to your account using an authenticator app",
-      "twoFactorEnabled": "2FA is enabled",
-      "enable2fa": "Enable 2FA",
-      "disable2fa": "Disable 2FA",
-      "scanQr": "Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)",
-      "enterCode": "Enter the 6-digit code to confirm",
-      "backupCodes": "Backup Codes",
-      "backupCodesDescription": "Save these codes in a safe place. Each code can only be used once to sign in if you lose access to your authenticator.",
-      "verify": "Verify & Enable",
-      "changePassword": "Change Password",
-      "currentPassword": "Current password",
-      "newPassword": "New password",
-      "confirmNewPassword": "Confirm new password",
-      "passwordChanged": "Password changed successfully",
-      "disablePassword": "Enter your password to disable 2FA"
+      "twoFA": {
+        "section": "Two-Factor Authentication",
+        "enabled": "Enabled",
+        "notEnabled": "Not enabled",
+        "protected": "Your account is protected with 2FA.",
+        "addLayer": "Add an extra layer of security to your account.",
+        "enable": "Enable 2FA",
+        "disable": "Disable 2FA",
+        "step1": "Step 1: Scan the QR code",
+        "useApp": "Use Google Authenticator, Authy, or any TOTP app.",
+        "orManual": "Or enter the code manually:",
+        "step2": "Step 2: Enter the 6-digit code",
+        "verifyCode": "Verification Code",
+        "verifyEnable": "Verify & Enable",
+        "backupWarning": "Save these backup codes in a secure place. They can each be used once if you lose access to your authenticator.",
+        "copyAll": "Copy All",
+        "copied": "Copied!",
+        "savedCodes": "I've Saved My Backup Codes",
+        "disableTitle": "Disable Two-Factor Authentication",
+        "disableConfirm": "Enter your password to confirm disabling 2FA.",
+        "disableBtn": "Disable 2FA",
+        "disabled": "Two-factor authentication disabled",
+        "setupFailed": "Failed to set up 2FA",
+        "disableFailed": "Failed to disable 2FA",
+        "invalidCode": "Invalid code. Please try again."
+      },
+      "account": {
+        "section": "Account",
+        "email": "Email",
+        "role": "Role"
+      }
     },
     "data": {
       "title": "Data & Privacy",
@@ -963,15 +1078,25 @@
     },
     "subAccounts": {
       "title": "Sub-accounts",
-      "description": "Manage your sub-accounts for different brands or clients.",
+      "description": "Manage child organizations linked to your account.",
       "create": "Create Sub-account",
-      "name": "Sub-account name",
+      "createTitle": "Create Sub-account",
+      "orgName": "Organization Name",
       "label": "Label",
-      "switch": "Switch to",
-      "remove": "Remove",
-      "removeConfirm": "Remove this sub-account? This will not delete the organization.",
-      "noSubAccounts": "No sub-accounts yet",
-      "requiresEnterprise": "Sub-accounts require Enterprise plan"
+      "labelHint": "A short identifier for this sub-account",
+      "switch": "Switch",
+      "empty": "No sub-accounts yet. Create one to manage multiple organizations.",
+      "created": "Sub-account created",
+      "removed": "Sub-account removed",
+      "switched": "Reloading dashboard...",
+      "removeTitle": "Remove Sub-account",
+      "removeWarning": "This will only unlink the sub-account. The organization itself will not be deleted.",
+      "removeConfirm": "Remove {name} ({label}) from your sub-accounts?",
+      "plan": "plan",
+      "loadFailed": "Failed to load sub-accounts",
+      "createFailed": "Failed to create sub-account",
+      "removeFailed": "Failed to remove sub-account",
+      "switchFailed": "Failed to switch account"
     },
     "apiKeys": {
       "title": "API Keys",
@@ -1038,7 +1163,7 @@
     "yearly": "Yearly",
     "save10": "Save 10%",
     "save20": "Save 20%",
-    "perMonth": "/month",
+    "perMonth": "/mo",
     "free": "Free",
     "forever": "forever",
     "startFree": "Start Free",
@@ -1072,6 +1197,43 @@
       "a3": "We offer a 14-day money-back guarantee for all paid plans.",
       "q4": "Can I use my own OpenAI or Anthropic API key?",
       "a4": "Yes! Enterprise plan users can bring their own API keys to remove all message limits."
+    },
+    "pageTitle": "Simple, Transparent Pricing",
+    "pageSubtitle": "Start free. Upgrade when you're ready. No hidden fees.",
+    "foreverFree": "Forever free",
+    "billedMonthly": "Billed monthly",
+    "billedQuarterly": "billed quarterly",
+    "billedYearly": "billed yearly",
+    "startFreeTrial": "Start Free Trial",
+    "compareAll": "Compare All Features",
+    "feature": "Feature",
+    "addons": {
+      "title": "Need More Messages?",
+      "subtitle": "Purchase one-time message packs when you need them. Non-cumulative, expires at month end.",
+      "oneTime": "one-time"
+    },
+    "faqSection": {
+      "title": "Common Questions",
+      "q1": "Can I change plans anytime?",
+      "a1": "Yes, you can upgrade or downgrade at any time. Upgrades take effect immediately; downgrades apply at the next billing cycle.",
+      "q2": "What happens when I hit my message limit?",
+      "a2": "Your agents pause automatically. We'll notify you at 80% so you can upgrade or purchase add-on messages before hitting the limit.",
+      "q3": "Do unused messages roll over?",
+      "a3": "No, message limits reset on the 1st of each month. Add-on message packs are non-cumulative and expire at month end.",
+      "q4": "What payment methods do you accept?",
+      "a4": "We accept all major credit cards (Visa, Mastercard, American Express) via Stripe. Enterprise plans can also be paid by invoice."
+    },
+    "groups": {
+      "core": "Core",
+      "channels": "Channels",
+      "ai": "AI",
+      "crmAdvanced": "CRM & Advanced"
     }
+  },
+  "blog": {
+    "title": "GenSmart Blog",
+    "subtitle": "Insights on AI agents, automation, and growth",
+    "readMore": "Read more",
+    "noPosts": "No posts yet. Check back soon!"
   }
 }

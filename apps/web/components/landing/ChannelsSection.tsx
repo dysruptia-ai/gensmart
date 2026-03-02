@@ -1,19 +1,21 @@
+'use client';
+
 import { MessageCircle, Globe } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './ChannelsSection.module.css';
 
 export function ChannelsSection() {
+  const { t } = useTranslation();
+
   return (
     <section className={styles.section} aria-label="Channels">
       <div className={styles.inner}>
         <ScrollReveal>
           <div className={styles.header}>
-            <span className={styles.eyebrow}>Multi-channel deployment</span>
-            <h2 className={styles.title}>Meet Your Customers Where They Are</h2>
-            <p className={styles.subtitle}>
-              Deploy the same AI agent across WhatsApp and your website
-              simultaneously — from a single dashboard.
-            </p>
+            <span className={styles.eyebrow}>{t('landing.channels.eyebrow')}</span>
+            <h2 className={styles.title}>{t('landing.channels.title')}</h2>
+            <p className={styles.subtitle}>{t('landing.channels.subtitle')}</p>
           </div>
         </ScrollReveal>
 
@@ -27,9 +29,7 @@ export function ChannelsSection() {
                 </div>
                 <div>
                   <h3 className={styles.channelTitle}>WhatsApp Business</h3>
-                  <p className={styles.channelDesc}>
-                    Connect via Meta Cloud API. Reach 2B+ WhatsApp users instantly.
-                  </p>
+                  <p className={styles.channelDesc}>{t('landing.channels.whatsappDesc')}</p>
                 </div>
               </div>
 
@@ -72,9 +72,7 @@ export function ChannelsSection() {
                 </div>
                 <div>
                   <h3 className={styles.channelTitle}>Web Widget</h3>
-                  <p className={styles.channelDesc}>
-                    Embed with one line of code. Customizable to match your brand.
-                  </p>
+                  <p className={styles.channelDesc}>{t('landing.channels.webDesc')}</p>
                 </div>
               </div>
 

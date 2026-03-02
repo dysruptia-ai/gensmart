@@ -12,6 +12,7 @@ import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
 import Dropdown from '@/components/ui/Dropdown';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../settings.module.css';
 
 interface Member {
@@ -34,6 +35,7 @@ const ROLE_VARIANTS: Record<string, RoleVariant> = {
 export default function TeamSettingsPage() {
   const { user } = useAuth();
   const { success, error: toastError } = useToast();
+  const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -48,11 +50,11 @@ export default function TeamSettingsPage() {
       const data = await api.get<Member[]>('/api/organization/members');
       setMembers(data);
     } catch {
-      toastError('Failed to load team members');
+      toastError(t('settings.team.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [toastError]);
+  }, [toastError, t]);
 
   useEffect(() => { loadMembers(); }, [loadMembers]);
 
@@ -61,13 +63,13 @@ export default function TeamSettingsPage() {
     setInviting(true);
     try {
       await api.post('/api/organization/members/invite', { email: inviteEmail, role: inviteRole });
-      success('Invitation sent!', `${inviteEmail} will receive an email to join.`);
+      success(t('settings.team.inviteSent'), `${inviteEmail} will receive an email to join.`);
       setInviteOpen(false);
       setInviteEmail('');
       setInviteRole('member');
       await loadMembers();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to send invitation');
+      toastError(err instanceof ApiError ? err.message : t('settings.team.inviteFailed'));
     } finally {
       setInviting(false);
     }
@@ -77,11 +79,11 @@ export default function TeamSettingsPage() {
     setRemoving(true);
     try {
       await api.delete(`/api/organization/members/${member.id}`);
-      success('Member removed');
+      success(t('settings.team.memberRemoved'));
       setConfirmRemove(null);
       await loadMembers();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to remove member');
+      toastError(err instanceof ApiError ? err.message : t('settings.team.removeFailed'));
     } finally {
       setRemoving(false);
     }
@@ -90,10 +92,10 @@ export default function TeamSettingsPage() {
   async function handleChangeRole(member: Member, newRole: 'admin' | 'member') {
     try {
       await api.put(`/api/organization/members/${member.id}/role`, { role: newRole });
-      success('Role updated');
+      success(t('settings.team.roleUpdated'));
       await loadMembers();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to update role');
+      toastError(err instanceof ApiError ? err.message : t('settings.team.roleFailed'));
     }
   }
 
@@ -103,12 +105,12 @@ export default function TeamSettingsPage() {
     <div>
       <div className={styles.pageHeader} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <h1 className={styles.pageTitle}>Team Members</h1>
-          <p className={styles.pageDesc}>Manage who has access to your workspace.</p>
+          <h1 className={styles.pageTitle}>{t('settings.team.title')}</h1>
+          <p className={styles.pageDesc}>{t('settings.team.description')}</p>
         </div>
         {isOwner && (
           <Button icon={UserPlus} onClick={() => setInviteOpen(true)} size="sm">
-            Invite Member
+            {t('settings.team.inviteMember')}
           </Button>
         )}
       </div>
@@ -140,12 +142,12 @@ export default function TeamSettingsPage() {
                     }
                     items={[
                       {
-                        label: member.role === 'admin' ? 'Change to Member' : 'Change to Admin',
+                        label: member.role === 'admin' ? t('settings.team.changeToMember') : t('settings.team.changeToAdmin'),
                         icon: Shield,
                         onClick: () => handleChangeRole(member, member.role === 'admin' ? 'member' : 'admin'),
                       },
                       {
-                        label: 'Remove Member',
+                        label: t('settings.team.removeMember'),
                         icon: Trash2,
                         danger: true,
                         dividerBefore: true,
@@ -164,12 +166,12 @@ export default function TeamSettingsPage() {
       <Modal
         isOpen={inviteOpen}
         onClose={() => { setInviteOpen(false); setInviteEmail(''); }}
-        title="Invite Team Member"
+        title={t('settings.team.inviteTitle')}
         size="sm"
       >
         <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <Input
-            label="Email address"
+            label={t('settings.team.emailLabel')}
             type="email"
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
@@ -179,7 +181,7 @@ export default function TeamSettingsPage() {
           />
           <div>
             <label htmlFor="invite-role" style={{ display: 'block', fontSize: 'var(--font-sm)', fontWeight: 500, color: 'var(--color-text-primary)', marginBottom: '0.375rem' }}>
-              Role
+              {t('settings.team.roleLabel')}
             </label>
             <select
               id="invite-role"
@@ -187,13 +189,13 @@ export default function TeamSettingsPage() {
               onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member')}
               style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-sm)', background: 'var(--color-bg-card)', color: 'var(--color-text-primary)' }}
             >
-              <option value="member">Member — Use agents, view CRM</option>
-              <option value="admin">Admin — Manage agents, team, CRM</option>
+              <option value="member">{t('settings.team.roles.memberDesc')}</option>
+              <option value="admin">{t('settings.team.roles.adminDesc')}</option>
             </select>
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-            <Button variant="secondary" type="button" onClick={() => setInviteOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={inviting} icon={UserPlus}>Send Invite</Button>
+            <Button variant="secondary" type="button" onClick={() => setInviteOpen(false)}>{t('common.cancel')}</Button>
+            <Button type="submit" loading={inviting} icon={UserPlus}>{t('settings.team.sendInvite')}</Button>
           </div>
         </form>
       </Modal>
@@ -202,17 +204,16 @@ export default function TeamSettingsPage() {
       <Modal
         isOpen={!!confirmRemove}
         onClose={() => setConfirmRemove(null)}
-        title="Remove Member"
+        title={t('settings.team.removeTitle')}
         size="sm"
       >
         <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
-          Are you sure you want to remove <strong>{confirmRemove?.name}</strong> from the team?
-          They will lose access immediately.
+          {t('settings.team.removeConfirm', { name: confirmRemove?.name ?? '' })}
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <Button variant="secondary" onClick={() => setConfirmRemove(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setConfirmRemove(null)}>{t('common.cancel')}</Button>
           <Button variant="danger" loading={removing} icon={Trash2} onClick={() => confirmRemove && handleRemove(confirmRemove)}>
-            Remove
+            {t('common.delete')}
           </Button>
         </div>
       </Modal>

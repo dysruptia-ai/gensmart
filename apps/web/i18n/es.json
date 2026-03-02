@@ -58,7 +58,8 @@
       "pricing": "Precios",
       "blog": "Blog",
       "login": "Iniciar sesión",
-      "getStarted": "Comenzar gratis"
+      "getStarted": "Comenzar gratis",
+      "howItWorks": "Cómo funciona"
     },
     "hero": {
       "title": "Crea e implementa agentes de IA en minutos, no en semanas",
@@ -226,6 +227,53 @@
       "docs": "Documentación",
       "about": "Acerca de",
       "contact": "Contacto"
+    },
+    "problemSolution": {
+      "title": "Deja de luchar con herramientas complejas",
+      "subtitle": "No deberías necesitar un desarrollador para automatizar las conversaciones con tus clientes.",
+      "oldWay": "La forma tradicional",
+      "newWay": "La forma GenSmart",
+      "problems": {
+        "setup": "Semanas de configuración con herramientas complejas",
+        "disconnected": "Múltiples plataformas desconectadas",
+        "expensive": "Recursos de desarrollo costosos"
+      },
+      "solutions": {
+        "deploy": "Despliega en minutos, no semanas",
+        "allInOne": "Plataforma todo-en-uno",
+        "noCode": "Sin necesidad de código"
+      }
+    },
+    "channels": {
+      "eyebrow": "Despliegue multi-canal",
+      "title": "Encuentra a tus clientes donde están",
+      "subtitle": "Despliega el mismo agente de IA en WhatsApp y tu sitio web simultáneamente — desde un solo panel.",
+      "whatsappDesc": "Conecta vía Meta Cloud API. Alcanza más de 2B usuarios de WhatsApp al instante.",
+      "webDesc": "Incrusta con una línea de código. Personalizable para tu marca."
+    },
+    "crmPreview": {
+      "eyebrow": "CRM integrado",
+      "title": "CRM inteligente que trabaja mientras duermes",
+      "subtitle": "Cada conversación automáticamente calificada, resumida y organizada. Tus mejores leads siempre al frente.",
+      "contactList": "Lista de contactos",
+      "salesFunnel": "Embudo de ventas",
+      "table": {
+        "contact": "Contacto",
+        "score": "Puntaje",
+        "stage": "Etapa",
+        "service": "Servicio"
+      },
+      "stages": {
+        "lead": "Lead",
+        "opportunity": "Oportunidad",
+        "customer": "Cliente"
+      }
+    },
+    "blogPreview": {
+      "title": "Lo último de nuestro blog",
+      "subtitle": "Artículos sobre agentes de IA, automatización y crecimiento empresarial.",
+      "readMore": "Leer más",
+      "viewAll": "Ver todos los posts"
     }
   },
   "auth": {
@@ -366,40 +414,80 @@
         "prompt": "Prompt",
         "variables": "Variables",
         "tools": "Herramientas",
-        "knowledge": "Conocimiento",
+        "settings": "Configuración",
         "channels": "Canales",
-        "settings": "Configuración"
+        "versions": "Versiones"
       },
+      "save": "Guardar",
       "preview": "Vista previa",
       "publish": "Publicar",
-      "save": "Guardar",
-      "publishConfirm": "¿Publicar este agente? Estará disponible en todos los canales configurados.",
-      "publishSuccess": "Agente publicado correctamente",
-      "saveSuccess": "Agente guardado",
-      "generatePrompt": "Generar con IA",
-      "generatePromptPlaceholder": "Describe tu agente en lenguaje natural. Ej.: Un agente de atención al cliente para una clínica dental que captura datos de pacientes...",
-      "generatePromptCta": "Generar prompt",
-      "generating": "Generando...",
-      "systemPrompt": "Prompt del sistema",
-      "systemPromptPlaceholder": "Eres un asistente de IA útil...",
-      "agentName": "Nombre del agente",
-      "agentNamePlaceholder": "Mi agente de IA",
-      "version": "Versión {number}",
-      "rollback": "Restaurar a esta versión",
-      "agentType": "Tipo de agente",
-      "model": "Modelo de IA",
-      "temperature": "Temperatura",
-      "maxTokens": "Máx. tokens por respuesta",
-      "contextWindow": "Ventana de contexto (mensajes)",
-      "language": "Idioma",
-      "deleteAgent": "Eliminar agente",
-      "deleteConfirm": "¿Eliminar este agente? Todas las conversaciones y configuraciones se eliminarán permanentemente.",
-      "applyPrompt": "Aplicar prompt",
-      "overwriteWarning": "Esto reemplazará tu prompt actual. ¿Continuar?",
-      "previewTitle": "Vista previa",
-      "previewPlaceholder": "Escribe un mensaje para probar tu agente...",
-      "previewReset": "Reiniciar conversación",
-      "previewSend": "Enviar"
+      "publishTitle": "Publicar agente",
+      "publishConfirm": "Al publicar se guardarán los cambios actuales y esta versión quedará activa. ¿Continuar?",
+      "published": "Agente publicado como v{version}",
+      "publishedLive": "Tu agente está ahora activo.",
+      "publishFailed": "Error al publicar",
+      "loadFailed": "Error al cargar el agente",
+      "saveFailed": "Error al guardar",
+      "saved": "Cambios guardados",
+      "unsavedChanges": "Cambios sin guardar",
+      "rollbackTitle": "Revertir a v{version}",
+      "rollbackConfirm": "Esto restaurará el agente a la versión {version}. Los cambios actuales se guardarán primero.",
+      "rolledBack": "Revertido a v{version}",
+      "rollbackFailed": "Error al revertir",
+      "avatarUpdated": "Avatar actualizado",
+      "avatarSizeFailed": "La imagen debe ser menor a 2MB",
+      "avatarTypeFailed": "El archivo debe ser una imagen",
+      "avatarFailed": "Error al subir el avatar",
+      "channelFailed": "Error al actualizar el canal",
+      "status": {
+        "active": "Activo",
+        "draft": "Borrador",
+        "paused": "Pausado"
+      },
+      "prompt": {
+        "label": "Prompt del sistema",
+        "generate": "Generar con IA",
+        "placeholder": "Ingresa el prompt del sistema para tu agente...",
+        "characters": "{count} caracteres"
+      },
+      "settings": {
+        "llmConfig": "Configuración LLM",
+        "provider": "Proveedor",
+        "model": "Modelo",
+        "temperature": "Temperatura",
+        "temperatureHint": "Menor = más enfocado, Mayor = más creativo",
+        "maxTokens": "Tokens máximos",
+        "planMax": "Máximo en tu plan: {max}",
+        "noModels": "No hay modelos disponibles para este proveedor en tu plan",
+        "upgradeModel": "Actualiza tu plan para usar modelos de {provider}.",
+        "conversation": "Conversación",
+        "contextWindow": "Mensajes de contexto",
+        "messageBuffer": "Buffer de mensajes",
+        "messageBufferHint": "Tiempo de espera antes de procesar el mensaje del usuario",
+        "channels": "Canales"
+      },
+      "channels": {
+        "webWidget": "Web Widget",
+        "webDesc": "Incrusta un chat widget en cualquier sitio web",
+        "webOffHint": "Activa Web Widget para configurarlo y obtener tu código de inserción.",
+        "whatsapp": "WhatsApp",
+        "whatsappDesc": "Conecta tu número de WhatsApp Business",
+        "whatsappOffHint": "Activa WhatsApp para configurar tu integración de WhatsApp Business."
+      },
+      "versions": {
+        "noVersions": "Aún no hay versiones publicadas.",
+        "publishedAt": "Publicado {date}",
+        "by": "por {name}",
+        "rollback": "Revertir"
+      },
+      "previewModal": {
+        "banner": "MODO VISTA PREVIA — Los mensajes no se cuentan para el uso de tu plan",
+        "empty": "Envía un mensaje para comenzar a chatear con tu agente.",
+        "capturedVars": "Variables capturadas:",
+        "inputPlaceholder": "Escribe un mensaje...",
+        "send": "Enviar",
+        "reset": "Reiniciar"
+      }
     },
     "variables": {
       "title": "Variables",
@@ -870,39 +958,66 @@
       "preferences": "Preferencias"
     },
     "team": {
-      "title": "Equipo",
-      "description": "Gestiona los miembros de tu equipo y sus roles.",
-      "invite": "Invitar miembro",
-      "inviteEmail": "Correo electrónico",
-      "role": "Rol",
-      "admin": "Administrador",
-      "member": "Miembro",
-      "owner": "Propietario",
-      "remove": "Eliminar",
-      "removeConfirm": "¿Eliminar a este miembro de tu organización?",
-      "inviteSent": "Invitación enviada correctamente",
-      "noMembers": "Sin miembros en el equipo",
-      "addFirst": "Invita a tu primer miembro del equipo"
+      "title": "Miembros del equipo",
+      "description": "Gestiona quién tiene acceso a tu espacio de trabajo.",
+      "inviteMember": "Invitar miembro",
+      "inviteTitle": "Invitar miembro al equipo",
+      "emailLabel": "Correo electrónico",
+      "roleLabel": "Rol",
+      "sendInvite": "Enviar invitación",
+      "inviteSent": "¡Invitación enviada!",
+      "inviteFailed": "Error al enviar la invitación",
+      "memberRemoved": "Miembro eliminado",
+      "removeFailed": "Error al eliminar al miembro",
+      "loadFailed": "Error al cargar los miembros del equipo",
+      "roleUpdated": "Rol actualizado",
+      "roleFailed": "Error al actualizar el rol",
+      "changeToMember": "Cambiar a Miembro",
+      "changeToAdmin": "Cambiar a Admin",
+      "removeMember": "Eliminar miembro",
+      "removeTitle": "Eliminar miembro",
+      "removeConfirm": "¿Seguro que quieres eliminar a {name} del equipo? Perderá el acceso inmediatamente.",
+      "roles": {
+        "member": "Miembro",
+        "memberDesc": "Miembro — Usar agentes, ver CRM",
+        "admin": "Admin",
+        "adminDesc": "Admin — Gestionar agentes, equipo, CRM"
+      }
     },
     "security": {
       "title": "Seguridad",
-      "description": "Gestiona la seguridad de tu cuenta.",
-      "twoFactor": "Autenticación de dos factores",
-      "twoFactorDescription": "Añade una capa extra de seguridad a tu cuenta usando una aplicación autenticadora",
-      "twoFactorEnabled": "2FA está habilitado",
-      "enable2fa": "Habilitar 2FA",
-      "disable2fa": "Deshabilitar 2FA",
-      "scanQr": "Escanea este código QR con tu aplicación autenticadora (Google Authenticator, Authy, etc.)",
-      "enterCode": "Ingresa el código de 6 dígitos para confirmar",
-      "backupCodes": "Códigos de respaldo",
-      "backupCodesDescription": "Guarda estos códigos en un lugar seguro. Cada código solo se puede usar una vez para iniciar sesión si pierdes acceso a tu autenticador.",
-      "verify": "Verificar y habilitar",
-      "changePassword": "Cambiar contraseña",
-      "currentPassword": "Contraseña actual",
-      "newPassword": "Nueva contraseña",
-      "confirmNewPassword": "Confirmar nueva contraseña",
-      "passwordChanged": "Contraseña cambiada correctamente",
-      "disablePassword": "Ingresa tu contraseña para deshabilitar el 2FA"
+      "description": "Gestiona la configuración de seguridad de tu cuenta.",
+      "twoFA": {
+        "section": "Autenticación de dos factores",
+        "enabled": "Activada",
+        "notEnabled": "No activada",
+        "protected": "Tu cuenta está protegida con 2FA.",
+        "addLayer": "Agrega una capa extra de seguridad a tu cuenta.",
+        "enable": "Activar 2FA",
+        "disable": "Desactivar 2FA",
+        "step1": "Paso 1: Escanea el código QR",
+        "useApp": "Usa Google Authenticator, Authy o cualquier app TOTP.",
+        "orManual": "O ingresa el código manualmente:",
+        "step2": "Paso 2: Ingresa el código de 6 dígitos",
+        "verifyCode": "Código de verificación",
+        "verifyEnable": "Verificar y activar",
+        "backupWarning": "Guarda estos códigos de respaldo en un lugar seguro. Cada uno puede usarse una vez si pierdes acceso a tu autenticador.",
+        "copyAll": "Copiar todos",
+        "copied": "¡Copiado!",
+        "savedCodes": "He guardado mis códigos de respaldo",
+        "disableTitle": "Desactivar autenticación de dos factores",
+        "disableConfirm": "Ingresa tu contraseña para confirmar la desactivación del 2FA.",
+        "disableBtn": "Desactivar 2FA",
+        "disabled": "Autenticación de dos factores desactivada",
+        "setupFailed": "Error al configurar el 2FA",
+        "disableFailed": "Error al desactivar el 2FA",
+        "invalidCode": "Código inválido. Inténtalo de nuevo."
+      },
+      "account": {
+        "section": "Cuenta",
+        "email": "Correo electrónico",
+        "role": "Rol"
+      }
     },
     "data": {
       "title": "Datos y privacidad",
@@ -963,15 +1078,25 @@
     },
     "subAccounts": {
       "title": "Sub-cuentas",
-      "description": "Gestiona tus sub-cuentas para diferentes marcas o clientes.",
+      "description": "Gestiona las organizaciones vinculadas a tu cuenta.",
       "create": "Crear sub-cuenta",
-      "name": "Nombre de la sub-cuenta",
+      "createTitle": "Crear sub-cuenta",
+      "orgName": "Nombre de la organización",
       "label": "Etiqueta",
-      "switch": "Cambiar a",
-      "remove": "Eliminar",
-      "removeConfirm": "¿Eliminar esta sub-cuenta? No se eliminará la organización.",
-      "noSubAccounts": "Sin sub-cuentas aún",
-      "requiresEnterprise": "Las sub-cuentas requieren plan Enterprise"
+      "labelHint": "Un identificador corto para esta sub-cuenta",
+      "switch": "Cambiar",
+      "empty": "Sin sub-cuentas aún. Crea una para gestionar múltiples organizaciones.",
+      "created": "Sub-cuenta creada",
+      "removed": "Sub-cuenta eliminada",
+      "switched": "Recargando panel...",
+      "removeTitle": "Eliminar sub-cuenta",
+      "removeWarning": "Esto solo desvinculará la sub-cuenta. La organización en sí no será eliminada.",
+      "removeConfirm": "¿Eliminar {name} ({label}) de tus sub-cuentas?",
+      "plan": "plan",
+      "loadFailed": "Error al cargar las sub-cuentas",
+      "createFailed": "Error al crear la sub-cuenta",
+      "removeFailed": "Error al eliminar la sub-cuenta",
+      "switchFailed": "Error al cambiar de cuenta"
     },
     "apiKeys": {
       "title": "Claves API",
@@ -1072,6 +1197,43 @@
       "a3": "Ofrecemos garantía de devolución de dinero de 14 días para todos los planes de pago.",
       "q4": "¿Puedo usar mi propia clave de API de OpenAI o Anthropic?",
       "a4": "¡Sí! Los usuarios del plan Enterprise pueden usar sus propias claves API para eliminar todos los límites de mensajes."
+    },
+    "pageTitle": "Precios simples y transparentes",
+    "pageSubtitle": "Empieza gratis. Actualiza cuando quieras. Sin costos ocultos.",
+    "foreverFree": "Gratis para siempre",
+    "billedMonthly": "Facturación mensual",
+    "billedQuarterly": "facturación trimestral",
+    "billedYearly": "facturación anual",
+    "startFreeTrial": "Prueba gratis",
+    "compareAll": "Comparar todas las funciones",
+    "feature": "Función",
+    "addons": {
+      "title": "¿Necesitas más mensajes?",
+      "subtitle": "Compra paquetes de mensajes adicionales cuando los necesites. No acumulables, expiran al final del mes.",
+      "oneTime": "pago único"
+    },
+    "faqSection": {
+      "title": "Preguntas frecuentes",
+      "q1": "¿Puedo cambiar de plan cuando quiera?",
+      "a1": "Sí, puedes subir o bajar de plan en cualquier momento. Las mejoras aplican de inmediato; las bajas aplican en el siguiente ciclo de facturación.",
+      "q2": "¿Qué pasa cuando alcanzo mi límite de mensajes?",
+      "a2": "Tus agentes se pausan automáticamente. Te notificamos al 80% para que puedas actualizar o comprar mensajes adicionales antes de alcanzar el límite.",
+      "q3": "¿Los mensajes no usados se acumulan?",
+      "a3": "No, los límites de mensajes se reinician el 1 de cada mes. Los paquetes adicionales no son acumulables y expiran al final del mes.",
+      "q4": "¿Qué métodos de pago aceptan?",
+      "a4": "Aceptamos todas las tarjetas de crédito principales (Visa, Mastercard, American Express) vía Stripe. Los planes Enterprise también pueden pagarse por factura."
+    },
+    "groups": {
+      "core": "Básico",
+      "channels": "Canales",
+      "ai": "IA",
+      "crmAdvanced": "CRM y Avanzado"
     }
+  },
+  "blog": {
+    "title": "Blog de GenSmart",
+    "subtitle": "Artículos sobre agentes de IA, automatización y crecimiento",
+    "readMore": "Leer más",
+    "noPosts": "¡Aún no hay posts. Vuelve pronto!"
   }
 }
