@@ -122,8 +122,8 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
           )}
           {subscription?.currentPeriodEnd && !isFree && (
             <div className={styles.metaRow}>
-              <Calendar size={13} />
-              <span>
+              <Calendar size={13} className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined} />
+              <span className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined}>
                 {subscription.cancelAtPeriodEnd ? 'Cancels' : 'Renews'} {formatDate(subscription.currentPeriodEnd)}
               </span>
             </div>

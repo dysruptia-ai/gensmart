@@ -238,12 +238,12 @@ router.get(
         avg_score: string | null;
       }>(
         `SELECT a.id, a.name, a.avatar_url, a.avatar_initials, a.status,
-           COUNT(DISTINCT c.id) as conversation_count,
+           COUNT(DISTINCT conv.id) as conversation_count,
            COUNT(DISTINCT co.id) as contact_count,
            COALESCE(ROUND(AVG(co.ai_score)::numeric, 1), NULL) as avg_score
          FROM agents a
-         LEFT JOIN conversations c ON c.agent_id = a.id
-         LEFT JOIN contacts co ON co.agent_id = a.id AND co.ai_score IS NOT NULL
+         LEFT JOIN conversations conv ON conv.agent_id = a.id
+         LEFT JOIN contacts co ON co.id = conv.contact_id
          WHERE a.organization_id = $1
          GROUP BY a.id
          ORDER BY conversation_count DESC
@@ -325,9 +325,18 @@ router.get(
         agent_id: string | null;
       }>(
         `SELECT c.id, c.name, c.email, c.ai_score, c.ai_service, c.created_at,
-           a.name as agent_name, a.id as agent_id
+           COALESCE(a.name, conv_agent.name) as agent_name,
+           COALESCE(a.id, conv_agent.id) as agent_id
          FROM contacts c
-         LEFT JOIN agents a ON c.agent_id = a.id
+         LEFT JOIN agents a ON a.id = c.agent_id
+         LEFT JOIN LATERAL (
+           SELECT ag.id, ag.name
+           FROM conversations conv
+           JOIN agents ag ON ag.id = conv.agent_id
+           WHERE conv.contact_id = c.id
+           ORDER BY conv.created_at DESC
+           LIMIT 1
+         ) conv_agent ON true
          WHERE c.organization_id = $1 AND c.ai_score IS NOT NULL AND c.ai_score >= 5
          ORDER BY c.ai_score DESC, c.created_at DESC
          LIMIT 5`,

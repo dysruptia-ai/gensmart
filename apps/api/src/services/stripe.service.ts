@@ -130,6 +130,17 @@ export async function cancelSubscription(
   });
 }
 
+export async function updateSubscriptionPlan(
+  subscriptionId: string,
+  itemId: string,
+  newPriceId: string
+): Promise<Stripe.Subscription> {
+  return stripe.subscriptions.update(subscriptionId, {
+    items: [{ id: itemId, price: newPriceId }],
+    proration_behavior: 'create_prorations',
+  });
+}
+
 // ── Add-on payments ───────────────────────────────────────────────────────────
 
 export async function createAddOnCheckout(params: {

@@ -149,13 +149,14 @@ router.post(
         userAgent?: string;
       };
 
-      // Create anonymous contact
+      // Create anonymous contact (include agent_id so contacts are properly attributed)
       const contactResult = await query<{ id: string }>(
-        `INSERT INTO contacts (organization_id, source_channel, custom_variables, created_at, updated_at)
-         VALUES ($1, 'web', $2::jsonb, NOW(), NOW())
+        `INSERT INTO contacts (organization_id, agent_id, source_channel, custom_variables, created_at, updated_at)
+         VALUES ($1, $2, 'web', $3::jsonb, NOW(), NOW())
          RETURNING id`,
         [
           agent.organization_id,
+          agent.id,
           JSON.stringify({ fingerprint: fingerprint ?? null, referrer: referrer ?? null }),
         ]
       );

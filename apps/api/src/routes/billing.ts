@@ -42,8 +42,12 @@ router.post(
     try {
       const { plan, interval, successUrl, cancelUrl } = req.body as z.infer<typeof createCheckoutSchema>;
 
-      const orgResult = await query<{ name: string; stripe_customer_id: string | null }>(
-        'SELECT name, stripe_customer_id FROM organizations WHERE id = $1',
+      const orgResult = await query<{
+        name: string;
+        stripe_customer_id: string | null;
+        stripe_subscription_id: string | null;
+      }>(
+        'SELECT name, stripe_customer_id, stripe_subscription_id FROM organizations WHERE id = $1',
         [req.user!.orgId]
       );
       const org = orgResult.rows[0];
@@ -51,13 +55,6 @@ router.post(
         res.status(404).json({ error: { message: 'Organization not found', code: 'NOT_FOUND' } });
         return;
       }
-
-      // Ensure Stripe customer exists
-      const customerId = await stripeService.getOrCreateCustomer(
-        req.user!.orgId,
-        req.user!.email,
-        org.name
-      );
 
       const priceId = stripeService.getPricesForPlan(plan)[interval];
       if (!priceId || priceId === 'price_placeholder') {
@@ -69,6 +66,28 @@ router.post(
         });
         return;
       }
+
+      // If org already has an active subscription → update it (no new checkout)
+      if (org.stripe_subscription_id) {
+        const subscription = await stripeService.getSubscription(org.stripe_subscription_id);
+        const itemId = subscription.items.data[0]?.id;
+        if (itemId) {
+          const updated = await stripeService.updateSubscriptionPlan(
+            org.stripe_subscription_id,
+            itemId,
+            priceId
+          );
+          res.json({ success: true, subscription: updated });
+          return;
+        }
+      }
+
+      // No existing subscription → create Stripe Checkout session
+      const customerId = await stripeService.getOrCreateCustomer(
+        req.user!.orgId,
+        req.user!.email,
+        org.name
+      );
 
       const defaultSuccess = `${env.FRONTEND_URL}/dashboard/billing?success=1&plan=${plan}`;
       const defaultCancel = `${env.FRONTEND_URL}/dashboard/billing?cancelled=1`;

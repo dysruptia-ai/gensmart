@@ -140,16 +140,17 @@ router.post(
       let contactId: string;
       if (existingContact.rows[0]) {
         contactId = existingContact.rows[0].id;
+        // Also set agent_id if missing
         await query(
-          'UPDATE contacts SET updated_at = NOW() WHERE id = $1',
-          [contactId]
+          'UPDATE contacts SET agent_id = COALESCE(agent_id, $1), updated_at = NOW() WHERE id = $2',
+          [agent.id, contactId]
         );
       } else {
         const newContact = await query<{ id: string }>(
-          `INSERT INTO contacts (organization_id, phone, source_channel, created_at, updated_at)
-           VALUES ($1, $2, 'whatsapp', NOW(), NOW())
+          `INSERT INTO contacts (organization_id, agent_id, phone, source_channel, created_at, updated_at)
+           VALUES ($1, $2, $3, 'whatsapp', NOW(), NOW())
            RETURNING id`,
-          [agent.organization_id, fromPhone]
+          [agent.organization_id, agent.id, fromPhone]
         );
         contactId = newContact.rows[0]!.id;
       }

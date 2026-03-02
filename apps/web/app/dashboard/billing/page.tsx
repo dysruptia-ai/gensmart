@@ -102,9 +102,10 @@ export default function BillingPage() {
     setIsManaging(true);
     try {
       const { url } = await api.post<{ url: string }>('/api/billing/create-portal');
-      window.location.href = url;
+      window.open(url, '_blank');
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : 'Failed to open billing portal');
+    } finally {
       setIsManaging(false);
     }
   }
@@ -112,10 +113,19 @@ export default function BillingPage() {
   async function handleUpgrade(plan: 'starter' | 'pro' | 'enterprise', interval: 'monthly' | 'quarterly' | 'yearly') {
     setUpgradeLoading(true);
     try {
-      const { url } = await api.post<{ url: string }>('/api/billing/create-checkout', { plan, interval });
-      window.location.href = url;
+      const result = await api.post<{ url?: string; success?: boolean }>('/api/billing/create-checkout', { plan, interval });
+      if (result.success) {
+        // Direct subscription update (existing subscriber)
+        success('Plan updated successfully!');
+        setShowUpgradeModal(false);
+        void loadData();
+      } else if (result.url) {
+        // New subscription via Stripe Checkout
+        window.location.href = result.url;
+      }
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : 'Failed to start checkout');
+    } finally {
       setUpgradeLoading(false);
     }
   }

@@ -43,14 +43,6 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), asyn
   const sig = req.headers['stripe-signature'] as string;
   const secret = process.env['STRIPE_WEBHOOK_SECRET'];
 
-  // ── Debug (remove after confirming webhook works) ──
-  console.log('[webhook-debug] body type    :', typeof req.body);
-  console.log('[webhook-debug] isBuffer     :', Buffer.isBuffer(req.body));
-  console.log('[webhook-debug] body length  :', (req.body as Buffer)?.length ?? 'n/a');
-  console.log('[webhook-debug] sig          :', sig ? 'present' : 'MISSING');
-  console.log('[webhook-debug] secret       :', secret ? 'present' : 'MISSING');
-  // ────────────────────────────────────────────────────
-
   if (!sig || !secret) {
     res.status(400).json({ error: 'Missing stripe-signature header or STRIPE_WEBHOOK_SECRET' });
     return;

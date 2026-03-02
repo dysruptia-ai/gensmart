@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, getClient } from '../config/database';
 import { PLAN_LIMITS } from '@gensmart/shared';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -220,17 +220,48 @@ export async function updateContact(
 }
 
 export async function deleteContact(orgId: string, contactId: string): Promise<boolean> {
-  // Unlink conversations first to avoid FK constraint violation
-  await query(
-    'UPDATE conversations SET contact_id = NULL WHERE contact_id = $1 AND organization_id = $2',
-    [contactId, orgId]
-  );
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
 
-  const result = await query(
-    'DELETE FROM contacts WHERE id = $1 AND organization_id = $2',
-    [contactId, orgId]
-  );
-  return (result.rowCount ?? 0) > 0;
+    // 1. Delete messages from this contact's conversations
+    await client.query(
+      `DELETE FROM messages WHERE conversation_id IN (
+        SELECT id FROM conversations WHERE contact_id = $1 AND organization_id = $2
+      )`,
+      [contactId, orgId]
+    );
+
+    // 2. Unlink appointments (keep appointments, remove contact + conversation references)
+    await client.query(
+      `UPDATE appointments SET contact_id = NULL, conversation_id = NULL
+       WHERE contact_id = $1
+          OR conversation_id IN (
+            SELECT id FROM conversations WHERE contact_id = $1 AND organization_id = $2
+          )`,
+      [contactId, orgId]
+    );
+
+    // 3. Delete conversations
+    await client.query(
+      'DELETE FROM conversations WHERE contact_id = $1 AND organization_id = $2',
+      [contactId, orgId]
+    );
+
+    // 4. Delete the contact
+    const result = await client.query(
+      'DELETE FROM contacts WHERE id = $1 AND organization_id = $2',
+      [contactId, orgId]
+    );
+
+    await client.query('COMMIT');
+    return (result.rowCount ?? 0) > 0;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export async function getContactConversations(orgId: string, contactId: string) {
