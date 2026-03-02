@@ -14,6 +14,7 @@ import ContactNotes from '@/components/crm/ContactNotes';
 import ContactConversations from '@/components/crm/ContactConversations';
 import ContactVariables from '@/components/crm/ContactVariables';
 import ContactTimeline from '@/components/crm/ContactTimeline';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './contact-detail.module.css';
 
 interface Contact {
@@ -59,6 +60,7 @@ export default function ContactDetailPage() {
   const router = useRouter();
   const id = String(params['id'] ?? '');
   const toast = useToast();
+  const { t } = useTranslation();
 
   const { on, off } = useWebSocket();
   const isDeletingRef = React.useRef(false);
@@ -93,7 +95,7 @@ export default function ContactDetailPage() {
       setConversations(convsRes.conversations);
       setTimeline(timelineRes.events);
     } catch {
-      toast.error('Failed to load contact');
+      toast.error(t('contacts.detail.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -143,9 +145,9 @@ export default function ContactDetailPage() {
     try {
       const res = await api.put<{ contact: Contact }>(`/api/contacts/${id}`, data);
       setContact(res.contact);
-      toast.success('Contact updated');
+      toast.success(t('contacts.detail.updateSuccess'));
     } catch {
-      toast.error('Failed to update contact');
+      toast.error(t('contacts.detail.updateFailed'));
     }
   };
 
@@ -153,9 +155,9 @@ export default function ContactDetailPage() {
     try {
       const res = await api.put<{ contact: Contact }>(`/api/contacts/${id}/stage`, { stage });
       setContact(res.contact);
-      toast.success('Stage updated');
+      toast.success(t('contacts.detail.stageSuccess'));
     } catch {
-      toast.error('Failed to update stage');
+      toast.error(t('contacts.detail.stageFailed'));
     }
   };
 
@@ -163,25 +165,25 @@ export default function ContactDetailPage() {
     try {
       const res = await api.put<{ contact: Contact }>(`/api/contacts/${id}`, { notes });
       setContact(res.contact);
-      toast.success('Notes saved');
+      toast.success(t('contacts.detail.notesSaved'));
     } catch {
-      toast.error('Failed to save notes');
+      toast.error(t('contacts.detail.notesFailed'));
     }
   };
 
   const handleDelete = async () => {
     isDeletingRef.current = true;
     await api.delete(`/api/contacts/${id}`);
-    toast.success('Contact deleted');
+    toast.success(t('contacts.detail.deleted'));
     router.push('/dashboard/contacts');
   };
 
   const handleReanalyze = async () => {
     try {
       await api.post(`/api/contacts/${id}/analyze`);
-      toast.success('Analysis queued — results will appear shortly');
+      toast.success(t('contacts.detail.analyzeQueued'));
     } catch {
-      toast.error('No conversation found to analyze');
+      toast.error(t('contacts.detail.analyzeFailed'));
     }
   };
 
@@ -196,9 +198,9 @@ export default function ContactDetailPage() {
   if (!contact) {
     return (
       <div className={styles.notFound}>
-        <p>Contact not found.</p>
+        <p>{t('contacts.detail.notFound')}</p>
         <Button variant="ghost" icon={ArrowLeft} onClick={() => router.push('/dashboard/contacts')}>
-          Back to Contacts
+          {t('contacts.detail.back')}
         </Button>
       </div>
     );
@@ -213,10 +215,10 @@ export default function ContactDetailPage() {
           icon={ArrowLeft}
           onClick={() => router.push('/dashboard/contacts')}
         >
-          Contacts
+          {t('contacts.title')}
         </Button>
         <span className={styles.breadcrumbSep}>/</span>
-        <span className={styles.breadcrumbCurrent}>{contact.name ?? 'Unknown'}</span>
+        <span className={styles.breadcrumbCurrent}>{contact.name ?? t('common.name')}</span>
       </div>
 
       <div className={styles.layout}>

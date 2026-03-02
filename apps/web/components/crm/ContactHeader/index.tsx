@@ -7,6 +7,8 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import ScoreBadge from '@/components/crm/ScoreBadge';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatDate } from '@/lib/formatters';
 import styles from './ContactHeader.module.css';
 
 interface ContactHeaderProps {
@@ -30,6 +32,7 @@ interface ContactHeaderProps {
 const STAGES = ['lead', 'opportunity', 'customer'];
 
 export default function ContactHeader({ contact, onUpdate, onStageChange, onDelete }: ContactHeaderProps) {
+  const { t, language } = useTranslation();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     name: contact.name ?? '',
@@ -91,26 +94,26 @@ export default function ContactHeader({ contact, onUpdate, onStageChange, onDele
             )}
           </div>
           <p className={styles.createdAt}>
-            Contact since {new Date(contact.created_at).toLocaleDateString()}
+            {t('contacts.detail.contactSince', { date: formatDate(contact.created_at, language) })}
           </p>
         </div>
         <div className={styles.actions}>
           {editing ? (
             <>
               <Button size="sm" variant="primary" icon={Save} loading={saving} onClick={handleSave}>
-                Save
+                {t('contacts.detail.save')}
               </Button>
               <Button size="sm" variant="ghost" icon={X} onClick={() => setEditing(false)}>
-                Cancel
+                {t('contacts.detail.cancel')}
               </Button>
             </>
           ) : (
             <>
               <Button size="sm" variant="secondary" icon={Edit2} onClick={() => setEditing(true)}>
-                Edit
+                {t('contacts.detail.edit')}
               </Button>
               <Button size="sm" variant="danger" icon={Trash2} onClick={() => setShowDeleteModal(true)}>
-                Delete
+                {t('contacts.detail.delete')}
               </Button>
             </>
           )}
@@ -120,16 +123,16 @@ export default function ContactHeader({ contact, onUpdate, onStageChange, onDele
       {editing ? (
         <div className={styles.editForm}>
           <div className={styles.field}>
-            <label className={styles.label}>Name</label>
+            <label className={styles.label}>{t('common.name')}</label>
             <input
               className={styles.input}
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Contact name"
+              placeholder={t('common.name')}
             />
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Email</label>
+            <label className={styles.label}>{t('common.email')}</label>
             <input
               className={styles.input}
               type="email"
@@ -139,7 +142,7 @@ export default function ContactHeader({ contact, onUpdate, onStageChange, onDele
             />
           </div>
           <div className={styles.field}>
-            <label className={styles.label}>Phone</label>
+            <label className={styles.label}>{t('common.phone')}</label>
             <input
               className={styles.input}
               value={form.phone}
@@ -150,14 +153,14 @@ export default function ContactHeader({ contact, onUpdate, onStageChange, onDele
         </div>
       ) : (
         <div className={styles.info}>
-          <h2 className={styles.name}>{contact.name ?? 'Unknown Contact'}</h2>
+          <h2 className={styles.name}>{contact.name ?? t('common.name')}</h2>
           {contact.email && <p className={styles.infoLine}>{contact.email}</p>}
           {contact.phone && <p className={styles.infoLine}>{contact.phone}</p>}
         </div>
       )}
 
       <div className={styles.stageRow}>
-        <span className={styles.stageLabel}>Stage</span>
+        <span className={styles.stageLabel}>{t('contacts.detail.stageLabel')}</span>
         <div className={styles.stageSelectWrap}>
           <select
             className={styles.stageSelect}
@@ -168,7 +171,7 @@ export default function ContactHeader({ contact, onUpdate, onStageChange, onDele
           >
             {STAGES.map((s) => (
               <option key={s} value={s}>
-                {s.charAt(0).toUpperCase() + s.slice(1)}
+                {t(`contacts.stages.${s}`)}
               </option>
             ))}
           </select>
@@ -187,19 +190,18 @@ export default function ContactHeader({ contact, onUpdate, onStageChange, onDele
       <Modal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        title="Delete Contact"
+        title={t('contacts.detail.deleteTitle')}
         size="sm"
       >
         <p className={styles.deleteWarning}>
-          Are you sure you want to delete this contact? This action cannot be undone.
-          All conversations associated with this contact will also be deleted.
+          {t('contacts.detail.deleteWarning')}
         </p>
         <div className={styles.deleteActions}>
           <Button variant="ghost" onClick={() => setShowDeleteModal(false)} disabled={deleting}>
-            Cancel
+            {t('contacts.detail.cancel')}
           </Button>
           <Button variant="danger" icon={Trash2} loading={deleting} onClick={handleDelete}>
-            Delete Contact
+            {t('contacts.detail.deleteContact')}
           </Button>
         </div>
       </Modal>

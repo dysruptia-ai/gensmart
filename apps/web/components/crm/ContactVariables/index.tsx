@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Variable } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './ContactVariables.module.css';
 
 interface ContactVariablesProps {
@@ -7,6 +10,7 @@ interface ContactVariablesProps {
 }
 
 export default function ContactVariables({ variables }: ContactVariablesProps) {
+  const { t } = useTranslation();
   const entries = Object.entries(variables ?? {}).filter(
     ([, val]) => val !== null && val !== undefined && val !== ''
   );
@@ -16,12 +20,12 @@ export default function ContactVariables({ variables }: ContactVariablesProps) {
       <div className={styles.titleRow}>
         <Variable size={16} aria-hidden="true" className={styles.icon} />
         <h3 className={styles.title}>
-          Captured Variables
+          {t('contacts.detail.customVariables')}
           <span className={styles.count}>{entries.length}</span>
         </h3>
       </div>
       {entries.length === 0 ? (
-        <p className={styles.empty}>No variables captured yet.</p>
+        <p className={styles.empty}>{t('contacts.detail.noVariables')}</p>
       ) : (
         <div className={styles.list}>
           {entries.map(([key, val]) => (

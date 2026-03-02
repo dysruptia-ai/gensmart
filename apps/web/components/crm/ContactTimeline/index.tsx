@@ -1,5 +1,9 @@
+'use client';
+
 import React from 'react';
 import { MessageSquare, XCircle, Clock } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatRelativeTime } from '@/lib/formatters';
 import styles from './ContactTimeline.module.css';
 
 interface TimelineEvent {
@@ -18,28 +22,17 @@ const EVENT_ICONS: Record<string, React.ReactNode> = {
   conversation_closed: <XCircle size={14} aria-hidden="true" />,
 };
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  const now = Date.now();
-  const diff = now - d.getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString();
-}
-
 export default function ContactTimeline({ events }: ContactTimelineProps) {
+  const { t, language } = useTranslation();
+
   return (
     <div className={styles.card}>
       <div className={styles.titleRow}>
         <Clock size={16} aria-hidden="true" className={styles.titleIcon} />
-        <h3 className={styles.title}>Timeline</h3>
+        <h3 className={styles.title}>{t('contacts.detail.timeline')}</h3>
       </div>
       {events.length === 0 ? (
-        <p className={styles.empty}>No activity yet.</p>
+        <p className={styles.empty}>{t('contacts.detail.noActivity')}</p>
       ) : (
         <div className={styles.list}>
           {events.map((ev, i) => (
@@ -49,7 +42,7 @@ export default function ContactTimeline({ events }: ContactTimelineProps) {
               </div>
               <div className={styles.content}>
                 <span className={styles.description}>{ev.description}</span>
-                <span className={styles.date}>{formatDate(ev.date)}</span>
+                <span className={styles.date}>{formatRelativeTime(ev.date, language)}</span>
               </div>
             </div>
           ))}

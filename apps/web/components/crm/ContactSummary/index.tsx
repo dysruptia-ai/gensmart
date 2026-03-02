@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './ContactSummary.module.css';
 
 interface ContactSummaryProps {
@@ -12,6 +13,7 @@ interface ContactSummaryProps {
 }
 
 export default function ContactSummary({ summary, service, onReanalyze }: ContactSummaryProps) {
+  const { t } = useTranslation();
   const [analyzing, setAnalyzing] = useState(false);
   const [done, setDone] = useState(false);
 
@@ -31,7 +33,7 @@ export default function ContactSummary({ summary, service, onReanalyze }: Contac
       <div className={styles.header}>
         <div className={styles.titleRow}>
           <Sparkles size={16} aria-hidden="true" className={styles.icon} />
-          <h3 className={styles.title}>AI Analysis</h3>
+          <h3 className={styles.title}>{t('contacts.detail.aiSummary')}</h3>
         </div>
         <Button
           size="sm"
@@ -40,19 +42,19 @@ export default function ContactSummary({ summary, service, onReanalyze }: Contac
           loading={analyzing}
           onClick={handleReanalyze}
         >
-          {done ? 'Queued!' : 'Re-analyze'}
+          {done ? t('contacts.detail.queued') : t('contacts.detail.reanalyze')}
         </Button>
       </div>
 
       {service && (
         <div className={styles.serviceRow}>
-          <span className={styles.serviceLabel}>Detected Service</span>
+          <span className={styles.serviceLabel}>{t('contacts.detail.detectedService')}</span>
           <span className={styles.serviceValue}>{service}</span>
         </div>
       )}
 
       <p className={styles.summary}>
-        {summary ?? 'No analysis available yet. Re-analyze to generate an AI summary.'}
+        {summary ?? t('contacts.detail.noSummary')}
       </p>
     </div>
   );

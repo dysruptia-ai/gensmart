@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Save, FileText } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './ContactNotes.module.css';
 
 interface ContactNotesProps {
@@ -11,6 +12,7 @@ interface ContactNotesProps {
 }
 
 export default function ContactNotes({ notes, onSave }: ContactNotesProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState(notes ?? '');
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -40,11 +42,11 @@ export default function ContactNotes({ notes, onSave }: ContactNotesProps) {
       <div className={styles.header}>
         <div className={styles.titleRow}>
           <FileText size={16} aria-hidden="true" className={styles.icon} />
-          <h3 className={styles.title}>Notes</h3>
+          <h3 className={styles.title}>{t('contacts.detail.notes')}</h3>
         </div>
         {dirty && (
           <Button size="sm" variant="primary" icon={Save} loading={saving} onClick={handleSave}>
-            Save
+            {t('contacts.detail.save')}
           </Button>
         )}
       </div>
@@ -52,7 +54,7 @@ export default function ContactNotes({ notes, onSave }: ContactNotesProps) {
         className={styles.textarea}
         value={value}
         onChange={handleChange}
-        placeholder="Add notes about this contact…"
+        placeholder={t('contacts.detail.notesPlaceholderFull')}
         rows={4}
       />
     </div>
