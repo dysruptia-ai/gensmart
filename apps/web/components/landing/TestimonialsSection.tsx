@@ -1,5 +1,8 @@
+'use client';
+
 import Avatar from '@/components/ui/Avatar';
 import { ScrollReveal } from './ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './TestimonialsSection.module.css';
 
 const TESTIMONIALS = [
@@ -27,13 +30,15 @@ const TESTIMONIALS = [
 ];
 
 export function TestimonialsSection() {
+  const { t } = useTranslation();
+
   return (
     <section className={styles.section} aria-label="Testimonials">
       <div className={styles.inner}>
         <ScrollReveal>
           <div className={styles.header}>
-            <span className={styles.eyebrow}>What our users say</span>
-            <h2 className={styles.title}>Loved by Businesses Worldwide</h2>
+            <span className={styles.eyebrow}>{t('landing.testimonials.eyebrow')}</span>
+            <h2 className={styles.title}>{t('landing.testimonials.gridTitle')}</h2>
           </div>
         </ScrollReveal>
 

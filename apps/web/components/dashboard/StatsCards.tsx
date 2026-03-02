@@ -3,6 +3,7 @@
 import React from 'react';
 import { Users, MessageSquare, Star, BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
 import ProgressBar from '@/components/ui/ProgressBar';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './StatsCards.module.css';
 
 interface LeadStats {
@@ -46,12 +47,14 @@ function messageBarColor(percent: number): string {
 }
 
 export default function StatsCards({ leads, activeConversations, avgLeadScore, messages }: StatsCardsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className={styles.grid}>
       {/* Leads card */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardLabel}>Leads This Month</span>
+          <span className={styles.cardLabel}>{t('dashboard.stats.leadsThisMonth')}</span>
           <span className={styles.iconWrap}>
             <Users size={18} aria-hidden="true" />
           </span>
@@ -59,31 +62,33 @@ export default function StatsCards({ leads, activeConversations, avgLeadScore, m
         <div className={styles.cardValue}>{leads.month.toLocaleString()}</div>
         <div className={styles.cardMeta}>
           <ChangeBadge value={leads.monthChange} />
-          <span className={styles.cardSub}>vs last month</span>
+          <span className={styles.cardSub}>{t('dashboard.stats.vsLastMonth')}</span>
         </div>
         <div className={styles.cardFooter}>
-          Today: {leads.today} &nbsp;·&nbsp; Week: {leads.week}
+          {t('dashboard.stats.today', { count: String(leads.today) })}
+          &nbsp;·&nbsp;
+          {t('dashboard.stats.thisWeek', { count: String(leads.week) })}
         </div>
       </div>
 
       {/* Active conversations */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardLabel}>Active Conversations</span>
+          <span className={styles.cardLabel}>{t('dashboard.stats.activeConversations')}</span>
           <span className={styles.iconWrap}>
             <MessageSquare size={18} aria-hidden="true" />
           </span>
         </div>
         <div className={styles.cardValue}>{activeConversations.toLocaleString()}</div>
         <div className={styles.cardMeta}>
-          <span className={styles.cardSub}>Currently open</span>
+          <span className={styles.cardSub}>{t('dashboard.stats.currentlyOpen')}</span>
         </div>
       </div>
 
       {/* Avg lead score */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardLabel}>Avg Lead Score</span>
+          <span className={styles.cardLabel}>{t('dashboard.stats.avgLeadScore')}</span>
           <span className={styles.iconWrap}>
             <Star size={18} aria-hidden="true" />
           </span>
@@ -93,14 +98,14 @@ export default function StatsCards({ leads, activeConversations, avgLeadScore, m
           <span className={styles.scoreMax}>/10</span>
         </div>
         <div className={styles.cardMeta}>
-          <span className={styles.cardSub}>Across all scored contacts</span>
+          <span className={styles.cardSub}>{t('dashboard.stats.acrossAllContacts')}</span>
         </div>
       </div>
 
       {/* Messages used */}
       <div className={styles.card}>
         <div className={styles.cardHeader}>
-          <span className={styles.cardLabel}>Messages Used</span>
+          <span className={styles.cardLabel}>{t('dashboard.stats.messagesUsed')}</span>
           <span className={styles.iconWrap}>
             <BarChart3 size={18} aria-hidden="true" />
           </span>
@@ -113,7 +118,10 @@ export default function StatsCards({ leads, activeConversations, avgLeadScore, m
           <ProgressBar value={messages.percent} color={messageBarColor(messages.percent)} />
         </div>
         <div className={styles.cardFooter}>
-          {messages.used.toLocaleString()} / {messages.limit.toLocaleString()} messages
+          {t('dashboard.stats.messagesCount', {
+            used: messages.used.toLocaleString(),
+            limit: messages.limit.toLocaleString(),
+          })}
         </div>
       </div>
     </div>

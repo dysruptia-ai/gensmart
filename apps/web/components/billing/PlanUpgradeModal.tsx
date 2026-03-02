@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './PlanUpgradeModal.module.css';
 
 type PlanName = 'starter' | 'pro' | 'enterprise';
@@ -68,15 +69,16 @@ const PLANS: Array<{
   },
 ];
 
-const SAVINGS: Record<Interval, string | null> = {
-  monthly: null,
-  quarterly: 'Save 10%',
-  yearly: 'Save 20%',
-};
-
 export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loading }: Props) {
+  const { t } = useTranslation();
   const [interval, setInterval] = useState<Interval>('monthly');
   const [selected, setSelected] = useState<PlanName | null>(null);
+
+  const SAVINGS: Record<Interval, string | null> = {
+    monthly: null,
+    quarterly: t('landing.pricing.save10'),
+    yearly: t('landing.pricing.save20'),
+  };
 
   function handleSelect(plan: PlanName) {
     if (plan === currentPlan) return;
@@ -88,15 +90,23 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
     onSelect(selected, interval);
   }
 
+  const intervalLabel = (i: Interval) => {
+    switch (i) {
+      case 'monthly': return t('landing.pricing.monthly');
+      case 'quarterly': return t('landing.pricing.quarterly');
+      case 'yearly': return t('landing.pricing.yearly');
+    }
+  };
+
   return (
     <div className={styles.overlay} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className={styles.modal}>
         <div className={styles.header}>
           <div className={styles.headerText}>
-            <h2>Upgrade Your Plan</h2>
-            <p>Choose the plan that fits your needs. Cancel anytime.</p>
+            <h2>{t('billing.upgrade.title')}</h2>
+            <p>{t('billing.upgrade.choosePlan')}</p>
           </div>
-          <button className={styles.closeBtn} onClick={onClose} aria-label="Close">
+          <button className={styles.closeBtn} onClick={onClose} aria-label={t('common.close')}>
             <X size={20} />
           </button>
         </div>
@@ -108,7 +118,7 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
               className={`${styles.toggleBtn} ${interval === i ? styles.toggleBtnActive : ''}`}
               onClick={() => setInterval(i)}
             >
-              {i.charAt(0).toUpperCase() + i.slice(1)}
+              {intervalLabel(i)}
             </button>
           ))}
           {SAVINGS[interval] && (
@@ -130,8 +140,8 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
                 ].filter(Boolean).join(' ')}
                 onClick={() => handleSelect(plan.key)}
               >
-                {plan.popular && <span className={styles.popularBadge}>Popular</span>}
-                {isCurrent && <span className={styles.popularBadge} style={{ background: '#9ca3af' }}>Current</span>}
+                {plan.popular && <span className={styles.popularBadge}>{t('billing.upgrade.popular')}</span>}
+                {isCurrent && <span className={styles.popularBadge} style={{ background: '#9ca3af' }}>{t('billing.upgrade.current')}</span>}
                 <div className={styles.planCardName}>{plan.name}</div>
                 <div>
                   <div className={styles.planCardPrice}>{plan.prices[interval]}</div>
@@ -159,11 +169,11 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
             style={{ minWidth: '200px' }}
           >
             {selected
-              ? `Upgrade to ${selected.charAt(0).toUpperCase() + selected.slice(1)}`
-              : 'Select a Plan'}
+              ? t('billing.upgrade.upgradeTo', { plan: selected.charAt(0).toUpperCase() + selected.slice(1) })
+              : t('billing.upgrade.selectPlan')}
           </Button>
           <div className={styles.currentLabel}>
-            Currently on <strong>{currentPlan}</strong> plan · Powered by Stripe
+            {t('billing.upgrade.currentlyOn', { plan: currentPlan })}
           </div>
         </div>
       </div>

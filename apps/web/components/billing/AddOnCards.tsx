@@ -3,6 +3,7 @@
 import React from 'react';
 import { Zap } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './AddOnCards.module.css';
 
 interface Props {
@@ -34,6 +35,8 @@ const ADDONS = [
 ];
 
 export default function AddOnCards({ onBuy, loading, plan }: Props) {
+  const { t } = useTranslation();
+
   // Don't show add-ons for Enterprise (unlimited or BYO key)
   if (plan === 'enterprise') return null;
 
@@ -41,8 +44,8 @@ export default function AddOnCards({ onBuy, loading, plan }: Props) {
     <div className={styles.card}>
       <div className={styles.header}>
         <div>
-          <div className={styles.title}>Message Add-ons</div>
-          <div className={styles.subtitle}>One-time purchase — valid for the current month</div>
+          <div className={styles.title}>{t('billing.addons.sectionTitle')}</div>
+          <div className={styles.subtitle}>{t('billing.addons.oneTimePurchase')}</div>
         </div>
       </div>
 
@@ -50,9 +53,9 @@ export default function AddOnCards({ onBuy, loading, plan }: Props) {
         {ADDONS.map((addon) => (
           <div key={addon.key} className={styles.addonCard}>
             <div className={styles.addonMessages}>{addon.messages.toLocaleString()}</div>
-            <div className={styles.addonUnit}>extra messages</div>
+            <div className={styles.addonUnit}>{t('billing.addons.extraMessages')}</div>
             <div className={styles.addonPrice}>{addon.price}</div>
-            <div className={styles.addonPerMessage}>{addon.perMessage} / message</div>
+            <div className={styles.addonPerMessage}>{addon.perMessage} / {t('billing.addons.perMessage')}</div>
             <Button
               variant="primary"
               size="sm"
@@ -61,7 +64,7 @@ export default function AddOnCards({ onBuy, loading, plan }: Props) {
               style={{ width: '100%', marginTop: '0.5rem' }}
             >
               <Zap size={14} />
-              Buy Now
+              {t('billing.addons.buyNow')}
             </Button>
           </div>
         ))}

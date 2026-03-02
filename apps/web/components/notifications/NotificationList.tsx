@@ -4,6 +4,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, AlertTriangle, XCircle, Bell } from 'lucide-react';
 import { Notification } from '@/hooks/useNotifications';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatRelativeTime } from '@/lib/formatters';
 import styles from './NotificationList.module.css';
 
 interface NotificationListProps {
@@ -11,17 +13,6 @@ interface NotificationListProps {
   onMarkAllAsRead: () => void;
   onMarkAsRead: (id: string) => void;
   onClose: () => void;
-}
-
-function relativeTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 function NotifIcon({ type }: { type: string }) {
@@ -52,6 +43,7 @@ export default function NotificationList({
   onClose,
 }: NotificationListProps) {
   const router = useRouter();
+  const { t, language } = useTranslation();
   const hasUnread = notifications.some((n) => !n.read);
 
   function handleItemClick(notif: Notification) {
@@ -68,10 +60,10 @@ export default function NotificationList({
   return (
     <div className={styles.dropdown}>
       <div className={styles.header}>
-        <span className={styles.headerTitle}>Notifications</span>
+        <span className={styles.headerTitle}>{t('notifications.title')}</span>
         {hasUnread && (
           <button className={styles.markAllBtn} onClick={onMarkAllAsRead}>
-            Mark all as read
+            {t('notifications.markAllRead')}
           </button>
         )}
       </div>
@@ -80,7 +72,7 @@ export default function NotificationList({
         {notifications.length === 0 ? (
           <div className={styles.emptyState}>
             <Bell size={32} className={styles.emptyIcon} />
-            <p className={styles.emptyText}>No notifications yet</p>
+            <p className={styles.emptyText}>{t('notifications.noNotificationsYet')}</p>
           </div>
         ) : (
           notifications.map((notif) => (
@@ -95,9 +87,9 @@ export default function NotificationList({
               <span className={styles.itemContent}>
                 <span className={styles.itemTitle}>{notif.title}</span>
                 <span className={styles.itemMessage}>{notif.message}</span>
-                <span className={styles.itemTime}>{relativeTime(notif.createdAt)}</span>
+                <span className={styles.itemTime}>{formatRelativeTime(notif.createdAt, language)}</span>
               </span>
-              {!notif.read && <span className={styles.unreadDot} aria-label="Unread" />}
+              {!notif.read && <span className={styles.unreadDot} aria-label={t('notifications.noNotificationsYet')} />}
             </button>
           ))
         )}

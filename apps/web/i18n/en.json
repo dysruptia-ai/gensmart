@@ -68,7 +68,12 @@
       "noCard": "No credit card required",
       "agentsActive": "AI agents active",
       "leadsMonth": "Leads captured/mo",
-      "uptime": "Uptime"
+      "uptime": "Uptime",
+      "badge": "AI Agents for WhatsApp & Web",
+      "freeForeverHint": "No credit card required · Free forever plan",
+      "titleStart": "Create & Deploy AI Agents in",
+      "titleHighlight": "Minutes",
+      "titleEnd": ", Not Weeks"
     },
     "features": {
       "title": "Everything you need to convert visitors into customers",
@@ -96,6 +101,41 @@
       "appointments": {
         "title": "Appointment Scheduling",
         "description": "Let your AI agent book appointments directly in your calendar. No back-and-forth emails."
+      },
+      "eyebrow": "Everything you need",
+      "gridTitle": "One Platform. Every Feature.",
+      "gridSubtitle": "Replace your entire automation stack with a single, integrated platform built for AI-powered customer conversations.",
+      "aiAgents": {
+        "title": "AI Agents",
+        "description": "Create intelligent conversational agents powered by GPT-4o & Claude"
+      },
+      "channelsFeature": {
+        "title": "WhatsApp & Web",
+        "description": "Deploy on WhatsApp Business and your website with one click"
+      },
+      "smartCrm": {
+        "title": "Smart CRM",
+        "description": "AI-powered lead scoring, summaries, and contact management"
+      },
+      "salesFunnelFeature": {
+        "title": "Sales Funnel",
+        "description": "Visual kanban pipeline from lead to customer"
+      },
+      "schedulingFeature": {
+        "title": "Scheduling",
+        "description": "Let your agent book appointments automatically"
+      },
+      "knowledgeBaseFeature": {
+        "title": "Knowledge Base",
+        "description": "Upload docs and URLs — your agent learns your business"
+      },
+      "humanTakeoverFeature": {
+        "title": "Human Takeover",
+        "description": "Jump into any conversation when the AI needs help"
+      },
+      "customFunctionsMcp": {
+        "title": "Custom Functions & MCP",
+        "description": "Connect to any API or MCP server for live data"
       }
     },
     "howItWorks": {
@@ -112,6 +152,25 @@
       "step3": {
         "title": "Capture leads automatically",
         "description": "Your agent qualifies prospects, captures contact info, and books appointments — 24/7."
+      },
+      "eyebrow": "Simple by design",
+      "gridTitle": "From Idea to Live Agent in 4 Steps",
+      "gridSubtitle": "No complex setup, no developer needed. Just you and your AI agent.",
+      "gridStep1": {
+        "title": "Create",
+        "description": "Start from a template or build your own agent from scratch"
+      },
+      "gridStep2": {
+        "title": "Configure",
+        "description": "Set personality, knowledge base, and tools"
+      },
+      "gridStep3": {
+        "title": "Deploy",
+        "description": "Connect to WhatsApp or embed on your website instantly"
+      },
+      "gridStep4": {
+        "title": "Track",
+        "description": "Monitor leads, conversations, and conversions in real-time"
       }
     },
     "pricing": {
@@ -133,8 +192,11 @@
     },
     "testimonials": {
       "title": "Trusted by businesses worldwide",
-      "subtitle": "See how GenSmart is transforming how businesses connect with customers."
+      "subtitle": "See how GenSmart is transforming how businesses connect with customers.",
+      "eyebrow": "What our users say",
+      "gridTitle": "Loved by Businesses Worldwide"
     },
+    "socialProof": "Trusted by {count}+ businesses worldwide",
     "faq": {
       "title": "Frequently Asked Questions",
       "subtitle": "Everything you need to know about GenSmart."
@@ -143,7 +205,10 @@
       "title": "Ready to transform your customer conversations?",
       "subtitle": "Join thousands of businesses using GenSmart to capture leads and grow revenue.",
       "cta": "Start Free — No Credit Card Required",
-      "ctaSecondary": "Schedule a Demo"
+      "ctaSecondary": "Schedule a Demo",
+      "altTitle": "Ready to Deploy Your First AI Agent?",
+      "altSubtitle": "Join {count}+ businesses already using GenSmart to automate conversations and capture more leads.",
+      "hint": "No credit card required · Free forever plan"
     },
     "footer": {
       "product": "Product",
@@ -265,20 +330,36 @@
     }
   },
   "agents": {
-    "title": "Agents",
+    "title": "AI Agents",
+    "pageDescription": "Create and manage your conversational AI agents.",
     "create": "Create Agent",
+    "newAgent": "New Agent",
     "search": "Search agents...",
+    "usageCount": "{used} / {limit} agents",
+    "usageUnlimited": "{used} / ∞ agents",
+    "searchEmpty": "No agents match your search.",
     "empty": {
       "title": "No agents yet",
-      "description": "Create your first AI agent to start capturing leads and conversations",
-      "cta": "Create your first agent"
+      "description": "Create your first AI agent to start capturing leads and automating conversations.",
+      "cta": "Create Agent"
     },
     "card": {
       "conversations": "{count} conversations",
       "lastActive": "Last active {date}",
+      "active": "Active",
       "draft": "Draft",
       "published": "Published",
-      "paused": "Paused"
+      "paused": "Paused",
+      "whatsapp": "WhatsApp",
+      "web": "Web",
+      "noChannels": "No channels",
+      "updated": "Updated {date}",
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "menuLabel": "Agent options",
+      "deleteTitle": "Delete Agent",
+      "deleteConfirm": "Are you sure you want to delete {name}? This action cannot be undone and all versions will be lost."
     },
     "editor": {
       "tabs": {
@@ -431,7 +512,10 @@
     "variables": {
       "title": "Captured Variables",
       "noVariables": "No variables captured yet",
-      "waitingForInfo": "The agent will capture information as the conversation progresses"
+      "waitingForInfo": "The agent will capture information as the conversation progresses",
+      "contact": "Contact",
+      "pending": "Pending (required)",
+      "notCaptured": "Not captured"
     },
     "contactInfo": {
       "title": "Contact Info",
@@ -441,6 +525,21 @@
       "agent": "Agent",
       "started": "Started",
       "lastMessage": "Last message"
+    },
+    "refresh": "Refresh",
+    "noMessages": "No messages yet",
+    "score": "Score:",
+    "allStatuses": "All statuses",
+    "allChannels": "All channels",
+    "takeover": {
+      "closed": "This conversation is closed.",
+      "inControl": "You are in control of this conversation.",
+      "takenBy": "Taken over by {name}",
+      "aiHandling": "AI Agent is handling this conversation.",
+      "upgradeTakeover": "Upgrade to enable takeover"
+    },
+    "messageBubble": {
+      "aiResumed": "AI Agent resumed"
     }
   },
   "contacts": {
@@ -490,14 +589,22 @@
       "lead": "Lead",
       "opportunity": "Opportunity",
       "customer": "Customer"
-    }
+    },
+    "total": "{count} total",
+    "pageInfo": "Page {page} of {total}"
   },
   "funnel": {
     "title": "Sales Funnel",
     "stats": {
       "total": "Total",
       "conversion": "Conversion rate",
-      "topScore": "Top score"
+      "topScore": "Top score",
+      "leads": "Leads",
+      "opportunities": "Opportunities",
+      "customers": "Customers",
+      "leadToOpp": "Lead → Opp",
+      "oppToCustomer": "Opp → Customer",
+      "avgScore": "Avg Score"
     },
     "empty": {
       "title": "No contacts in this stage",
@@ -505,7 +612,12 @@
     },
     "filterByAgent": "Filter by agent",
     "allAgents": "All agents",
-    "dragToMove": "Drag cards to move contacts between stages"
+    "dragToMove": "Drag cards to move contacts between stages",
+    "contacts": "{count} contacts",
+    "noContacts": "No contacts in funnel",
+    "movedTo": "Moved to {stage}",
+    "failedToMove": "Failed to move contact",
+    "failedToLoad": "Failed to load funnel data"
   },
   "calendar": {
     "title": "Calendar",
@@ -547,7 +659,30 @@
       "book": "Book Appointment",
       "cancel": "Cancel Appointment",
       "cancelConfirm": "Cancel this appointment? This action cannot be undone.",
-      "minutes": "{count} minutes"
+      "minutes": "{count} minutes",
+      "newButton": "New",
+      "editTitle": "Edit Appointment",
+      "newTitle": "New Appointment",
+      "titleLabel": "Title",
+      "calendarLabel": "Calendar",
+      "dateLabel": "Date",
+      "timeLabel": "Time",
+      "loadingSlots": "Loading slots…",
+      "descriptionOptional": "Description (optional)",
+      "addDetails": "Add details…",
+      "statusLabel": "Status",
+      "titleRequired": "Title is required",
+      "missingFields": "Calendar, date and time are required",
+      "updated": "Appointment updated",
+      "booked": "Appointment booked",
+      "cancelSuccess": "Appointment cancelled",
+      "cancelFailed": "Failed to cancel appointment",
+      "saveFailed": "Failed to save appointment",
+      "loadSlotsFailed": "Could not load available slots",
+      "saveChanges": "Save Changes",
+      "bookAppointment": "Book Appointment",
+      "cancelButton": "Cancel Appointment",
+      "noAppointments": "No appointments this day"
     },
     "days": {
       "monday": "Monday",
@@ -578,7 +713,13 @@
       "october": "October",
       "november": "November",
       "december": "December"
-    }
+    },
+    "allCalendars": "All Calendars",
+    "allStatuses": "All Statuses",
+    "loadFailed": "Failed to load calendar data",
+    "more": "+{count} more",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
   },
   "billing": {
     "title": "Billing",
@@ -595,7 +736,15 @@
       "cancelSubscription": "Cancel Subscription",
       "subscriptionActive": "Active",
       "subscriptionCancelled": "Cancelled",
-      "subscriptionPastDue": "Past Due"
+      "subscriptionPastDue": "Past Due",
+      "upgradePlan": "Upgrade Plan",
+      "freeForever": "Free Forever",
+      "cancelsAtPeriodEnd": "Cancels at period end",
+      "paymentPastDue": "Payment past due",
+      "trial": "Trial",
+      "freeForeverNote": "Free forever, no credit card required",
+      "cancels": "Cancels",
+      "renews": "Renews"
     },
     "usage": {
       "title": "Usage This Month",
@@ -605,7 +754,9 @@
       "knowledgeFiles": "Knowledge Files",
       "of": "{used} of {limit}",
       "unlimited": "Unlimited",
-      "percentUsed": "{percent}% used"
+      "percentUsed": "{percent}% used",
+      "loadingUsage": "Loading usage data...",
+      "addonNote": "Includes {count} add-on messages"
     },
     "addons": {
       "title": "Need more messages?",
@@ -614,7 +765,12 @@
       "messages2000": "2,000 messages",
       "messages5000": "5,000 messages",
       "oneTime": "One-time purchase",
-      "buy": "Buy"
+      "buy": "Buy",
+      "sectionTitle": "Message Add-ons",
+      "oneTimePurchase": "One-time purchase — valid for the current month",
+      "extraMessages": "extra messages",
+      "perMessage": "per message",
+      "buyNow": "Buy Now"
     },
     "invoices": {
       "title": "Invoice History",
@@ -624,14 +780,30 @@
       "paid": "Paid",
       "pending": "Pending",
       "download": "Download",
-      "noInvoices": "No invoices yet"
+      "noInvoices": "No invoices yet",
+      "loading": "Loading invoices...",
+      "noneYet": "No invoices yet. They will appear here after your first payment.",
+      "invoice": "Invoice",
+      "view": "View"
     },
     "upgrade": {
       "title": "Upgrade your plan",
       "description": "You've reached the limit of your current plan. Upgrade to continue.",
       "limitReached": "Limit reached",
       "upgradeNow": "Upgrade now",
-      "viewPlans": "View all plans"
+      "viewPlans": "View all plans",
+      "choosePlan": "Choose the plan that fits your needs. Cancel anytime.",
+      "popular": "Popular",
+      "current": "Current",
+      "upgradeTo": "Upgrade to {plan}",
+      "selectPlan": "Select a Plan",
+      "currentlyOn": "Currently on {plan} plan · Powered by Stripe"
+    },
+    "banner": {
+      "allUsed": "You've used all {limit} of your monthly messages. Your agents are paused.",
+      "partialUsed": "You've used {percent}% of your monthly messages ({used} / {limit}).",
+      "buyAddon": "Buy Add-on",
+      "upgradePlan": "Upgrade Plan"
     },
     "plans": {
       "free": {
@@ -791,6 +963,7 @@
     "title": "Notifications",
     "markAllRead": "Mark all as read",
     "empty": "No notifications",
+    "noNotificationsYet": "No notifications yet",
     "emptySubtitle": "You're all caught up!",
     "types": {
       "high_score_lead": "High-score lead detected",
@@ -822,7 +995,13 @@
     "planLimitReached": "You've reached the limit for your current plan. Upgrade to continue.",
     "fileTooBig": "File is too large. Maximum size is {size}MB.",
     "unsupportedFormat": "Unsupported file format",
-    "generic": "Something went wrong. Please try again."
+    "generic": "Something went wrong. Please try again.",
+    "nameTooShort": "Name must be at least 2 characters",
+    "orgNameTooShort": "Organization name must be at least 2 characters",
+    "passwordNeedsUppercase": "Password must contain at least one uppercase letter",
+    "passwordNeedsNumber": "Password must contain at least one number",
+    "invalidResetToken": "This reset link is invalid or has expired. Please request a new one.",
+    "somethingWentWrong": "Something went wrong. Please try again."
   },
   "pricing": {
     "title": "Simple, transparent pricing",

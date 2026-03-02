@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Bot,
   MessageCircle,
@@ -9,75 +11,43 @@ import {
   Plug,
 } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './FeaturesGrid.module.css';
 
-const FEATURES = [
-  {
-    icon: Bot,
-    title: 'AI Agents',
-    description: 'Create intelligent conversational agents powered by GPT-4o & Claude',
-  },
-  {
-    icon: MessageCircle,
-    title: 'WhatsApp & Web',
-    description: 'Deploy on WhatsApp Business and your website with one click',
-  },
-  {
-    icon: Users,
-    title: 'Smart CRM',
-    description: 'AI-powered lead scoring, summaries, and contact management',
-  },
-  {
-    icon: GitBranch,
-    title: 'Sales Funnel',
-    description: 'Visual kanban pipeline from lead to customer',
-  },
-  {
-    icon: Calendar,
-    title: 'Scheduling',
-    description: 'Let your agent book appointments automatically',
-  },
-  {
-    icon: BookOpen,
-    title: 'Knowledge Base',
-    description: 'Upload docs and URLs — your agent learns your business',
-  },
-  {
-    icon: UserCheck,
-    title: 'Human Takeover',
-    description: 'Jump into any conversation when the AI needs help',
-  },
-  {
-    icon: Plug,
-    title: 'Custom Functions & MCP',
-    description: 'Connect to any API or MCP server for live data',
-  },
-];
-
 export function FeaturesGrid() {
+  const { t } = useTranslation();
+
+  const FEATURES = [
+    { icon: Bot, titleKey: 'landing.features.aiAgents.title', descKey: 'landing.features.aiAgents.description' },
+    { icon: MessageCircle, titleKey: 'landing.features.channelsFeature.title', descKey: 'landing.features.channelsFeature.description' },
+    { icon: Users, titleKey: 'landing.features.smartCrm.title', descKey: 'landing.features.smartCrm.description' },
+    { icon: GitBranch, titleKey: 'landing.features.salesFunnelFeature.title', descKey: 'landing.features.salesFunnelFeature.description' },
+    { icon: Calendar, titleKey: 'landing.features.schedulingFeature.title', descKey: 'landing.features.schedulingFeature.description' },
+    { icon: BookOpen, titleKey: 'landing.features.knowledgeBaseFeature.title', descKey: 'landing.features.knowledgeBaseFeature.description' },
+    { icon: UserCheck, titleKey: 'landing.features.humanTakeoverFeature.title', descKey: 'landing.features.humanTakeoverFeature.description' },
+    { icon: Plug, titleKey: 'landing.features.customFunctionsMcp.title', descKey: 'landing.features.customFunctionsMcp.description' },
+  ];
+
   return (
     <section id="features" className={styles.section} aria-label="Features">
       <div className={styles.inner}>
         <ScrollReveal>
           <div className={styles.header}>
-            <span className={styles.eyebrow}>Everything you need</span>
-            <h2 className={styles.title}>One Platform. Every Feature.</h2>
-            <p className={styles.subtitle}>
-              Replace your entire automation stack with a single, integrated
-              platform built for AI-powered customer conversations.
-            </p>
+            <span className={styles.eyebrow}>{t('landing.features.eyebrow')}</span>
+            <h2 className={styles.title}>{t('landing.features.gridTitle')}</h2>
+            <p className={styles.subtitle}>{t('landing.features.gridSubtitle')}</p>
           </div>
         </ScrollReveal>
 
         <div className={styles.grid}>
-          {FEATURES.map(({ icon: Icon, title, description }, i) => (
-            <ScrollReveal key={title} delay={i * 60}>
+          {FEATURES.map(({ icon: Icon, titleKey, descKey }, i) => (
+            <ScrollReveal key={titleKey} delay={i * 60}>
               <article className={styles.card}>
                 <div className={styles.iconWrap} aria-hidden="true">
                   <Icon size={24} />
                 </div>
-                <h3 className={styles.cardTitle}>{title}</h3>
-                <p className={styles.cardDesc}>{description}</p>
+                <h3 className={styles.cardTitle}>{t(titleKey)}</h3>
+                <p className={styles.cardDesc}>{t(descKey)}</p>
               </article>
             </ScrollReveal>
           ))}

@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bot, User, ArrowUpRight } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './TakeoverBanner.module.css';
 import Link from 'next/link';
 
@@ -27,10 +28,12 @@ export default function TakeoverBanner({
   onRelease,
   loading = false,
 }: TakeoverBannerProps) {
+  const { t } = useTranslation();
+
   if (status === 'closed') {
     return (
       <div className={`${styles.banner} ${styles.closed}`}>
-        <span className={styles.text}>This conversation is closed.</span>
+        <span className={styles.text}>{t('conversations.takeover.closed')}</span>
       </div>
     );
   }
@@ -40,14 +43,14 @@ export default function TakeoverBanner({
       return (
         <div className={`${styles.banner} ${styles.takeover}`}>
           <User size={14} aria-hidden="true" />
-          <span className={styles.text}>You are in control of this conversation.</span>
+          <span className={styles.text}>{t('conversations.takeover.inControl')}</span>
           <Button
             variant="primary"
             size="sm"
             onClick={onRelease}
             loading={loading}
           >
-            Release to AI
+            {t('conversations.chat.release')}
           </Button>
         </div>
       );
@@ -56,7 +59,7 @@ export default function TakeoverBanner({
       <div className={`${styles.banner} ${styles.takeover}`}>
         <User size={14} aria-hidden="true" />
         <span className={styles.text}>
-          Taken over by <strong>{takeoverUserName ?? 'another agent'}</strong>
+          {t('conversations.takeover.takenBy', { name: takeoverUserName ?? t('conversations.contactInfo.noContact') })}
         </span>
       </div>
     );
@@ -67,9 +70,9 @@ export default function TakeoverBanner({
     return (
       <div className={`${styles.banner} ${styles.ai}`}>
         <Bot size={14} aria-hidden="true" />
-        <span className={styles.text}>AI Agent is handling this conversation.</span>
+        <span className={styles.text}>{t('conversations.takeover.aiHandling')}</span>
         <Link href="/dashboard/billing" className={styles.upgradeLink}>
-          Upgrade to enable takeover <ArrowUpRight size={12} aria-hidden="true" />
+          {t('conversations.takeover.upgradeTakeover')} <ArrowUpRight size={12} aria-hidden="true" />
         </Link>
       </div>
     );
@@ -78,14 +81,14 @@ export default function TakeoverBanner({
   return (
     <div className={`${styles.banner} ${styles.ai}`}>
       <Bot size={14} aria-hidden="true" />
-      <span className={styles.text}>AI Agent is handling this conversation.</span>
+      <span className={styles.text}>{t('conversations.takeover.aiHandling')}</span>
       <Button
         variant="outline"
         size="sm"
         onClick={onTakeover}
         loading={loading}
       >
-        Take Over
+        {t('conversations.chat.takeover')}
       </Button>
     </div>
   );

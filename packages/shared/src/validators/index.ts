@@ -38,6 +38,7 @@ export const agentCreateSchema = z.object({
   channels: z.array(z.enum(['web', 'whatsapp'])).default([]),
   messageBufferSeconds: z.number().int().min(0).max(30).default(5),
   variables: z.array(variableSchema).optional(),
+  webConfig: z.record(z.unknown()).optional(),
 });
 
 export const agentUpdateSchema = agentCreateSchema.partial();

@@ -17,6 +17,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import Spinner from '@/components/ui/Spinner';
 import Button from '@/components/ui/Button';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatRelativeTime } from '@/lib/formatters';
 import styles from './conversations.module.css';
 
 interface ConversationItem {
@@ -52,24 +54,8 @@ interface ConversationsResponse {
   };
 }
 
-function timeAgo(isoString: string | null): string {
-  if (!isoString) return '';
-  const diff = Date.now() - new Date(isoString).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'neutral' | 'info' | 'danger' }> = {
-  active: { label: 'Active', variant: 'success' },
-  human_takeover: { label: 'Takeover', variant: 'warning' },
-  closed: { label: 'Closed', variant: 'neutral' },
-};
-
 export default function ConversationsPage() {
+  const { t, language } = useTranslation();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -105,7 +91,6 @@ export default function ConversationsPage() {
       setConversations((prev) => {
         const existing = prev.find((c) => c.id === data.conversationId);
         if (!existing) {
-          // New conversation — refresh
           void fetchConversations();
           return prev;
         }
@@ -117,7 +102,6 @@ export default function ConversationsPage() {
             ? { content: data.lastMessage, role: 'assistant' }
             : existing.lastMessage,
         };
-        // Move to top
         return [updated, ...prev.filter((c) => c.id !== data.conversationId)];
       });
     };
@@ -133,11 +117,17 @@ export default function ConversationsPage() {
     return `Conversation ${conv.id.slice(0, 8)}`;
   };
 
+  const STATUS_CONFIG: Record<string, { label: string; variant: 'success' | 'warning' | 'neutral' | 'info' | 'danger' }> = {
+    active: { label: t('conversations.filters.active'), variant: 'success' },
+    human_takeover: { label: t('conversations.filters.takeover'), variant: 'warning' },
+    closed: { label: t('conversations.filters.closed'), variant: 'neutral' },
+  };
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.pageTitle}>
-          <h1>Conversations</h1>
+          <h1>{t('conversations.title')}</h1>
           <span className={styles.totalBadge}>{total}</span>
         </div>
         <Button
@@ -146,7 +136,7 @@ export default function ConversationsPage() {
           icon={RefreshCw}
           onClick={() => void fetchConversations()}
         >
-          Refresh
+          {t('conversations.refresh')}
         </Button>
       </div>
 
@@ -155,7 +145,7 @@ export default function ConversationsPage() {
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search by name, phone, email..."
+          placeholder={t('conversations.search')}
           className={styles.searchInput}
         />
         <div className={styles.filterGroup}>
@@ -164,20 +154,20 @@ export default function ConversationsPage() {
             className={styles.select}
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            aria-label="Filter by status"
+            aria-label={t('conversations.allStatuses')}
           >
-            <option value="">All statuses</option>
-            <option value="active">Active</option>
-            <option value="human_takeover">Takeover</option>
-            <option value="closed">Closed</option>
+            <option value="">{t('conversations.allStatuses')}</option>
+            <option value="active">{t('conversations.filters.active')}</option>
+            <option value="human_takeover">{t('conversations.filters.takeover')}</option>
+            <option value="closed">{t('conversations.filters.closed')}</option>
           </select>
           <select
             className={styles.select}
             value={channelFilter}
             onChange={(e) => setChannelFilter(e.target.value)}
-            aria-label="Filter by channel"
+            aria-label={t('conversations.allChannels')}
           >
-            <option value="">All channels</option>
+            <option value="">{t('conversations.allChannels')}</option>
             <option value="web">Web</option>
             <option value="whatsapp">WhatsApp</option>
           </select>
@@ -192,8 +182,8 @@ export default function ConversationsPage() {
       ) : conversations.length === 0 ? (
         <EmptyState
           icon={MessageSquare}
-          title="No conversations yet"
-          description="Conversations will appear here once users start chatting with your agents."
+          title={t('conversations.empty.title')}
+          description={t('conversations.empty.description')}
         />
       ) : (
         <div className={styles.list}>
@@ -217,13 +207,13 @@ export default function ConversationsPage() {
                   <div className={styles.itemHeader}>
                     <span className={styles.itemName}>{displayName(conv)}</span>
                     <span className={styles.itemTime}>
-                      {timeAgo(conv.lastMessageAt ?? conv.createdAt)}
+                      {formatRelativeTime(conv.lastMessageAt ?? conv.createdAt, language)}
                     </span>
                   </div>
 
                   <div className={styles.itemPreview}>
                     <span className={styles.itemMessage}>
-                      {conv.lastMessage?.content ?? 'No messages yet'}
+                      {conv.lastMessage?.content ?? t('conversations.noMessages')}
                     </span>
                   </div>
 
@@ -245,7 +235,7 @@ export default function ConversationsPage() {
                     </Badge>
 
                     {conv.aiScore !== null && (
-                      <span className={styles.score}>Score: {conv.aiScore}</span>
+                      <span className={styles.score}>{t('conversations.score')} {conv.aiScore}</span>
                     )}
                   </div>
                 </div>

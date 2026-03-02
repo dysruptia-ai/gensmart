@@ -8,12 +8,14 @@ import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../../auth.module.css';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
   const params = useParams();
   const token = params['token'] as string;
+  const { t } = useTranslation();
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -23,19 +25,19 @@ export default function ResetPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError(t('errors.passwordTooShort'));
       return;
     }
     if (!/[A-Z]/.test(password)) {
-      setError('Password must contain at least one uppercase letter.');
+      setError(t('errors.passwordNeedsUppercase'));
       return;
     }
     if (!/[0-9]/.test(password)) {
-      setError('Password must contain at least one number.');
+      setError(t('errors.passwordNeedsNumber'));
       return;
     }
     if (password !== confirmPassword) {
-      setError('Passwords do not match.');
+      setError(t('errors.passwordsNotMatch'));
       return;
     }
     setError('');
@@ -46,12 +48,12 @@ export default function ResetPasswordPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.code === 'INVALID_RESET_TOKEN') {
-          setError('This reset link is invalid or has expired. Please request a new one.');
+          setError(t('errors.invalidResetToken'));
         } else {
           setError(err.message);
         }
       } else {
-        setError('Something went wrong. Please try again.');
+        setError(t('errors.somethingWentWrong'));
       }
     } finally {
       setLoading(false);
@@ -64,8 +66,8 @@ export default function ResetPasswordPage() {
         <Logo size="lg" href="/" />
       </div>
 
-      <h1 className={styles.heading}>Create new password</h1>
-      <p className={styles.subheading}>Choose a strong password for your account.</p>
+      <h1 className={styles.heading}>{t('auth.resetPassword.title')}</h1>
+      <p className={styles.subheading}>{t('auth.resetPassword.subtitle')}</p>
 
       {error && (
         <div className={styles.errorBanner} role="alert">
@@ -76,7 +78,7 @@ export default function ResetPasswordPage() {
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <Input
-          label="New Password"
+          label={t('auth.resetPassword.password')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -87,7 +89,7 @@ export default function ResetPasswordPage() {
           icon={Lock}
         />
         <Input
-          label="Confirm New Password"
+          label={t('auth.resetPassword.confirmPassword')}
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -97,13 +99,13 @@ export default function ResetPasswordPage() {
           icon={Lock}
         />
         <Button type="submit" fullWidth loading={loading}>
-          Reset Password
+          {t('auth.resetPassword.submit')}
         </Button>
       </form>
 
       <p className={styles.footer}>
         <Link href="/forgot-password" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
-          <ArrowLeft size={14} /> Request new link
+          <ArrowLeft size={14} /> {t('auth.forgotPassword.backToLogin')}
         </Link>
       </p>
     </div>

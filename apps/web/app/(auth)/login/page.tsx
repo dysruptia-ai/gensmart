@@ -9,12 +9,14 @@ import { ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../auth.module.css';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, verify2FA } = useAuth();
+  const { t } = useTranslation();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,7 +39,7 @@ function LoginForm() {
         router.replace(from);
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Login failed. Please try again.');
+      setError(err instanceof ApiError ? err.message : t('errors.generic'));
     } finally {
       setLoading(false);
     }
@@ -51,7 +53,7 @@ function LoginForm() {
       await verify2FA(tempToken!, totpCode);
       router.replace(from);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Invalid code. Please try again.');
+      setError(err instanceof ApiError ? err.message : t('auth.twoFactor.invalidCode'));
     } finally {
       setLoading(false);
     }
@@ -67,10 +69,10 @@ function LoginForm() {
         <div className={styles.twoFAWrapper}>
           <ShieldCheck size={40} color="var(--color-primary)" aria-hidden="true" />
           <h2 className={styles.twoFATitle} style={{ marginTop: '0.75rem' }}>
-            Two-Factor Authentication
+            {t('auth.twoFactor.title')}
           </h2>
           <p className={styles.twoFADesc}>
-            Enter the 6-digit code from your authenticator app or a backup code.
+            {t('auth.twoFactor.subtitle')}
           </p>
         </div>
 
@@ -83,7 +85,7 @@ function LoginForm() {
 
         <form onSubmit={handle2FA} className={styles.form}>
           <Input
-            label="Authentication Code"
+            label={t('auth.twoFactor.code')}
             value={totpCode}
             onChange={(e) => setTotpCode(e.target.value)}
             placeholder="000000"
@@ -93,7 +95,7 @@ function LoginForm() {
             icon={ShieldCheck}
           />
           <Button type="submit" fullWidth loading={loading}>
-            Verify
+            {t('auth.twoFactor.submit')}
           </Button>
         </form>
 
@@ -102,7 +104,7 @@ function LoginForm() {
             className={styles.backLink}
             onClick={() => { setTempToken(null); setTotpCode(''); setError(''); }}
           >
-            <ArrowLeft size={14} /> Back to login
+            <ArrowLeft size={14} /> {t('auth.twoFactor.backToLogin')}
           </button>
         </div>
       </div>
@@ -115,8 +117,8 @@ function LoginForm() {
         <Logo size="lg" href="/" />
       </div>
 
-      <h1 className={styles.heading}>Sign in to your account</h1>
-      <p className={styles.subheading}>Welcome back! Enter your credentials to continue.</p>
+      <h1 className={styles.heading}>{t('auth.login.subtitle')}</h1>
+      <p className={styles.subheading}>{t('auth.login.title')}</p>
 
       {error && (
         <div className={styles.errorBanner} role="alert">
@@ -127,7 +129,7 @@ function LoginForm() {
 
       <form onSubmit={handleLogin} className={styles.form}>
         <Input
-          label="Email"
+          label={t('auth.login.email')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -138,7 +140,7 @@ function LoginForm() {
           icon={Mail}
         />
         <Input
-          label="Password"
+          label={t('auth.login.password')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -148,16 +150,16 @@ function LoginForm() {
           icon={Lock}
         />
         <Link href="/forgot-password" className={styles.forgotLink}>
-          Forgot password?
+          {t('auth.login.forgotPassword')}
         </Link>
         <Button type="submit" fullWidth loading={loading}>
-          Sign In
+          {t('auth.login.submit')}
         </Button>
       </form>
 
       <p className={styles.footer}>
-        Don&apos;t have an account?{' '}
-        <Link href="/register">Create one</Link>
+        {t('auth.login.noAccount')}{' '}
+        <Link href="/register">{t('auth.login.register')}</Link>
       </p>
     </div>
   );

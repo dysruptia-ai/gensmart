@@ -1,37 +1,42 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight, Play } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './HeroSection.module.css';
 
 export function HeroSection() {
+  const { t } = useTranslation();
+
   return (
     <section className={styles.hero} aria-label="Hero">
       <div className={styles.inner}>
         <div className={styles.content}>
           <div className={styles.badge}>
             <span className={styles.badgeDot} aria-hidden="true" />
-            AI Agents for WhatsApp &amp; Web
+            {t('landing.hero.badge')}
           </div>
           <h1 className={styles.headline}>
-            Create &amp; Deploy AI Agents in{' '}
-            <span className={styles.highlight}>Minutes</span>, Not Weeks
+            {t('landing.hero.titleStart')}{' '}
+            <span className={styles.highlight}>{t('landing.hero.titleHighlight')}</span>
+            {t('landing.hero.titleEnd')}
           </h1>
           <p className={styles.subheadline}>
-            Build intelligent WhatsApp &amp; Web chatbots with built-in CRM, sales
-            funnel, and scheduling — no coding required.
+            {t('landing.hero.subtitle')}
           </p>
           <div className={styles.ctas}>
             <Link href="/register" className={styles.ctaPrimary}>
-              Start Free
+              {t('landing.hero.cta')}
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
             <a href="#how-it-works" className={styles.ctaSecondary}>
               <span className={styles.playIcon} aria-hidden="true">
                 <Play size={14} />
               </span>
-              See How It Works
+              {t('landing.hero.ctaSecondary')}
             </a>
           </div>
-          <p className={styles.hint}>No credit card required · Free forever plan</p>
+          <p className={styles.hint}>{t('landing.hero.freeForeverHint')}</p>
         </div>
 
         <div className={styles.visual} aria-hidden="true">
@@ -46,7 +51,7 @@ export function HeroSection() {
             </div>
 
             <div className={styles.mockupBody}>
-              {/* Stats row */}
+              {/* Stats row — decorative mockup, not translated */}
               <div className={styles.statsRow}>
                 <div className={styles.statCard}>
                   <span className={styles.statLabel}>Leads Today</span>

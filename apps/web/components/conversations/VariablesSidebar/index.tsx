@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { CheckCircle, Circle } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './VariablesSidebar.module.css';
 
 interface AgentVariable {
@@ -37,13 +38,14 @@ export default function VariablesSidebar({
   agentVariables = [],
   contact,
 }: VariablesSidebarProps) {
+  const { t } = useTranslation();
   const capturedEntries = Object.entries(capturedVariables);
 
   return (
     <div className={styles.sidebar}>
       {/* Contact info */}
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Contact</h3>
+        <h3 className={styles.sectionTitle}>{t('conversations.variables.contact')}</h3>
         {contact ? (
           <div className={styles.contactInfo}>
             <div className={styles.contactAvatar}>
@@ -56,7 +58,7 @@ export default function VariablesSidebar({
                 : '?'}
             </div>
             <div className={styles.contactDetails}>
-              <span className={styles.contactName}>{contact.name ?? 'Unknown'}</span>
+              <span className={styles.contactName}>{contact.name ?? t('common.name')}</span>
               {contact.phone && <span className={styles.contactMeta}>{contact.phone}</span>}
               {contact.email && <span className={styles.contactMeta}>{contact.email}</span>}
               {contact.funnelStage && (
@@ -74,13 +76,13 @@ export default function VariablesSidebar({
             )}
           </div>
         ) : (
-          <p className={styles.noContact}>No contact linked yet</p>
+          <p className={styles.noContact}>{t('conversations.contactInfo.noContact')}</p>
         )}
       </div>
 
       {/* Captured variables */}
       <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>Captured Variables</h3>
+        <h3 className={styles.sectionTitle}>{t('conversations.variables.title')}</h3>
         {agentVariables.length > 0 ? (
           <ul className={styles.variableList}>
             {agentVariables.map((v) => {
@@ -104,7 +106,7 @@ export default function VariablesSidebar({
                       <span className={styles.variableValue}>{String(captured)}</span>
                     ) : (
                       <span className={styles.variablePending}>
-                        {v.required ? 'Pending (required)' : 'Not captured'}
+                        {v.required ? t('conversations.variables.pending') : t('conversations.variables.notCaptured')}
                       </span>
                     )}
                   </div>
@@ -127,7 +129,7 @@ export default function VariablesSidebar({
             ))}
           </ul>
         ) : (
-          <p className={styles.noVars}>No variables captured yet</p>
+          <p className={styles.noVars}>{t('conversations.variables.noVariables')}</p>
         )}
       </div>
     </div>

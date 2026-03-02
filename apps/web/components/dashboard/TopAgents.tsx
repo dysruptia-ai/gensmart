@@ -6,6 +6,7 @@ import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import { Bot } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './TopAgents.module.css';
 
 interface AgentRow {
@@ -32,21 +33,22 @@ function scoreBadgeVariant(score: number | null): 'success' | 'warning' | 'dange
 
 export default function TopAgents({ agents }: TopAgentsProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <div className={styles.card}>
-      <h2 className={styles.title}>Top Agents</h2>
+      <h2 className={styles.title}>{t('dashboard.topAgents.title')}</h2>
 
       {agents.length === 0 ? (
-        <EmptyState icon={Bot} title="No agents yet" description="Create your first agent to see stats here." />
+        <EmptyState icon={Bot} title={t('dashboard.topAgents.noAgents')} description={t('agents.empty.description')} />
       ) : (
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={styles.th}>Agent</th>
-              <th className={`${styles.th} ${styles.numCol}`}>Convos</th>
-              <th className={`${styles.th} ${styles.numCol}`}>Contacts</th>
-              <th className={`${styles.th} ${styles.numCol}`}>Score</th>
+              <th className={styles.th}>{t('dashboard.topAgents.agent')}</th>
+              <th className={`${styles.th} ${styles.numCol}`}>{t('dashboard.topAgents.convos')}</th>
+              <th className={`${styles.th} ${styles.numCol}`}>{t('dashboard.topAgents.contacts')}</th>
+              <th className={`${styles.th} ${styles.numCol}`}>{t('dashboard.topAgents.score')}</th>
             </tr>
           </thead>
           <tbody>
@@ -73,7 +75,7 @@ export default function TopAgents({ agents }: TopAgentsProps) {
                     />
                     <span className={styles.agentName}>{agent.name}</span>
                     {agent.status === 'active' && (
-                      <span className={styles.activeDot} aria-label="Active" />
+                      <span className={styles.activeDot} aria-label={t('common.active')} />
                     )}
                   </span>
                 </td>

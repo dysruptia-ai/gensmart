@@ -1,5 +1,8 @@
+'use client';
+
 import React from 'react';
 import { TrendingUp, Users, UserCheck, ArrowRight } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './FunnelStats.module.css';
 
 interface FunnelStatsData {
@@ -16,13 +19,15 @@ interface FunnelStatsProps {
 }
 
 export default function FunnelStats({ stats }: FunnelStatsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className={styles.row}>
       <div className={styles.stat}>
         <Users size={18} className={styles.icon} aria-hidden="true" />
         <div className={styles.info}>
           <span className={styles.value}>{stats.totalLeads}</span>
-          <span className={styles.label}>Leads</span>
+          <span className={styles.label}>{t('funnel.stats.leads')}</span>
         </div>
       </div>
 
@@ -30,7 +35,7 @@ export default function FunnelStats({ stats }: FunnelStatsProps) {
 
       <div className={styles.conversion}>
         <span className={styles.pct}>{stats.conversionLeadToOpp}%</span>
-        <span className={styles.convLabel}>Lead → Opp</span>
+        <span className={styles.convLabel}>{t('funnel.stats.leadToOpp')}</span>
       </div>
 
       <ArrowRight size={16} className={styles.arrow} aria-hidden="true" />
@@ -39,7 +44,7 @@ export default function FunnelStats({ stats }: FunnelStatsProps) {
         <TrendingUp size={18} className={styles.icon} aria-hidden="true" />
         <div className={styles.info}>
           <span className={styles.value}>{stats.totalOpportunities}</span>
-          <span className={styles.label}>Opportunities</span>
+          <span className={styles.label}>{t('funnel.stats.opportunities')}</span>
         </div>
       </div>
 
@@ -47,7 +52,7 @@ export default function FunnelStats({ stats }: FunnelStatsProps) {
 
       <div className={styles.conversion}>
         <span className={styles.pct}>{stats.conversionOppToCustomer}%</span>
-        <span className={styles.convLabel}>Opp → Customer</span>
+        <span className={styles.convLabel}>{t('funnel.stats.oppToCustomer')}</span>
       </div>
 
       <ArrowRight size={16} className={styles.arrow} aria-hidden="true" />
@@ -56,7 +61,7 @@ export default function FunnelStats({ stats }: FunnelStatsProps) {
         <UserCheck size={18} className={styles.iconGreen} aria-hidden="true" />
         <div className={styles.info}>
           <span className={styles.value}>{stats.totalCustomers}</span>
-          <span className={styles.label}>Customers</span>
+          <span className={styles.label}>{t('funnel.stats.customers')}</span>
         </div>
       </div>
 
@@ -65,7 +70,7 @@ export default function FunnelStats({ stats }: FunnelStatsProps) {
       <div className={styles.stat}>
         <div className={styles.info}>
           <span className={styles.value}>{stats.avgScore.toFixed(1)}</span>
-          <span className={styles.label}>Avg Score</span>
+          <span className={styles.label}>{t('funnel.stats.avgScore')}</span>
         </div>
       </div>
     </div>

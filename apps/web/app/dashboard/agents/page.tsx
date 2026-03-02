@@ -12,6 +12,7 @@ import Spinner from '@/components/ui/Spinner';
 import Modal from '@/components/ui/Modal';
 import ProgressBar from '@/components/ui/ProgressBar';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import AgentCard from '@/components/agents/AgentCard';
 import styles from './agents.module.css';
 
@@ -36,6 +37,7 @@ interface AgentsResponse {
 export default function AgentsPage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { t } = useTranslation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -58,7 +60,6 @@ export default function AgentsPage() {
     }
   }, [toastError]);
 
-  // Fetch org plan for accurate limit display
   useEffect(() => {
     api.get<{ plan: string }>('/api/organization')
       .then((org) => { if (org.plan) setOrgPlan(org.plan); })
@@ -67,7 +68,6 @@ export default function AgentsPage() {
 
   useEffect(() => { loadAgents(); }, [loadAgents]);
 
-  // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => loadAgents(search), 300);
     return () => clearTimeout(timer);
@@ -77,11 +77,11 @@ export default function AgentsPage() {
     setDeleting(true);
     try {
       await api.delete(`/api/agents/${agent.id}`);
-      success('Agent deleted');
+      success(t('common.delete'));
       setDeleteTarget(null);
       await loadAgents(search);
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to delete agent');
+      toastError(err instanceof ApiError ? err.message : t('errors.generic'));
     } finally {
       setDeleting(false);
     }
@@ -93,7 +93,7 @@ export default function AgentsPage() {
       success(`"${data.agent.name}" created`);
       await loadAgents(search);
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to duplicate agent');
+      toastError(err instanceof ApiError ? err.message : t('errors.generic'));
     }
   }
 
@@ -106,11 +106,11 @@ export default function AgentsPage() {
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>AI Agents</h1>
-          <p className={styles.pageDesc}>Create and manage your conversational AI agents.</p>
+          <h1 className={styles.pageTitle}>{t('agents.title')}</h1>
+          <p className={styles.pageDesc}>{t('agents.pageDescription')}</p>
         </div>
         <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')}>
-          New Agent
+          {t('agents.newAgent')}
         </Button>
       </div>
 
@@ -118,10 +118,14 @@ export default function AgentsPage() {
         <SearchInput
           value={search}
           onChange={(v) => setSearch(v)}
-          placeholder="Search agents..."
+          placeholder={t('agents.search')}
         />
         <div className={styles.usageBar}>
-          <span>{total} / {agentLimit === null ? '∞' : agentLimit} agents</span>
+          <span>
+            {agentLimit === null
+              ? t('agents.usageUnlimited', { used: String(total) })
+              : t('agents.usageCount', { used: String(total), limit: String(agentLimit) })}
+          </span>
           {agentLimit !== null && (
             <div className={styles.usageBarInner}>
               <ProgressBar value={Math.round((total / agentLimit) * 100)} size="sm" />
@@ -137,11 +141,11 @@ export default function AgentsPage() {
       ) : agents.length === 0 ? (
         <EmptyState
           icon={Bot}
-          title="No agents yet"
-          description={search ? 'No agents match your search.' : 'Create your first AI agent to start capturing leads and automating conversations.'}
+          title={t('agents.empty.title')}
+          description={search ? t('agents.searchEmpty') : t('agents.empty.description')}
           action={!search ? (
             <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')}>
-              Create Agent
+              {t('agents.empty.cta')}
             </Button>
           ) : undefined}
         />
@@ -161,21 +165,20 @@ export default function AgentsPage() {
       <Modal
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
-        title="Delete Agent"
+        title={t('agents.card.deleteTitle')}
         size="sm"
       >
         <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
-          Are you sure you want to delete <strong>{deleteTarget?.name}</strong>?
-          This action cannot be undone and all versions will be lost.
+          {t('agents.card.deleteConfirm', { name: deleteTarget?.name ?? '' })}
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+          <Button variant="secondary" onClick={() => setDeleteTarget(null)}>{t('common.cancel')}</Button>
           <Button
             variant="danger"
             loading={deleting}
             onClick={() => deleteTarget && handleDelete(deleteTarget)}
           >
-            Delete Agent
+            {t('agents.card.deleteTitle')}
           </Button>
         </div>
       </Modal>

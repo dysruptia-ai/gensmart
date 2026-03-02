@@ -3,6 +3,8 @@
 import React from 'react';
 import { CreditCard, Calendar, AlertCircle, CheckCircle2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatDate } from '@/lib/formatters';
 import styles from './CurrentPlan.module.css';
 
 interface SubscriptionData {
@@ -36,15 +38,6 @@ function getPlanBadgeClass(plan: string): string {
   }
 }
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
 function getStatusIcon(status: string, cancelAtPeriodEnd: boolean) {
   if (cancelAtPeriodEnd) return <AlertCircle size={14} className={styles.statusCanceling} />;
   if (status === 'active') return <CheckCircle2 size={14} className={styles.statusActive} />;
@@ -52,24 +45,26 @@ function getStatusIcon(status: string, cancelAtPeriodEnd: boolean) {
   return null;
 }
 
-function getStatusText(status: string, cancelAtPeriodEnd: boolean): string {
-  if (cancelAtPeriodEnd) return 'Cancels at period end';
-  switch (status) {
-    case 'active': return 'Active';
-    case 'past_due': return 'Payment past due';
-    case 'canceled': return 'Canceled';
-    case 'trialing': return 'Trial';
-    default: return status;
-  }
-}
-
 export default function CurrentPlan({ subscription, loading, onManage, onChangePlan, isManaging }: Props) {
+  const { t, language } = useTranslation();
+
   const plan = subscription?.plan ?? 'free';
   const isFree = plan === 'free';
 
   const priceStr = !isFree && subscription?.interval
     ? PLAN_PRICES[plan]?.[subscription.interval] ?? ''
     : '';
+
+  function getStatusText(status: string, cancelAtPeriodEnd: boolean): string {
+    if (cancelAtPeriodEnd) return t('billing.currentPlan.cancelsAtPeriodEnd');
+    switch (status) {
+      case 'active': return t('billing.currentPlan.subscriptionActive');
+      case 'past_due': return t('billing.currentPlan.paymentPastDue');
+      case 'canceled': return t('billing.currentPlan.subscriptionCancelled');
+      case 'trialing': return t('billing.currentPlan.trial');
+      default: return status;
+    }
+  }
 
   return (
     <div className={styles.card}>
@@ -87,7 +82,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
             fontWeight: 600,
             textTransform: 'capitalize',
           }}>
-            {isFree ? 'Free Forever' : plan}
+            {isFree ? t('billing.currentPlan.freeForever') : plan}
           </span>
         </div>
 
@@ -99,7 +94,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
               onClick={onManage}
               loading={isManaging}
             >
-              Manage Subscription
+              {t('billing.currentPlan.manageSubscription')}
             </Button>
           )}
           <Button
@@ -107,7 +102,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
             size="sm"
             onClick={onChangePlan}
           >
-            {isFree ? 'Upgrade Plan' : 'Change Plan'}
+            {isFree ? t('billing.currentPlan.upgradePlan') : t('billing.currentPlan.changePlan')}
           </Button>
         </div>
       </div>
@@ -124,7 +119,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
             <div className={styles.metaRow}>
               <Calendar size={13} className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined} />
               <span className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined}>
-                {subscription.cancelAtPeriodEnd ? 'Cancels' : 'Renews'} {formatDate(subscription.currentPeriodEnd)}
+                {subscription.cancelAtPeriodEnd ? t('billing.currentPlan.cancels') : t('billing.currentPlan.renews')} {formatDate(subscription.currentPeriodEnd, language)}
               </span>
             </div>
           )}
@@ -144,7 +139,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
           {isFree && (
             <div className={styles.metaRow}>
               <CheckCircle2 size={13} className={styles.statusFree} />
-              <span>Free forever, no credit card required</span>
+              <span>{t('billing.currentPlan.freeForeverNote')}</span>
             </div>
           )}
         </div>

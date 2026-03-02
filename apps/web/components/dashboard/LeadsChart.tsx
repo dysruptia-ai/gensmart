@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import Skeleton from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { BarChart3 } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './LeadsChart.module.css';
 
 type Period = '7d' | '30d' | '90d';
@@ -27,20 +28,18 @@ interface TooltipState {
   count: number;
 }
 
-function formatLabel(dateStr: string, period: Period): string {
+function formatLabel(dateStr: string, locale: string): string {
   const d = new Date(dateStr + 'T00:00:00');
-  if (period === '90d') {
-    return `${d.toLocaleString('default', { month: 'short' })} ${d.getDate()}`;
-  }
-  return `${d.toLocaleString('default', { month: 'short' })} ${d.getDate()}`;
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }
 
-function formatTooltipDate(dateStr: string): string {
+function formatTooltipDate(dateStr: string, locale: string): string {
   const d = new Date(dateStr + 'T00:00:00');
-  return d.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export default function LeadsChart() {
+  const { t, language } = useTranslation();
   const [period, setPeriod] = useState<Period>('7d');
   const [data, setData] = useState<DataPoint[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,7 +53,6 @@ export default function LeadsChart() {
       .then((res) => setData(res.data))
       .catch(() => setData([]))
       .finally(() => setIsLoading(false));
-
   }, [period]);
 
   const hasData = data.some((d) => d.count > 0);
@@ -79,11 +77,8 @@ export default function LeadsChart() {
     ? `${points[0]!.x},${PADDING.top + chartH} ${polylinePoints} ${points[points.length - 1]!.x},${PADDING.top + chartH}`
     : '';
 
-  // X-axis labels: show every Nth to avoid crowding
   const labelStep = data.length <= 7 ? 1 : data.length <= 14 ? 2 : data.length <= 30 ? 5 : 7;
   const xLabels = points.filter((_, i) => i % labelStep === 0 || i === points.length - 1);
-
-  // Y-axis ticks (3 ticks)
   const yTicks = [0, Math.ceil(maxCount / 2), maxCount];
 
   function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
@@ -99,7 +94,6 @@ export default function LeadsChart() {
       if (dist < minDist) { minDist = dist; closest = p; }
     }
 
-    const scaleY = HEIGHT / rect.height;
     setTooltip({
       visible: true,
       x: closest.x,
@@ -107,7 +101,6 @@ export default function LeadsChart() {
       date: closest.date,
       count: closest.count,
     });
-    void scaleY;
   }
 
   function handleMouseLeave() {
@@ -117,7 +110,7 @@ export default function LeadsChart() {
   return (
     <div className={styles.card}>
       <div className={styles.header}>
-        <h2 className={styles.title}>New Leads</h2>
+        <h2 className={styles.title}>{t('dashboard.leadsChart.title')}</h2>
         <div className={styles.periods}>
           {(['7d', '30d', '90d'] as Period[]).map((p) => (
             <button
@@ -135,7 +128,7 @@ export default function LeadsChart() {
         {isLoading ? (
           <Skeleton width="100%" height={200} />
         ) : !hasData ? (
-          <EmptyState icon={BarChart3} title="No data yet" description="Leads will appear here as they come in." />
+          <EmptyState icon={BarChart3} title={t('dashboard.leadsChart.noData')} description={t('contacts.empty.description')} />
         ) : (
           <svg
             ref={svgRef}
@@ -143,9 +136,8 @@ export default function LeadsChart() {
             className={styles.svg}
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
-            aria-label="Leads over time chart"
+            aria-label={t('dashboard.leadsChart.title')}
           >
-            {/* Grid lines */}
             {yTicks.map((tick, i) => {
               const ty = PADDING.top + chartH - (tick / maxCount) * chartH;
               return (
@@ -171,7 +163,6 @@ export default function LeadsChart() {
               );
             })}
 
-            {/* Area fill */}
             {polygonPoints && (
               <polygon
                 points={polygonPoints}
@@ -180,7 +171,6 @@ export default function LeadsChart() {
               />
             )}
 
-            {/* Line */}
             {polylinePoints && (
               <polyline
                 points={polylinePoints}
@@ -192,7 +182,6 @@ export default function LeadsChart() {
               />
             )}
 
-            {/* Data point circles */}
             {points.map((p, i) => (
               <circle
                 key={i}
@@ -205,7 +194,6 @@ export default function LeadsChart() {
               />
             ))}
 
-            {/* X-axis labels */}
             {xLabels.map((p, i) => (
               <text
                 key={i}
@@ -215,15 +203,14 @@ export default function LeadsChart() {
                 fontSize="10"
                 fill="var(--color-text-secondary)"
               >
-                {formatLabel(p.date, period)}
+                {formatLabel(p.date, language)}
               </text>
             ))}
 
-            {/* Tooltip */}
             {tooltip.visible && (() => {
               const tx = tooltip.x;
               const ty = tooltip.y - 12;
-              const label = `${formatTooltipDate(tooltip.date)}: ${tooltip.count}`;
+              const label = `${formatTooltipDate(tooltip.date, language)}: ${tooltip.count}`;
               const boxW = Math.max(label.length * 5.5 + 12, 80);
               const boxX = Math.min(tx - boxW / 2, WIDTH - boxW - 4);
               const boxY = Math.max(ty - 28, 2);

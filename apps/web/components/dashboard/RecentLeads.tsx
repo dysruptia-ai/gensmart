@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/ui/EmptyState';
 import { Star } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatDate } from '@/lib/formatters';
 import styles from './RecentLeads.module.css';
 
 interface Lead {
@@ -28,32 +30,28 @@ function scoreBadgeVariant(score: number): 'success' | 'warning' | 'danger' {
   return 'danger';
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('default', { month: 'short', day: 'numeric' });
-}
-
 export default function RecentLeads({ leads }: RecentLeadsProps) {
   const router = useRouter();
+  const { t, language } = useTranslation();
 
   return (
     <div className={styles.card}>
-      <h2 className={styles.title}>Recent High-Score Leads</h2>
+      <h2 className={styles.title}>{t('dashboard.recentLeads.title')}</h2>
 
       {leads.length === 0 ? (
         <EmptyState
           icon={Star}
-          title="No high-score leads yet"
-          description="Leads with a score of 5 or above will appear here."
+          title={t('dashboard.recentLeads.noLeads')}
+          description={t('contacts.empty.description')}
         />
       ) : (
         <table className={styles.table}>
           <thead>
             <tr>
-              <th className={styles.th}>Name</th>
-              <th className={`${styles.th} ${styles.centerCol}`}>Score</th>
-              <th className={styles.th}>Agent</th>
-              <th className={`${styles.th} ${styles.rightCol}`}>Date</th>
+              <th className={styles.th}>{t('dashboard.recentLeads.name')}</th>
+              <th className={`${styles.th} ${styles.centerCol}`}>{t('dashboard.recentLeads.score')}</th>
+              <th className={styles.th}>{t('dashboard.recentLeads.agent')}</th>
+              <th className={`${styles.th} ${styles.rightCol}`}>{t('dashboard.recentLeads.date')}</th>
             </tr>
           </thead>
           <tbody>
@@ -73,7 +71,7 @@ export default function RecentLeads({ leads }: RecentLeadsProps) {
               >
                 <td className={styles.td}>
                   <span className={styles.leadName}>
-                    {lead.name ?? lead.email ?? 'Unknown'}
+                    {lead.name ?? lead.email ?? t('common.name')}
                   </span>
                   {lead.service && (
                     <span className={styles.service}>{lead.service}</span>
@@ -92,7 +90,7 @@ export default function RecentLeads({ leads }: RecentLeadsProps) {
                   </span>
                 </td>
                 <td className={`${styles.td} ${styles.rightCol}`}>
-                  <span className={styles.date}>{formatDate(lead.createdAt)}</span>
+                  <span className={styles.date}>{formatDate(lead.createdAt, language)}</span>
                 </td>
               </tr>
             ))}

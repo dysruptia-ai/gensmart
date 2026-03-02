@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './CalendarView.module.css';
 
 // ── Timezone-aware date helpers ────────────────────────────────────────────
@@ -24,16 +25,16 @@ export function getYearInTimezone(isoString: string, timezone: string): number {
   );
 }
 
-function formatTimeInTimezone(isoString: string, timezone: string): string {
+function formatTimeInTimezone(isoString: string, timezone: string, locale: string): string {
   try {
-    return new Date(isoString).toLocaleTimeString('en-US', {
+    return new Date(isoString).toLocaleTimeString(locale, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
       timeZone: timezone,
     });
   } catch {
-    return new Date(isoString).toLocaleTimeString('en-US', {
+    return new Date(isoString).toLocaleTimeString(locale, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -63,12 +64,6 @@ interface Props {
   onNextMonth: () => void;
 }
 
-const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
 export default function CalendarView({
   year,
   month,
@@ -78,10 +73,26 @@ export default function CalendarView({
   onPrevMonth,
   onNextMonth,
 }: Props) {
+  const { t, language } = useTranslation();
+  const locale = language === 'es' ? 'es-ES' : 'en-US';
+
   const today = new Date();
   const todayY = today.getFullYear();
   const todayM = today.getMonth();
   const todayD = today.getDate();
+
+  // Locale-aware day names (Mon–Sun), using a known Monday as anchor
+  const DAY_NAMES = useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(2024, 0, 1 + i); // Jan 1 2024 was Monday
+      return date.toLocaleDateString(locale, { weekday: 'short' });
+    });
+  }, [locale]);
+
+  // Locale-aware month name
+  const monthTitle = useMemo(() => {
+    return new Intl.DateTimeFormat(locale, { month: 'long', year: 'numeric' }).format(new Date(year, month, 1));
+  }, [locale, year, month]);
 
   // Build calendar grid: weeks × 7 cells
   const cells = useMemo(() => {
@@ -126,14 +137,12 @@ export default function CalendarView({
   return (
     <div className={styles.wrapper}>
       <div className={styles.header}>
-        <span className={styles.monthTitle}>
-          {MONTH_NAMES[month]} {year}
-        </span>
+        <span className={styles.monthTitle}>{monthTitle}</span>
         <div className={styles.navButtons}>
-          <button className={styles.navBtn} onClick={onPrevMonth} aria-label="Previous month">
+          <button className={styles.navBtn} onClick={onPrevMonth} aria-label={t('calendar.prevMonth')}>
             <ChevronLeft size={16} />
           </button>
-          <button className={styles.navBtn} onClick={onNextMonth} aria-label="Next month">
+          <button className={styles.navBtn} onClick={onNextMonth} aria-label={t('calendar.nextMonth')}>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -176,7 +185,7 @@ export default function CalendarView({
                   let dotClass = styles.apptDot;
                   if (a.status === 'cancelled') dotClass += ` ${styles.apptDotCancelled}`;
                   else if (a.status === 'completed') dotClass += ` ${styles.apptDotCompleted}`;
-                  const time = formatTimeInTimezone(a.start_time, a.calendar_timezone || 'UTC');
+                  const time = formatTimeInTimezone(a.start_time, a.calendar_timezone || 'UTC', locale);
                   return (
                     <div key={a.id} className={dotClass} title={a.title}>
                       {time} {a.title}
@@ -185,7 +194,7 @@ export default function CalendarView({
                 })}
                 {dayAppts.length > MAX_VISIBLE && (
                   <span className={styles.moreBadge}>
-                    +{dayAppts.length - MAX_VISIBLE} more
+                    {t('calendar.more', { count: String(dayAppts.length - MAX_VISIBLE) })}
                   </span>
                 )}
               </div>

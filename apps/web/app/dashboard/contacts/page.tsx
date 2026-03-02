@@ -17,6 +17,8 @@ import EmptyState from '@/components/ui/EmptyState';
 import ScoreBadge from '@/components/crm/ScoreBadge';
 import StageBadge from '@/components/crm/StageBadge';
 import ContactFilters from '@/components/crm/ContactFilters';
+import { useTranslation } from '@/hooks/useTranslation';
+import { formatRelativeTime } from '@/lib/formatters';
 import styles from './contacts.module.css';
 
 interface ContactItem {
@@ -47,19 +49,8 @@ interface Agent {
   name: string;
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString();
-}
-
 export default function ContactsPage() {
+  const { t, language } = useTranslation();
   const [contacts, setContacts] = useState<ContactItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -168,9 +159,9 @@ export default function ContactsPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Contacts</h1>
+          <h1 className={styles.title}>{t('contacts.title')}</h1>
           {!loading && (
-            <span className={styles.count}>{total.toLocaleString()} total</span>
+            <span className={styles.count}>{t('contacts.total', { count: total.toLocaleString(language === 'es' ? 'es-ES' : 'en-US') })}</span>
           )}
         </div>
         <Button
@@ -180,7 +171,7 @@ export default function ContactsPage() {
           loading={exporting}
           onClick={handleExport}
         >
-          Export CSV
+          {t('contacts.export')}
         </Button>
       </div>
 
@@ -203,8 +194,8 @@ export default function ContactsPage() {
       ) : contacts.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="No contacts yet"
-          description="Contacts are created automatically when agents capture variables from conversations."
+          title={t('contacts.empty.title')}
+          description={t('contacts.empty.description')}
         />
       ) : (
         <>
@@ -212,14 +203,14 @@ export default function ContactsPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Contact</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Agent</th>
-                  <th>Score</th>
-                  <th>Stage</th>
-                  <th>Service</th>
-                  <th>Created</th>
+                  <th>{t('contacts.table.name')}</th>
+                  <th>{t('contacts.table.email')}</th>
+                  <th>{t('contacts.table.phone')}</th>
+                  <th>{t('contacts.table.agent')}</th>
+                  <th>{t('contacts.table.score')}</th>
+                  <th>{t('contacts.table.stage')}</th>
+                  <th>{t('contacts.table.service')}</th>
+                  <th>{t('contacts.table.date')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -229,10 +220,10 @@ export default function ContactsPage() {
                       <Link href={`/dashboard/contacts/${c.id}`} className={styles.nameCell}>
                         <Avatar
                           src={c.avatar_url ?? undefined}
-                          name={c.name ?? 'Unknown'}
+                          name={c.name ?? t('common.name')}
                           size="sm"
                         />
-                        <span className={styles.name}>{c.name ?? 'Unknown'}</span>
+                        <span className={styles.name}>{c.name ?? t('common.name')}</span>
                       </Link>
                     </td>
                     <td className={styles.secondary}>{c.email ?? '—'}</td>
@@ -258,7 +249,7 @@ export default function ContactsPage() {
                       <StageBadge stage={c.funnel_stage} />
                     </td>
                     <td className={styles.secondary}>{c.ai_service ?? '—'}</td>
-                    <td className={styles.secondary}>{timeAgo(c.created_at)}</td>
+                    <td className={styles.secondary}>{formatRelativeTime(c.created_at, language)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -274,10 +265,10 @@ export default function ContactsPage() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Prev
+                {t('common.back')}
               </Button>
               <span className={styles.pageInfo}>
-                Page {page} of {totalPages}
+                {t('contacts.pageInfo', { page: String(page), total: String(totalPages) })}
               </span>
               <Button
                 variant="ghost"
@@ -287,7 +278,7 @@ export default function ContactsPage() {
                 disabled={page >= totalPages}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Next
+                {t('common.next')}
               </Button>
             </div>
           )}

@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import KanbanBoard from '@/components/funnel/KanbanBoard';
 import FunnelStats from '@/components/funnel/FunnelStats';
 import styles from './funnel.module.css';
@@ -35,7 +36,7 @@ interface FunnelResponse {
   total: number;
 }
 
-interface FunnelStats {
+interface FunnelStatsData {
   totalLeads: number;
   totalOpportunities: number;
   totalCustomers: number;
@@ -50,8 +51,9 @@ interface Agent {
 }
 
 export default function FunnelPage() {
+  const { t } = useTranslation();
   const [stages, setStages] = useState<StageData[]>([]);
-  const [stats, setStats] = useState<FunnelStats | null>(null);
+  const [stats, setStats] = useState<FunnelStatsData | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [agentId, setAgentId] = useState('');
   const [loading, setLoading] = useState(true);
@@ -63,16 +65,16 @@ export default function FunnelPage() {
       const params = agentId ? `?agentId=${agentId}` : '';
       const [funnelRes, statsRes] = await Promise.all([
         api.get<FunnelResponse>(`/api/funnel${params}`),
-        api.get<FunnelStats>('/api/funnel/stats'),
+        api.get<FunnelStatsData>('/api/funnel/stats'),
       ]);
       setStages(funnelRes.stages);
       setStats(statsRes);
     } catch {
-      toast.error('Failed to load funnel data');
+      toast.error(t('funnel.failedToLoad'));
     } finally {
       setLoading(false);
     }
-  }, [agentId, toast]);
+  }, [agentId, toast, t]);
 
   useEffect(() => {
     fetchData();
@@ -114,12 +116,12 @@ export default function FunnelPage() {
 
     try {
       await api.put('/api/funnel/move', { contactId, fromStage, toStage });
-      toast.success(`Moved to ${toStage}`);
+      toast.success(t('funnel.movedTo', { stage: toStage }));
       // Refresh stats
-      const statsRes = await api.get<FunnelStats>('/api/funnel/stats');
+      const statsRes = await api.get<FunnelStatsData>('/api/funnel/stats');
       setStats(statsRes);
     } catch {
-      toast.error('Failed to move contact');
+      toast.error(t('funnel.failedToMove'));
       // Revert on failure
       fetchData();
     }
@@ -131,9 +133,9 @@ export default function FunnelPage() {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Sales Funnel</h1>
+          <h1 className={styles.title}>{t('funnel.title')}</h1>
           {!loading && (
-            <span className={styles.count}>{total} contacts</span>
+            <span className={styles.count}>{t('funnel.contacts', { count: String(total) })}</span>
           )}
         </div>
 
@@ -144,9 +146,9 @@ export default function FunnelPage() {
               className={styles.select}
               value={agentId}
               onChange={(e) => setAgentId(e.target.value)}
-              aria-label="Filter by agent"
+              aria-label={t('funnel.filterByAgent')}
             >
-              <option value="">All Agents</option>
+              <option value="">{t('funnel.allAgents')}</option>
               {agents.map((a) => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
@@ -163,8 +165,8 @@ export default function FunnelPage() {
         </div>
       ) : total === 0 ? (
         <EmptyState
-          title="No contacts in funnel"
-          description="Contacts appear here automatically when agents capture conversation data."
+          title={t('funnel.noContacts')}
+          description={t('funnel.empty.description')}
         />
       ) : (
         <KanbanBoard stages={stages} onMove={handleMove} />

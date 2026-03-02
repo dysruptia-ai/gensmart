@@ -6,17 +6,14 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './PublicNavbar.module.css';
-
-const SECTION_LINKS = [
-  { label: 'Features', sectionId: 'features' },
-  { label: 'How It Works', sectionId: 'how-it-works' },
-];
 
 export function PublicNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
+  const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -53,6 +50,11 @@ export function PublicNavbar() {
     [closeMobile, pathname, router]
   );
 
+  const SECTION_LINKS = [
+    { label: t('landing.nav.features'), sectionId: 'features' },
+    { label: t('landing.nav.pricing'), sectionId: 'how-it-works' },
+  ];
+
   return (
     <header className={`${styles.navbar} ${isScrolled ? styles.scrolled : ''}`}>
       <div className={styles.inner}>
@@ -69,10 +71,10 @@ export function PublicNavbar() {
             </button>
           ))}
           <Link className={styles.navLink} href="/pricing">
-            Pricing
+            {t('landing.nav.pricing')}
           </Link>
           <Link className={styles.navLink} href="/blog">
-            Blog
+            {t('landing.nav.blog')}
           </Link>
         </nav>
 
@@ -84,15 +86,15 @@ export function PublicNavbar() {
                 aria-hidden="true"
                 style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.375rem' }}
               />
-              Dashboard
+              {t('nav.dashboard')}
             </Link>
           ) : (
             <>
               <Link href="/login" className={styles.loginBtn}>
-                Log In
+                {t('landing.nav.login')}
               </Link>
               <Link href="/register" className={styles.ctaBtn}>
-                Start Free
+                {t('landing.nav.getStarted')}
               </Link>
             </>
           )}
@@ -104,7 +106,7 @@ export function PublicNavbar() {
             if (mobileOpen) closeMobile();
             else setMobileOpen(true);
           }}
-          aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+          aria-label={mobileOpen ? t('common.close') : 'Open menu'}
           aria-expanded={mobileOpen}
           aria-controls="public-mobile-nav"
         >
@@ -128,24 +130,24 @@ export function PublicNavbar() {
             </button>
           ))}
           <Link className={styles.mobileLink} href="/pricing" onClick={closeMobile}>
-            Pricing
+            {t('landing.nav.pricing')}
           </Link>
           <Link className={styles.mobileLink} href="/blog" onClick={closeMobile}>
-            Blog
+            {t('landing.nav.blog')}
           </Link>
         </nav>
         <div className={styles.mobileActions}>
           {isAuthenticated ? (
             <Link href="/dashboard" className={styles.ctaBtn} onClick={closeMobile}>
-              Dashboard
+              {t('nav.dashboard')}
             </Link>
           ) : (
             <>
               <Link href="/login" className={styles.loginBtn} onClick={closeMobile}>
-                Log In
+                {t('landing.nav.login')}
               </Link>
               <Link href="/register" className={styles.ctaBtn} onClick={closeMobile}>
-                Start Free
+                {t('landing.nav.getStarted')}
               </Link>
             </>
           )}

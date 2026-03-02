@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './MessageBubble.module.css';
 
 interface MessageBubbleProps {
@@ -16,23 +17,25 @@ interface MessageBubbleProps {
   };
 }
 
-function formatTime(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
 export default function MessageBubble({
   role,
   content,
   createdAt,
   metadata,
 }: MessageBubbleProps) {
+  const { t, language } = useTranslation();
+
+  function formatTime(isoString: string): string {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString(language === 'es' ? 'es' : 'en', { hour: '2-digit', minute: '2-digit' });
+  }
+
   // Intervention summary — display as center divider
   if (role === 'system' && metadata?.type === 'intervention_summary') {
     return (
       <div className={styles.divider}>
         <span className={styles.dividerPill}>
-          AI Agent resumed — {content}
+          {t('conversations.messageBubble.aiResumed')} — {content}
         </span>
       </div>
     );
@@ -54,7 +57,7 @@ export default function MessageBubble({
         ].join(' ')}
       >
         {role === 'human' && (
-          <span className={styles.humanLabel}>Human Agent</span>
+          <span className={styles.humanLabel}>{t('conversations.chat.humanAgent')}</span>
         )}
         <p className={styles.content}>{content}</p>
         <div className={styles.meta}>

@@ -5,6 +5,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { api } from '@/lib/api';
 import styles from './AppointmentModal.module.css';
 import type { Appointment } from './CalendarView';
@@ -18,8 +19,6 @@ interface Calendar {
 
 /**
  * Converts a wall-clock date+time in `timezone` to a UTC ISO string.
- * Uses Date.UTC() + Intl.DateTimeFormat.formatToParts() so it is
- * independent of both the server's and the browser's local timezone.
  */
 function localDateTimeToUTC(date: string, time: string, timezone: string): string {
   const [year, month, day] = date.split('-').map(Number) as [number, number, number];
@@ -70,6 +69,7 @@ export default function AppointmentModal({
   onSaved,
 }: Props) {
   const toast = useToast();
+  const { t } = useTranslation();
   const isEditing = Boolean(appointment);
 
   const [title, setTitle] = useState('');
@@ -91,7 +91,6 @@ export default function AppointmentModal({
       setStatus(appointment.status);
       const apptTz = appointment.calendar_timezone || 'UTC';
       const d = new Date(appointment.start_time);
-      // Show date and time in the calendar's timezone, not UTC
       const localDate = new Intl.DateTimeFormat('en-CA', { timeZone: apptTz }).format(d);
       const localTime = d.toLocaleTimeString('en-GB', {
         timeZone: apptTz,
@@ -130,17 +129,17 @@ export default function AppointmentModal({
         setSlots(data.slots);
         if (data.slots[0]) setTimeSlot(data.slots[0].start);
       })
-      .catch(() => toast.error('Could not load available slots'))
+      .catch(() => toast.error(t('calendar.appointment.loadSlotsFailed')))
       .finally(() => setLoadingSlots(false));
-  }, [calendarId, date, isEditing, toast]);
+  }, [calendarId, date, isEditing, toast, t]);
 
   const handleSave = async () => {
     if (!title.trim()) {
-      toast.error('Title is required');
+      toast.error(t('calendar.appointment.titleRequired'));
       return;
     }
     if (!isEditing && (!calendarId || !date || !timeSlot)) {
-      toast.error('Calendar, date and time are required');
+      toast.error(t('calendar.appointment.missingFields'));
       return;
     }
 
@@ -152,9 +151,8 @@ export default function AppointmentModal({
           description: description || null,
           status,
         });
-        toast.success('Appointment updated');
+        toast.success(t('calendar.appointment.updated'));
       } else {
-        // Calculate end time using slot duration; convert local slot time → UTC
         const cal = calendars.find((c) => c.id === calendarId);
         const slotDuration = cal?.slot_duration ?? 30;
         const calTz = cal?.timezone || 'UTC';
@@ -168,12 +166,12 @@ export default function AppointmentModal({
           startTime: startISO,
           endTime: endISO,
         });
-        toast.success('Appointment booked');
+        toast.success(t('calendar.appointment.booked'));
       }
       onSaved();
       onClose();
     } catch (err) {
-      toast.error((err as Error).message || 'Failed to save appointment');
+      toast.error((err as Error).message || t('calendar.appointment.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -184,11 +182,11 @@ export default function AppointmentModal({
     setSaving(true);
     try {
       await api.delete(`/api/appointments/${appointment.id}`);
-      toast.success('Appointment cancelled');
+      toast.success(t('calendar.appointment.cancelSuccess'));
       onSaved();
       onClose();
     } catch {
-      toast.error('Failed to cancel appointment');
+      toast.error(t('calendar.appointment.cancelFailed'));
     } finally {
       setSaving(false);
     }
@@ -204,12 +202,12 @@ export default function AppointmentModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? 'Edit Appointment' : 'New Appointment'}
+      title={isEditing ? t('calendar.appointment.editTitle') : t('calendar.appointment.newTitle')}
       size="md"
     >
       <div className={styles.body}>
         <div className={styles.field}>
-          <label className={styles.label}>Title</label>
+          <label className={styles.label}>{t('calendar.appointment.titleLabel')}</label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -219,7 +217,7 @@ export default function AppointmentModal({
 
         {!isEditing && (
           <div className={styles.field}>
-            <label className={styles.label}>Calendar</label>
+            <label className={styles.label}>{t('calendar.appointment.calendarLabel')}</label>
             <select
               className={styles.select}
               value={calendarId}
@@ -236,7 +234,7 @@ export default function AppointmentModal({
 
         <div className={styles.row}>
           <div className={styles.field}>
-            <label className={styles.label}>Date</label>
+            <label className={styles.label}>{t('calendar.appointment.dateLabel')}</label>
             <Input
               type="date"
               value={date}
@@ -246,13 +244,13 @@ export default function AppointmentModal({
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Time</label>
+            <label className={styles.label}>{t('calendar.appointment.timeLabel')}</label>
             {isEditing ? (
               <Input value={timeSlot} disabled />
             ) : loadingSlots ? (
-              <div className={styles.slotsLoading}>Loading slots…</div>
+              <div className={styles.slotsLoading}>{t('calendar.appointment.loadingSlots')}</div>
             ) : slots.length === 0 && date ? (
-              <div className={styles.noSlots}>No slots available</div>
+              <div className={styles.noSlots}>{t('calendar.appointment.noSlots')}</div>
             ) : (
               <select
                 className={styles.select}
@@ -270,26 +268,26 @@ export default function AppointmentModal({
         </div>
 
         <div className={styles.field}>
-          <label className={styles.label}>Description (optional)</label>
+          <label className={styles.label}>{t('calendar.appointment.descriptionOptional')}</label>
           <textarea
             className={styles.textarea}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Add details…"
+            placeholder={t('calendar.appointment.addDetails')}
           />
         </div>
 
         {isEditing && (
           <div className={styles.field}>
-            <label className={styles.label}>Status</label>
+            <label className={styles.label}>{t('calendar.appointment.statusLabel')}</label>
             <select
               className={styles.select}
               value={status}
               onChange={(e) => setStatus(e.target.value)}
             >
-              <option value="scheduled">Scheduled</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="scheduled">{t('calendar.appointment.scheduled')}</option>
+              <option value="completed">{t('calendar.appointment.completed')}</option>
+              <option value="cancelled">{t('calendar.appointment.cancelled')}</option>
             </select>
           </div>
         )}
@@ -297,7 +295,11 @@ export default function AppointmentModal({
         {isEditing && (
           <div>
             <span className={`${styles.statusBadge} ${getStatusClass()}`}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {status === 'completed'
+                ? t('calendar.appointment.completed')
+                : status === 'cancelled'
+                ? t('calendar.appointment.cancelled')
+                : t('calendar.appointment.scheduled')}
             </span>
           </div>
         )}
@@ -312,16 +314,16 @@ export default function AppointmentModal({
               onClick={handleCancel}
               loading={saving}
             >
-              Cancel Appointment
+              {t('calendar.appointment.cancelButton')}
             </Button>
           )}
         </div>
         <div className={styles.footerRight}>
           <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Close
+            {t('common.close')}
           </Button>
           <Button variant="primary" onClick={handleSave} loading={saving}>
-            {isEditing ? 'Save Changes' : 'Book Appointment'}
+            {isEditing ? t('calendar.appointment.saveChanges') : t('calendar.appointment.bookAppointment')}
           </Button>
         </div>
       </div>

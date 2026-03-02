@@ -1,8 +1,13 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './FinalCTA.module.css';
 
 export function FinalCTA() {
+  const { t } = useTranslation();
+
   return (
     <section className={styles.section} aria-label="Call to action">
       <div className={styles.inner}>
@@ -11,18 +16,17 @@ export function FinalCTA() {
 
         <div className={styles.content}>
           <h2 className={styles.title}>
-            Ready to Deploy Your First AI Agent?
+            {t('landing.finalCta.altTitle')}
           </h2>
           <p className={styles.subtitle}>
-            Join 500+ businesses already using GenSmart to automate conversations
-            and capture more leads.
+            {t('landing.finalCta.altSubtitle', { count: '500' })}
           </p>
           <div className={styles.actions}>
             <Link href="/register" className={styles.cta}>
-              Start Free
+              {t('landing.hero.cta')}
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
-            <p className={styles.hint}>No credit card required · Free forever plan</p>
+            <p className={styles.hint}>{t('landing.finalCta.hint')}</p>
           </div>
         </div>
       </div>

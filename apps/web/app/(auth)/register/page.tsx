@@ -10,29 +10,36 @@ import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../auth.module.css';
 
-function validateForm(
-  name: string,
-  email: string,
-  orgName: string,
-  password: string,
-  confirmPassword: string
-): string {
-  if (!name.trim() || name.length < 2) return 'Name must be at least 2 characters.';
-  if (!email.includes('@')) return 'Please enter a valid email address.';
-  if (!orgName.trim() || orgName.length < 2) return 'Organization name must be at least 2 characters.';
-  if (password.length < 8) return 'Password must be at least 8 characters.';
-  if (!/[A-Z]/.test(password)) return 'Password must contain at least one uppercase letter.';
-  if (!/[0-9]/.test(password)) return 'Password must contain at least one number.';
-  if (password !== confirmPassword) return 'Passwords do not match.';
-  return '';
+function useValidateForm() {
+  const { t } = useTranslation();
+
+  return (
+    name: string,
+    email: string,
+    orgName: string,
+    password: string,
+    confirmPassword: string
+  ): string => {
+    if (!name.trim() || name.length < 2) return t('errors.nameTooShort');
+    if (!email.includes('@')) return t('errors.invalidEmail');
+    if (!orgName.trim() || orgName.length < 2) return t('errors.orgNameTooShort');
+    if (password.length < 8) return t('errors.passwordTooShort');
+    if (!/[A-Z]/.test(password)) return t('errors.passwordNeedsUppercase');
+    if (!/[0-9]/.test(password)) return t('errors.passwordNeedsNumber');
+    if (password !== confirmPassword) return t('errors.passwordsNotMatch');
+    return '';
+  };
 }
 
 export default function RegisterPage() {
   const router = useRouter();
   const { register } = useAuth();
   const { success } = useToast();
+  const { t } = useTranslation();
+  const validateForm = useValidateForm();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -56,7 +63,7 @@ export default function RegisterPage() {
       success('Account created!', 'Welcome to GenSmart. Setting up your dashboard…');
       router.replace('/dashboard');
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Registration failed. Please try again.');
+      setError(err instanceof ApiError ? err.message : t('errors.generic'));
     } finally {
       setLoading(false);
     }
@@ -68,8 +75,8 @@ export default function RegisterPage() {
         <Logo size="lg" href="/" />
       </div>
 
-      <h1 className={styles.heading}>Create your account</h1>
-      <p className={styles.subheading}>Start building AI agents for your business in minutes.</p>
+      <h1 className={styles.heading}>{t('auth.register.title')}</h1>
+      <p className={styles.subheading}>{t('auth.register.subtitle')}</p>
 
       {error && (
         <div className={styles.errorBanner} role="alert">
@@ -80,7 +87,7 @@ export default function RegisterPage() {
 
       <form onSubmit={handleSubmit} className={styles.form}>
         <Input
-          label="Full Name"
+          label={t('auth.register.name')}
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -91,7 +98,7 @@ export default function RegisterPage() {
           icon={User}
         />
         <Input
-          label="Email"
+          label={t('auth.register.email')}
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -101,7 +108,7 @@ export default function RegisterPage() {
           icon={Mail}
         />
         <Input
-          label="Company / Organization Name"
+          label={t('auth.register.orgName')}
           type="text"
           value={orgName}
           onChange={(e) => setOrgName(e.target.value)}
@@ -111,7 +118,7 @@ export default function RegisterPage() {
           icon={Building2}
         />
         <Input
-          label="Password"
+          label={t('auth.register.password')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -121,7 +128,7 @@ export default function RegisterPage() {
           icon={Lock}
         />
         <Input
-          label="Confirm Password"
+          label={t('auth.register.confirmPassword')}
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
@@ -131,13 +138,13 @@ export default function RegisterPage() {
           icon={Lock}
         />
         <Button type="submit" fullWidth loading={loading}>
-          Create Account
+          {t('auth.register.submit')}
         </Button>
       </form>
 
       <p className={styles.footer}>
-        Already have an account?{' '}
-        <Link href="/login">Sign in</Link>
+        {t('auth.register.hasAccount')}{' '}
+        <Link href="/login">{t('auth.register.login')}</Link>
       </p>
     </div>
   );

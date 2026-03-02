@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import CalendarView, {
   type Appointment,
   getDayInTimezone,
@@ -31,6 +32,7 @@ interface Agent {
 
 export default function CalendarPage() {
   const toast = useToast();
+  const { t } = useTranslation();
   const today = new Date();
 
   const [year, setYear] = useState(today.getFullYear());
@@ -55,7 +57,6 @@ export default function CalendarPage() {
   }, []);
 
   const fetchAppointments = useCallback(async () => {
-    // Fetch full month range
     const fromDate = new Date(year, month, 1).toISOString();
     const toDate = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
 
@@ -79,11 +80,11 @@ export default function CalendarPage() {
       const agentsRes = await api.get<{ agents: Agent[] }>('/api/agents');
       setAgents(agentsRes.agents ?? []);
     } catch {
-      toast.error('Failed to load calendar data');
+      toast.error(t('calendar.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [fetchCalendars, fetchAppointments, toast]);
+  }, [fetchCalendars, fetchAppointments, toast, t]);
 
   useEffect(() => {
     fetchAll();
@@ -153,14 +154,14 @@ export default function CalendarPage() {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Calendar</h1>
+        <h1 className={styles.pageTitle}>{t('calendar.title')}</h1>
         <div className={styles.filters}>
           <select
             className={styles.select}
             value={filterCalendar}
             onChange={(e) => setFilterCalendar(e.target.value)}
           >
-            <option value="">All Calendars</option>
+            <option value="">{t('calendar.allCalendars')}</option>
             {calendars.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -173,10 +174,10 @@ export default function CalendarPage() {
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
           >
-            <option value="">All Statuses</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
+            <option value="">{t('calendar.allStatuses')}</option>
+            <option value="scheduled">{t('calendar.appointment.scheduled')}</option>
+            <option value="completed">{t('calendar.appointment.completed')}</option>
+            <option value="cancelled">{t('calendar.appointment.cancelled')}</option>
           </select>
 
           <Button
@@ -185,7 +186,7 @@ export default function CalendarPage() {
             onClick={() => openNewAppointment()}
             disabled={calendars.length === 0}
           >
-            New Appointment
+            {t('calendar.appointment.new')}
           </Button>
         </div>
       </div>

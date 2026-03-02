@@ -4,55 +4,57 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Check, ArrowRight } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './PricingSection.module.css';
 
 type BillingCycle = 'monthly' | 'yearly';
 
 const PLANS = [
   {
-    name: 'Free',
+    key: 'free',
     monthlyPrice: 0,
     features: ['1 AI Agent', '50 messages/mo', '25 contacts', 'Web channel only', '1 knowledge file', 'Community support'],
-    cta: 'Start Free',
+    ctaKey: 'landing.pricing.startFree',
     href: '/register',
     popular: false,
   },
   {
-    name: 'Starter',
+    key: 'starter',
     monthlyPrice: 29,
     features: ['3 AI Agents', '1,000 messages/mo', '500 contacts', 'WhatsApp + Web', '5 knowledge files', 'Email support'],
-    cta: 'Start Free Trial',
+    ctaKey: 'landing.pricing.getStarted',
     href: '/register?plan=starter',
     popular: false,
   },
   {
-    name: 'Pro',
+    key: 'pro',
     monthlyPrice: 79,
     features: ['10 AI Agents', '5,000 messages/mo', '2,000 contacts', 'WhatsApp + Web', '20 knowledge files', 'Priority support'],
-    cta: 'Start Free Trial',
+    ctaKey: 'landing.pricing.getStarted',
     href: '/register?plan=pro',
     popular: true,
   },
   {
-    name: 'Enterprise',
+    key: 'enterprise',
     monthlyPrice: 199,
     features: ['Unlimited Agents', '25,000 messages/mo', 'Unlimited contacts', 'WhatsApp + Web', 'Unlimited files', 'Dedicated support'],
-    cta: 'Contact Sales',
+    ctaKey: 'landing.pricing.contactSales',
     href: 'mailto:sales@gensmart.ai',
     popular: false,
   },
 ];
 
-function getDisplayPrice(monthly: number, cycle: BillingCycle) {
-  if (monthly === 0) return { price: '0', period: '/mo' };
+function getDisplayPrice(monthly: number, cycle: BillingCycle, perMonthLabel: string) {
+  if (monthly === 0) return { price: '0', period: perMonthLabel };
   if (cycle === 'yearly') {
     const discounted = Math.round(monthly * 0.8);
-    return { price: String(discounted), period: '/mo, billed yearly' };
+    return { price: String(discounted), period: `${perMonthLabel}, billed yearly` };
   }
-  return { price: String(monthly), period: '/mo' };
+  return { price: String(monthly), period: perMonthLabel };
 }
 
 export function PricingSection() {
+  const { t } = useTranslation();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
 
   return (
@@ -60,11 +62,9 @@ export function PricingSection() {
       <div className={styles.inner}>
         <ScrollReveal>
           <div className={styles.header}>
-            <span className={styles.eyebrow}>Transparent pricing</span>
-            <h2 className={styles.title}>Simple, Transparent Pricing</h2>
-            <p className={styles.subtitle}>
-              Start free. Upgrade when you&apos;re ready. No hidden fees.
-            </p>
+            <span className={styles.eyebrow}>{t('landing.pricing.title')}</span>
+            <h2 className={styles.title}>{t('landing.pricing.title')}</h2>
+            <p className={styles.subtitle}>{t('landing.pricing.subtitle')}</p>
 
             <div className={styles.toggleWrap} role="group" aria-label="Billing cycle">
               <button
@@ -72,40 +72,41 @@ export function PricingSection() {
                 onClick={() => setCycle('monthly')}
                 aria-pressed={cycle === 'monthly'}
               >
-                Monthly
+                {t('landing.pricing.monthly')}
               </button>
               <button
                 className={`${styles.toggleBtn} ${cycle === 'yearly' ? styles.active : ''}`}
                 onClick={() => setCycle('yearly')}
                 aria-pressed={cycle === 'yearly'}
               >
-                Yearly
-                <span className={styles.saveBadge}>Save 20%</span>
+                {t('landing.pricing.yearly')}
+                <span className={styles.saveBadge}>{t('landing.pricing.save20')}</span>
               </button>
             </div>
           </div>
         </ScrollReveal>
 
         <div className={styles.plans}>
-          {PLANS.map(({ name, monthlyPrice, features, cta, href, popular }, i) => {
-            const { price, period } = getDisplayPrice(monthlyPrice, cycle);
+          {PLANS.map(({ key, monthlyPrice, features, ctaKey, href, popular }, i) => {
+            const { price, period } = getDisplayPrice(monthlyPrice, cycle, t('landing.pricing.perMonth'));
+            const planName = t(`billing.plans.${key}.name`);
             return (
-              <ScrollReveal key={name} delay={i * 80}>
+              <ScrollReveal key={key} delay={i * 80}>
                 <div className={`${styles.planCard} ${popular ? styles.popular : ''}`}>
                   {popular && (
                     <div className={styles.popularBadge} aria-label="Most popular plan">
-                      Most Popular
+                      {t('landing.pricing.mostPopular')}
                     </div>
                   )}
                   <div className={styles.planHeader}>
-                    <h3 className={styles.planName}>{name}</h3>
+                    <h3 className={styles.planName}>{planName}</h3>
                     <div className={styles.priceWrap}>
                       <span className={styles.currency}>$</span>
                       <span className={styles.price}>{price}</span>
                       <span className={styles.period}>{period}</span>
                     </div>
                   </div>
-                  <ul className={styles.featureList} aria-label={`${name} plan features`}>
+                  <ul className={styles.featureList} aria-label={`${planName} plan features`}>
                     {features.map((f) => (
                       <li key={f} className={styles.feature}>
                         <Check size={14} aria-hidden="true" className={styles.checkIcon} />
@@ -114,7 +115,7 @@ export function PricingSection() {
                     ))}
                   </ul>
                   <Link href={href} className={`${styles.planCta} ${popular ? styles.ctaPrimary : styles.ctaSecondary}`}>
-                    {cta}
+                    {t(ctaKey)}
                   </Link>
                 </div>
               </ScrollReveal>
@@ -124,7 +125,7 @@ export function PricingSection() {
 
         <div className={styles.footer}>
           <Link href="/pricing" className={styles.compareLink}>
-            Compare all features
+            {t('pricing.compareFeatures')}
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>

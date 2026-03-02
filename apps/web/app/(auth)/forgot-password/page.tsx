@@ -7,9 +7,11 @@ import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../auth.module.css';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -25,7 +27,7 @@ export default function ForgotPasswordPage() {
     } catch (err) {
       // Always show generic success to prevent email enumeration
       if (err instanceof ApiError && err.status >= 500) {
-        setError('Something went wrong. Please try again.');
+        setError(t('errors.somethingWentWrong'));
       } else {
         setSubmitted(true);
       }
@@ -40,15 +42,12 @@ export default function ForgotPasswordPage() {
         <Logo size="lg" href="/" />
       </div>
 
-      <h1 className={styles.heading}>Reset your password</h1>
-      <p className={styles.subheading}>
-        Enter your email and we&apos;ll send you a reset link.
-      </p>
+      <h1 className={styles.heading}>{t('auth.forgotPassword.title')}</h1>
+      <p className={styles.subheading}>{t('auth.forgotPassword.subtitle')}</p>
 
       {submitted ? (
         <div className={styles.successBanner} role="status">
-          If an account exists with that email, we&apos;ve sent a password reset link.
-          Please check your inbox.
+          {t('auth.forgotPassword.successMessage')}
         </div>
       ) : (
         <>
@@ -59,7 +58,7 @@ export default function ForgotPasswordPage() {
           )}
           <form onSubmit={handleSubmit} className={styles.form}>
             <Input
-              label="Email"
+              label={t('auth.forgotPassword.email')}
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -70,7 +69,7 @@ export default function ForgotPasswordPage() {
               icon={Mail}
             />
             <Button type="submit" fullWidth loading={loading}>
-              Send Reset Link
+              {t('auth.forgotPassword.submit')}
             </Button>
           </form>
         </>
@@ -78,7 +77,7 @@ export default function ForgotPasswordPage() {
 
       <p className={styles.footer}>
         <Link href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
-          <ArrowLeft size={14} /> Back to login
+          <ArrowLeft size={14} /> {t('auth.forgotPassword.backToLogin')}
         </Link>
       </p>
     </div>

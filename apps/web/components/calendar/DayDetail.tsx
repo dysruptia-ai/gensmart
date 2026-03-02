@@ -3,6 +3,7 @@
 import React from 'react';
 import { CalendarDays, Plus } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './DayDetail.module.css';
 import type { Appointment } from './CalendarView';
 
@@ -13,29 +14,16 @@ interface Props {
   onSelectAppointment: (a: Appointment) => void;
 }
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-function formatDayLabel(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  if (!y || !m || !d) return dateStr;
-  const dt = new Date(y, m - 1, d);
-  const dayName = dt.toLocaleDateString('en-US', { weekday: 'long' });
-  return `${dayName}, ${MONTH_NAMES[m - 1]} ${d}`;
-}
-
-function formatTimeInTimezone(isoString: string, timezone: string): string {
+function formatTimeInTimezone(isoString: string, timezone: string, locale: string): string {
   try {
-    return new Date(isoString).toLocaleTimeString('en-US', {
+    return new Date(isoString).toLocaleTimeString(locale, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
       timeZone: timezone,
     });
   } catch {
-    return new Date(isoString).toLocaleTimeString('en-US', {
+    return new Date(isoString).toLocaleTimeString(locale, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -53,16 +41,26 @@ function getDuration(start: string, end: string): string {
 }
 
 export default function DayDetail({ date, appointments, onNewAppointment, onSelectAppointment }: Props) {
+  const { t, language } = useTranslation();
+  const locale = language === 'es' ? 'es-ES' : 'en-US';
+
   const sorted = [...appointments].sort(
     (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
+
+  function formatDayLabel(dateStr: string): string {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    if (!y || !m || !d) return dateStr;
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString(locale, { weekday: 'long', month: 'long', day: 'numeric' });
+  }
 
   return (
     <div className={styles.panel}>
       <div className={styles.panelHeader}>
         <span className={styles.panelTitle}>{formatDayLabel(date)}</span>
         <Button size="sm" variant="primary" icon={Plus} onClick={onNewAppointment}>
-          New
+          {t('calendar.appointment.newButton')}
         </Button>
       </div>
 
@@ -70,24 +68,24 @@ export default function DayDetail({ date, appointments, onNewAppointment, onSele
         {sorted.length === 0 ? (
           <div className={styles.emptyState}>
             <CalendarDays size={28} />
-            <span>No appointments this day</span>
+            <span>{t('calendar.appointment.noAppointments')}</span>
           </div>
         ) : (
           sorted.map((a) => {
-            const timeStart = formatTimeInTimezone(a.start_time, a.calendar_timezone || 'UTC');
+            const timeStart = formatTimeInTimezone(a.start_time, a.calendar_timezone || 'UTC', locale);
             const duration = getDuration(a.start_time, a.end_time);
 
             let colorBarClass = styles.colorBar;
             let badgeClass = styles.badge + ' ' + styles.badgeScheduled;
-            let badgeLabel = 'Scheduled';
+            let badgeLabel = t('calendar.appointment.scheduled');
             if (a.status === 'cancelled') {
               colorBarClass += ' ' + styles.colorBarCancelled;
               badgeClass = styles.badge + ' ' + styles.badgeCancelled;
-              badgeLabel = 'Cancelled';
+              badgeLabel = t('calendar.appointment.cancelled');
             } else if (a.status === 'completed') {
               colorBarClass += ' ' + styles.colorBarCompleted;
               badgeClass = styles.badge + ' ' + styles.badgeCompleted;
-              badgeLabel = 'Completed';
+              badgeLabel = t('calendar.appointment.completed');
             }
 
             return (

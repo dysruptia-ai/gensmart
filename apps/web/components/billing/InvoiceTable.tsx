@@ -3,6 +3,7 @@
 import React from 'react';
 import { Download, FileText } from 'lucide-react';
 import Badge from '@/components/ui/Badge';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './InvoiceTable.module.css';
 
 interface Invoice {
@@ -28,14 +29,6 @@ function formatAmount(amount: number, currency: string): string {
   }).format(amount / 100);
 }
 
-function formatDate(timestamp: number): string {
-  return new Date(timestamp * 1000).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
 function getStatusVariant(status: string | null): 'success' | 'warning' | 'danger' | 'neutral' {
   switch (status) {
     case 'paid': return 'success';
@@ -47,32 +40,43 @@ function getStatusVariant(status: string | null): 'success' | 'warning' | 'dange
 }
 
 export default function InvoiceTable({ invoices, loading }: Props) {
+  const { t, language } = useTranslation();
+  const locale = language === 'es' ? 'es-ES' : 'en-US';
+
+  function formatInvoiceDate(timestamp: number): string {
+    return new Date(timestamp * 1000).toLocaleDateString(locale, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }
+
   return (
     <div className={styles.card}>
-      <div className={styles.title}>Invoice History</div>
+      <div className={styles.title}>{t('billing.invoices.title')}</div>
 
       {loading ? (
-        <div className={styles.empty}>Loading invoices...</div>
+        <div className={styles.empty}>{t('billing.invoices.loading')}</div>
       ) : invoices.length === 0 ? (
         <div className={styles.empty}>
           <FileText size={24} style={{ display: 'block', margin: '0 auto 0.5rem', opacity: 0.4 }} />
-          No invoices yet. They will appear here after your first payment.
+          {t('billing.invoices.noneYet')}
         </div>
       ) : (
         <table className={styles.table}>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Invoice</th>
-              <th>Amount</th>
-              <th>Status</th>
-              <th>Download</th>
+              <th>{t('billing.invoices.date')}</th>
+              <th>{t('billing.invoices.invoice')}</th>
+              <th>{t('billing.invoices.amount')}</th>
+              <th>{t('billing.invoices.status')}</th>
+              <th>{t('billing.invoices.download')}</th>
             </tr>
           </thead>
           <tbody>
             {invoices.map((inv) => (
               <tr key={inv.id}>
-                <td>{formatDate(inv.created)}</td>
+                <td>{formatInvoiceDate(inv.created)}</td>
                 <td style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-xs)' }}>
                   {inv.number ?? '—'}
                 </td>
@@ -100,7 +104,7 @@ export default function InvoiceTable({ invoices, loading }: Props) {
                       rel="noopener noreferrer"
                       className={styles.downloadLink}
                     >
-                      View
+                      {t('billing.invoices.view')}
                     </a>
                   ) : (
                     <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-xs)' }}>—</span>

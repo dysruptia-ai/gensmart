@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from '@/hooks/useTranslation';
 import styles from './FunnelOverview.module.css';
 
 interface Stage {
@@ -14,12 +15,6 @@ interface FunnelOverviewProps {
   total: number;
 }
 
-const STAGE_LABELS: Record<string, string> = {
-  lead: 'Lead',
-  opportunity: 'Opportunity',
-  customer: 'Customer',
-};
-
 const STAGE_COLORS: Record<string, string> = {
   lead: 'var(--color-info)',
   opportunity: 'var(--color-warning)',
@@ -27,9 +22,17 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 export default function FunnelOverview({ stages, total }: FunnelOverviewProps) {
+  const { t } = useTranslation();
+
+  const stageLabel = (stage: string) => {
+    const key = `dashboard.funnelOverview.${stage}` as const;
+    const translated = t(key);
+    return translated !== key ? translated : stage;
+  };
+
   return (
     <div className={styles.card}>
-      <h2 className={styles.title}>Funnel Overview</h2>
+      <h2 className={styles.title}>{t('dashboard.funnelOverview.title')}</h2>
 
       <div className={styles.stageList}>
         {stages.map(({ stage, count, percent }) => (
@@ -40,7 +43,7 @@ export default function FunnelOverview({ stages, total }: FunnelOverviewProps) {
                 style={{ background: STAGE_COLORS[stage] ?? 'var(--color-text-secondary)' }}
                 aria-hidden="true"
               />
-              <span className={styles.stageLabel}>{STAGE_LABELS[stage] ?? stage}</span>
+              <span className={styles.stageLabel}>{stageLabel(stage)}</span>
               <span className={styles.stageCount}>{count.toLocaleString()}</span>
               <span className={styles.stagePct}>{percent}%</span>
             </div>
@@ -58,7 +61,7 @@ export default function FunnelOverview({ stages, total }: FunnelOverviewProps) {
       </div>
 
       <div className={styles.total}>
-        <span className={styles.totalLabel}>Total contacts</span>
+        <span className={styles.totalLabel}>{t('dashboard.funnelOverview.totalContacts')}</span>
         <span className={styles.totalValue}>{total.toLocaleString()}</span>
       </div>
     </div>
