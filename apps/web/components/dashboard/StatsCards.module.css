@@ -1,0 +1,106 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.25rem;
+}
+
+.cardLabel {
+  font-size: var(--font-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.iconWrap {
+  color: var(--color-text-secondary);
+  display: flex;
+}
+
+.cardValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.1;
+}
+
+.scoreMax {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  margin-left: 2px;
+}
+
+.cardMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 20px;
+}
+
+.cardSub {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+
+.changeUp {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.changeDown {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--color-danger);
+}
+
+.changeNeutral {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+
+.progressWrap {
+  margin-top: 0.25rem;
+}
+
+.cardFooter {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  margin-top: 0.125rem;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

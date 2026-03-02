@@ -1,0 +1,97 @@
+.card {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.title {
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.stageList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.stageRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.stageLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stageDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stageLabel {
+  flex: 1;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.stageCount {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  min-width: 2rem;
+  text-align: right;
+}
+
+.stagePct {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  min-width: 2.5rem;
+  text-align: right;
+}
+
+.barTrack {
+  height: 8px;
+  background: var(--color-bg-main);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+  min-width: 2px;
+}
+
+.total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.totalLabel {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+}
+
+.totalValue {
+  font-size: var(--font-sm);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
