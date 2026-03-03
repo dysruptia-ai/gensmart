@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plug, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plug, Check, X, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { api, ApiError } from '@/lib/api';
@@ -37,24 +37,32 @@ export default function MCPConfigurator({
   const { t } = useTranslation();
 
   const [testing, setTesting] = useState(false);
-  const [connectionTested, setConnectionTested] = useState(false);
+  // Whether we have live data from the MCP server (vs. only saved names)
+  const [liveTested, setLiveTested] = useState(false);
   const [availableTools, setAvailableTools] = useState<MCPToolInfo[]>([]);
-  const [showTools, setShowTools] = useState(false);
+  const [showTools, setShowTools] = useState(true);
 
-  // Reset connection state when URL changes after a successful test
   const [lastTestedUrl, setLastTestedUrl] = useState('');
+  const urlChanged = liveTested && config.server_url !== lastTestedUrl;
 
-  const urlChanged = connectionTested && config.server_url !== lastTestedUrl;
+  // In edit mode: we have selected_tools from the saved config but no live tool list.
+  // Synthesise display items so the user can see what's saved without forcing a reconnect.
+  const isEditMode = !liveTested && config.selected_tools.length > 0 && config.server_url !== '';
 
-  // Restore connection-tested state if we already have selected tools and a URL
+  // Live-tested tools take priority; fall back to synthetic items from saved selection
+  const displayTools: MCPToolInfo[] =
+    availableTools.length > 0
+      ? availableTools
+      : config.selected_tools.map((name) => ({ name, description: '', inputSchema: {} }));
+
+  const showToolsSection =
+    (liveTested && !urlChanged && displayTools.length > 0) ||
+    isEditMode;
+
+  // Auto-open tool list in edit mode
   useEffect(() => {
-    if (config.selected_tools.length > 0 && config.server_url) {
-      setLastTestedUrl(config.server_url);
-      setConnectionTested(true);
-    }
-  // Only run on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (isEditMode) setShowTools(true);
+  }, [isEditMode]);
 
   async function handleTestConnection() {
     if (!config.server_url.trim()) return;
@@ -71,23 +79,23 @@ export default function MCPConfigurator({
 
       if (data.success && data.tools) {
         setAvailableTools(data.tools);
-        setConnectionTested(true);
+        setLiveTested(true);
         setLastTestedUrl(config.server_url.trim());
         setShowTools(true);
-        // Auto-select all tools if none selected yet
+        // Auto-select all tools only when none were previously selected
         if (config.selected_tools.length === 0) {
-          onChange({ selected_tools: data.tools.map((t) => t.name) });
+          onChange({ selected_tools: data.tools.map((tool) => tool.name) });
         }
       } else {
         const errMsg = data.error ?? 'Connection failed';
         onConnectionError?.(errMsg);
-        setConnectionTested(false);
+        setLiveTested(false);
         setAvailableTools([]);
       }
     } catch (err) {
       const errMsg = err instanceof ApiError ? err.message : 'Connection failed';
       onConnectionError?.(errMsg);
-      setConnectionTested(false);
+      setLiveTested(false);
       setAvailableTools([]);
     } finally {
       setTesting(false);
@@ -103,7 +111,7 @@ export default function MCPConfigurator({
   }
 
   function selectAll() {
-    onChange({ selected_tools: availableTools.map((t) => t.name) });
+    onChange({ selected_tools: displayTools.map((tool) => tool.name) });
   }
 
   function deselectAll() {
@@ -126,7 +134,10 @@ export default function MCPConfigurator({
             value={config.server_url}
             onChange={(e) => {
               onChange({ server_url: e.target.value });
-              if (connectionTested) setConnectionTested(false);
+              if (liveTested) {
+                setLiveTested(false);
+                setAvailableTools([]);
+              }
             }}
             placeholder={t('agents.tools.mcp.serverUrlPlaceholder')}
           />
@@ -147,8 +158,8 @@ export default function MCPConfigurator({
           </Button>
         </div>
 
-        {/* Connection status */}
-        {connectionTested && !urlChanged && (
+        {/* Connection status — live test */}
+        {liveTested && !urlChanged && (
           <div className={styles.statusOk}>
             <Check size={14} />
             <span>
@@ -158,6 +169,18 @@ export default function MCPConfigurator({
             </span>
           </div>
         )}
+
+        {/* Edit mode banner — saved tools, not yet re-tested */}
+        {isEditMode && (
+          <div className={styles.statusInfo}>
+            <Info size={14} />
+            <span>
+              {selectedCount} {selectedCount === 1 ? 'tool' : 'tools'} saved.{' '}
+              {t('agents.tools.mcp.testConnection')} to refresh the list.
+            </span>
+          </div>
+        )}
+
         {urlChanged && (
           <div className={styles.statusWarn}>
             <X size={14} />
@@ -196,8 +219,8 @@ export default function MCPConfigurator({
         </select>
       </div>
 
-      {/* Available tools (shown after test) */}
-      {connectionTested && !urlChanged && availableTools.length > 0 && (
+      {/* Tools list — shown after live test OR in edit mode with saved tools */}
+      {showToolsSection && (
         <div className={styles.toolsSection}>
           <button
             type="button"
@@ -212,8 +235,7 @@ export default function MCPConfigurator({
                 {t('agents.tools.mcp.selectedTools', {
                   count: String(selectedCount),
                 })}
-                {' / '}
-                {availableTools.length}
+                {displayTools.length > 0 && ` / ${displayTools.length}`}
               </span>
             </span>
             {showTools ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -230,7 +252,7 @@ export default function MCPConfigurator({
                   {t('agents.tools.mcp.deselectAll')}
                 </button>
               </div>
-              {availableTools.map((tool) => (
+              {displayTools.map((tool) => (
                 <label key={tool.name} className={styles.toolItem}>
                   <input
                     type="checkbox"
@@ -252,7 +274,7 @@ export default function MCPConfigurator({
       )}
 
       {/* Validation hint */}
-      {connectionTested && !urlChanged && selectedCount === 0 && (
+      {(liveTested || isEditMode) && !urlChanged && selectedCount === 0 && (
         <p className={styles.hint}>{t('agents.tools.mcp.noToolsSelected')}</p>
       )}
     </div>

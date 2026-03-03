@@ -6,6 +6,7 @@ import {
   Check, RefreshCw, ChevronDown, ChevronUp, Play,
 } from 'lucide-react';
 import MCPConfigurator, { MCPConfig } from '../MCPConfigurator';
+import { useTranslation } from '@/hooks/useTranslation';
 import Button from '@/components/ui/Button';
 import Toggle from '@/components/ui/Toggle';
 import Modal from '@/components/ui/Modal';
@@ -136,11 +137,11 @@ const DEFAULT_FORM: ToolForm = {
 
 // ── Catalog entries ───────────────────────────────────────────────────────────
 
-const TOOL_CATALOG: { type: ToolType; label: string; icon: React.ElementType; desc: string }[] = [
-  { type: 'custom_function', label: 'Custom Function', icon: Code2, desc: 'Call any HTTP endpoint' },
-  { type: 'scheduling', label: 'Scheduling', icon: Calendar, desc: 'Appointment / reminder booking' },
-  { type: 'rag', label: 'Knowledge Base', icon: Database, desc: 'Upload docs & web pages for retrieval' },
-  { type: 'mcp', label: 'MCP Server', icon: Wrench, desc: 'Model Context Protocol server' },
+const TOOL_CATALOG: { type: ToolType; labelKey: string; icon: React.ElementType; descKey: string }[] = [
+  { type: 'custom_function', labelKey: 'agents.tools.types.customFunction', icon: Code2, descKey: 'agents.tools.types.customFunctionDesc' },
+  { type: 'scheduling', labelKey: 'agents.tools.types.scheduling', icon: Calendar, descKey: 'agents.tools.types.schedulingDesc' },
+  { type: 'rag', labelKey: 'agents.tools.types.knowledgeBase', icon: Database, descKey: 'agents.tools.types.knowledgeBaseDesc' },
+  { type: 'mcp', labelKey: 'agents.tools.types.mcpServer', icon: Wrench, descKey: 'agents.tools.types.mcpServerDesc' },
 ];
 
 const TOOL_ICONS: Partial<Record<ToolType, React.ElementType>> = {
@@ -236,6 +237,7 @@ interface ToolConfiguratorProps {
 
 export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = true }: ToolConfiguratorProps) {
   const { success, error: toastError } = useToast();
+  const { t } = useTranslation();
   const [tools, setTools] = useState<AgentTool[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -1440,20 +1442,20 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
   return (
     <div className={styles.container}>
       <div className={styles.toolbar}>
-        <span className={styles.toolbarTitle}>Tools ({tools.length})</span>
+        <span className={styles.toolbarTitle}>{t('agents.tools.title')} ({tools.length})</span>
         <Button variant="secondary" size="sm" icon={Plus} onClick={openAdd}>
-          Add Tool
+          {t('agents.tools.add')}
         </Button>
       </div>
 
       {tools.length === 0 ? (
         <div className={styles.emptyState}>
           <Wrench size={28} strokeWidth={1.5} aria-hidden="true" />
-          <p className={styles.emptyTitle}>No tools configured</p>
+          <p className={styles.emptyTitle}>{t('agents.tools.noTools')}</p>
           <p className={styles.emptyDesc}>
-            Add tools to extend your agent with scheduling, knowledge bases, custom API calls, and more.
+            {t('agents.tools.noToolsDesc')}
           </p>
-          <Button size="sm" icon={Plus} onClick={openAdd}>Add First Tool</Button>
+          <Button size="sm" icon={Plus} onClick={openAdd}>{t('agents.tools.addFirstBtn')}</Button>
         </div>
       ) : (
         <div className={styles.toolList}>
@@ -1495,7 +1497,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title={editTool ? 'Edit Tool' : 'Add Tool'}
+        title={editTool ? t('agents.tools.modal.editTitle') : t('agents.tools.modal.addTitle')}
         size="lg"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -1503,7 +1505,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
           <div className={styles.modalLayout}>
             {/* Catalog */}
             <div className={styles.catalog}>
-              <span className={styles.catalogLabel}>Tool Type</span>
+              <span className={styles.catalogLabel}>{t('agents.tools.modal.toolType')}</span>
               {TOOL_CATALOG.map((cat) => {
                 const CatIcon = cat.icon;
                 const isCustomFn = cat.type === 'custom_function';
@@ -1519,8 +1521,8 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 );
                 const isDisabled = !!editTool || planNeedsUpgrade || planLimitReached;
                 const badgeLabel = !orgPlanLoaded ? null
-                  : planNeedsUpgrade ? 'Upgrade'
-                  : planLimitReached ? 'Limit'
+                  : planNeedsUpgrade ? t('agents.tools.modal.upgradeBadge')
+                  : planLimitReached ? t('agents.tools.modal.limitBadge')
                   : null;
 
                 return (
@@ -1540,13 +1542,13 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                     }}
                     disabled={isDisabled}
                     title={
-                      planNeedsUpgrade ? 'Upgrade your plan to use this tool'
-                      : planLimitReached ? 'Tool limit reached for your plan'
+                      planNeedsUpgrade ? t('agents.tools.modal.upgradeTooltip')
+                      : planLimitReached ? t('agents.tools.modal.limitTooltip')
                       : undefined
                     }
                   >
                     <CatIcon size={15} className={styles.catalogBtnIcon} aria-hidden="true" />
-                    <span className={styles.catalogBtnLabel}>{cat.label}</span>
+                    <span className={styles.catalogBtnLabel}>{t(cat.labelKey)}</span>
                     {badgeLabel && (
                       <span className={styles.upgradeBadge}>{badgeLabel}</span>
                     )}
@@ -1558,27 +1560,27 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
             {/* Config panel */}
             <div className={styles.configPanel}>
               <div className={styles.configHeading}>
-                <span className={styles.configTitle}>{catalogEntry?.label ?? 'Tool'}</span>
-                <span className={styles.configDesc}>{catalogEntry?.desc}</span>
+                <span className={styles.configTitle}>{catalogEntry ? t(catalogEntry.labelKey) : t('agents.tools.modal.addTitle')}</span>
+                <span className={styles.configDesc}>{catalogEntry ? t(catalogEntry.descKey) : ''}</span>
               </div>
 
               <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Tool Name</label>
+                <label className={styles.fieldLabel}>{t('agents.tools.modal.toolName')}</label>
                 <input
                   className={styles.fieldInput}
                   value={form.name}
                   onChange={(e) => setField('name', e.target.value)}
-                  placeholder={`My ${catalogEntry?.label ?? 'Tool'}`}
+                  placeholder={t('agents.tools.modal.toolNamePlaceholder')}
                 />
               </div>
 
               <div className={styles.fieldGroup}>
-                <label className={styles.fieldLabel}>Description</label>
+                <label className={styles.fieldLabel}>{t('agents.tools.modal.description')}</label>
                 <input
                   className={styles.fieldInput}
                   value={form.description}
                   onChange={(e) => setField('description', e.target.value)}
-                  placeholder="What does this tool do?"
+                  placeholder={t('agents.tools.modal.descriptionPlaceholder')}
                 />
               </div>
 
@@ -1588,9 +1590,9 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
 
           {/* Footer */}
           <div className={styles.modalFooter}>
-            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>{t('agents.tools.modal.cancel')}</Button>
             <Button onClick={handleSave} loading={saving}>
-              {editTool ? 'Save Changes' : 'Add Tool'}
+              {editTool ? t('agents.tools.modal.saveButton') : t('agents.tools.modal.addButton')}
             </Button>
           </div>
         </div>

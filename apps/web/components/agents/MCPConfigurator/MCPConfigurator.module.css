@@ -73,6 +73,15 @@
   margin-top: 4px;
 }
 
+.statusInfo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-info);
+  margin-top: 4px;
+}
+
 .statusWarn {
   display: flex;
   align-items: center;
