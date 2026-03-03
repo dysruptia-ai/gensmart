@@ -12,6 +12,8 @@ import * as agentService from '../services/agent.service';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
+import { connectAndListTools } from '../services/mcp-client.service';
+import { redis } from '../config/redis';
 
 const router = Router();
 
@@ -253,6 +255,45 @@ router.post(
   }
 );
 
+// POST /api/agents/:id/tools/mcp/test-connection — must be before /:id/tools/:toolId
+router.post(
+  '/:id/tools/mcp/test-connection',
+  validateUUID('id'),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { server_url } = req.body as { server_url?: string };
+
+      if (!server_url || typeof server_url !== 'string') {
+        res.status(400).json({ success: false, error: 'server_url is required' });
+        return;
+      }
+
+      // Validate URL
+      let parsed: URL;
+      try {
+        parsed = new URL(server_url);
+      } catch {
+        res.status(400).json({ success: false, error: 'Invalid URL format' });
+        return;
+      }
+
+      // Require HTTPS (allow http://localhost for dev)
+      const isLocal = parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1';
+      if (parsed.protocol !== 'https:' && !isLocal) {
+        res.status(400).json({ success: false, error: 'Server URL must use HTTPS' });
+        return;
+      }
+
+      const tools = await connectAndListTools(server_url);
+      res.json({ success: true, tools });
+    } catch (err) {
+      const message = (err as Error).message;
+      console.error('[agents] MCP test-connection failed:', message);
+      res.json({ success: false, error: message });
+    }
+  }
+);
+
 // PUT /api/agents/:id/tools/:toolId
 router.put(
   '/:id/tools/:toolId',
@@ -260,12 +301,19 @@ router.put(
   validate(toolUpdateSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const toolId = String(req.params['toolId']);
       const tool = await agentService.updateTool(
         req.org!.id,
         String(req.params['id']),
-        String(req.params['toolId']),
+        toolId,
         req.body
       );
+
+      // Invalidate MCP tool cache if config changed
+      if (tool && tool.type === 'mcp') {
+        await redis.del(`mcp:tools:${toolId}`).catch(() => {});
+      }
+
       res.json({ tool });
     } catch (err) {
       next(err);
@@ -279,10 +327,15 @@ router.delete(
   validateUUID('id', 'toolId'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const toolId = String(req.params['toolId']);
+
+      // Invalidate MCP tool cache before deletion
+      await redis.del(`mcp:tools:${toolId}`).catch(() => {});
+
       await agentService.deleteTool(
         req.org!.id,
         String(req.params['id']),
-        String(req.params['toolId'])
+        toolId
       );
       res.json({ message: 'Tool deleted successfully' });
     } catch (err) {

@@ -5,6 +5,7 @@ import {
   Plus, Calendar, Database, Code2, Wrench, Trash2, Settings, Upload, X,
   Check, RefreshCw, ChevronDown, ChevronUp, Play,
 } from 'lucide-react';
+import MCPConfigurator, { MCPConfig } from '../MCPConfigurator';
 import Button from '@/components/ui/Button';
 import Toggle from '@/components/ui/Toggle';
 import Modal from '@/components/ui/Modal';
@@ -98,6 +99,7 @@ interface ToolForm {
   mcpServerName: string;
   mcpApiKey: string;
   mcpTransport: 'sse' | 'streamable-http';
+  mcpSelectedTools: string[];
   // web_scraping
   allowedDomains: string;
 }
@@ -128,6 +130,7 @@ const DEFAULT_FORM: ToolForm = {
   mcpServerName: '',
   mcpApiKey: '',
   mcpTransport: 'sse',
+  mcpSelectedTools: [],
   allowedDomains: '',
 };
 
@@ -213,10 +216,10 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
     }
     case 'mcp':
       return {
-        serverUrl: form.mcpServerUrl,
-        serverName: form.mcpServerName,
-        apiKey: form.mcpApiKey,
+        server_url: form.mcpServerUrl,
+        name: form.mcpServerName,
         transport: form.mcpTransport,
+        selected_tools: form.mcpSelectedTools,
       };
     default:
       return {};
@@ -404,10 +407,11 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       responsePathMapping: rawMapping?.path ?? '',
       responseFormatMapping: rawMapping?.format ?? '',
       timeoutSeconds: cfg['timeoutMs'] ? Math.round((cfg['timeoutMs'] as number) / 1000) : 10,
-      mcpServerUrl: (cfg['serverUrl'] as string) ?? '',
-      mcpServerName: (cfg['serverName'] as string) ?? '',
+      mcpServerUrl: (cfg['server_url'] as string) ?? (cfg['serverUrl'] as string) ?? '',
+      mcpServerName: (cfg['name'] as string) ?? (cfg['serverName'] as string) ?? '',
       mcpApiKey: (cfg['apiKey'] as string) ?? '',
       mcpTransport: ((cfg['transport'] as string) ?? 'sse') as 'sse' | 'streamable-http',
+      mcpSelectedTools: (cfg['selected_tools'] as string[]) ?? [],
       allowedDomains: Array.isArray(cfg['allowedDomains'])
         ? (cfg['allowedDomains'] as string[]).join(', ')
         : '',
@@ -1384,48 +1388,25 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
   }
 
   function renderMcpPanel() {
+    const mcpConfig: MCPConfig = {
+      server_url: form.mcpServerUrl,
+      name: form.mcpServerName,
+      transport: form.mcpTransport,
+      selected_tools: form.mcpSelectedTools,
+    };
+
     return (
-      <>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Server URL</label>
-          <input
-            className={styles.fieldInput}
-            value={form.mcpServerUrl}
-            onChange={(e) => setField('mcpServerUrl', e.target.value)}
-            placeholder="https://mcp.example.com"
-          />
-        </div>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Server Name</label>
-          <input
-            className={styles.fieldInput}
-            value={form.mcpServerName}
-            onChange={(e) => setField('mcpServerName', e.target.value)}
-            placeholder="my-mcp-server"
-          />
-        </div>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>API Key</label>
-          <input
-            className={styles.fieldInput}
-            type="password"
-            value={form.mcpApiKey}
-            onChange={(e) => setField('mcpApiKey', e.target.value)}
-            placeholder="sk-..."
-          />
-        </div>
-        <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Transport</label>
-          <select
-            className={styles.fieldSelect}
-            value={form.mcpTransport}
-            onChange={(e) => setField('mcpTransport', e.target.value as ToolForm['mcpTransport'])}
-          >
-            <option value="sse">Server-Sent Events (SSE)</option>
-            <option value="streamable-http">Streamable HTTP</option>
-          </select>
-        </div>
-      </>
+      <MCPConfigurator
+        agentId={agentId}
+        config={mcpConfig}
+        onChange={(patch) => {
+          if (patch.server_url !== undefined) setField('mcpServerUrl', patch.server_url);
+          if (patch.name !== undefined) setField('mcpServerName', patch.name);
+          if (patch.transport !== undefined) setField('mcpTransport', patch.transport);
+          if (patch.selected_tools !== undefined) setField('mcpSelectedTools', patch.selected_tools);
+        }}
+        onConnectionError={toastError}
+      />
     );
   }
 

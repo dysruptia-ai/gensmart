@@ -13,10 +13,15 @@ import {
 } from '../services/variable-capture.service';
 import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
+import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
+import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, decryptAccessToken } from '../services/whatsapp.service';
 import { getAvailableSlots, localTimeToUTC } from '../services/calendar.service';
 import { createAppointment } from '../services/appointment.service';
+
+// MCP cache TTL: 1 hour
+const MCP_TOOLS_CACHE_TTL = 3600;
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -77,6 +82,11 @@ interface OrgRow {
 }
 
 const MAX_TOOL_ITERATIONS = 5;
+
+interface MCPToolMapping {
+  serverUrl: string;
+  originalToolName: string;
+}
 
 async function processMessage(job: Job<MessageJobData>): Promise<void> {
   const { conversationId, agentId, organizationId } = job.data;
@@ -265,6 +275,72 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     }
   }
 
+  // MCP tools — load definitions (with Redis cache) and add to llmTools
+  const mcpToolMap: Record<string, MCPToolMapping> = {};
+
+  for (const tool of agentTools) {
+    if (tool.type !== 'mcp' || !tool.is_enabled) continue;
+
+    const cfg = tool.config as {
+      server_url?: string;
+      serverUrl?: string;
+      name?: string;
+      serverName?: string;
+      transport?: string;
+      selected_tools?: string[];
+    };
+
+    const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
+    const serverName = cfg.name ?? cfg.serverName ?? 'mcp';
+    const selectedTools = cfg.selected_tools ?? [];
+
+    if (!serverUrl || selectedTools.length === 0) continue;
+
+    const cacheKey = `mcp:tools:${tool.id}`;
+
+    try {
+      // Try Redis cache first
+      let toolDefs: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> | null = null;
+
+      const cached = await redis.get(cacheKey).catch(() => null);
+      if (cached) {
+        try {
+          toolDefs = JSON.parse(cached) as typeof toolDefs;
+        } catch {
+          toolDefs = null;
+        }
+      }
+
+      if (!toolDefs) {
+        // Fetch from MCP server
+        const fetched = await connectAndListTools(serverUrl);
+        toolDefs = fetched;
+        // Cache for 1 hour
+        await redis.setex(cacheKey, MCP_TOOLS_CACHE_TTL, JSON.stringify(toolDefs)).catch(() => {});
+      }
+
+      const sanitizedServerName = sanitizeName(serverName);
+
+      for (const toolDef of toolDefs) {
+        // Only include selected tools
+        if (!selectedTools.includes(toolDef.name)) continue;
+
+        const prefixedName = `mcp_${sanitizedServerName}_${sanitizeName(toolDef.name)}`;
+
+        llmTools.push({
+          name: prefixedName,
+          description: `[MCP:${serverName}] ${toolDef.description}`,
+          parameters: toolDef.inputSchema as ToolDefinition['parameters'],
+        });
+
+        mcpToolMap[prefixedName] = { serverUrl, originalToolName: toolDef.name };
+      }
+    } catch (err) {
+      // Graceful degradation: log but continue without MCP tools
+      console.error(`[msg-worker] Failed to load MCP tools for tool ${tool.id}:`, (err as Error).message);
+    }
+  }
+
   // Add scheduling instructions if a scheduling tool is enabled
   if (agentTools.some((t) => t.type === 'scheduling')) {
     const todayDate = new Date().toISOString().split('T')[0]; // e.g. "2026-03-01"
@@ -327,7 +403,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           agentTools,
           variables,
           conversationId,
-          organizationId
+          organizationId,
+          mcpToolMap
         );
         toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
         toolResults.push({ toolCallId: toolCall.id, content: result });
@@ -467,9 +544,17 @@ async function executeTool(
   agentTools: ToolRow[],
   variables: AgentVariable[],
   conversationId: string,
-  organizationId: string
+  organizationId: string,
+  mcpToolMap: Record<string, MCPToolMapping> = {}
 ): Promise<string> {
   const { name, arguments: args } = toolCall;
+
+  // MCP tools (prefixed with mcp_)
+  if (name.startsWith('mcp_') && mcpToolMap[name]) {
+    const { serverUrl, originalToolName } = mcpToolMap[name];
+    const result = await executeMCPTool(serverUrl, originalToolName, args);
+    return result.content;
+  }
 
   // Internal tool: capture_variable
   if (name === 'capture_variable') {
