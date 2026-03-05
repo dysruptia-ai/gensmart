@@ -624,7 +624,7 @@
       "whatsappConnected": "Conectado",
       "whatsappDisconnect": "Desconectar",
       "whatsappStatus": "Estado de WhatsApp",
-      "requiresPro": "WhatsApp requiere plan Pro o superior"
+      "requiresStarter": "WhatsApp requiere plan Starter o superior"
     },
     "templates": {
       "title": "Comenzar desde una plantilla",

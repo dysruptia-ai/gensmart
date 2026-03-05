@@ -1,117 +1,136 @@
 import { Metadata } from 'next';
-import { MessageSquare, ArrowRight, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import { MessageSquare, CheckCircle, ExternalLink, ArrowRight, Info } from 'lucide-react';
+import styles from './whatsapp-setup.module.css';
 
 export const metadata: Metadata = {
   title: 'WhatsApp Setup Guide — GenSmart',
-  description: 'Learn how to connect your WhatsApp Business account to GenSmart and start deploying AI agents.',
+  description: 'Step-by-step guide to connect your WhatsApp Business account to GenSmart and deploy AI agents on WhatsApp.',
 };
 
 const STEPS = [
-  'Create or open an agent in your GenSmart dashboard',
-  "Go to the Channels tab in the agent editor",
-  "Click \"Connect WhatsApp\" — you'll be guided through Facebook's Embedded Signup",
-  'Grant the necessary permissions and link your WhatsApp Business account',
-  'Your agent will be live on WhatsApp within minutes',
+  {
+    title: 'Create a Meta Developer App',
+    desc: 'Go to the Meta for Developers portal and create a new App. Choose "Business" as the app type.',
+    link: { href: 'https://developers.facebook.com/apps', label: 'developers.facebook.com' },
+    info: 'You need a Meta Business Account linked to your developer account. If you don\'t have one, create it first at business.facebook.com.',
+  },
+  {
+    title: 'Add the WhatsApp Product',
+    desc: 'From your app dashboard, click "Add Product" → select WhatsApp → click "Set Up". This creates a WhatsApp Business Account (WABA) sandbox for testing.',
+    info: null,
+  },
+  {
+    title: 'Get your Phone Number ID and WABA ID',
+    desc: 'In the WhatsApp → Getting Started section, find the "Phone number ID" and "WhatsApp Business Account ID". Copy both — you\'ll need them in GenSmart.',
+    info: 'The test number provided by Meta is free to use in sandbox mode. To go live, add and verify your own business phone number.',
+  },
+  {
+    title: 'Generate a Permanent Access Token',
+    desc: 'Go to Meta Business Manager → Settings → System Users. Create a system user with Admin role, assign your app, then click "Generate Token" with scopes: whatsapp_business_messaging and whatsapp_business_management.',
+    link: { href: 'https://business.facebook.com/settings/system-users', label: 'Business Manager System Users' },
+    info: 'Temporary tokens expire after 24h. Always use a System User token for production deployments.',
+  },
+  {
+    title: 'Connect in GenSmart',
+    desc: 'Open your agent in the GenSmart dashboard → Channels tab → WhatsApp section → Manual Setup. Enter your Phone Number ID, WABA ID, and Permanent Access Token, then click Connect.',
+    info: null,
+  },
+  {
+    title: 'Configure the Webhook in Meta',
+    desc: 'After connecting, GenSmart shows you a Webhook URL and Verify Token. Go to your Meta app → WhatsApp → Configuration → Webhook. Click "Edit" and paste both values. Subscribe to the "messages" field.',
+    info: 'In development you can use ngrok to expose your local server: run "ngrok http 4000" and use the https URL as your webhook base.',
+  },
 ];
 
 export default function WhatsAppSetupPage() {
   return (
-    <main style={{ maxWidth: '720px', margin: '0 auto', padding: '4rem 1.5rem', fontFamily: 'var(--font-family)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+    <div className={styles.page}>
+      <div className={styles.header}>
         <MessageSquare size={32} color="var(--color-primary)" aria-hidden="true" />
-        <h1 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-          WhatsApp Setup Guide
-        </h1>
+        <h1 className={styles.title}>WhatsApp Setup Guide</h1>
       </div>
 
-      <p style={{ fontSize: '1.125rem', color: 'var(--color-text-secondary)', marginBottom: '2.5rem', lineHeight: 1.6 }}>
-        Detailed setup documentation is coming soon. In the meantime, use our{' '}
-        <strong>Embedded Signup</strong> feature for quick WhatsApp connection — it walks you
-        through the process in just a few clicks.
+      <p className={styles.subtitle}>
+        Follow these steps to connect your WhatsApp Business account to GenSmart and start
+        deploying AI agents that respond to your customers on WhatsApp.
       </p>
 
-      <div style={{
-        background: 'var(--color-bg-card)',
-        border: '1px solid var(--color-border)',
-        borderRadius: '12px',
-        padding: '2rem',
-        marginBottom: '2rem',
-      }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '1.25rem' }}>
-          Quick Start with Embedded Signup
-        </h2>
-        <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {/* Prerequisites */}
+      <div className={styles.prereqBanner}>
+        <Info size={18} color="var(--color-primary-dark)" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true" />
+        <p>
+          <strong>Prerequisites:</strong> A{' '}
+          <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer">
+            Meta Business Account
+          </a>{' '}
+          and a phone number not currently registered with WhatsApp. GenSmart requires a{' '}
+          <strong>Starter plan or higher</strong> to use WhatsApp.
+        </p>
+      </div>
+
+      {/* Step-by-step */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>Manual Setup — Step by Step</h2>
+        <ol className={styles.stepList}>
           {STEPS.map((step, i) => (
-            <li key={i} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-              <CheckCircle size={20} color="var(--color-success)" style={{ flexShrink: 0, marginTop: '0.125rem' }} aria-hidden="true" />
-              <span style={{ color: 'var(--color-text-primary)', fontSize: '0.9375rem', lineHeight: 1.5 }}>
-                <strong>Step {i + 1}:</strong> {step}
-              </span>
+            <li key={i} className={styles.step}>
+              <span className={styles.stepNum}>{i + 1}</span>
+              <div className={styles.stepContent}>
+                <div className={styles.stepTitle}>{step.title}</div>
+                <p className={styles.stepDesc}>
+                  {step.desc}
+                  {step.link && (
+                    <>
+                      {' '}
+                      <a href={step.link.href} target="_blank" rel="noopener noreferrer">
+                        {step.link.label} <ExternalLink size={11} aria-hidden="true" />
+                      </a>
+                    </>
+                  )}
+                </p>
+                {step.info && (
+                  <div className={styles.infoBox}>
+                    {step.info}
+                  </div>
+                )}
+              </div>
             </li>
           ))}
         </ol>
       </div>
 
-      <div style={{
-        background: 'var(--color-primary-light)',
-        border: '1px solid var(--color-primary)',
-        borderRadius: '12px',
-        padding: '1.5rem',
-        marginBottom: '2rem',
-      }}>
-        <p style={{ margin: 0, color: 'var(--color-primary-dark)', fontSize: '0.9375rem', lineHeight: 1.5 }}>
-          <strong>Prerequisites:</strong> You need a Meta Business Account and a verified phone number
-          not currently associated with another WhatsApp account. Visit{' '}
-          <a
-            href="https://business.facebook.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: 'var(--color-primary-dark)', fontWeight: 600 }}
-          >
-            business.facebook.com
-          </a>{' '}
-          to set up your Meta Business Account if you don&apos;t have one.
-        </p>
+      {/* Embedded Signup alternative */}
+      <div className={styles.card}>
+        <h2 className={styles.cardTitle}>Quick Setup with Facebook Login</h2>
+        <ol className={styles.stepList}>
+          {[
+            'Open your agent in the GenSmart dashboard and go to the Channels tab.',
+            'In the WhatsApp section, click "Connect with Facebook".',
+            'Log in with your Facebook account and grant the required permissions.',
+            'GenSmart will automatically retrieve your Phone Number ID and WABA ID.',
+            'Copy the Webhook URL and Verify Token shown, and configure them in your Meta app.',
+          ].map((step, i) => (
+            <li key={i} className={styles.step}>
+              <span className={styles.stepNum}>
+                <CheckCircle size={14} aria-hidden="true" />
+              </span>
+              <div className={styles.stepContent}>
+                <p className={styles.stepDesc} style={{ margin: 0 }}>{step}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-        <Link
-          href="/register"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: 'var(--color-primary)',
-            color: '#fff',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '8px',
-            fontWeight: 600,
-            textDecoration: 'none',
-            fontSize: '0.9375rem',
-          }}
-        >
-          Get Started Free <ArrowRight size={16} />
+      <div className={styles.ctaRow}>
+        <Link href="/register" className={styles.ctaPrimary}>
+          Get Started Free <ArrowRight size={16} aria-hidden="true" />
         </Link>
-        <Link
-          href="/dashboard"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: 'transparent',
-            color: 'var(--color-text-primary)',
-            padding: '0.75rem 1.5rem',
-            borderRadius: '8px',
-            fontWeight: 600,
-            textDecoration: 'none',
-            fontSize: '0.9375rem',
-            border: '1px solid var(--color-border)',
-          }}
-        >
+        <Link href="/dashboard" className={styles.ctaSecondary}>
           Go to Dashboard
         </Link>
       </div>
-    </main>
+    </div>
   );
 }
