@@ -20,17 +20,33 @@ const router = Router();
 
 // ── GET /api/whatsapp/webhook ─────────────────────────────────────────────────
 // Meta webhook verification challenge
-router.get('/webhook', (req: Request, res: Response): void => {
+router.get('/webhook', async (req: Request, res: Response): Promise<void> => {
   const mode = req.query['hub.mode'] as string;
   const token = req.query['hub.verify_token'] as string;
   const challenge = req.query['hub.challenge'] as string;
 
-  const verifyToken = env.WHATSAPP_VERIFY_TOKEN || env.META_VERIFY_TOKEN;
+  if (mode !== 'subscribe' || !token || !challenge) {
+    res.status(403).json({ error: 'Verification failed' });
+    return;
+  }
 
-  if (mode === 'subscribe' && token === verifyToken) {
-    console.log('[whatsapp] Webhook verified');
-    res.status(200).send(challenge);
-  } else {
+  try {
+    const result = await query<{ id: string }>(
+      `SELECT id FROM agents
+       WHERE whatsapp_config->>'verify_token' = $1
+         AND (whatsapp_config->>'connected')::boolean = true`,
+      [token]
+    );
+
+    if (result.rows.length > 0) {
+      console.log('[whatsapp] Webhook verified for agent:', result.rows[0]!.id);
+      res.status(200).send(challenge);
+    } else {
+      console.log('[whatsapp] Webhook verification failed — token not found');
+      res.status(403).json({ error: 'Verification failed' });
+    }
+  } catch (err) {
+    console.error('[whatsapp] Webhook verification error:', err);
     res.status(403).json({ error: 'Verification failed' });
   }
 });
