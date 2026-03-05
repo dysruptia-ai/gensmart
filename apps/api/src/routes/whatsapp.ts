@@ -46,11 +46,12 @@ router.post(
 
     // Process asynchronously
     try {
+      // req.body is a Buffer (express.raw registered before express.json in index.ts)
+      const rawBuffer: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
       const appSecret = env.WHATSAPP_APP_SECRET || env.META_APP_SECRET;
       if (appSecret) {
         const signature = req.headers['x-hub-signature-256'] as string;
-        const rawBody = JSON.stringify(req.body);
-        if (!signature || !verifyWebhookSignature(rawBody, signature, appSecret)) {
+        if (!signature || !verifyWebhookSignature(rawBuffer.toString(), signature, appSecret)) {
           console.warn('[whatsapp] Invalid webhook signature — ignoring');
           return;
         }
@@ -58,7 +59,16 @@ router.post(
         console.warn('[whatsapp] No app secret configured — skipping signature validation');
       }
 
-      const body = req.body as {
+      // Parse body from raw buffer
+      let parsedBody: Record<string, unknown>;
+      try {
+        parsedBody = JSON.parse(rawBuffer.toString()) as Record<string, unknown>;
+      } catch {
+        console.warn('[whatsapp] Failed to parse webhook body');
+        return;
+      }
+
+      const body = parsedBody as {
         entry?: Array<{
           changes?: Array<{
             value?: {

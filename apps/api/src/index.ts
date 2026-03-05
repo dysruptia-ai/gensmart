@@ -37,6 +37,10 @@ app.use(cors({
 app.use(compression());
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
+// WhatsApp webhook — raw body required for HMAC-SHA256 signature verification
+// Must be registered BEFORE express.json() so Meta's raw payload is preserved.
+app.use('/api/whatsapp/webhook', express.raw({ type: 'application/json' }));
+
 // Stripe webhook — registered BEFORE express.json() so the stream is consumed
 // as a raw Buffer by express.raw(). The handler is inline (not via a router)
 // to guarantee no other middleware intercepts the body first.
