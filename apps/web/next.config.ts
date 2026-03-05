@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_FACEBOOK_APP_ID: process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'] ?? '',
+  },
   async rewrites() {
     // In development, proxy /api/* to the Express backend
     if (process.env.NODE_ENV === 'development') {
