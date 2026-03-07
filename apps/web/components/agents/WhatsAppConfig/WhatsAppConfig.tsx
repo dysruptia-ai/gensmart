@@ -155,7 +155,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     const FB = (window as Window & { FB?: {
       init: (opts: Record<string, unknown>) => void;
-      login: (cb: (response: { authResponse?: { code?: string } }) => void, opts: Record<string, unknown>) => void;
+      login: (cb: (response: { authResponse?: { accessToken?: string } }) => void, opts: Record<string, unknown>) => void;
     } }).FB;
 
     if (!FB) {

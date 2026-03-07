@@ -148,30 +148,3 @@ export function encryptAccessToken(token: string): string {
 export function decryptAccessToken(encryptedToken: string): string {
   return decrypt(encryptedToken);
 }
-
-export async function exchangeCodeForToken(
-  code: string,
-  appId: string,
-  appSecret: string
-): Promise<string> {
-  // Opción C: POST with FRONTEND_URL as redirect_uri (must be registered in Meta Dashboard)
-  const redirectUri = process.env['FRONTEND_URL'] ?? 'https://localhost:3000';
-  const response = await fetch(`${META_BASE_URL}/oauth/access_token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: appId,
-      client_secret: appSecret,
-      code: code,
-      redirect_uri: redirectUri,
-    }).toString(),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(`Failed to exchange code for token: ${JSON.stringify(error)}`);
-  }
-
-  const data = await response.json() as { access_token: string };
-  return data.access_token;
-}
