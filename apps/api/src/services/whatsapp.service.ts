@@ -154,7 +154,8 @@ export async function exchangeCodeForToken(
   appId: string,
   appSecret: string
 ): Promise<string> {
-  // Opción B: POST with form-urlencoded and explicit empty redirect_uri
+  // Opción C: POST with FRONTEND_URL as redirect_uri (must be registered in Meta Dashboard)
+  const redirectUri = process.env['FRONTEND_URL'] ?? 'https://localhost:3000';
   const response = await fetch(`${META_BASE_URL}/oauth/access_token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -162,7 +163,7 @@ export async function exchangeCodeForToken(
       client_id: appId,
       client_secret: appSecret,
       code: code,
-      redirect_uri: '',
+      redirect_uri: redirectUri,
     }).toString(),
   });
 
