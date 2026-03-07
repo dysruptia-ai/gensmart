@@ -143,7 +143,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     }
   }
 
-  async function handleEmbeddedSignup() {
+  function handleEmbeddedSignup() {
     if (!fbAppId) return;
 
     // Load Facebook SDK if needed and open login dialog
