@@ -12,7 +12,6 @@ import {
   encryptAccessToken,
   decryptAccessToken,
   getPhoneNumberInfo,
-  getWABAAndPhoneNumber,
 } from '../services/whatsapp.service';
 import { pushToBuffer } from '../services/message-buffer.service';
 
@@ -260,29 +259,39 @@ router.post(
         accessToken: string;
       };
 
-      if (!agentId || !phoneNumberId || !wabaId || !accessToken) {
-        throw new AppError(400, 'Missing required fields: agentId, phoneNumberId, wabaId, accessToken', 'VALIDATION_ERROR');
+      if (!agentId || !phoneNumberId || !wabaId) {
+        throw new AppError(400, 'Missing required fields: agentId, phoneNumberId, wabaId', 'VALIDATION_ERROR');
       }
 
       // Verify agent belongs to org
-      const agentCheck = await query<{ id: string }>(
-        'SELECT id FROM agents WHERE id = $1 AND organization_id = $2',
+      const agentCheck = await query<{ id: string; whatsapp_config: Record<string, unknown> }>(
+        'SELECT id, whatsapp_config FROM agents WHERE id = $1 AND organization_id = $2',
         [agentId, req.org!.id]
       );
       if (!agentCheck.rows[0]) {
         throw new AppError(404, 'Agent not found', 'NOT_FOUND');
       }
 
+      // If no accessToken in body, use the one saved via Embedded Signup
+      let finalAccessToken = accessToken?.trim() ?? '';
+      if (!finalAccessToken) {
+        const savedEncrypted = agentCheck.rows[0]!.whatsapp_config?.['access_token_encrypted'] as string | undefined;
+        if (!savedEncrypted) {
+          throw new AppError(400, 'No access token provided or saved. Please reconnect with Facebook.', 'VALIDATION_ERROR');
+        }
+        finalAccessToken = decryptAccessToken(savedEncrypted);
+      }
+
       // Validate access token by calling Meta API
       let phoneDisplay = phoneNumberId;
       try {
-        const info = await getPhoneNumberInfo(phoneNumberId, accessToken);
+        const info = await getPhoneNumberInfo(phoneNumberId, finalAccessToken);
         phoneDisplay = info.display_phone_number;
       } catch {
         throw new AppError(400, 'Invalid access token or phone number ID. Please check your credentials.', 'INVALID_CREDENTIALS');
       }
 
-      const encryptedToken = encryptAccessToken(accessToken);
+      const encryptedToken = encryptAccessToken(finalAccessToken);
       const agentVerifyToken = crypto.randomUUID();
 
       // Build new whatsapp_config
@@ -359,47 +368,25 @@ router.post(
         throw new AppError(404, 'Agent not found', 'NOT_FOUND');
       }
 
-      // accessToken received directly from FB.login (response_type: 'token') — no code exchange needed
-
-      // Fetch WABA ID and Phone Number ID from the Graph API
-      const { wabaId, phoneNumberId, displayPhone } = await getWABAAndPhoneNumber(accessToken);
-
+      // Save encrypted token only — user must supply Phone Number ID + WABA ID via /connect
       const encryptedToken = encryptAccessToken(accessToken);
-      const agentVerifyToken = crypto.randomUUID();
-
       await query(
         `UPDATE agents
-         SET whatsapp_config = jsonb_build_object(
-               'phone_number_id', $1::text,
-               'waba_id', $2::text,
-               'access_token_encrypted', $3::text,
-               'verify_token', $4::text,
-               'connected', true
+         SET whatsapp_config = jsonb_set(
+               jsonb_set(
+                 COALESCE(whatsapp_config, '{}'::jsonb),
+                 '{access_token_encrypted}', to_jsonb($1::text)
+               ),
+               '{connected}', 'false'::jsonb
              ),
              updated_at = NOW()
-         WHERE id = $5`,
-        [phoneNumberId, wabaId, encryptedToken, agentVerifyToken, agentId]
-      );
-
-      // Ensure 'whatsapp' is in channels array
-      await query(
-        `UPDATE agents
-         SET channels = (
-           SELECT jsonb_agg(DISTINCT elem ORDER BY elem)
-           FROM jsonb_array_elements_text(COALESCE(channels, '[]'::jsonb) || '["whatsapp"]'::jsonb) elem
-         )
-         WHERE id = $1`,
-        [agentId]
+         WHERE id = $2`,
+        [encryptedToken, agentId]
       );
 
       res.json({
         success: true,
-        phoneNumberId,
-        wabaId,
-        displayPhone,
-        verifyToken: agentVerifyToken,
-        webhookUrl: `${env.API_URL}/api/whatsapp/webhook`,
-        message: `Connected! Phone: ${displayPhone}. Configure the webhook URL and Verify Token in your Meta app to finish setup.`,
+        message: 'Access token saved. Now enter your Phone Number ID and WABA ID below to complete setup.',
       });
     } catch (err) {
       next(err);

@@ -15,10 +15,7 @@ export function fbLoginEmbeddedSignup(
 ): void {
   FB.login(
     function(response) {
-      console.log('[fbLogin] Full response:', JSON.stringify(response));
-      console.log('[fbLogin] authResponse:', JSON.stringify(response && response.authResponse));
       var token = response && response.authResponse && response.authResponse.accessToken;
-      console.log('[fbLogin] accessToken:', token);
       onResult(token || null);
     },
     {

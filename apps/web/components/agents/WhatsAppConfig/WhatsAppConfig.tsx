@@ -99,7 +99,12 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   }, [loadStatus]);
 
   async function handleManualConnect() {
-    if (!phoneNumberId.trim() || !wabaId.trim() || !accessToken.trim()) {
+    if (!phoneNumberId.trim() || !wabaId.trim()) {
+      toastError('Please fill in Phone Number ID and WABA ID');
+      return;
+    }
+    const tokenSavedViaSignup = accessToken === 'EMBEDDED_SIGNUP_TOKEN_SAVED';
+    if (!tokenSavedViaSignup && !accessToken.trim()) {
       toastError('Please fill in all fields');
       return;
     }
@@ -114,7 +119,8 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         agentId,
         phoneNumberId: phoneNumberId.trim(),
         wabaId: wabaId.trim(),
-        accessToken: accessToken.trim(),
+        // Empty string signals backend to use the token saved via Embedded Signup
+        accessToken: tokenSavedViaSignup ? '' : accessToken.trim(),
       });
 
       success(`Connected! Phone: ${data.phoneNumber}`);
@@ -168,8 +174,10 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
       }
       api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', { agentId, accessToken })
         .then(function(data) {
-          success(data.message ?? 'Access token saved. Complete manual setup below.');
+          success(data.message ?? 'Access token saved. Complete setup below.');
           setShowManual(true);
+          // Mark token as already saved — user only needs Phone Number ID + WABA ID
+          setAccessToken('EMBEDDED_SIGNUP_TOKEN_SAVED');
           return loadStatus();
         })
         .catch(function(err: unknown) {
