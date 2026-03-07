@@ -356,6 +356,8 @@ router.post(
       }
 
       const { agentId, accessToken } = req.body as { agentId: string; accessToken: string };
+      console.log('[embedded-signup] req.body:', JSON.stringify(req.body));
+      console.log('[embedded-signup] agentId:', agentId, '| accessToken length:', accessToken?.length ?? 0);
       if (!agentId || !accessToken) {
         throw new AppError(400, 'Missing agentId or accessToken', 'VALIDATION_ERROR');
       }
