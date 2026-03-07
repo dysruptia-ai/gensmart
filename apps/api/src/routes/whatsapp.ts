@@ -12,7 +12,6 @@ import {
   encryptAccessToken,
   decryptAccessToken,
   getPhoneNumberInfo,
-  exchangeCodeForToken,
   getWABAAndPhoneNumber,
 } from '../services/whatsapp.service';
 import { pushToBuffer } from '../services/message-buffer.service';
@@ -347,9 +346,9 @@ router.post(
         throw new AppError(503, 'Facebook App credentials not configured on this server', 'NOT_CONFIGURED');
       }
 
-      const { agentId, code } = req.body as { agentId: string; code: string };
-      if (!agentId || !code) {
-        throw new AppError(400, 'Missing agentId or code', 'VALIDATION_ERROR');
+      const { agentId, accessToken } = req.body as { agentId: string; accessToken: string };
+      if (!agentId || !accessToken) {
+        throw new AppError(400, 'Missing agentId or accessToken', 'VALIDATION_ERROR');
       }
 
       const agentCheck = await query<{ id: string }>(
@@ -360,7 +359,7 @@ router.post(
         throw new AppError(404, 'Agent not found', 'NOT_FOUND');
       }
 
-      const accessToken = await exchangeCodeForToken(code, fbAppId, fbAppSecret);
+      // accessToken received directly from FB.login (response_type: 'token') — no code exchange needed
 
       // Fetch WABA ID and Phone Number ID from the Graph API
       const { wabaId, phoneNumberId, displayPhone } = await getWABAAndPhoneNumber(accessToken);

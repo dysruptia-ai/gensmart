@@ -2,10 +2,10 @@
 // The Facebook SDK scans the entire closure of the FB.login callback
 // for the word "async" and throws if found anywhere in scope.
 
-type FBLoginCallback = (code: string | null) => void;
+type FBLoginCallback = (accessToken: string | null) => void;
 
 interface FBInstance {
-  login: (cb: (response: { authResponse?: { code?: string } }) => void, opts: Record<string, unknown>) => void;
+  login: (cb: (response: { authResponse?: { access_token?: string; code?: string } }) => void, opts: Record<string, unknown>) => void;
 }
 
 export function fbLoginEmbeddedSignup(
@@ -15,12 +15,12 @@ export function fbLoginEmbeddedSignup(
 ): void {
   FB.login(
     function(response) {
-      var code = response && response.authResponse && response.authResponse.code;
-      onResult(code || null);
+      var token = response && response.authResponse && response.authResponse.access_token;
+      onResult(token || null);
     },
     {
       config_id: configId,
-      response_type: 'code',
+      response_type: 'token',
       override_default_response_type: true,
       extras: {
         setup: {},

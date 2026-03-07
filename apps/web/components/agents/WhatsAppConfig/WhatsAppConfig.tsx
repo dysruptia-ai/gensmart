@@ -161,12 +161,12 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     // fbLoginEmbeddedSignup lives in an isolated module with no async functions in scope.
     // The FB.login callback inside it is 100% synchronous — the SDK's closure scan finds nothing.
-    fbLoginEmbeddedSignup(FB, configId, function(code) {
-      if (!code) {
+    fbLoginEmbeddedSignup(FB, configId, function(accessToken) {
+      if (!accessToken) {
         toastError('Facebook login was cancelled or failed.');
         return;
       }
-      api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', { agentId, code })
+      api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', { agentId, accessToken })
         .then(function(data) {
           success(data.message ?? 'Access token saved. Complete manual setup below.');
           setShowManual(true);
