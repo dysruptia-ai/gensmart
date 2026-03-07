@@ -179,8 +179,14 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         })();
       },
       {
-        scope: 'whatsapp_business_management,whatsapp_business_messaging',
+        config_id: process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID'] ?? '',
         response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          setup: {},
+          featureType: '',
+          sessionInfoVersion: '3',
+        },
       }
     );
   }
