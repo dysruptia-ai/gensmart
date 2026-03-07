@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Unplug } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import Input from '@/components/ui/Input';
@@ -143,6 +143,27 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     }
   }
 
+  // Ref used to pass the OAuth code out of the FB.login callback (which must
+  // be fully synchronous — the SDK scans the entire closure for "async").
+  const embeddedSignupCodeRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!embeddedSignupCodeRef.current) return;
+    const code = embeddedSignupCodeRef.current;
+    embeddedSignupCodeRef.current = null;
+
+    api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', { agentId, code })
+      .then((data) => {
+        success(data.message ?? 'Access token saved. Complete manual setup below.');
+        setShowManual(true);
+        return loadStatus();
+      })
+      .catch((err: unknown) => {
+        toastError(err instanceof ApiError ? err.message : 'Failed to complete WhatsApp setup');
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embeddedSignupCodeRef.current]);
+
   function handleEmbeddedSignup() {
     if (!fbAppId) return;
 
@@ -156,29 +177,18 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
       return;
     }
 
-    // IMPORTANT: FB.login callback must be a plain synchronous function.
-    // The SDK inspects the callback with .toString() and throws if it finds
-    // the word "async" anywhere in the function text — including inside nested IIFEs.
-    // Solution: use Promise.resolve().then() chains (no "async" keyword anywhere).
     FB.login(
       function(response) {
+        // Only synchronous operations here — no async, no promises, no closures with async functions
         const code = response && response.authResponse && response.authResponse.code;
         if (!code) {
           toastError('Facebook login was cancelled or failed.');
           return;
         }
-        Promise.resolve()
-          .then(function() {
-            return api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', { agentId, code });
-          })
-          .then(function(data) {
-            success(data.message ?? 'Access token saved. Complete manual setup below.');
-            setShowManual(true);
-            return loadStatus();
-          })
-          .catch(function(err: unknown) {
-            toastError(err instanceof ApiError ? err.message : 'Failed to complete WhatsApp setup');
-          });
+        // Store code in ref — the useEffect above will pick it up and call the API
+        embeddedSignupCodeRef.current = code;
+        // Force a re-render to trigger the useEffect
+        setShowManual(false);
       },
       {
         config_id: process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID'] ?? '',
