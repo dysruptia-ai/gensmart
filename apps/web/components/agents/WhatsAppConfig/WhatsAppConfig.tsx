@@ -146,7 +146,6 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   function handleEmbeddedSignup() {
     if (!fbAppId) return;
 
-    // Load Facebook SDK if needed and open login dialog
     const FB = (window as Window & { FB?: {
       init: (opts: Record<string, unknown>) => void;
       login: (cb: (response: { authResponse?: { code?: string } }) => void, opts: Record<string, unknown>) => void;
@@ -157,26 +156,29 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
       return;
     }
 
+    // IMPORTANT: FB.login callback must be a plain synchronous function.
+    // The SDK inspects the callback with .toString() and throws if it finds
+    // the word "async" anywhere in the function text — including inside nested IIFEs.
+    // Solution: use Promise.resolve().then() chains (no "async" keyword anywhere).
     FB.login(
-      (response) => {
-        (async () => {
-          const code = response?.authResponse?.code;
-          if (!code) {
-            toastError('Facebook login was cancelled or failed.');
-            return;
-          }
-          try {
-            const data = await api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', {
-              agentId,
-              code,
-            });
+      function(response) {
+        const code = response && response.authResponse && response.authResponse.code;
+        if (!code) {
+          toastError('Facebook login was cancelled or failed.');
+          return;
+        }
+        Promise.resolve()
+          .then(function() {
+            return api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', { agentId, code });
+          })
+          .then(function(data) {
             success(data.message ?? 'Access token saved. Complete manual setup below.');
             setShowManual(true);
-            await loadStatus();
-          } catch (err) {
+            return loadStatus();
+          })
+          .catch(function(err: unknown) {
             toastError(err instanceof ApiError ? err.message : 'Failed to complete WhatsApp setup');
-          }
-        })();
+          });
       },
       {
         config_id: process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID'] ?? '',
