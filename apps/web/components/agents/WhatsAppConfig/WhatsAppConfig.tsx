@@ -158,23 +158,25 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     }
 
     FB.login(
-      async (response) => {
-        const code = response?.authResponse?.code;
-        if (!code) {
-          toastError('Facebook login was cancelled or failed.');
-          return;
-        }
-        try {
-          const data = await api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', {
-            agentId,
-            code,
-          });
-          success(data.message ?? 'Access token saved. Complete manual setup below.');
-          setShowManual(true);
-          await loadStatus();
-        } catch (err) {
-          toastError(err instanceof ApiError ? err.message : 'Failed to complete WhatsApp setup');
-        }
+      (response) => {
+        (async () => {
+          const code = response?.authResponse?.code;
+          if (!code) {
+            toastError('Facebook login was cancelled or failed.');
+            return;
+          }
+          try {
+            const data = await api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', {
+              agentId,
+              code,
+            });
+            success(data.message ?? 'Access token saved. Complete manual setup below.');
+            setShowManual(true);
+            await loadStatus();
+          } catch (err) {
+            toastError(err instanceof ApiError ? err.message : 'Failed to complete WhatsApp setup');
+          }
+        })();
       },
       {
         scope: 'whatsapp_business_management,whatsapp_business_messaging',
