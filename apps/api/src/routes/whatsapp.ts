@@ -13,6 +13,7 @@ import {
   decryptAccessToken,
   getPhoneNumberInfo,
   exchangeCodeForToken,
+  getWABAAndPhoneNumber,
 } from '../services/whatsapp.service';
 import { pushToBuffer } from '../services/message-buffer.service';
 
@@ -360,28 +361,46 @@ router.post(
       }
 
       const accessToken = await exchangeCodeForToken(code, fbAppId, fbAppSecret);
+
+      // Fetch WABA ID and Phone Number ID from the Graph API
+      const { wabaId, phoneNumberId, displayPhone } = await getWABAAndPhoneNumber(accessToken);
+
       const encryptedToken = encryptAccessToken(accessToken);
       const agentVerifyToken = crypto.randomUUID();
 
       await query(
         `UPDATE agents
          SET whatsapp_config = jsonb_build_object(
-               'phone_number_id', whatsapp_config->>'phone_number_id',
-               'waba_id', whatsapp_config->>'waba_id',
-               'access_token_encrypted', $1,
-               'verify_token', $2,
-               'connected', false
+               'phone_number_id', $1::text,
+               'waba_id', $2::text,
+               'access_token_encrypted', $3::text,
+               'verify_token', $4::text,
+               'connected', true
              ),
              updated_at = NOW()
-         WHERE id = $3`,
-        [encryptedToken, agentVerifyToken, agentId]
+         WHERE id = $5`,
+        [phoneNumberId, wabaId, encryptedToken, agentVerifyToken, agentId]
+      );
+
+      // Ensure 'whatsapp' is in channels array
+      await query(
+        `UPDATE agents
+         SET channels = (
+           SELECT jsonb_agg(DISTINCT elem ORDER BY elem)
+           FROM jsonb_array_elements_text(COALESCE(channels, '[]'::jsonb) || '["whatsapp"]'::jsonb) elem
+         )
+         WHERE id = $1`,
+        [agentId]
       );
 
       res.json({
         success: true,
+        phoneNumberId,
+        wabaId,
+        displayPhone,
         verifyToken: agentVerifyToken,
         webhookUrl: `${env.API_URL}/api/whatsapp/webhook`,
-        message: 'Access token saved. Complete setup by providing your Phone Number ID and WABA ID.',
+        message: `Connected! Phone: ${displayPhone}. Configure the webhook URL and Verify Token in your Meta app to finish setup.`,
       });
     } catch (err) {
       next(err);

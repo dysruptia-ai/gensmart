@@ -91,6 +91,56 @@ export async function getPhoneNumberInfo(
   return response.json() as Promise<{ display_phone_number: string; verified_name: string }>;
 }
 
+export async function getWABAAndPhoneNumber(accessToken: string): Promise<{
+  wabaId: string;
+  phoneNumberId: string;
+  displayPhone: string;
+}> {
+  // Step 1: get WABA accounts linked to this user token
+  const wabaRes = await fetch(
+    `${META_BASE_URL}/me/whatsapp_business_accounts?fields=id,name,phone_numbers{id,display_phone_number}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!wabaRes.ok) {
+    const err = await wabaRes.json().catch(() => ({}));
+    throw new Error(`Failed to fetch WABA accounts: ${JSON.stringify(err)}`);
+  }
+
+  const wabaData = await wabaRes.json() as {
+    data?: Array<{
+      id: string;
+      phone_numbers?: { data?: Array<{ id: string; display_phone_number: string }> };
+    }>;
+  };
+
+  const waba = wabaData.data?.[0];
+  if (!waba) throw new Error('No WhatsApp Business Account found for this user');
+
+  const phoneEntry = waba.phone_numbers?.data?.[0];
+  if (!phoneEntry) {
+    // Fallback: list phone numbers directly from WABA
+    const pnRes = await fetch(
+      `${META_BASE_URL}/${waba.id}/phone_numbers?fields=id,display_phone_number`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    if (pnRes.ok) {
+      const pnData = await pnRes.json() as { data?: Array<{ id: string; display_phone_number: string }> };
+      const pn = pnData.data?.[0];
+      if (pn) {
+        return { wabaId: waba.id, phoneNumberId: pn.id, displayPhone: pn.display_phone_number };
+      }
+    }
+    throw new Error('No phone number found in WhatsApp Business Account');
+  }
+
+  return {
+    wabaId: waba.id,
+    phoneNumberId: phoneEntry.id,
+    displayPhone: phoneEntry.display_phone_number,
+  };
+}
+
 export function encryptAccessToken(token: string): string {
   return encrypt(token);
 }
@@ -104,8 +154,8 @@ export async function exchangeCodeForToken(
   appId: string,
   appSecret: string
 ): Promise<string> {
-  // Embedded Signup with config_id does NOT use redirect_uri
-  const url = `${META_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}`;
+  // Opción A: pass redirect_uri as empty string — Meta treats omission differently from ''
+  const url = `${META_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=&code=${code}`;
   const response = await fetch(url);
 
   if (!response.ok) {
