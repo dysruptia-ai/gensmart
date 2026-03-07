@@ -5,7 +5,7 @@
 type FBLoginCallback = (accessToken: string | null) => void;
 
 interface FBInstance {
-  login: (cb: (response: { authResponse?: { access_token?: string; code?: string } }) => void, opts: Record<string, unknown>) => void;
+  login: (cb: (response: { authResponse?: { accessToken?: string; code?: string } }) => void, opts: Record<string, unknown>) => void;
 }
 
 export function fbLoginEmbeddedSignup(
@@ -17,8 +17,8 @@ export function fbLoginEmbeddedSignup(
     function(response) {
       console.log('[fbLogin] Full response:', JSON.stringify(response));
       console.log('[fbLogin] authResponse:', JSON.stringify(response && response.authResponse));
-      var token = response && response.authResponse && response.authResponse.access_token;
-      console.log('[fbLogin] access_token:', token);
+      var token = response && response.authResponse && response.authResponse.accessToken;
+      console.log('[fbLogin] accessToken:', token);
       onResult(token || null);
     },
     {
