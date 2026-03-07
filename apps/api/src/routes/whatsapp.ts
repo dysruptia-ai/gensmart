@@ -359,7 +359,8 @@ router.post(
         throw new AppError(404, 'Agent not found', 'NOT_FOUND');
       }
 
-      const accessToken = await exchangeCodeForToken(code, fbAppId, fbAppSecret);
+      const frontendUrl = process.env['FRONTEND_URL'] ?? 'https://localhost:3000';
+      const accessToken = await exchangeCodeForToken(code, fbAppId, fbAppSecret, frontendUrl);
       const encryptedToken = encryptAccessToken(accessToken);
       const agentVerifyToken = crypto.randomUUID();
 

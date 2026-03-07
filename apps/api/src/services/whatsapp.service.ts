@@ -102,9 +102,13 @@ export function decryptAccessToken(encryptedToken: string): string {
 export async function exchangeCodeForToken(
   code: string,
   appId: string,
-  appSecret: string
+  appSecret: string,
+  redirectUri?: string
 ): Promise<string> {
-  const url = `${META_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}`;
+  let url = `${META_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}`;
+  if (redirectUri) {
+    url += `&redirect_uri=${encodeURIComponent(redirectUri)}`;
+  }
   const response = await fetch(url);
 
   if (!response.ok) {
