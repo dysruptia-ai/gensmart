@@ -104,9 +104,8 @@ export async function exchangeCodeForToken(
   appId: string,
   appSecret: string
 ): Promise<string> {
-  // For Embedded Signup popup flow, Meta requires this exact redirect_uri
-  const redirectUri = 'https://www.facebook.com/connect/login_success.html';
-  const url = `${META_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=${encodeURIComponent(redirectUri)}&code=${code}`;
+  // Embedded Signup with config_id does NOT use redirect_uri
+  const url = `${META_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&code=${code}`;
   const response = await fetch(url);
 
   if (!response.ok) {
