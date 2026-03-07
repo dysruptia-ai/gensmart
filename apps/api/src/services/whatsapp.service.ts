@@ -154,9 +154,17 @@ export async function exchangeCodeForToken(
   appId: string,
   appSecret: string
 ): Promise<string> {
-  // Opción A: pass redirect_uri as empty string — Meta treats omission differently from ''
-  const url = `${META_BASE_URL}/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&redirect_uri=&code=${code}`;
-  const response = await fetch(url);
+  // Opción B: POST with form-urlencoded and explicit empty redirect_uri
+  const response = await fetch(`${META_BASE_URL}/oauth/access_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: appId,
+      client_secret: appSecret,
+      code: code,
+      redirect_uri: '',
+    }).toString(),
+  });
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
