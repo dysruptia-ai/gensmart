@@ -11,3 +11,4 @@ apps/web/.env.local
 coverage/
 *.log
 uploads/
+env.prod.txt
