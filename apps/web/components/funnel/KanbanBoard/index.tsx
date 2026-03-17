@@ -14,6 +14,7 @@ interface KanbanContact {
   ai_score: number | null;
   ai_service: string | null;
   source_channel: string | null;
+  agent_name: string | null;
   funnel_stage: string;
   created_at: string;
 }
