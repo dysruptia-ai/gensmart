@@ -944,15 +944,14 @@ export default function AgentEditorPage() {
         onApply={({ prompt, variables: suggestedVars }) => {
           if (prompt) { setSystemPrompt(prompt); setIsDirty(true); }
           if (suggestedVars.length > 0) {
-            setVariables(
-              suggestedVars.map((v) => ({
-                name: v.name,
-                type: (v.type as AgentVariable['type']) || 'string',
-                required: v.required ?? false,
-                description: v.description ?? '',
-                options: v.options,
-              }))
-            );
+            const mapped = suggestedVars.map((v) => ({
+              name: v.name,
+              type: (v.type as AgentVariable['type']) || 'string',
+              required: v.required ?? false,
+              description: v.description ?? '',
+              options: v.options,
+            }));
+            setVariables(mergeVariables(variables, mapped));
             setIsDirty(true);
           }
         }}
