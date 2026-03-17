@@ -354,9 +354,32 @@ router.post(
         [conversationId]
       );
 
-      // WhatsApp stub — will be fully implemented in Phase 5
+      // Send via WhatsApp if channel is whatsapp
       if (conv.channel === 'whatsapp') {
-        console.log(`[conversations] WhatsApp human message stub — conv: ${conversationId}`);
+        try {
+          const agentResult = await query<{ whatsapp_config: Record<string, unknown> }>(
+            'SELECT whatsapp_config FROM agents WHERE id = $1',
+            [conv.agent_id]
+          );
+          const waConfig = agentResult.rows[0]?.whatsapp_config;
+
+          if (waConfig?.['connected'] && waConfig?.['phone_number_id'] && waConfig?.['access_token_encrypted']) {
+            const contactResult = await query<{ phone: string | null }>(
+              'SELECT phone FROM contacts WHERE id = (SELECT contact_id FROM conversations WHERE id = $1)',
+              [conversationId]
+            );
+            const phone = contactResult.rows[0]?.phone;
+
+            if (phone) {
+              const { sendTextMessage, decryptAccessToken } = await import('../services/whatsapp.service');
+              const accessToken = decryptAccessToken(String(waConfig['access_token_encrypted']));
+              await sendTextMessage(String(waConfig['phone_number_id']), accessToken, phone, content.trim());
+            }
+          }
+        } catch (err) {
+          console.error(`[conversations] WhatsApp send error:`, (err as Error).message);
+          // Non-fatal — message is saved, just couldn't send via WhatsApp
+        }
       }
 
       // Emit WebSocket events
@@ -483,14 +506,14 @@ router.post(
         try {
           const humanMessages = await query<{ role: string; content: string }>(
             `SELECT role, content FROM messages
-             WHERE conversation_id = $1 AND role = 'human' AND created_at >= $2
+             WHERE conversation_id = $1 AND role IN ('human', 'user') AND created_at >= $2
              ORDER BY created_at ASC`,
             [conversationId, conv.taken_over_at]
           );
 
           if (humanMessages.rows.length > 0) {
             const interventionText = humanMessages.rows
-              .map((m) => `Human Agent: ${m.content}`)
+              .map((m) => m.role === 'human' ? `Human Agent (team member): ${m.content}` : `Customer: ${m.content}`)
               .join('\n');
 
             const summaryResponse = await chat({
@@ -499,7 +522,7 @@ router.post(
               messages: [
                 {
                   role: 'user',
-                  content: `Summarize this human agent intervention in 2-3 sentences for the AI agent to understand what was discussed:\n\n${interventionText}`,
+                  content: `Summarize this human agent intervention for the AI agent to understand what happened. CRITICAL RULES:\n- "Team Member (staff)" messages are from an employee who temporarily helped the customer. Do NOT treat any team member names or information as customer data.\n- "Customer" messages are from the actual customer/lead.\n- Only summarize what the CUSTOMER needs and any commitments made TO the customer.\n- Never capture team member names as customer names.\n\nIntervention transcript:\n${interventionText}\n\nWrite 2-3 sentences focusing on customer needs and outcomes.`,
                 },
               ],
               temperature: 0.3,

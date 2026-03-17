@@ -24,15 +24,15 @@ router.get(
       const orgId = req.org!.id;
       const { agentId } = req.query as Record<string, string>;
 
-      const conditions: string[] = ['organization_id = $1'];
+      const aliasedConditions: string[] = ['c.organization_id = $1'];
       const params: unknown[] = [orgId];
 
       if (agentId) {
-        conditions.push('agent_id = $2');
+        aliasedConditions.push('c.agent_id = $2');
         params.push(agentId);
       }
 
-      const where = conditions.join(' AND ');
+      const aliasedWhere = aliasedConditions.join(' AND ');
 
       const result = await query<{
         id: string;
@@ -45,12 +45,15 @@ router.get(
         funnel_stage: string;
         source_channel: string | null;
         created_at: string;
+        agent_name: string | null;
       }>(
-        `SELECT id, name, phone, email, avatar_url, ai_score, ai_service,
-                funnel_stage, source_channel, created_at
-         FROM contacts
-         WHERE ${where}
-         ORDER BY created_at DESC`,
+        `SELECT c.id, c.name, c.phone, c.email, c.avatar_url, c.ai_score, c.ai_service,
+                c.funnel_stage, c.source_channel, c.created_at,
+                a.name AS agent_name
+         FROM contacts c
+         LEFT JOIN agents a ON a.id = c.agent_id
+         WHERE ${aliasedWhere}
+         ORDER BY c.created_at DESC`,
         params
       );
 

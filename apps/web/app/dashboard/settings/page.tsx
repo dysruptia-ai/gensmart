@@ -22,7 +22,10 @@ interface OrgData {
 
 const TIMEZONES = [
   'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
-  'Europe/London', 'Europe/Paris', 'Europe/Madrid', 'America/Sao_Paulo', 'America/Mexico_City',
+  'America/Mexico_City', 'America/Guatemala', 'America/Costa_Rica', 'America/Panama',
+  'America/Bogota', 'America/Lima', 'America/Guayaquil', 'America/Caracas',
+  'America/Santo_Domingo', 'America/Santiago', 'America/Buenos_Aires', 'America/Sao_Paulo',
+  'Europe/London', 'Europe/Paris', 'Europe/Madrid',
 ];
 
 const LANGUAGES = [

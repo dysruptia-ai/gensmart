@@ -66,8 +66,45 @@
   text-overflow: ellipsis;
 }
 
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
 .date {
   font-size: 0.7rem;
   color: var(--color-text-secondary);
   margin: 0;
+}
+
+.badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.agentBadge {
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sidebar, #F5F0EB);
+  padding: 1px 6px;
+  border-radius: 4px;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channelBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--color-primary-light, #DCF8C6);
+  color: var(--color-primary-dark, #128C7E);
 }

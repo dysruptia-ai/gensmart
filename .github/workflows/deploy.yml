@@ -1,0 +1,28 @@
+name: Deploy to Lightsail
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy GenSmart
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.LIGHTSAIL_HOST }}
+          username: ${{ secrets.LIGHTSAIL_USER }}
+          key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
+          script_stop: true
+          command_timeout: 10m
+          script: |
+            cd /home/ubuntu/gensmart
+            git pull origin main
+            npm ci --production=false
+            npm run build
+            cd apps/api && npx node-pg-migrate up && cd ../..
+            pm2 reload ecosystem.config.cjs
+            echo "Deploy complete at $(date)"

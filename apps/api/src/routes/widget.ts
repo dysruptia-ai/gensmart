@@ -245,7 +245,7 @@ router.post(
       // Push to message buffer
       await pushToBuffer(sessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
 
-      res.json({ messageId: null, status: 'queued' });
+      res.json({ messageId: null, status: 'queued', conversationStatus: conv.status });
     } catch (err) {
       next(err);
     }

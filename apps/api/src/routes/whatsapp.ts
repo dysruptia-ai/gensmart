@@ -206,16 +206,7 @@ router.post(
         convStatus = newConv.rows[0]!.status;
       }
 
-      // Skip if human takeover
-      if (convStatus === 'human_takeover') {
-        console.log(`[whatsapp] Conversation ${convId} is in human takeover — skipping`);
-        return;
-      }
-
-      // Push to message buffer
-      await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds);
-
-      // Mark message as read (fire and forget)
+      // Mark message as read (fire and forget) — always, regardless of takeover status
       const waConfig = agent.whatsapp_config;
       if (waConfig?.access_token_encrypted) {
         try {
@@ -225,6 +216,49 @@ router.post(
           // Ignore decryption errors for mark-as-read
         }
       }
+
+      // During human takeover — save message + notify dashboard, skip LLM
+      if (convStatus === 'human_takeover') {
+        console.log(`[whatsapp] Conversation ${convId} in human takeover — saving message, skipping LLM`);
+
+        const msgResult = await query<{ id: string; created_at: string }>(
+          `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
+           VALUES ($1, 'user', $2, '{}', NOW())
+           RETURNING id, created_at`,
+          [convId, messageText]
+        );
+
+        await query(
+          `UPDATE conversations SET last_message_at = NOW(), message_count = message_count + 1, updated_at = NOW() WHERE id = $1`,
+          [convId]
+        );
+
+        try {
+          const { getIO } = await import('../config/websocket');
+          const io = getIO();
+          io.to(`org:${agent.organization_id}`).emit('message:new', {
+            conversationId: convId,
+            messages: [{
+              id: msgResult.rows[0]!.id,
+              role: 'user',
+              content: messageText,
+              createdAt: msgResult.rows[0]!.created_at,
+            }],
+          });
+          io.to(`org:${agent.organization_id}`).emit('conversation:update', {
+            conversationId: convId,
+            lastMessage: messageText.slice(0, 100),
+            updatedAt: new Date().toISOString(),
+          });
+        } catch {
+          // WebSocket not initialized
+        }
+
+        return;
+      }
+
+      // Push to message buffer (LLM processing)
+      await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds);
     } catch (err) {
       console.error('[whatsapp] Webhook processing error:', err);
     }

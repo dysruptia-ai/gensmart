@@ -110,9 +110,41 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     return;
   }
 
-  // Step 3: Skip if human takeover
+  // Step 3: If human takeover — save user message + notify dashboard, skip LLM
   if (conv.status === 'human_takeover') {
-    console.log(`[msg-worker] Skipping — conversation ${conversationId} is in human takeover`);
+    console.log(`[msg-worker] Human takeover — saving user message, skipping LLM`);
+
+    const msgResult = await query<{ id: string; created_at: string }>(
+      `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
+       VALUES ($1, 'user', $2, '{}', NOW())
+       RETURNING id, created_at`,
+      [conversationId, userMessage]
+    );
+
+    await query(
+      `UPDATE conversations SET last_message_at = NOW(), message_count = message_count + $1, updated_at = NOW() WHERE id = $2`,
+      [bufferedMessages.length, conversationId]
+    );
+
+    try {
+      const io = getIO();
+      const takoverMsg = [{
+        id: msgResult.rows[0]!.id,
+        role: 'user',
+        content: userMessage,
+        createdAt: msgResult.rows[0]!.created_at,
+      }];
+      io.to(`org:${organizationId}`).emit('message:new', { conversationId, messages: takoverMsg });
+      io.to(`conv:${conversationId}`).emit('message:new', { conversationId, messages: takoverMsg });
+      io.to(`org:${organizationId}`).emit('conversation:update', {
+        conversationId,
+        lastMessage: userMessage.slice(0, 100),
+        updatedAt: new Date().toISOString(),
+      });
+    } catch {
+      // WebSocket might not be initialized
+    }
+
     return;
   }
 
@@ -211,11 +243,16 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   );
   const history: ChatMessage[] = historyResult.rows
     .reverse()
-    .filter((m) => m.role === 'user' || m.role === 'assistant' || m.role === 'human')
+    .filter((m) => m.role === 'user' || m.role === 'assistant' || m.role === 'human' ||
+      (m.role === 'system' && (m.metadata as Record<string, unknown>)?.['type'] === 'intervention_summary'))
     .slice(-contextWindowMessages)
     .map((m) => ({
-      role: m.role === 'human' ? ('user' as const) : (m.role as 'user' | 'assistant'),
-      content: m.content,
+      role: m.role === 'human' ? ('assistant' as const) : (m.role === 'system' ? ('assistant' as const) : (m.role as 'user' | 'assistant')),
+      content: m.role === 'human'
+        ? `[Human agent responded]: ${m.content}`
+        : m.role === 'system'
+          ? `[Intervention summary]: ${m.content}`
+          : m.content,
     }));
 
   // Step 8: Build tools list for LLM

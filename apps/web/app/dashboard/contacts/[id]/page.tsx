@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import Spinner from '@/components/ui/Spinner';
 import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -69,37 +69,45 @@ export default function ContactDetailPage() {
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   const fetchContact = useCallback(async () => {
-    if (isDeletingRef.current) return;
+    if (isDeletingRef.current || notFound) return;
     const res = await api.get<{ contact: Contact }>(`/api/contacts/${id}`);
     setContact(res.contact);
-  }, [id]);
+  }, [id, notFound]);
 
   const fetchTimeline = useCallback(async () => {
-    if (isDeletingRef.current) return;
+    if (isDeletingRef.current || notFound) return;
     const res = await api.get<{ events: TimelineEvent[] }>(`/api/contacts/${id}/timeline`);
     setTimeline(res.events);
-  }, [id]);
+  }, [id, notFound]);
 
   const fetchAll = useCallback(async () => {
-    if (isDeletingRef.current) return;
+    if (isDeletingRef.current || notFound) return;
     setLoading(true);
     try {
-      const [contactRes, convsRes, timelineRes] = await Promise.all([
-        api.get<{ contact: Contact }>(`/api/contacts/${id}`),
+      // Fetch contact first — abort early on 404 without firing secondary requests
+      const contactRes = await api.get<{ contact: Contact }>(`/api/contacts/${id}`);
+      setContact(contactRes.contact);
+
+      // Only fetch secondary data if contact exists
+      const [convsRes, timelineRes] = await Promise.all([
         api.get<{ conversations: ConversationItem[] }>(`/api/contacts/${id}/conversations`),
         api.get<{ events: TimelineEvent[] }>(`/api/contacts/${id}/timeline`),
       ]);
-      setContact(contactRes.contact);
       setConversations(convsRes.conversations);
       setTimeline(timelineRes.events);
-    } catch {
-      toast.error(t('contacts.detail.loadFailed'));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        setNotFound(true);
+      } else {
+        toast.error(t('contacts.detail.loadFailed'));
+      }
     } finally {
       setLoading(false);
     }
-  }, [id, toast]);
+  }, [id, notFound, toast]);
 
   useEffect(() => {
     fetchAll();

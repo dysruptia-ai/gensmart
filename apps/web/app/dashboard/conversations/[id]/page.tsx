@@ -68,7 +68,8 @@ interface ConversationDetail {
 }
 
 interface OrgData {
-  organization: { plan: string };
+  plan: string;
+  [key: string]: unknown;
 }
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral'> = {
@@ -119,7 +120,7 @@ export default function ConversationDetailPage() {
   const fetchOrgPlan = useCallback(async () => {
     try {
       const data = await api.get<OrgData>('/api/organization');
-      setOrgPlan(data.organization.plan);
+      setOrgPlan(data.plan ?? 'free');
     } catch {
       // ignore
     }
@@ -135,6 +136,30 @@ export default function ConversationDetailPage() {
     joinConversation(conversationId);
     return () => leaveConversation(conversationId);
   }, [conversationId, joinConversation, leaveConversation]);
+
+  // Polling fallback during human takeover — WebSocket may miss worker emits
+  useEffect(() => {
+    if (!conversationId || conversation?.status !== 'human_takeover') return;
+    if (conversation?.takenOverBy !== user?.id) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const data = await api.get<{ conversation: ConversationDetail; messages: Message[] }>(
+          `/api/conversations/${conversationId}`
+        );
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const newMsgs = data.messages.filter((m) => !existingIds.has(m.id));
+          if (!newMsgs.length) return prev;
+          return [...prev, ...newMsgs];
+        });
+      } catch {
+        // ignore polling errors
+      }
+    }, 3000);
+
+    return () => clearInterval(pollInterval);
+  }, [conversationId, conversation?.status, conversation?.takenOverBy, user?.id]);
 
   // Scroll to bottom when messages load
   useEffect(() => {
@@ -161,9 +186,13 @@ export default function ConversationDetailPage() {
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
           const newOnes = data.messages!
-            .filter((m) => m.id && !existingIds.has(m.id))
+            .filter((m) => {
+              const msgId = m.id || `ws-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+              if (!m.id) m.id = msgId;
+              return !existingIds.has(msgId);
+            })
             .map((m) => ({
-              id: m.id!,
+              id: m.id || `ws-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
               role: m.role as Message['role'],
               content: m.content,
               metadata: (m.metadata ?? {}) as Message['metadata'],
@@ -278,7 +307,15 @@ export default function ConversationDetailPage() {
     setTimeout(scrollToBottom, 50);
 
     try {
-      await api.post(`/api/conversations/${conversationId}/message`, { content });
+      const result = await api.post<{ message: { id: string; role: string; content: string; createdAt: string } }>(
+        `/api/conversations/${conversationId}/message`,
+        { content }
+      );
+      if (result.message) {
+        setMessages((prev) => prev.map((m) =>
+          m.id === optimisticMsg.id ? { ...m, id: result.message.id, createdAt: result.message.createdAt } : m
+        ));
+      }
     } catch (err) {
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));

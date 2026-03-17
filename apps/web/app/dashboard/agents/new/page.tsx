@@ -25,7 +25,7 @@ interface Agent {
 
 export default function NewAgentPage() {
   const router = useRouter();
-  const { error: toastError } = useToast();
+  const { error: toastError, success: toastSuccess } = useToast();
   const [method, setMethod] = useState<Method | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -62,6 +62,7 @@ export default function NewAgentPage() {
         router.push('/dashboard/agents');
         return;
       }
+      toastSuccess('Agent created successfully!');
       router.push(`/dashboard/agents/${newId}`);
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : 'Failed to create agent');
@@ -80,6 +81,7 @@ export default function NewAgentPage() {
         router.push('/dashboard/agents');
         return;
       }
+      toastSuccess('Agent created successfully!');
       router.push(`/dashboard/agents/${newId}`);
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : 'Failed to create agent');

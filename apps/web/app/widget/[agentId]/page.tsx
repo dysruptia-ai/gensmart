@@ -189,6 +189,17 @@ export default function WidgetPage() {
     };
   }, [sessionId, isPending, lastMessageTime, pollMessages]);
 
+  // Background polling — catches human takeover messages and delayed responses
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const bgPoll = setInterval(() => {
+      pollMessages(sessionId, lastMessageTime);
+    }, 8000);
+
+    return () => clearInterval(bgPoll);
+  }, [sessionId, lastMessageTime, pollMessages]);
+
   function handleSend() {
     const text = input.trim();
     if (!text || !sessionId) return;
@@ -205,19 +216,30 @@ export default function WidgetPage() {
     setInput('');
     inputRef.current?.focus();
 
-    // 3. Increment pending counter (shows typing indicator, activates polling)
-    setPendingCount((n) => n + 1);
+    // 3. Send message and conditionally show typing indicator
     setLastMessageTime(new Date().toISOString());
 
-    // 4. Fire-and-forget — do NOT await
     fetch(`${API_BASE}/api/widget/${agentId}/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sessionId, message: text }),
-    }).catch(() => {
-      // POST failed — message never reached the buffer, decrement to unblock the indicator
-      setPendingCount((n) => Math.max(0, n - 1));
-    });
+    })
+      .then(async (r) => {
+        if (r.ok) {
+          const data = await r.json() as { messageId: string | null; status: string; conversationStatus?: string };
+          // Only show typing indicator when AI is handling the conversation
+          if (data.conversationStatus !== 'human_takeover') {
+            setPendingCount((n) => n + 1);
+            // Auto-clear after 30s as safety net
+            setTimeout(() => {
+              setPendingCount((n) => Math.max(0, n - 1));
+            }, 30000);
+          }
+        }
+      })
+      .catch(() => {
+        // POST failed — no typing indicator needed
+      });
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
