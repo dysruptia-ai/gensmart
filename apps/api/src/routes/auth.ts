@@ -40,12 +40,14 @@ const updateMeSchema = z.object({
 });
 
 function setRefreshCookie(res: Response, token: string): void {
+  const isProduction = process.env['NODE_ENV'] === 'production';
   res.cookie('refresh_token', token, {
     httpOnly: true,
-    secure: process.env['NODE_ENV'] === 'production',
-    sameSite: 'lax',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
+    ...(isProduction && { domain: '.gensmart.co' }),
   });
 }
 
@@ -115,7 +117,11 @@ router.post(
       if (refreshToken) {
         await authService.logout(refreshToken);
       }
-      res.clearCookie('refresh_token', { path: '/' });
+      const isProduction = process.env['NODE_ENV'] === 'production';
+      res.clearCookie('refresh_token', {
+        path: '/',
+        ...(isProduction && { domain: '.gensmart.co' }),
+      });
       res.json({ message: 'Logged out successfully' });
     } catch (err) {
       next(err);
