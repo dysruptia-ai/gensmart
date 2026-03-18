@@ -22,7 +22,8 @@ jobs:
             cd /home/ubuntu/gensmart
             git pull origin main
             npm ci --production=false
-            npm run build
-            cd apps/api && npx node-pg-migrate up && cd ../..
+            cd packages/shared && npm run build && cd ../..
+            cd apps/web && npm run build && cd ../..
+            cd apps/api && npx node-pg-migrate --migrations-dir=src/db/migrations --migration-file-language=sql up && cd ../..
             pm2 reload ecosystem.config.cjs
             echo "Deploy complete at $(date)"

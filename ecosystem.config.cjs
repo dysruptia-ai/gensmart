@@ -18,7 +18,9 @@ module.exports = {
     {
       name: 'express-api',
       cwd: '/home/ubuntu/gensmart/apps/api',
-      script: 'dist/index.js',
+      script: 'src/index.ts',
+      interpreter: './node_modules/.bin/tsx',
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PORT: 4000,
