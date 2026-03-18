@@ -219,6 +219,10 @@ export async function register(input: {
     };
   } catch (err) {
     await client.query('ROLLBACK');
+    // Handle unique constraint violation on org slug
+    if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
+      throw new AppError(409, 'Organization name already taken. Please choose a different name.', 'ORG_SLUG_TAKEN');
+    }
     throw err;
   } finally {
     client.release();

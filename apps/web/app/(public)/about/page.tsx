@@ -15,8 +15,8 @@ export default function AboutPage() {
         <p className={styles.desc}>
           We&apos;re putting the finishing touches on our About page. In the
           meantime, reach us at{' '}
-          <a href="mailto:hello@gensmart.ai" className={styles.link}>
-            hello@gensmart.ai
+          <a href="mailto:hello@gensmart.co" className={styles.link}>
+            hello@gensmart.co
           </a>
           .
         </p>

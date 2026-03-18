@@ -25,14 +25,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: post.title,
       description: post.description,
-      url: `https://gensmart.ai/blog/${slug}`,
+      url: `https://gensmart.co/blog/${slug}`,
       siteName: 'GenSmart',
       type: 'article',
       publishedTime: post.date,
       authors: [post.author],
       images: [
         {
-          url: 'https://gensmart.ai/og-image.png',
+          url: 'https://gensmart.co/og-image.png',
           width: 1200,
           height: 630,
           alt: post.title,
@@ -45,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.description,
     },
     alternates: {
-      canonical: `https://gensmart.ai/blog/${slug}`,
+      canonical: `https://gensmart.co/blog/${slug}`,
     },
   };
 }
@@ -69,9 +69,9 @@ export default async function BlogPostPage({ params }: Props) {
     publisher: {
       '@type': 'Organization',
       name: 'GenSmart',
-      url: 'https://gensmart.ai',
+      url: 'https://gensmart.co',
     },
-    url: `https://gensmart.ai/blog/${slug}`,
+    url: `https://gensmart.co/blog/${slug}`,
   };
 
   return (

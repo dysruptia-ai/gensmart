@@ -52,8 +52,8 @@ export default async function LegalPage({
         <p className={styles.desc}>
           We&apos;re working on our {page.title.toLowerCase()}. Please check
           back shortly or contact us at{' '}
-          <a href="mailto:legal@gensmart.ai" className={styles.link}>
-            legal@gensmart.ai
+          <a href="mailto:legal@gensmart.co" className={styles.link}>
+            legal@gensmart.co
           </a>{' '}
           if you have any questions.
         </p>

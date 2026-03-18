@@ -54,7 +54,7 @@ export const env = {
   SMTP_PORT: parseInt(optionalEnv('SMTP_PORT', '587'), 10),
   SMTP_USER: process.env['SMTP_USER'] ?? '',
   SMTP_PASS: process.env['SMTP_PASS'] ?? '',
-  SMTP_FROM: optionalEnv('SMTP_FROM', 'noreply@gensmart.ai'),
+  SMTP_FROM: optionalEnv('SMTP_FROM', 'noreply@gensmart.co'),
 };
 
 // Keep requireEnv available for future use

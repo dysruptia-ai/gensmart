@@ -39,7 +39,7 @@ const PLANS = [
     monthlyPrice: 199,
     features: ['Unlimited Agents', '25,000 messages/mo', 'Unlimited contacts', 'WhatsApp + Web', 'Unlimited files', 'Dedicated support'],
     ctaKey: 'landing.pricing.contactSales',
-    href: 'mailto:sales@gensmart.ai',
+    href: 'mailto:sales@gensmart.co',
     popular: false,
   },
 ];

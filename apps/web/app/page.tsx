@@ -32,11 +32,11 @@ export const metadata: Metadata = {
     title: 'GenSmart — Create & Deploy AI Agents for WhatsApp & Web',
     description:
       'Build intelligent WhatsApp & Web chatbots with built-in CRM, sales funnel, and scheduling — no coding required.',
-    url: 'https://gensmart.ai',
+    url: 'https://gensmart.co',
     siteName: 'GenSmart',
     images: [
       {
-        url: 'https://gensmart.ai/og-image.png',
+        url: 'https://gensmart.co/og-image.png',
         width: 1200,
         height: 630,
         alt: 'GenSmart — AI Agents Platform',
@@ -49,10 +49,10 @@ export const metadata: Metadata = {
     title: 'GenSmart — Create & Deploy AI Agents for WhatsApp & Web',
     description:
       'Build intelligent WhatsApp & Web chatbots with built-in CRM, sales funnel, and scheduling.',
-    images: ['https://gensmart.ai/og-image.png'],
+    images: ['https://gensmart.co/og-image.png'],
   },
   alternates: {
-    canonical: 'https://gensmart.ai',
+    canonical: 'https://gensmart.co',
   },
 };
 
@@ -61,9 +61,9 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'Organization',
-      '@id': 'https://gensmart.ai/#organization',
+      '@id': 'https://gensmart.co/#organization',
       name: 'GenSmart',
-      url: 'https://gensmart.ai',
+      url: 'https://gensmart.co',
       sameAs: [
         'https://twitter.com/gensmart_ai',
         'https://linkedin.com/company/gensmart-ai',
@@ -71,7 +71,7 @@ const jsonLd = {
     },
     {
       '@type': 'SoftwareApplication',
-      '@id': 'https://gensmart.ai/#app',
+      '@id': 'https://gensmart.co/#app',
       name: 'GenSmart',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web, WhatsApp',
@@ -83,7 +83,7 @@ const jsonLd = {
       },
       description:
         'All-in-one platform for creating and deploying AI conversational agents on WhatsApp and web.',
-      publisher: { '@id': 'https://gensmart.ai/#organization' },
+      publisher: { '@id': 'https://gensmart.co/#organization' },
     },
   ],
 };

@@ -57,7 +57,7 @@ export default function WidgetCustomizer({ agentId, initialConfig, channels, onS
     }
   }
 
-  const snippetCode = `<script src="${process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://app.gensmart.ai'}/widget.js" data-agent-id="${agentId}"></script>`;
+  const snippetCode = `<script src="${process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://app.gensmart.co'}/widget.js" data-agent-id="${agentId}"></script>`;
 
   async function handleCopy() {
     try {

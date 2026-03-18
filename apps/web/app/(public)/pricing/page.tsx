@@ -39,7 +39,7 @@ const PLANS = [
     monthlyPrice: 199,
     highlight: false,
     ctaKey: 'pricing.contactSales' as const,
-    href: 'mailto:sales@gensmart.ai',
+    href: 'mailto:sales@gensmart.co',
   },
 ];
 

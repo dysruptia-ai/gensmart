@@ -399,7 +399,7 @@ export default function WidgetPage() {
       <div className={styles.footer}>
         Powered by{' '}
         <a
-          href="https://gensmart.ai"
+          href="https://gensmart.co"
           target="_blank"
           rel="noopener noreferrer"
           className={styles.footerLink}

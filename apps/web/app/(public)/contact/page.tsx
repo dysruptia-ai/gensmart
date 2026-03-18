@@ -14,12 +14,12 @@ export default function ContactPage() {
         <p className={styles.coming}>Coming soon.</p>
         <p className={styles.desc}>
           Our contact form is on its way. For now, email us directly at{' '}
-          <a href="mailto:hello@gensmart.ai" className={styles.link}>
-            hello@gensmart.ai
+          <a href="mailto:hello@gensmart.co" className={styles.link}>
+            hello@gensmart.co
           </a>{' '}
           or reach sales at{' '}
-          <a href="mailto:sales@gensmart.ai" className={styles.link}>
-            sales@gensmart.ai
+          <a href="mailto:sales@gensmart.co" className={styles.link}>
+            sales@gensmart.co
           </a>
           .
         </p>
