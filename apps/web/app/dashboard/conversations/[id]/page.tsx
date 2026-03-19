@@ -137,10 +137,9 @@ export default function ConversationDetailPage() {
     return () => leaveConversation(conversationId);
   }, [conversationId, joinConversation, leaveConversation]);
 
-  // Polling fallback during human takeover — WebSocket may miss worker emits
+  // Polling fallback for all active conversations — WebSocket may temporarily disconnect
   useEffect(() => {
-    if (!conversationId || conversation?.status !== 'human_takeover') return;
-    if (conversation?.takenOverBy !== user?.id) return;
+    if (!conversationId || conversation?.status === 'closed') return;
 
     const pollInterval = setInterval(async () => {
       try {
@@ -153,13 +152,14 @@ export default function ConversationDetailPage() {
           if (!newMsgs.length) return prev;
           return [...prev, ...newMsgs];
         });
+        setConversation(data.conversation);
       } catch {
         // ignore polling errors
       }
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(pollInterval);
-  }, [conversationId, conversation?.status, conversation?.takenOverBy, user?.id]);
+  }, [conversationId, conversation?.status]);
 
   // Scroll to bottom when messages load
   useEffect(() => {

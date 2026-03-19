@@ -1,10 +1,67 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { getAccessToken } from '@/lib/api';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000';
+
+// Module-level singleton
+let sharedSocket: Socket | null = null;
+let currentToken: string | null = null;
+
+function getOrCreateSocket(): Socket | null {
+  const token = getAccessToken();
+  if (!token) return null;
+
+  // If socket exists and token hasn't changed, reuse it
+  if (sharedSocket && currentToken === token) {
+    if (sharedSocket.connected || sharedSocket.active) {
+      return sharedSocket;
+    }
+  }
+
+  // Token changed or no socket — (re)create
+  if (sharedSocket) {
+    sharedSocket.disconnect();
+  }
+
+  currentToken = token;
+  sharedSocket = io(API_BASE, {
+    auth: { token },
+    transports: ['websocket', 'polling'],
+    path: '/socket.io',
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    reconnectionAttempts: 10,
+  });
+
+  sharedSocket.on('connect', () => {
+    console.log('[ws] Connected:', sharedSocket?.id);
+  });
+
+  sharedSocket.on('disconnect', (reason) => {
+    console.log('[ws] Disconnected:', reason);
+  });
+
+  sharedSocket.on('connect_error', (err) => {
+    console.error('[ws] Connection error:', err.message);
+    // If auth error, try reconnecting with fresh token
+    if (err.message === 'Invalid token' || err.message === 'Authentication required') {
+      const freshToken = getAccessToken();
+      if (freshToken && freshToken !== currentToken) {
+        currentToken = freshToken;
+        if (sharedSocket) {
+          sharedSocket.auth = { token: freshToken };
+          sharedSocket.connect();
+        }
+      }
+    }
+  });
+
+  return sharedSocket;
+}
 
 export interface WebSocketEvents {
   'conversation:update': (data: {
@@ -63,83 +120,49 @@ type EventName = keyof WebSocketEvents;
 type EventHandler<E extends EventName> = WebSocketEvents[E];
 
 export function useWebSocket() {
-  const socketRef = useRef<Socket | null>(null);
+  const mountedRef = useRef(true);
 
-  const getSocket = useCallback((): Socket | null => {
-    if (socketRef.current?.connected) return socketRef.current;
-
-    const token = getAccessToken();
-    if (!token) return null;
-
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-    }
-
-    const socket = io(API_BASE, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      path: '/socket.io',
-    });
-
-    socket.on('connect', () => {
-      console.log('[ws] Connected:', socket.id);
-    });
-
-    socket.on('disconnect', (reason) => {
-      console.log('[ws] Disconnected:', reason);
-    });
-
-    socket.on('connect_error', (err) => {
-      console.error('[ws] Connection error:', err.message);
-    });
-
-    socketRef.current = socket;
-    return socket;
+  useEffect(() => {
+    mountedRef.current = true;
+    // Ensure socket is created when component mounts
+    getOrCreateSocket();
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
   const on = useCallback(
     <E extends EventName>(event: E, handler: EventHandler<E>) => {
-      const socket = getSocket();
+      const socket = getOrCreateSocket();
       if (!socket) return;
       socket.on(event as string, handler as (...args: unknown[]) => void);
     },
-    [getSocket]
+    []
   );
 
   const off = useCallback(
     <E extends EventName>(event: E, handler?: EventHandler<E>) => {
-      const socket = socketRef.current;
-      if (!socket) return;
+      if (!sharedSocket) return;
       if (handler) {
-        socket.off(event as string, handler as (...args: unknown[]) => void);
+        sharedSocket.off(event as string, handler as (...args: unknown[]) => void);
       } else {
-        socket.off(event as string);
+        sharedSocket.off(event as string);
       }
     },
     []
   );
 
-  const joinConversation = useCallback(
-    (conversationId: string) => {
-      const socket = getSocket();
-      if (socket) socket.emit('conversation:join', conversationId);
-    },
-    [getSocket]
-  );
+  const joinConversation = useCallback((conversationId: string) => {
+    const socket = getOrCreateSocket();
+    if (socket) socket.emit('conversation:join', conversationId);
+  }, []);
 
-  const leaveConversation = useCallback(
-    (conversationId: string) => {
-      const socket = socketRef.current;
-      if (socket) socket.emit('conversation:leave', conversationId);
-    },
-    []
-  );
+  const leaveConversation = useCallback((conversationId: string) => {
+    if (sharedSocket) sharedSocket.emit('conversation:leave', conversationId);
+  }, []);
 
-  useEffect(() => {
-    return () => {
-      socketRef.current?.disconnect();
-      socketRef.current = null;
-    };
+  const getSocket = useCallback((): Socket | null => {
+    return getOrCreateSocket();
   }, []);
 
   return { on, off, joinConversation, leaveConversation, getSocket };

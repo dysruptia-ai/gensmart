@@ -479,12 +479,10 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       console.error('[msg-worker] LLM failed after retry:', retryErr);
       // Save error message
       const errorMessage = 'I encountered an error processing your message. Please try again.';
-      await saveMessages(conversationId, userMessage, errorMessage, {
-        error: true,
-        errorMessage: (retryErr as Error).message,
-      });
+      const errorMeta = { error: true, errorMessage: (retryErr as Error).message };
+      const errorSaved = await saveMessages(conversationId, userMessage, errorMessage, errorMeta);
       await updateConversation(conversationId, 2);
-      notifyClients(organizationId, conversationId, userMessage, errorMessage);
+      notifyClients(organizationId, conversationId, userMessage, errorMessage, errorSaved, errorMeta);
       return;
     }
   }
@@ -494,12 +492,13 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   }
 
   // Step 10: Save messages
-  await saveMessages(conversationId, userMessage, finalResponse, {
+  const msgMetadata = {
     tokensUsed: totalTokensUsed,
     toolsCalled: toolsCalledLog,
     model: agent.llm_model,
     latencyMs: 0, // Could add timing if needed
-  });
+  };
+  const savedMessages = await saveMessages(conversationId, userMessage, finalResponse, msgMetadata);
 
   // Step 11: Update conversation stats
   await updateConversation(conversationId, bufferedMessages.length + 1);
@@ -510,7 +509,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   }
 
   // Step 13: Emit WebSocket events
-  notifyClients(organizationId, conversationId, userMessage, finalResponse);
+  notifyClients(organizationId, conversationId, userMessage, finalResponse, savedMessages, msgMetadata);
 
   // Step 14b: Trigger AI scoring after enough messages (threshold: 6)
   const updatedMessageCount = (conv.message_count ?? 0) + bufferedMessages.length + 1;
@@ -716,18 +715,37 @@ async function executeTool(
   return `Tool ${name} is not available.`;
 }
 
+interface SavedMessages {
+  userMsgId: string;
+  assistantMsgId: string;
+  userCreatedAt: string;
+  assistantCreatedAt: string;
+}
+
 async function saveMessages(
   conversationId: string,
   userMessage: string,
   assistantMessage: string,
   metadata: Record<string, unknown>
-): Promise<void> {
-  await query(
+): Promise<SavedMessages> {
+  const userResult = await query<{ id: string; created_at: string }>(
     `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
-     VALUES ($1, 'user', $2, '{}', NOW()),
-            ($1, 'assistant', $3, $4, NOW())`,
-    [conversationId, userMessage, assistantMessage, JSON.stringify(metadata)]
+     VALUES ($1, 'user', $2, '{}', NOW())
+     RETURNING id, created_at`,
+    [conversationId, userMessage]
   );
+  const assistantResult = await query<{ id: string; created_at: string }>(
+    `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
+     VALUES ($1, 'assistant', $2, $3, NOW())
+     RETURNING id, created_at`,
+    [conversationId, assistantMessage, JSON.stringify(metadata)]
+  );
+  return {
+    userMsgId: userResult.rows[0]!.id,
+    assistantMsgId: assistantResult.rows[0]!.id,
+    userCreatedAt: userResult.rows[0]!.created_at,
+    assistantCreatedAt: assistantResult.rows[0]!.created_at,
+  };
 }
 
 async function updateConversation(conversationId: string, messageDelta: number): Promise<void> {
@@ -745,23 +763,39 @@ function notifyClients(
   organizationId: string,
   conversationId: string,
   userMessage: string,
-  assistantMessage: string
+  assistantMessage: string,
+  savedMessages?: SavedMessages,
+  metadata?: Record<string, unknown>
 ): void {
   try {
     const io = getIO();
-    // Notify dashboard
-    io.to(`org:${organizationId}`).emit('conversation:update', {
+    const msgPayload = {
+      conversationId,
+      messages: [
+        {
+          id: savedMessages?.userMsgId,
+          role: 'user',
+          content: userMessage,
+          createdAt: savedMessages?.userCreatedAt,
+        },
+        {
+          id: savedMessages?.assistantMsgId,
+          role: 'assistant',
+          content: assistantMessage,
+          metadata,
+          createdAt: savedMessages?.assistantCreatedAt,
+        },
+      ],
+    };
+    const updatePayload = {
       conversationId,
       lastMessage: assistantMessage.slice(0, 100),
       updatedAt: new Date().toISOString(),
-    });
-    io.to(`org:${organizationId}`).emit('message:new', {
-      conversationId,
-      messages: [
-        { role: 'user', content: userMessage },
-        { role: 'assistant', content: assistantMessage },
-      ],
-    });
+    };
+    // Emit to both org room (conversation list) and conv room (detail page)
+    io.to(`org:${organizationId}`).emit('message:new', msgPayload);
+    io.to(`conv:${conversationId}`).emit('message:new', msgPayload);
+    io.to(`org:${organizationId}`).emit('conversation:update', updatePayload);
   } catch {
     // WebSocket might not be initialized
   }
