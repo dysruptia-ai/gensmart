@@ -66,9 +66,12 @@ export default function MessageBubble({
             <span className={styles.metaInfo}>
               {metadata.latencyMs ? `${(metadata.latencyMs / 1000).toFixed(1)}s` : ''}
               {metadata.tokensUsed ? ` · ${metadata.tokensUsed} tokens` : ''}
-              {metadata.toolsCalled?.length
-                ? ` · ${metadata.toolsCalled.map((t) => t).join(', ')}`
-                : ''}
+              {(() => {
+                const visibleTools = (metadata.toolsCalled ?? [])
+                  .map((tc) => tc.split('(')[0]?.trim())
+                  .filter((tc) => tc && tc !== 'capture_variable');
+                return visibleTools.length ? ` · ${visibleTools.join(', ')}` : '';
+              })()}
             </span>
           ) : null}
         </div>

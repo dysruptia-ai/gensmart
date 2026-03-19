@@ -148,9 +148,25 @@ export default function ConversationDetailPage() {
         );
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
-          const newMsgs = data.messages.filter((m) => !existingIds.has(m.id));
+          // Track optimistic messages (tmp-*) by content for dedup
+          const optimisticContents = new Set(
+            prev.filter((m) => m.id.startsWith('tmp-')).map((m) => `${m.role}:${m.content}`)
+          );
+          const newMsgs = data.messages.filter((m) => {
+            if (existingIds.has(m.id)) return false;
+            if (optimisticContents.has(`${m.role}:${m.content}`)) return false;
+            return true;
+          });
           if (!newMsgs.length) return prev;
-          return [...prev, ...newMsgs];
+          // Replace optimistic messages with real ones if they match
+          const replaced = prev.map((existing) => {
+            if (!existing.id.startsWith('tmp-')) return existing;
+            const match = data.messages.find(
+              (m) => m.role === existing.role && m.content === existing.content && !existingIds.has(m.id)
+            );
+            return match ? { ...existing, id: match.id, createdAt: match.createdAt } : existing;
+          });
+          return [...replaced, ...newMsgs];
         });
         setConversation(data.conversation);
       } catch {
@@ -185,11 +201,17 @@ export default function ConversationDetailPage() {
       if (data.messages) {
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
+          const optimisticContents = new Set(
+            prev.filter((m) => m.id.startsWith('tmp-')).map((m) => `${m.role}:${m.content}`)
+          );
           const newOnes = data.messages!
             .filter((m) => {
               const msgId = m.id || `ws-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
               if (!m.id) m.id = msgId;
-              return !existingIds.has(msgId);
+              if (existingIds.has(msgId)) return false;
+              // Skip if matches an optimistic message by content
+              if (optimisticContents.has(`${m.role}:${m.content}`)) return false;
+              return true;
             })
             .map((m) => ({
               id: m.id || `ws-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
