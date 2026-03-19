@@ -10,6 +10,9 @@ export async function sendTextMessage(
   to: string,
   text: string
 ): Promise<void> {
+  // Meta Cloud API requires phone numbers in format: +1234567890
+  const normalizedTo = to.startsWith('+') ? to : `+${to}`;
+
   const url = `${META_BASE_URL}/${phoneNumberId}/messages`;
   const response = await fetch(url, {
     method: 'POST',
@@ -19,7 +22,7 @@ export async function sendTextMessage(
     },
     body: JSON.stringify({
       messaging_product: 'whatsapp',
-      to,
+      to: normalizedTo,
       type: 'text',
       text: { body: text },
     }),
