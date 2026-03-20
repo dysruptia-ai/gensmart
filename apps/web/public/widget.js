@@ -11,16 +11,31 @@
     return;
   }
 
-  // Derive base URL from script src (e.g. https://app.gensmart.ai/widget.js -> https://app.gensmart.ai)
+  // Derive base URL from script src (e.g. https://gensmart.co/widget.js -> https://gensmart.co)
   var scriptSrc = scriptTag.src || '';
   var baseUrl = scriptSrc.replace(/\/widget\.js(\?.*)?$/, '') || window.location.origin;
+
+  // API base: prefer data-api-url attribute, otherwise derive from baseUrl
+  // e.g. https://gensmart.co -> https://api.gensmart.co
+  var apiBase = scriptTag.getAttribute('data-api-url');
+  if (!apiBase) {
+    try {
+      var urlObj = new URL(baseUrl);
+      if (!urlObj.hostname.startsWith('api.')) {
+        urlObj.hostname = 'api.' + urlObj.hostname;
+      }
+      apiBase = urlObj.origin;
+    } catch (e) {
+      apiBase = baseUrl;
+    }
+  }
 
   var isOpen = false;
   var bubbleEl = null;
   var containerEl = null;
 
   function fetchConfig(cb) {
-    var url = baseUrl + '/api/widget/' + agentId + '/config';
+    var url = apiBase + '/api/widget/' + agentId + '/config';
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.onreadystatechange = function () {
