@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     title: 'Blog — GenSmart',
     description:
       'Insights on AI agents, WhatsApp automation, CRM, and business growth.',
-    url: 'https://gensmart.co/blog',
+    url: 'https://www.gensmart.co/blog',
     siteName: 'GenSmart',
     type: 'website',
   },

@@ -5,6 +5,8 @@ import { ArrowLeft, Tag, Calendar, User } from 'lucide-react';
 import { getPostBySlug, getAllSlugs } from '@/lib/blog';
 import styles from './post.module.css';
 
+const SITE_URL = process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://www.gensmart.co';
+
 interface Props {
   params: Promise<{ slug: string }>;
 }
@@ -25,14 +27,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: {
       title: post.title,
       description: post.description,
-      url: `https://gensmart.co/blog/${slug}`,
+      url: `${SITE_URL}/blog/${slug}`,
       siteName: 'GenSmart',
       type: 'article',
       publishedTime: post.date,
       authors: [post.author],
       images: [
         {
-          url: 'https://gensmart.co/og-image.png',
+          url: `${SITE_URL}/og-image.png`,
           width: 1200,
           height: 630,
           alt: post.title,
@@ -45,7 +47,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: post.description,
     },
     alternates: {
-      canonical: `https://gensmart.co/blog/${slug}`,
+      canonical: `${SITE_URL}/blog/${slug}`,
     },
   };
 }
@@ -69,9 +71,9 @@ export default async function BlogPostPage({ params }: Props) {
     publisher: {
       '@type': 'Organization',
       name: 'GenSmart',
-      url: 'https://gensmart.co',
+      url: SITE_URL,
     },
-    url: `https://gensmart.co/blog/${slug}`,
+    url: `${SITE_URL}/blog/${slug}`,
   };
 
   return (

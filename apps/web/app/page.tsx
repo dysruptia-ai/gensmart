@@ -32,11 +32,11 @@ export const metadata: Metadata = {
     title: 'GenSmart — Create & Deploy AI Agents for WhatsApp & Web',
     description:
       'Build intelligent WhatsApp & Web chatbots with built-in CRM, sales funnel, and scheduling — no coding required.',
-    url: 'https://gensmart.co',
+    url: 'https://www.gensmart.co',
     siteName: 'GenSmart',
     images: [
       {
-        url: 'https://gensmart.co/og-image.png',
+        url: 'https://www.gensmart.co/og-image.png',
         width: 1200,
         height: 630,
         alt: 'GenSmart — AI Agents Platform',
@@ -49,10 +49,10 @@ export const metadata: Metadata = {
     title: 'GenSmart — Create & Deploy AI Agents for WhatsApp & Web',
     description:
       'Build intelligent WhatsApp & Web chatbots with built-in CRM, sales funnel, and scheduling.',
-    images: ['https://gensmart.co/og-image.png'],
+    images: ['https://www.gensmart.co/og-image.png'],
   },
   alternates: {
-    canonical: 'https://gensmart.co',
+    canonical: 'https://www.gensmart.co',
   },
 };
 
@@ -61,9 +61,9 @@ const jsonLd = {
   '@graph': [
     {
       '@type': 'Organization',
-      '@id': 'https://gensmart.co/#organization',
+      '@id': 'https://www.gensmart.co/#organization',
       name: 'GenSmart',
-      url: 'https://gensmart.co',
+      url: 'https://www.gensmart.co',
       sameAs: [
         'https://twitter.com/gensmart_ai',
         'https://linkedin.com/company/gensmart-ai',
@@ -71,7 +71,7 @@ const jsonLd = {
     },
     {
       '@type': 'SoftwareApplication',
-      '@id': 'https://gensmart.co/#app',
+      '@id': 'https://www.gensmart.co/#app',
       name: 'GenSmart',
       applicationCategory: 'BusinessApplication',
       operatingSystem: 'Web, WhatsApp',
@@ -83,7 +83,7 @@ const jsonLd = {
       },
       description:
         'All-in-one platform for creating and deploying AI conversational agents on WhatsApp and web.',
-      publisher: { '@id': 'https://gensmart.co/#organization' },
+      publisher: { '@id': 'https://www.gensmart.co/#organization' },
     },
   ],
 };

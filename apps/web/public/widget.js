@@ -11,16 +11,20 @@
     return;
   }
 
-  // Derive base URL from script src (e.g. https://gensmart.co/widget.js -> https://gensmart.co)
+  // Derive base URL from script src (e.g. https://www.gensmart.co/widget.js -> https://www.gensmart.co)
   var scriptSrc = scriptTag.src || '';
   var baseUrl = scriptSrc.replace(/\/widget\.js(\?.*)?$/, '') || window.location.origin;
 
   // API base: prefer data-api-url attribute, otherwise derive from baseUrl
-  // e.g. https://gensmart.co -> https://api.gensmart.co
+  // e.g. https://www.gensmart.co -> https://api.gensmart.co
   var apiBase = scriptTag.getAttribute('data-api-url');
   if (!apiBase) {
     try {
       var urlObj = new URL(baseUrl);
+      // Strip www. prefix before adding api. prefix
+      if (urlObj.hostname.startsWith('www.')) {
+        urlObj.hostname = urlObj.hostname.substring(4);
+      }
       if (!urlObj.hostname.startsWith('api.')) {
         urlObj.hostname = 'api.' + urlObj.hostname;
       }

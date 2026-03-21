@@ -28,8 +28,16 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+const corsOrigins = [env.FRONTEND_URL];
+// Always allow both www and non-www variants
+if (env.FRONTEND_URL.includes('://www.')) {
+  corsOrigins.push(env.FRONTEND_URL.replace('://www.', '://'));
+} else {
+  corsOrigins.push(env.FRONTEND_URL.replace('://', '://www.'));
+}
+
 app.use(cors({
-  origin: [env.FRONTEND_URL, env.FRONTEND_URL.replace('https://', 'https://www.')],
+  origin: corsOrigins,
   credentials: true,
 }));
 
