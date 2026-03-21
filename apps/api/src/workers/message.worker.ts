@@ -466,8 +466,17 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         toolResults.push({ toolCallId: toolCall.id, content: result });
       }
 
-      // Append assistant message with tool calls + tool results to history
-      // For next iteration, add tool_results as user messages (simplified)
+      // Append the assistant's response (including what tools it called) so the LLM
+      // knows it already invoked these tools and doesn't re-call them.
+      const toolCallSummary = response.toolCalls
+        .map((tc) => `${tc.name}(${JSON.stringify(tc.arguments)})`)
+        .join(', ');
+      currentMessages.push({
+        role: 'assistant' as const,
+        content: response.content || `[Called tools: ${toolCallSummary}]`,
+      });
+
+      // Add tool results so the LLM can formulate a final answer
       for (const result of toolResults) {
         currentMessages.push({
           role: 'user' as const,
