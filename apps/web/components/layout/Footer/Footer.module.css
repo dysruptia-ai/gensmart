@@ -13,7 +13,7 @@
 /* Columns */
 .columns {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-12);
   padding-bottom: var(--space-12);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -82,6 +82,12 @@
 .copyright {
   font-size: var(--font-sm);
   color: #6b7280;
+}
+
+.trademark {
+  font-size: var(--font-xs);
+  color: #6b7280;
+  margin-bottom: var(--space-1);
 }
 
 /* Language selector */

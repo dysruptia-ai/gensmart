@@ -1,0 +1,34 @@
+# GenSmart
+
+> No-code AI agent builder for WhatsApp & Web. Create, deploy, and manage intelligent conversational AI agents with built-in CRM, lead scoring, sales funnel, and appointment scheduling.
+
+## About
+
+GenSmart is a SaaS platform by Dysruptia LLC that enables businesses, freelancers, and automation agencies to build and deploy AI conversational agents on WhatsApp and Web channels — without complex tools like N8N or custom code. Deploy an AI agent in minutes, not weeks.
+
+## Key Features
+
+- AI Agent Builder: Create intelligent chatbots with custom prompts, variables, and knowledge base (RAG)
+- WhatsApp & Web Channels: Deploy agents on WhatsApp Business API and embeddable web widget
+- Smart CRM: AI-powered lead scoring, contact management, and conversation tracking
+- Sales Funnel: Visual Kanban board for lead/opportunity/customer pipeline
+- Appointment Scheduling: AI agents can check availability and book appointments
+- Human Takeover: Seamlessly transfer conversations from AI to human agents
+- Knowledge Base: Upload documents and URLs for RAG-powered contextual responses
+- Custom Functions: Connect agents to external APIs for real-time data retrieval
+- Multi-LLM Support: GPT-4o, GPT-4o-mini, Claude Sonnet, Claude Haiku
+- No-Code: No programming required to create and deploy agents
+
+## Plans
+
+- Free: 1 agent, 50 messages/month, web only
+- Starter ($29/mo): 3 agents, 1,000 messages/month, WhatsApp + web
+- Pro ($79/mo): 10 agents, 5,000 messages/month, all models
+- Enterprise ($199/mo): Unlimited agents, 25,000 messages/month, BYO API key
+
+## Links
+
+- Website: https://www.gensmart.co
+- Pricing: https://www.gensmart.co/pricing
+- Blog: https://www.gensmart.co/blog
+- Contact: hello@gensmart.co

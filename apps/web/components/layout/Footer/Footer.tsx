@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Twitter, Linkedin, Globe } from 'lucide-react';
+import { Facebook, Globe } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -14,11 +14,6 @@ const PRODUCT_LINKS = [
   { labelKey: 'landing.footer.docs', href: '/docs/whatsapp-setup' },
 ];
 
-const COMPANY_LINKS = [
-  { labelKey: 'landing.footer.about', href: '/about' },
-  { labelKey: 'landing.footer.contact', href: '/contact' },
-];
-
 const LEGAL_LINKS = [
   { labelKey: 'landing.footer.privacy', href: '/legal/privacy-policy' },
   { labelKey: 'landing.footer.terms', href: '/legal/terms-of-service' },
@@ -26,8 +21,7 @@ const LEGAL_LINKS = [
 ];
 
 const SOCIAL_LINKS = [
-  { label: 'Twitter / X', href: 'https://twitter.com/gensmart_ai', icon: Twitter },
-  { label: 'LinkedIn', href: 'https://linkedin.com/company/gensmart-ai', icon: Linkedin },
+  { label: 'Facebook', href: 'https://facebook.com/gensmartai', icon: Facebook },
 ];
 
 const LANGUAGES = [
@@ -47,19 +41,6 @@ export function Footer() {
             <h3 className={styles.columnTitle}>{t('landing.footer.product')}</h3>
             <ul className={styles.linkList}>
               {PRODUCT_LINKS.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className={styles.link}>
-                    {t(l.labelKey)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>{t('landing.footer.company')}</h3>
-            <ul className={styles.linkList}>
-              {COMPANY_LINKS.map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className={styles.link}>
                     {t(l.labelKey)}
@@ -106,9 +87,10 @@ export function Footer() {
         <div className={styles.bottom}>
           <div className={styles.bottomLeft}>
             <Logo size="md" variant="full" color="white" href="/" />
-            <p className={styles.copyright}>
-              {t('landing.footer.copyright', { year: new Date().getFullYear() })}
-            </p>
+            <div className={styles.copyright}>
+              <p className={styles.trademark}>GenSmart is a registered trademark of Dysruptia LLC</p>
+              <p>&copy; {new Date().getFullYear()} Dysruptia LLC. All rights reserved.</p>
+            </div>
           </div>
 
           <div className={styles.languageSelector} aria-label="Language selector">

@@ -1,6 +1,10 @@
 User-agent: *
 Allow: /
 Disallow: /dashboard
+Disallow: /dashboard/*
 Disallow: /api
+Disallow: /api/*
+Disallow: /widget/
+Disallow: /design-system
 
-Sitemap: https://gensmart.ai/sitemap.xml
+Sitemap: https://www.gensmart.co/sitemap.xml

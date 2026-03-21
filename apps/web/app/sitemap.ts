@@ -50,5 +50,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...blogRoutes];
+  const legalRoutes: MetadataRoute.Sitemap = [
+    { url: `${BASE_URL}/legal/privacy-policy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/legal/terms-of-service`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${BASE_URL}/legal/cookie-policy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+  ];
+
+  return [...staticRoutes, ...blogRoutes, ...legalRoutes];
 }

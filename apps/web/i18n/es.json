@@ -62,8 +62,8 @@
       "howItWorks": "Cómo funciona"
     },
     "hero": {
-      "title": "Crea e implementa agentes de IA en minutos, no en semanas",
-      "subtitle": "Construye agentes conversacionales inteligentes para WhatsApp y la web. Captura leads, agenda citas y califica prospectos — de forma automática.",
+      "title": "Crea y Despliega Agentes IA para WhatsApp y Web en Minutos",
+      "subtitle": "Plataforma sin código para crear chatbots inteligentes con CRM integrado, scoring de leads y agendamiento. Reemplaza semanas de configuración por minutos.",
       "cta": "Comenzar gratis",
       "ctaSecondary": "Ver demo",
       "noCard": "No se requiere tarjeta de crédito",
@@ -72,9 +72,9 @@
       "uptime": "Disponibilidad",
       "badge": "Agentes de IA para WhatsApp y Web",
       "freeForeverHint": "Sin tarjeta de crédito · Plan gratuito para siempre",
-      "titleStart": "Crea e implementa agentes de IA en",
-      "titleHighlight": "minutos",
-      "titleEnd": ", no en semanas"
+      "titleStart": "Crea y Despliega ",
+      "titleHighlight": "Agentes IA",
+      "titleEnd": " para WhatsApp y Web en Minutos"
     },
     "features": {
       "title": "Todo lo que necesitas para convertir visitantes en clientes",
@@ -213,20 +213,18 @@
     },
     "footer": {
       "product": "Producto",
-      "company": "Empresa",
       "legal": "Legal",
       "connect": "Síguenos",
       "language": "Idioma",
-      "copyright": "© {year} GenSmart. Todos los derechos reservados.",
+      "copyright": "© {year} Dysruptia LLC. Todos los derechos reservados.",
+      "trademark": "GenSmart es una marca registrada de Dysruptia LLC",
       "privacy": "Política de privacidad",
       "terms": "Términos de servicio",
       "cookie": "Política de cookies",
       "features": "Funcionalidades",
       "pricing": "Precios",
       "blog": "Blog",
-      "docs": "Documentación",
-      "about": "Acerca de",
-      "contact": "Contacto"
+      "docs": "Documentación"
     },
     "problemSolution": {
       "title": "Deja de luchar con herramientas complejas",

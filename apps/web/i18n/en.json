@@ -62,8 +62,8 @@
       "howItWorks": "How It Works"
     },
     "hero": {
-      "title": "Create & Deploy AI Agents in Minutes, Not Weeks",
-      "subtitle": "Build intelligent conversational agents for WhatsApp and Web. Capture leads, book appointments, and qualify prospects — automatically.",
+      "title": "Build & Deploy AI Agents for WhatsApp & Web in Minutes",
+      "subtitle": "No-code platform to create intelligent chatbots with built-in CRM, lead scoring, and scheduling. Replace weeks of setup with minutes.",
       "cta": "Start Free",
       "ctaSecondary": "See Demo",
       "noCard": "No credit card required",
@@ -72,9 +72,9 @@
       "uptime": "Uptime",
       "badge": "AI Agents for WhatsApp & Web",
       "freeForeverHint": "No credit card required · Free forever plan",
-      "titleStart": "Create & Deploy AI Agents in",
-      "titleHighlight": "Minutes",
-      "titleEnd": ", Not Weeks"
+      "titleStart": "Build & Deploy ",
+      "titleHighlight": "AI Agents",
+      "titleEnd": " for WhatsApp & Web in Minutes"
     },
     "features": {
       "title": "Everything you need to convert visitors into customers",
@@ -213,20 +213,18 @@
     },
     "footer": {
       "product": "Product",
-      "company": "Company",
       "legal": "Legal",
       "connect": "Connect",
       "language": "Language",
-      "copyright": "© {year} GenSmart. All rights reserved.",
+      "copyright": "© {year} Dysruptia LLC. All rights reserved.",
+      "trademark": "GenSmart is a registered trademark of Dysruptia LLC",
       "privacy": "Privacy Policy",
       "terms": "Terms of Service",
       "cookie": "Cookie Policy",
       "features": "Features",
       "pricing": "Pricing",
       "blog": "Blog",
-      "docs": "Docs",
-      "about": "About",
-      "contact": "Contact"
+      "docs": "Docs"
     },
     "problemSolution": {
       "title": "Stop Fighting with Complex Tools",

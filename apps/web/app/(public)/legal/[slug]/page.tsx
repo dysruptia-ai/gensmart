@@ -1,24 +1,33 @@
 import type { Metadata } from 'next';
+import fs from 'fs';
+import path from 'path';
+import matter from 'gray-matter';
+import { marked } from 'marked';
 import { notFound } from 'next/navigation';
 import styles from './legal.module.css';
 
-const LEGAL_PAGES: Record<string, { title: string; description: string }> = {
-  'privacy-policy': {
-    title: 'Privacy Policy',
-    description: 'How we collect, use, and protect your data.',
-  },
-  'terms-of-service': {
-    title: 'Terms of Service',
-    description: 'The terms and conditions governing your use of GenSmart.',
-  },
-  'cookie-policy': {
-    title: 'Cookie Policy',
-    description: 'How we use cookies and similar tracking technologies.',
-  },
-};
+const LEGAL_DIR = path.join(process.cwd(), 'content', 'legal');
+
+const LEGAL_SLUGS = ['privacy-policy', 'terms-of-service', 'cookie-policy'];
+
+function getLegalPage(slug: string) {
+  const filePath = path.join(LEGAL_DIR, `${slug}.md`);
+  if (!fs.existsSync(filePath)) return null;
+
+  const raw = fs.readFileSync(filePath, 'utf-8');
+  const { data, content } = matter(raw);
+  const html = marked(content) as string;
+
+  return {
+    title: (data['title'] as string) || slug,
+    description: (data['description'] as string) || '',
+    lastUpdated: (data['lastUpdated'] as string) || '',
+    html,
+  };
+}
 
 export function generateStaticParams() {
-  return Object.keys(LEGAL_PAGES).map((slug) => ({ slug }));
+  return LEGAL_SLUGS.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({
@@ -27,7 +36,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const page = LEGAL_PAGES[slug];
+  const page = getLegalPage(slug);
   if (!page) return {};
   return {
     title: `${page.title} — GenSmart`,
@@ -41,22 +50,19 @@ export default async function LegalPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const page = LEGAL_PAGES[slug];
+
+  if (!LEGAL_SLUGS.includes(slug)) notFound();
+
+  const page = getLegalPage(slug);
   if (!page) notFound();
 
   return (
     <div className={styles.page}>
       <div className={styles.inner}>
-        <h1 className={styles.title}>{page.title}</h1>
-        <p className={styles.coming}>This page is coming soon.</p>
-        <p className={styles.desc}>
-          We&apos;re working on our {page.title.toLowerCase()}. Please check
-          back shortly or contact us at{' '}
-          <a href="mailto:legal@gensmart.co" className={styles.link}>
-            legal@gensmart.co
-          </a>{' '}
-          if you have any questions.
-        </p>
+        <div
+          className={styles.content}
+          dangerouslySetInnerHTML={{ __html: page.html }}
+        />
       </div>
     </div>
   );

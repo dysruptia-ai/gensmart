@@ -15,23 +15,30 @@ import { FAQ } from '@/components/landing/FAQ';
 import { FinalCTA } from '@/components/landing/FinalCTA';
 
 export const metadata: Metadata = {
-  title: 'GenSmart — Create & Deploy AI Agents for WhatsApp & Web',
+  title: 'GenSmart — Build & Deploy AI Agents for WhatsApp & Web in Minutes',
   description:
-    'Build intelligent WhatsApp & Web chatbots with built-in CRM, sales funnel, and scheduling — no coding required. Start free in minutes.',
+    'No-code AI agent builder for WhatsApp & Web. Create intelligent chatbots with built-in CRM, lead scoring, sales funnel, and appointment scheduling. Deploy in minutes, not weeks. Start free.',
   keywords: [
-    'AI agents',
-    'WhatsApp chatbot',
-    'AI automation',
-    'lead scoring',
-    'CRM',
-    'chatbot builder',
-    'WhatsApp Business',
-    'conversational AI',
+    'AI agent builder',
+    'WhatsApp AI chatbot',
+    'no-code AI agent platform',
+    'AI chatbot for small business',
+    'WhatsApp Business automation',
+    'AI-powered lead capture',
+    'deploy AI agent in minutes',
+    'conversational AI platform',
+    'AI customer service chatbot',
+    'chatbot builder with CRM',
+    'WhatsApp chatbot no code',
+    'AI sales agent',
+    'automated customer support',
+    'AI agent for WhatsApp Business',
+    'build AI chatbot without coding',
   ],
   openGraph: {
-    title: 'GenSmart — Create & Deploy AI Agents for WhatsApp & Web',
+    title: 'GenSmart — Build & Deploy AI Agents for WhatsApp & Web in Minutes',
     description:
-      'Build intelligent WhatsApp & Web chatbots with built-in CRM, sales funnel, and scheduling — no coding required.',
+      'No-code AI agent builder for WhatsApp & Web. Create intelligent chatbots with built-in CRM, lead scoring, sales funnel, and appointment scheduling. Deploy in minutes, not weeks.',
     url: 'https://www.gensmart.co',
     siteName: 'GenSmart',
     images: [
@@ -46,9 +53,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'GenSmart — Create & Deploy AI Agents for WhatsApp & Web',
+    title: 'GenSmart — Build & Deploy AI Agents for WhatsApp & Web in Minutes',
     description:
-      'Build intelligent WhatsApp & Web chatbots with built-in CRM, sales funnel, and scheduling.',
+      'No-code AI agent builder for WhatsApp & Web. Create intelligent chatbots with built-in CRM, lead scoring, sales funnel, and appointment scheduling.',
     images: ['https://www.gensmart.co/og-image.png'],
   },
   alternates: {
