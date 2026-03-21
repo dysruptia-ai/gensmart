@@ -120,15 +120,24 @@ export async function executeCustomFunction(
     const responseData: unknown = await response.json();
 
     // Apply response mapping
+    // Frontend saves { path, format }, interface expects { path, displayFormat }
+    const mappingFormat = responseMapping?.displayFormat ?? (responseMapping as Record<string, unknown>)?.['format'] as string | undefined;
+
     if (responseMapping?.path) {
       const extracted = resolvePath(responseData, responseMapping.path);
-      if (responseMapping.displayFormat) {
-        return responseMapping.displayFormat.replace(
+      if (mappingFormat) {
+        return mappingFormat.replace(
           /\{\{value\}\}/g,
-          String(extracted ?? '')
+          typeof extracted === 'object' ? JSON.stringify(extracted) : String(extracted ?? '')
         );
       }
-      return String(extracted ?? JSON.stringify(responseData));
+      // If extracted is an object, stringify it so the LLM gets readable JSON
+      if (extracted === null || extracted === undefined) {
+        return JSON.stringify(responseData, null, 2);
+      }
+      return typeof extracted === 'object'
+        ? JSON.stringify(extracted, null, 2)
+        : String(extracted);
     }
 
     return typeof responseData === 'string'
