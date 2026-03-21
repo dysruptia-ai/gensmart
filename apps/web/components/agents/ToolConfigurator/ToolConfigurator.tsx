@@ -633,6 +633,14 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                   <option>number</option>
                   <option>boolean</option>
                 </select>
+                <label className={styles.paramRequired} title="Required parameter">
+                  <input
+                    type="checkbox"
+                    checked={p.required}
+                    onChange={(e) => updateParam(i, { required: e.target.checked })}
+                  />
+                  <span>Req</span>
+                </label>
                 <button className={styles.iconBtn} onClick={() => removeParam(i)} aria-label="Remove param">
                   <X size={14} />
                 </button>

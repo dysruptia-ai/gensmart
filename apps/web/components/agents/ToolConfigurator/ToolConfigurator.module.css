@@ -548,9 +548,27 @@
 
 .paramRow {
   display: grid;
-  grid-template-columns: 1fr 90px auto;
+  grid-template-columns: 1fr 90px auto auto;
   gap: 0.5rem;
   align-items: center;
+}
+
+.paramRequired {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.paramRequired input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
 }
 
 .addParamBtn {

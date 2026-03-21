@@ -265,13 +265,32 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // Custom functions
   for (const tool of agentTools) {
-    if (tool.type === 'custom_function') {
+    if (tool.type === 'custom_function' && tool.is_enabled) {
       const cfg = tool.config;
-      const parameters = (cfg['parameters'] as Record<string, unknown>) ?? {
-        type: 'object',
-        properties: {},
-        required: [],
-      };
+
+      // Frontend stores params as array: [{name, type, required}, ...]
+      // LLM needs JSON Schema: {type:'object', properties:{...}, required:[...]}
+      let parameters: Record<string, unknown>;
+      const rawParams = cfg['parameters'] ?? cfg['params'];
+
+      if (Array.isArray(rawParams)) {
+        const properties: Record<string, { type: string; description: string }> = {};
+        const required: string[] = [];
+        for (const p of rawParams as Array<{ name: string; type: string; required?: boolean; description?: string }>) {
+          if (!p.name) continue;
+          properties[p.name] = {
+            type: p.type || 'string',
+            description: p.description || p.name,
+          };
+          if (p.required) required.push(p.name);
+        }
+        parameters = { type: 'object', properties, required };
+      } else if (rawParams && typeof rawParams === 'object' && (rawParams as Record<string, unknown>)['type'] === 'object') {
+        parameters = rawParams as Record<string, unknown>;
+      } else {
+        parameters = { type: 'object', properties: {}, required: [] };
+      }
+
       llmTools.push({
         name: tool.name.replace(/\s+/g, '_').toLowerCase(),
         description: tool.description ?? tool.name,
