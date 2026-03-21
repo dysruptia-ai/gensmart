@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import type { ChatMessage } from '../services/llm.service';
 import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
@@ -847,9 +848,12 @@ router.post(
       let finalResponse = '';
       let totalTokens = 0;
 
-      const messages: { role: 'user' | 'assistant'; content: string }[] = [
-        ...history,
-        { role: 'user', content: message.trim() },
+      const messages: ChatMessage[] = [
+        ...history.map((h: { role: string; content: string }) => ({
+          role: h.role as 'user' | 'assistant',
+          content: h.content,
+        })),
+        { role: 'user' as const, content: message.trim() },
       ];
 
       let currentMessages = [...messages];
@@ -874,13 +878,15 @@ router.post(
           break;
         }
 
+        const previewToolResults: Array<{ toolCallId: string; content: string }> = [];
+
         for (const tc of response.toolCalls) {
           toolsCalledLog.push(tc.name);
           if (tc.name === 'capture_variable') {
             const name = String(tc.arguments['variable_name'] ?? '');
             const val = String(tc.arguments['variable_value'] ?? '');
             capturedVars[name] = val;
-            currentMessages.push({ role: 'user', content: `[Tool result]: Variable '${name}' captured: ${val}` });
+            previewToolResults.push({ toolCallId: tc.id, content: `Variable '${name}' captured: ${val}` });
           } else if (tc.name === 'check_availability') {
             const { getAvailableSlots } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
@@ -897,7 +903,7 @@ router.post(
                 slotResult = `Could not check availability for ${date}.`;
               }
             }
-            currentMessages.push({ role: 'user', content: `[Tool result for check_availability]: ${slotResult}` });
+            previewToolResults.push({ toolCallId: tc.id, content: slotResult });
           } else if (tc.name === 'book_appointment') {
             const { createAppointment } = await import('../services/appointment.service');
             const { localTimeToUTC } = await import('../services/calendar.service');
@@ -930,7 +936,7 @@ router.post(
                 bookResult = `Could not book appointment: ${(err as Error).message}`;
               }
             }
-            currentMessages.push({ role: 'user', content: `[Tool result for book_appointment]: ${bookResult}` });
+            previewToolResults.push({ toolCallId: tc.id, content: bookResult });
           } else {
             const toolDef = toolsResult.rows.find(
               (t) => t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
@@ -940,18 +946,21 @@ router.post(
                 toolDef.config as unknown as Parameters<typeof executeCustomFunction>[0],
                 tc.arguments
               );
-              currentMessages.push({ role: 'user', content: `[Tool result for ${tc.name}]: ${result}` });
+              previewToolResults.push({ toolCallId: tc.id, content: result });
             }
           }
         }
 
-        // Add assistant message with tool call info (same fix as message.worker.ts #58)
-        const toolCallSummary = response.toolCalls
-          .map((tc) => `${tc.name}(${JSON.stringify(tc.arguments)})`)
-          .join(', ');
+        // Append structured assistant + tool result messages (Anthropic-compatible)
         currentMessages.push({
           role: 'assistant' as const,
-          content: response.content || `[Called tools: ${toolCallSummary}]`,
+          content: response.content || '',
+          toolCalls: response.toolCalls,
+        });
+        currentMessages.push({
+          role: 'user' as const,
+          content: '',
+          toolResults: previewToolResults,
         });
 
         if (response.content.trim()) finalResponse = response.content;

@@ -15,6 +15,13 @@ export const LLM_MODELS = {
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  // For tool call responses (assistant message that invoked tools)
+  toolCalls?: ToolCall[];
+  // For tool result messages
+  toolResults?: Array<{
+    toolCallId: string;
+    content: string;
+  }>;
 }
 
 export interface ToolDefinition {
@@ -88,9 +95,42 @@ export async function chat(params: ChatParams): Promise<ChatResponse> {
 async function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
   const client = getOpenAIClient(params.byoApiKey);
 
-  const messages: OpenAI.ChatCompletionMessageParam[] = params.system
-    ? [{ role: 'system', content: params.system }, ...params.messages]
-    : [...params.messages];
+  const messages: OpenAI.ChatCompletionMessageParam[] = [];
+
+  if (params.system) {
+    messages.push({ role: 'system', content: params.system });
+  }
+
+  for (const m of params.messages) {
+    if (m.role === 'system') {
+      messages.push({ role: 'system', content: m.content });
+    } else if (m.toolCalls && m.toolCalls.length > 0) {
+      // Assistant message with tool calls
+      messages.push({
+        role: 'assistant',
+        content: m.content || null,
+        tool_calls: m.toolCalls.map((tc) => ({
+          id: tc.id,
+          type: 'function' as const,
+          function: {
+            name: tc.name,
+            arguments: JSON.stringify(tc.arguments),
+          },
+        })),
+      });
+    } else if (m.toolResults && m.toolResults.length > 0) {
+      // Tool result messages — OpenAI expects one message per tool call
+      for (const tr of m.toolResults) {
+        messages.push({
+          role: 'tool',
+          tool_call_id: tr.toolCallId,
+          content: tr.content,
+        } as OpenAI.ChatCompletionToolMessageParam);
+      }
+    } else {
+      messages.push({ role: m.role as 'user' | 'assistant', content: m.content });
+    }
+  }
 
   const tools: OpenAI.ChatCompletionTool[] | undefined = params.tools?.map((t) => ({
     type: 'function' as const,
@@ -139,13 +179,54 @@ async function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
 async function chatAnthropic(params: ChatParams): Promise<ChatResponse> {
   const client = getAnthropicClient(params.byoApiKey);
 
-  // Anthropic requires messages to alternate user/assistant
-  const messages: Anthropic.MessageParam[] = params.messages
-    .filter((m) => m.role !== 'system')
-    .map((m) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
-    }));
+  const rawMessages: Anthropic.MessageParam[] = [];
+
+  for (const m of params.messages) {
+    if (m.role === 'system') continue; // System is passed separately
+
+    if (m.toolCalls && m.toolCalls.length > 0) {
+      // Assistant message with tool calls
+      const content: Anthropic.ContentBlockParam[] = [];
+      if (m.content) {
+        content.push({ type: 'text', text: m.content });
+      }
+      for (const tc of m.toolCalls) {
+        content.push({
+          type: 'tool_use',
+          id: tc.id,
+          name: tc.name,
+          input: tc.arguments,
+        });
+      }
+      rawMessages.push({ role: 'assistant', content });
+    } else if (m.toolResults && m.toolResults.length > 0) {
+      // Tool results — Anthropic expects role: 'user' with tool_result content blocks
+      const content: Anthropic.ToolResultBlockParam[] = m.toolResults.map((tr) => ({
+        type: 'tool_result' as const,
+        tool_use_id: tr.toolCallId,
+        content: tr.content,
+      }));
+      rawMessages.push({ role: 'user', content });
+    } else {
+      rawMessages.push({
+        role: m.role as 'user' | 'assistant',
+        content: m.content,
+      });
+    }
+  }
+
+  // Ensure strict alternation for Anthropic (merge consecutive same-role messages)
+  const messages: Anthropic.MessageParam[] = [];
+  for (const msg of rawMessages) {
+    if (messages.length > 0 && messages[messages.length - 1].role === msg.role) {
+      const prev = messages[messages.length - 1];
+      const prevContent = Array.isArray(prev.content) ? prev.content : [{ type: 'text' as const, text: prev.content }];
+      const newContent = Array.isArray(msg.content) ? msg.content : [{ type: 'text' as const, text: msg.content }];
+      prev.content = [...prevContent, ...newContent];
+    } else {
+      messages.push({ ...msg });
+    }
+  }
 
   const tools: Anthropic.Tool[] | undefined = params.tools?.map((t) => ({
     name: t.name,
