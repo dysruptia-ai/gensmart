@@ -14,6 +14,7 @@ import organizationRouter from './organization';
 import notificationsRouter from './notifications';
 import dashboardRouter from './dashboard';
 import accountRouter from './account';
+import lookupRouter from './lookup';
 
 const router = Router();
 
@@ -35,5 +36,6 @@ router.use('/organization', organizationRouter);
 router.use('/notifications', notificationsRouter);
 router.use('/dashboard', dashboardRouter);
 router.use('/account', accountRouter);
+router.use('/lookup', lookupRouter);
 
 export default router;
