@@ -105,6 +105,14 @@ interface ToolForm {
   allowedDomains: string;
 }
 
+const CALENDAR_TIMEZONES = [
+  'UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+  'America/Mexico_City', 'America/Guatemala', 'America/Costa_Rica', 'America/Panama',
+  'America/Bogota', 'America/Lima', 'America/Guayaquil', 'America/Caracas',
+  'America/Santo_Domingo', 'America/Santiago', 'America/Buenos_Aires', 'America/Sao_Paulo',
+  'Europe/London', 'Europe/Paris', 'Europe/Madrid',
+];
+
 const DEFAULT_FORM: ToolForm = {
   name: '',
   description: '',
@@ -994,13 +1002,15 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
 
             <div className={styles.fieldGroup}>
               <label className={styles.fieldLabelSmall}>Timezone</label>
-              <input
-                className={styles.fieldInput}
+              <select
+                className={styles.fieldSelect}
                 value={calForm.timezone}
                 onChange={(e) => setCalForm((f) => ({ ...f, timezone: e.target.value }))}
-                placeholder="UTC"
-              />
-              <span className={styles.fieldHint}>e.g. America/New_York, Europe/Madrid</span>
+              >
+                {CALENDAR_TIMEZONES.map((tz) => (
+                  <option key={tz} value={tz}>{tz}</option>
+                ))}
+              </select>
             </div>
 
             <div className={styles.fieldGroup}>
@@ -1090,13 +1100,15 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
 
             <div className={styles.fieldGroup}>
               <label className={styles.fieldLabelSmall}>Timezone</label>
-              <input
-                className={styles.fieldInput}
+              <select
+                className={styles.fieldSelect}
                 value={calForm.timezone}
                 onChange={(e) => setCalForm((f) => ({ ...f, timezone: e.target.value }))}
-                placeholder="UTC"
-              />
-              <span className={styles.fieldHint}>e.g. America/New_York, Europe/Madrid</span>
+              >
+                {CALENDAR_TIMEZONES.map((tz) => (
+                  <option key={tz} value={tz}>{tz}</option>
+                ))}
+              </select>
             </div>
 
             <div className={styles.fieldGroup}>
