@@ -92,15 +92,20 @@ async function request<T>(
   });
 
   if (res.status === 401 && !retried) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
-      return request<T>(path, options, true);
+    // Don't attempt refresh for auth endpoints — their 401s mean "invalid credentials", not "expired session"
+    const isAuthEndpoint = path.startsWith('/api/auth/');
+    if (!isAuthEndpoint) {
+      const refreshed = await tryRefresh();
+      if (refreshed) {
+        return request<T>(path, options, true);
+      }
+      if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
+        window.location.href = '/login';
+      }
+      throw new ApiError(401, 'Session expired');
     }
-    // Only redirect to /login from protected routes — never from public pages
-    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/dashboard')) {
-      window.location.href = '/login';
-    }
-    throw new ApiError(401, 'Session expired');
+    // For auth endpoints, propagate the actual backend error
+    throw await parseError(res);
   }
 
   if (!res.ok) {
