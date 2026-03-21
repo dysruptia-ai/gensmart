@@ -16,6 +16,7 @@ interface WidgetConfig {
   welcome_message: string;
   bubble_text: string;
   position: string;
+  show_branding: boolean;
 }
 
 interface ChatMessage {
@@ -395,18 +396,20 @@ export default function WidgetPage() {
         </button>
       </div>
 
-      {/* Footer */}
-      <div className={styles.footer}>
-        Powered by{' '}
-        <a
-          href="https://www.gensmart.co"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.footerLink}
-        >
-          GenSmart
-        </a>
-      </div>
+      {/* Footer — branding shown on Free plan only */}
+      {config.show_branding && (
+        <div className={styles.footer}>
+          Powered by{' '}
+          <a
+            href="https://www.gensmart.co?ref=widget"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.footerLink}
+          >
+            GenSmart
+          </a>
+        </div>
+      )}
     </div>
   );
 }

@@ -64,10 +64,13 @@ router.get(
         status: string;
         channels: string[];
         web_config: Record<string, unknown>;
+        plan: string;
       }>(
-        `SELECT id, name, avatar_url, avatar_initials, status, channels, web_config
-         FROM agents
-         WHERE id = $1`,
+        `SELECT a.id, a.name, a.avatar_url, a.avatar_initials, a.status, a.channels, a.web_config,
+                o.plan
+         FROM agents a
+         JOIN organizations o ON o.id = a.organization_id
+         WHERE a.id = $1`,
         [agentId]
       );
 
@@ -94,6 +97,7 @@ router.get(
         welcome_message: (webCfg['welcome_message'] as string) ?? 'Hello! How can I help you?',
         bubble_text: (webCfg['bubble_text'] as string) ?? 'Chat with us',
         position: (webCfg['position'] as string) ?? 'bottom-right',
+        show_branding: agent.plan === 'free',
       };
 
       // Cache for 5 minutes
