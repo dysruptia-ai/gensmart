@@ -773,15 +773,33 @@ router.post(
       if (variables.length > 0) llmTools.push(captureVariableToolDef);
 
       for (const tool of toolsResult.rows) {
-        if (tool.type === 'custom_function') {
+        if (tool.type === 'custom_function' && tool.is_enabled) {
+          // Convert params array to JSON Schema (same fix as message.worker.ts)
+          let parameters: Record<string, unknown>;
+          const rawParams = tool.config['parameters'] ?? tool.config['params'];
+
+          if (Array.isArray(rawParams)) {
+            const properties: Record<string, { type: string; description: string }> = {};
+            const required: string[] = [];
+            for (const p of rawParams as Array<{ name: string; type: string; required?: boolean; description?: string }>) {
+              if (!p.name) continue;
+              properties[p.name] = {
+                type: p.type || 'string',
+                description: p.description || p.name,
+              };
+              if (p.required) required.push(p.name);
+            }
+            parameters = { type: 'object', properties, required };
+          } else if (rawParams && typeof rawParams === 'object' && (rawParams as Record<string, unknown>)['type'] === 'object') {
+            parameters = rawParams as Record<string, unknown>;
+          } else {
+            parameters = { type: 'object', properties: {}, required: [] };
+          }
+
           llmTools.push({
             name: tool.name.replace(/\s+/g, '_').toLowerCase(),
             description: tool.description ?? tool.name,
-            parameters: (tool.config['parameters'] as Record<string, unknown>) ?? {
-              type: 'object',
-              properties: {},
-              required: [],
-            },
+            parameters,
           });
         }
         if (tool.type === 'scheduling') {
@@ -926,6 +944,15 @@ router.post(
             }
           }
         }
+
+        // Add assistant message with tool call info (same fix as message.worker.ts #58)
+        const toolCallSummary = response.toolCalls
+          .map((tc) => `${tc.name}(${JSON.stringify(tc.arguments)})`)
+          .join(', ');
+        currentMessages.push({
+          role: 'assistant' as const,
+          content: response.content || `[Called tools: ${toolCallSummary}]`,
+        });
 
         if (response.content.trim()) finalResponse = response.content;
       }
