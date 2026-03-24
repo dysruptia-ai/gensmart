@@ -24,6 +24,7 @@ export const variableSchema = z.object({
   required: z.boolean().default(false),
   description: z.string().max(255),
   options: z.array(z.string()).optional(),
+  mapsTo: z.enum(['name', 'email', 'phone', 'none']).optional(),
 });
 
 export const agentCreateSchema = z.object({

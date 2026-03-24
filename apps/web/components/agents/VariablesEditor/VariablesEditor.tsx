@@ -14,7 +14,15 @@ interface AgentVariable {
   required: boolean;
   description: string;
   options?: string[];
+  mapsTo?: string;
 }
+
+const CRM_FIELD_OPTIONS = [
+  { value: 'none', label: 'Custom variable (default)' },
+  { value: 'name', label: 'Contact Name' },
+  { value: 'email', label: 'Contact Email' },
+  { value: 'phone', label: 'Contact Phone' },
+] as const;
 
 interface VariablesEditorProps {
   variables: AgentVariable[];
@@ -137,6 +145,9 @@ export default function VariablesEditor({ variables, onChange }: VariablesEditor
                 <div className={styles.variableBadges}>
                   <Badge variant="info" size="sm">{v.type}</Badge>
                   {v.required && <Badge variant="warning" size="sm">required</Badge>}
+                  {v.mapsTo && v.mapsTo !== 'none' && (
+                    <Badge variant="success" size="sm">→ {v.mapsTo}</Badge>
+                  )}
                 </div>
                 {expandedIdx === idx ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 <button
@@ -185,6 +196,31 @@ export default function VariablesEditor({ variables, onChange }: VariablesEditor
                       checked={v.required}
                       onChange={(checked) => updateVariable(idx, { required: checked })}
                     />
+                  </div>
+
+                  <div className={styles.fieldGroup}>
+                    <label className={styles.fieldLabel}>Map to CRM field</label>
+                    <select
+                      className={styles.select}
+                      value={v.mapsTo ?? 'none'}
+                      onChange={(e) => updateVariable(idx, {
+                        mapsTo: e.target.value === 'none' ? undefined : e.target.value,
+                      })}
+                    >
+                      {CRM_FIELD_OPTIONS.map((opt) => {
+                        const alreadyMapped = opt.value !== 'none' && variables.some(
+                          (other, otherIdx) => otherIdx !== idx && other.mapsTo === opt.value
+                        );
+                        return (
+                          <option key={opt.value} value={opt.value} disabled={alreadyMapped}>
+                            {opt.label}{alreadyMapped ? ' (already mapped)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <span className={styles.fieldHint}>
+                      Variables mapped to CRM fields update the contact record automatically.
+                    </span>
                   </div>
 
                   {v.type === 'enum' && (

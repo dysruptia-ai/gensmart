@@ -247,6 +247,12 @@
   word-break: break-all;
 }
 
+.fieldHint {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.3;
+}
+
 .emptyState {
   text-align: center;
   padding: 2rem;

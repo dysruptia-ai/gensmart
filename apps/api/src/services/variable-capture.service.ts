@@ -7,6 +7,7 @@ export interface AgentVariable {
   required?: boolean;
   description?: string;
   options?: string[];
+  mapsTo?: string;
 }
 
 /** Build variable capture instructions to append to the system prompt */
@@ -133,7 +134,8 @@ export async function handleCaptureVariable(
     conv.channel_metadata,
     varDef.name,
     variableValue,
-    conversationId
+    conversationId,
+    varDef.mapsTo
   );
 
   // Emit WebSocket update
@@ -159,33 +161,44 @@ async function syncVariableToContact(
   channelMetadata: Record<string, unknown>,
   varName: string,
   varValue: string,
-  conversationId: string
+  conversationId: string,
+  mapsTo?: string
 ): Promise<void> {
-  const nameLower = varName.toLowerCase();
+  // Determine which CRM field this variable maps to
+  // Priority: explicit mapsTo config > legacy name matching (backward compat)
+  let targetField: 'name' | 'email' | 'phone' | 'custom' = 'custom';
 
-  // Map well-known variable names to contact fields
-  const isName = [
-    'name', 'nombre', 'full_name', 'fullname', 'user_name', 'username',
-    'first_name', 'customer_name', 'nombre_completo', 'client_name',
-    'contact_name', 'persona', 'nombre_cliente',
-  ].includes(nameLower);
+  if (mapsTo === 'name' || mapsTo === 'email' || mapsTo === 'phone') {
+    targetField = mapsTo;
+  } else if (!mapsTo || mapsTo === 'none') {
+    // Legacy fallback: check variable name against known patterns
+    const nameLower = varName.toLowerCase();
 
-  const isEmail = [
-    'email', 'correo', 'email_address', 'user_email', 'customer_email',
-    'correo_electronico', 'mail', 'e_mail', 'contact_email', 'client_email',
-  ].includes(nameLower);
+    const namePatterns = [
+      'name', 'nombre', 'full_name', 'fullname', 'user_name', 'username',
+      'first_name', 'customer_name', 'nombre_completo', 'client_name',
+      'contact_name', 'persona', 'nombre_cliente',
+    ];
+    const emailPatterns = [
+      'email', 'correo', 'email_address', 'user_email', 'customer_email',
+      'correo_electronico', 'mail', 'e_mail', 'contact_email', 'client_email',
+    ];
+    const phonePatterns = [
+      'phone', 'telefono', 'whatsapp', 'mobile', 'phone_number', 'user_phone',
+      'celular', 'numero', 'customer_phone', 'tel', 'cell', 'numero_telefono',
+      'contact_phone', 'client_phone', 'movil',
+    ];
 
-  const isPhone = [
-    'phone', 'telefono', 'whatsapp', 'mobile', 'phone_number', 'user_phone',
-    'celular', 'numero', 'customer_phone', 'tel', 'cell', 'numero_telefono',
-    'contact_phone', 'client_phone', 'movil',
-  ].includes(nameLower);
+    if (namePatterns.includes(nameLower)) targetField = 'name';
+    else if (emailPatterns.includes(nameLower)) targetField = 'email';
+    else if (phonePatterns.includes(nameLower)) targetField = 'phone';
+  }
 
   if (!contactId) {
     // Auto-create contact
     const phone = channel === 'whatsapp'
-      ? (channelMetadata['phone'] as string | undefined) ?? (isPhone ? varValue : null)
-      : isPhone ? varValue : null;
+      ? (channelMetadata['phone'] as string | undefined) ?? (targetField === 'phone' ? varValue : null)
+      : targetField === 'phone' ? varValue : null;
 
     const result = await query<{ id: string }>(
       `INSERT INTO contacts (organization_id, agent_id, name, phone, email, source_channel, funnel_stage, created_at, updated_at)
@@ -194,9 +207,9 @@ async function syncVariableToContact(
       [
         orgId,
         agentId,
-        isName ? varValue : null,
+        targetField === 'name' ? varValue : null,
         phone,
-        isEmail ? varValue : null,
+        targetField === 'email' ? varValue : null,
         channel,
       ]
     );
@@ -211,14 +224,14 @@ async function syncVariableToContact(
   }
 
   // Update existing contact
-  if (isName) {
+  if (targetField === 'name') {
     await query('UPDATE contacts SET name = $1, updated_at = NOW() WHERE id = $2', [varValue, contactId]);
-  } else if (isEmail) {
+  } else if (targetField === 'email') {
     await query('UPDATE contacts SET email = $1, updated_at = NOW() WHERE id = $2', [varValue, contactId]);
-  } else if (isPhone) {
+  } else if (targetField === 'phone') {
     await query('UPDATE contacts SET phone = $1, updated_at = NOW() WHERE id = $2', [varValue, contactId]);
   } else {
-    // Merge into custom_variables JSONB
+    // Custom variable → merge into JSONB
     await query(
       `UPDATE contacts
        SET custom_variables = custom_variables || $1::jsonb, updated_at = NOW()

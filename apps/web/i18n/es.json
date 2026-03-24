@@ -1354,5 +1354,12 @@
   "widget_voice_message": "Mensaje de voz",
   "widget_recording": "Grabando...",
   "widget_mic_denied": "Se requiere acceso al micrófono para enviar mensajes de voz.",
-  "widget_audio_too_long": "La grabación es muy larga. Tamaño máximo: 10MB."
+  "widget_audio_too_long": "La grabación es muy larga. Tamaño máximo: 10MB.",
+  "variables_map_to_crm": "Mapear a campo CRM",
+  "variables_map_hint": "Las variables mapeadas a campos CRM actualizan el registro del contacto automáticamente.",
+  "variables_map_none": "Variable personalizada (por defecto)",
+  "variables_map_name": "Nombre del Contacto",
+  "variables_map_email": "Email del Contacto",
+  "variables_map_phone": "Teléfono del Contacto",
+  "variables_map_already_mapped": "ya mapeado"
 }

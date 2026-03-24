@@ -1354,5 +1354,12 @@
   "widget_voice_message": "Voice message",
   "widget_recording": "Recording...",
   "widget_mic_denied": "Microphone access is required to send voice messages.",
-  "widget_audio_too_long": "Recording is too long. Maximum audio size is 10MB."
+  "widget_audio_too_long": "Recording is too long. Maximum audio size is 10MB.",
+  "variables_map_to_crm": "Map to CRM field",
+  "variables_map_hint": "Variables mapped to CRM fields update the contact record automatically.",
+  "variables_map_none": "Custom variable (default)",
+  "variables_map_name": "Contact Name",
+  "variables_map_email": "Contact Email",
+  "variables_map_phone": "Contact Phone",
+  "variables_map_already_mapped": "already mapped"
 }
