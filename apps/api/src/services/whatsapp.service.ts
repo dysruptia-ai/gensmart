@@ -208,6 +208,103 @@ export async function downloadMedia(
   return { data, mimeType };
 }
 
+/**
+ * Download audio from WhatsApp via Meta Media API.
+ * Same 2-step process as downloadMedia, but for audio files.
+ */
+export async function downloadAudio(
+  mediaId: string,
+  accessToken: string
+): Promise<{ buffer: Buffer; mimeType: string }> {
+  const metaUrl = `${META_BASE_URL}/${mediaId}`;
+  const metaRes = await fetch(metaUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!metaRes.ok) {
+    const err = await metaRes.json().catch(() => ({}));
+    throw new Error(`Failed to get audio media URL: ${JSON.stringify(err)}`);
+  }
+
+  const metaData = await metaRes.json() as {
+    url?: string;
+    mime_type?: string;
+    file_size?: number;
+  };
+
+  if (!metaData.url) {
+    throw new Error('No URL returned for audio media');
+  }
+
+  const mimeType = metaData.mime_type ?? 'audio/ogg';
+
+  if (!mimeType.startsWith('audio/')) {
+    throw new Error(`Expected audio media type, got: ${mimeType}`);
+  }
+
+  // Whisper API limit: 25MB
+  const MAX_AUDIO_SIZE = 25 * 1024 * 1024;
+  if (metaData.file_size && metaData.file_size > MAX_AUDIO_SIZE) {
+    throw new Error(`Audio too large (${Math.round(metaData.file_size / 1024 / 1024)}MB). Max 25MB.`);
+  }
+
+  const dataRes = await fetch(metaData.url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!dataRes.ok) {
+    throw new Error(`Failed to download audio: ${dataRes.status}`);
+  }
+
+  const arrayBuffer = await dataRes.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  if (buffer.length > MAX_AUDIO_SIZE) {
+    throw new Error(`Downloaded audio too large (${Math.round(buffer.length / 1024 / 1024)}MB). Max 25MB.`);
+  }
+
+  return { buffer, mimeType };
+}
+
+/**
+ * Transcribe audio using OpenAI Whisper API.
+ * Accepts audio buffer directly. Auto-detects language.
+ */
+export async function transcribeAudio(
+  audioBuffer: Buffer,
+  mimeType: string
+): Promise<string> {
+  const OpenAI = (await import('openai')).default;
+  const client = new OpenAI({ apiKey: process.env['OPENAI_API_KEY'] });
+
+  // Map mimeType to file extension for Whisper
+  const extMap: Record<string, string> = {
+    'audio/ogg': 'ogg',
+    'audio/ogg; codecs=opus': 'ogg',
+    'audio/mpeg': 'mp3',
+    'audio/mp4': 'm4a',
+    'audio/mp4; codecs=opus': 'm4a',
+    'audio/wav': 'wav',
+    'audio/webm': 'webm',
+    'audio/webm;codecs=opus': 'webm',
+    'audio/webm; codecs=opus': 'webm',
+    'audio/flac': 'flac',
+  };
+
+  const baseMime = mimeType.split(';')[0]!.trim();
+  const ext = extMap[mimeType] ?? extMap[baseMime] ?? 'ogg';
+
+  // OpenAI SDK v4+ accepts File objects
+  const file = new File([audioBuffer], `audio.${ext}`, { type: baseMime });
+
+  const response = await client.audio.transcriptions.create({
+    model: 'whisper-1',
+    file,
+  });
+
+  return response.text;
+}
+
 export function encryptAccessToken(token: string): string {
   return encrypt(token);
 }

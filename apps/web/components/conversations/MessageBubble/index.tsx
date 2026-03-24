@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon, Mic } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import styles from './MessageBubble.module.css';
 
@@ -21,6 +21,7 @@ interface MessageBubbleProps {
       mimeType: string;
       hasCaption: boolean;
     }>;
+    isVoiceMessage?: boolean;
   };
 }
 
@@ -65,6 +66,12 @@ export default function MessageBubble({
       >
         {role === 'human' && (
           <span className={styles.humanLabel}>{t('conversations.chat.humanAgent')}</span>
+        )}
+        {metadata?.isVoiceMessage && (
+          <div className={styles.voiceIndicator}>
+            <Mic size={14} />
+            <span>{t('chat_voice_message')}</span>
+          </div>
         )}
         {metadata?.hasImages && (
           <div className={styles.imageIndicator}>

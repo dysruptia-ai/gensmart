@@ -101,6 +101,9 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // Separate text items and image items
   const textItems = bufferedItems.filter((item) => item.type === 'text');
   const imageItems = bufferedItems.filter((item) => item.type === 'image');
+  const hasVoiceTranscription = textItems.some(
+    (item) => item.mimeType === 'audio/voice-transcription'
+  );
 
   // Plain text version (for DB storage + display + non-vision fallback)
   const textParts: string[] = [];
@@ -611,6 +614,9 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       mimeType: img.mimeType,
       hasCaption: !!img.content,
     }));
+  }
+  if (hasVoiceTranscription) {
+    userMsgMeta['isVoiceMessage'] = true;
   }
 
   const savedMessages = await saveMessages(

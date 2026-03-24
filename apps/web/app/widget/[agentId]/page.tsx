@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { Send, X, Bot, Paperclip } from 'lucide-react';
+import { Send, X, Bot, Paperclip, Mic, Square } from 'lucide-react';
 import styles from './widget.module.css';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? '';
@@ -50,6 +50,13 @@ export default function WidgetPage() {
     fileName: string;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -209,6 +216,18 @@ export default function WidgetPage() {
     return () => clearInterval(bgPoll);
   }, [sessionId, lastMessageTime, pollMessages]);
 
+  // Cleanup MediaRecorder on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, []);
+
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -241,6 +260,126 @@ export default function WidgetPage() {
 
   function handleRemoveImage() {
     setPendingImage(null);
+  }
+
+  async function handleStartRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Determine supported mimeType
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/webm')
+          ? 'audio/webm'
+          : 'audio/mp4'; // Safari fallback
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        // Stop all tracks to release mic
+        stream.getTracks().forEach((track) => track.stop());
+
+        // Clear timer
+        if (recordingTimerRef.current) {
+          clearInterval(recordingTimerRef.current);
+          recordingTimerRef.current = null;
+        }
+
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+
+        // Validate size (10MB max)
+        if (audioBlob.size > 10 * 1024 * 1024) {
+          alert('Recording is too long. Maximum audio size is 10MB.');
+          setRecordingDuration(0);
+          return;
+        }
+
+        // Convert to base64 and send
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUri = reader.result as string;
+          const base64Data = dataUri.split(',')[1] ?? '';
+          sendAudioMessage(base64Data, mimeType);
+        };
+        reader.readAsDataURL(audioBlob);
+
+        setRecordingDuration(0);
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setIsRecording(true);
+
+      // Duration timer
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((d) => {
+          // Auto-stop after 2 minutes
+          if (d >= 120) {
+            handleStopRecording();
+            return d;
+          }
+          return d + 1;
+        });
+      }, 1000);
+    } catch (err) {
+      console.error('[widget] Mic access denied:', err);
+      alert('Microphone access is required to send voice messages.');
+    }
+  }
+
+  function handleStopRecording() {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  }
+
+  function sendAudioMessage(base64Audio: string, mimeType: string) {
+    if (!sessionId) return;
+
+    // Show user message immediately
+    setMessages((prev) => [...prev, {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: '\uD83C\uDFA4 Voice message',
+      created_at: new Date().toISOString(),
+    }]);
+
+    setLastMessageTime(new Date().toISOString());
+
+    fetch(`${API_BASE}/api/widget/${agentId}/message`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        audio: base64Audio,
+        audioMimeType: mimeType,
+      }),
+    })
+      .then(async (r) => {
+        if (r.ok) {
+          const data = await r.json() as { conversationStatus?: string };
+          if (data.conversationStatus !== 'human_takeover') {
+            setPendingCount((n) => n + 1);
+            setTimeout(() => setPendingCount((n) => Math.max(0, n - 1)), 30000);
+          }
+        }
+      })
+      .catch(() => {});
+  }
+
+  function formatRecordingTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
   function handleSend() {
@@ -443,6 +582,13 @@ export default function WidgetPage() {
 
       {/* Input */}
       <div className={styles.inputArea}>
+        {isRecording && (
+          <div className={styles.recordingStrip}>
+            <div className={styles.recordingDot} />
+            <span className={styles.recordingTime}>{formatRecordingTime(recordingDuration)}</span>
+            <span className={styles.recordingLabel}>Recording...</span>
+          </div>
+        )}
         {pendingImage && (
           <div className={styles.imagePreviewStrip}>
             <div className={styles.imagePreviewThumb}>
@@ -470,11 +616,20 @@ export default function WidgetPage() {
           <button
             className={styles.attachBtn}
             onClick={() => fileInputRef.current?.click()}
-            disabled={!sessionId || !!pendingImage}
+            disabled={!sessionId || !!pendingImage || isRecording}
             aria-label="Attach image"
             type="button"
           >
             <Paperclip size={18} />
+          </button>
+          <button
+            className={`${styles.attachBtn} ${isRecording ? styles.recordingBtn : ''}`}
+            onClick={isRecording ? handleStopRecording : handleStartRecording}
+            disabled={!sessionId || !!pendingImage}
+            aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
+            type="button"
+          >
+            {isRecording ? <Square size={16} /> : <Mic size={18} />}
           </button>
           <input
             ref={inputRef}
@@ -491,7 +646,7 @@ export default function WidgetPage() {
           <button
             className={styles.sendBtn}
             onClick={handleSend}
-            disabled={(!input.trim() && !pendingImage) || !sessionId}
+            disabled={(!input.trim() && !pendingImage) || !sessionId || isRecording}
             aria-label="Send message"
             type="button"
             style={{ backgroundColor: config.primary_color }}

@@ -1349,5 +1349,10 @@
     "restartTour": "Reiniciar tour de onboarding"
   },
   "chat_image_indicator": "Imagen",
-  "chat_images_indicator": "imágenes"
+  "chat_images_indicator": "imágenes",
+  "chat_voice_message": "Mensaje de voz",
+  "widget_voice_message": "Mensaje de voz",
+  "widget_recording": "Grabando...",
+  "widget_mic_denied": "Se requiere acceso al micrófono para enviar mensajes de voz.",
+  "widget_audio_too_long": "La grabación es muy larga. Tamaño máximo: 10MB."
 }

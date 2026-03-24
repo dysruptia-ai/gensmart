@@ -13,6 +13,8 @@ import {
   decryptAccessToken,
   getPhoneNumberInfo,
   downloadMedia,
+  downloadAudio,
+  transcribeAudio,
 } from '../services/whatsapp.service';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
@@ -101,6 +103,10 @@ router.post(
                   sha256: string;
                   caption?: string;
                 };
+                audio?: {
+                  id: string;
+                  mime_type: string;
+                };
                 timestamp: string;
               }>;
               statuses?: unknown[];
@@ -119,7 +125,7 @@ router.post(
       const phoneNumberId = value.metadata?.phone_number_id;
 
       // Handle text and image messages
-      if (message.type !== 'text' && message.type !== 'image') {
+      if (message.type !== 'text' && message.type !== 'image' && message.type !== 'audio') {
         console.log(`[whatsapp] Skipping unsupported message type: ${message.type}`);
         return;
       }
@@ -133,6 +139,7 @@ router.post(
       let messageText = '';
       let imageMediaId: string | null = null;
       let imageCaption = '';
+      let audioMediaId: string | null = null;
 
       if (message.type === 'text') {
         messageText = message.text?.body ?? '';
@@ -147,6 +154,13 @@ router.post(
         }
 
         messageText = imageCaption || '[Image]';
+      } else if (message.type === 'audio') {
+        audioMediaId = message.audio?.id ?? null;
+        if (!audioMediaId) {
+          console.log('[whatsapp] Audio message missing media ID');
+          return;
+        }
+        messageText = '[Voice message]';
       }
 
       // Find active agent by phone_number_id
@@ -193,6 +207,35 @@ router.post(
           }
         } else {
           console.warn('[whatsapp] Cannot download image — no access token');
+        }
+      }
+
+      // Download and transcribe audio if this is an audio message
+      let audioTranscription: string | null = null;
+      if (audioMediaId) {
+        const waConfigAudio = agent.whatsapp_config;
+        if (waConfigAudio?.access_token_encrypted) {
+          try {
+            const accessToken = decryptAccessToken(String(waConfigAudio.access_token_encrypted));
+            const audio = await downloadAudio(audioMediaId, accessToken);
+            console.log(`[whatsapp] Downloaded audio: ${audio.mimeType}, ${Math.round(audio.buffer.length / 1024)}KB`);
+
+            const transcription = await transcribeAudio(audio.buffer, audio.mimeType);
+            if (transcription.trim()) {
+              audioTranscription = transcription.trim();
+              messageText = audioTranscription;
+              console.log(`[whatsapp] Audio transcribed: "${audioTranscription.slice(0, 100)}${audioTranscription.length > 100 ? '...' : ''}"`);
+            } else {
+              console.warn('[whatsapp] Whisper returned empty transcription');
+              messageText = '[Voice message — could not transcribe]';
+            }
+          } catch (err) {
+            console.error('[whatsapp] Failed to download/transcribe audio:', (err as Error).message);
+            messageText = '[Voice message — transcription failed]';
+          }
+        } else {
+          console.warn('[whatsapp] Cannot download audio — no access token');
+          messageText = '[Voice message — transcription unavailable]';
         }
       }
 
@@ -278,6 +321,9 @@ router.post(
           userMsgMeta['imageCount'] = 1;
           userMsgMeta['images'] = [{ mimeType: imageBufferItem.mimeType, hasCaption: !!imageBufferItem.content }];
         }
+        if (audioTranscription) {
+          userMsgMeta['isVoiceMessage'] = true;
+        }
 
         const msgResult = await query<{ id: string; created_at: string }>(
           `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
@@ -316,9 +362,16 @@ router.post(
         return;
       }
 
-      // Push to message buffer — image or text
+      // Push to message buffer — image, voice transcription, or text
       if (imageBufferItem?.data) {
         await pushToBuffer(convId, agent.id, agent.organization_id, imageBufferItem, agent.message_buffer_seconds);
+      } else if (audioTranscription) {
+        const voiceItem: BufferItem = {
+          type: 'text',
+          content: audioTranscription,
+          mimeType: 'audio/voice-transcription',
+        };
+        await pushToBuffer(convId, agent.id, agent.organization_id, voiceItem, agent.message_buffer_seconds);
       } else {
         await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds);
       }

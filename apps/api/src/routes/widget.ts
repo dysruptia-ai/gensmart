@@ -6,6 +6,7 @@ import { redis } from '../config/redis';
 import { AppError } from '../middleware/errorHandler';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
+import { transcribeAudio } from '../services/whatsapp.service';
 
 const router = Router();
 
@@ -18,8 +19,8 @@ const widgetCors = cors({
 
 router.use(widgetCors);
 
-// Larger body limit for image uploads (base64 images can be ~6.7MB for 5MB files)
-router.use(express.json({ limit: '8mb' }));
+// Larger body limit for image/audio uploads (base64 can be ~13.3MB for 10MB audio)
+router.use(express.json({ limit: '15mb' }));
 
 // ── Rate limiting helpers ─────────────────────────────────────────────────────
 
@@ -206,11 +207,13 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const agentId = String(req.params['agentId'] ?? '');
-      const { sessionId, message, image, imageMimeType } = req.body as {
+      const { sessionId, message, image, imageMimeType, audio, audioMimeType } = req.body as {
         sessionId: string;
         message?: string;
         image?: string;        // base64-encoded image data (NO data: prefix)
         imageMimeType?: string; // 'image/jpeg', 'image/png', etc.
+        audio?: string;        // base64-encoded audio data
+        audioMimeType?: string; // 'audio/webm', 'audio/mp4', etc.
       };
 
       if (!sessionId) {
@@ -219,9 +222,10 @@ router.post(
 
       const hasText = !!message?.trim();
       const hasImage = !!image;
+      const hasAudio = !!audio;
 
-      if (!hasText && !hasImage) {
-        throw new AppError(400, 'message or image is required', 'VALIDATION_ERROR');
+      if (!hasText && !hasImage && !hasAudio) {
+        throw new AppError(400, 'message, image, or audio is required', 'VALIDATION_ERROR');
       }
 
       // Validate image if present
@@ -234,6 +238,22 @@ router.post(
         const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
         if (estimatedBytes > MAX_IMAGE_SIZE) {
           throw new AppError(400, 'Image too large. Maximum size is 5MB.', 'VALIDATION_ERROR');
+        }
+      }
+
+      // Validate audio if present
+      if (hasAudio) {
+        const validAudioTypes = ['audio/webm', 'audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg', 'audio/mpeg', 'audio/wav'];
+        const baseAudioMime = (audioMimeType ?? '').split(';')[0]!.trim();
+        if (!audioMimeType || !validAudioTypes.includes(baseAudioMime)) {
+          throw new AppError(400, 'Invalid audio type. Supported: WebM, MP4, OGG, MP3, WAV', 'VALIDATION_ERROR');
+        }
+
+        // Validate size: 10MB max for widget
+        const estimatedBytes = (audio.length * 3) / 4;
+        const MAX_AUDIO_SIZE = 10 * 1024 * 1024;
+        if (estimatedBytes > MAX_AUDIO_SIZE) {
+          throw new AppError(400, 'Audio too large. Maximum size is 10MB.', 'VALIDATION_ERROR');
         }
       }
 
@@ -276,7 +296,7 @@ router.post(
       );
       const bufferSeconds = agentResult.rows[0]?.message_buffer_seconds ?? 5;
 
-      // Push to message buffer — image or text
+      // Push to message buffer — image, voice transcription, or text
       if (hasImage) {
         const imageItem: BufferItem = {
           type: 'image',
@@ -285,6 +305,26 @@ router.post(
           data: image!,
         };
         await pushToBuffer(sessionId, agentId, conv.organization_id, imageItem, bufferSeconds);
+      } else if (hasAudio) {
+        // Transcribe audio with Whisper, then push as text
+        try {
+          const audioBuffer = Buffer.from(audio!, 'base64');
+          const transcription = await transcribeAudio(audioBuffer, audioMimeType ?? 'audio/webm');
+
+          if (transcription.trim()) {
+            const voiceItem: BufferItem = {
+              type: 'text',
+              content: transcription.trim(),
+              mimeType: 'audio/voice-transcription',
+            };
+            await pushToBuffer(sessionId, agentId, conv.organization_id, voiceItem, bufferSeconds);
+          } else {
+            await pushToBuffer(sessionId, agentId, conv.organization_id, '[Voice message — could not transcribe]', bufferSeconds);
+          }
+        } catch (err) {
+          console.error('[widget] Audio transcription failed:', (err as Error).message);
+          await pushToBuffer(sessionId, agentId, conv.organization_id, '[Voice message — transcription failed]', bufferSeconds);
+        }
       } else {
         await pushToBuffer(sessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
       }

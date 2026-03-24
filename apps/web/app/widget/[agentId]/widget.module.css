@@ -426,3 +426,44 @@
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* ── Voice recording ────────────────────────────────────────────────────────── */
+
+.recordingBtn {
+  color: #ef4444 !important;
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.recordingStrip {
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border-bottom: 1px solid #fecaca;
+}
+
+.recordingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse-recording 1s ease-in-out infinite;
+}
+
+.recordingTime {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ef4444;
+  font-variant-numeric: tabular-nums;
+}
+
+.recordingLabel {
+  font-size: 0.75rem;
+  color: #6B7280;
+}

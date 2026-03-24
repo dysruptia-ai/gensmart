@@ -1349,5 +1349,10 @@
     "restartTour": "Restart onboarding tour"
   },
   "chat_image_indicator": "Image",
-  "chat_images_indicator": "images"
+  "chat_images_indicator": "images",
+  "chat_voice_message": "Voice message",
+  "widget_voice_message": "Voice message",
+  "widget_recording": "Recording...",
+  "widget_mic_denied": "Microphone access is required to send voice messages.",
+  "widget_audio_too_long": "Recording is too long. Maximum audio size is 10MB."
 }
