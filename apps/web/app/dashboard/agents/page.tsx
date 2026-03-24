@@ -109,7 +109,7 @@ export default function AgentsPage() {
           <h1 className={styles.pageTitle}>{t('agents.title')}</h1>
           <p className={styles.pageDesc}>{t('agents.pageDescription')}</p>
         </div>
-        <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')}>
+        <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')} data-tour="new-agent-btn">
           {t('agents.newAgent')}
         </Button>
       </div>

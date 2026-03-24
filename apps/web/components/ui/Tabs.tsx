@@ -29,6 +29,7 @@ export default function Tabs({ tabs, activeTab, onChange, children }: TabsProps)
             aria-selected={activeTab === tab.id}
             aria-controls={`panel-${tab.id}`}
             id={`tab-${tab.id}`}
+            data-tab={tab.id}
             className={[styles.tab, activeTab === tab.id ? styles.active : ''].join(' ')}
             onClick={() => onChange(tab.id)}
           >

@@ -1299,5 +1299,49 @@
     "subtitle": "Artículos sobre agentes de IA, automatización y crecimiento",
     "readMore": "Leer más",
     "noPosts": "¡Aún no hay posts. Vuelve pronto!"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "¡Bienvenido a GenSmart!",
+      "description": "Vamos a crear tu primer agente IA en minutos. Este tour rápido te mostrará las funciones principales."
+    },
+    "createAgent": {
+      "title": "Crea Tu Primer Agente",
+      "description": "Haz clic aquí para crear un nuevo agente IA. Puedes empezar desde una plantilla o desde cero."
+    },
+    "chooseMethod": {
+      "title": "Elige Cómo Empezar",
+      "description": "Escoge una plantilla predefinida para casos comunes, o empieza desde cero para personalización total."
+    },
+    "configurePrompt": {
+      "title": "Configura el Prompt del IA",
+      "description": "Este es el cerebro de tu agente. Escribe instrucciones sobre cómo debe comportarse y responder a los usuarios."
+    },
+    "addVariables": {
+      "title": "Agrega Variables Inteligentes",
+      "description": "Las variables permiten que tu agente capture información como nombres, emails o preferencias durante las conversaciones."
+    },
+    "configureChannel": {
+      "title": "Configura un Canal",
+      "description": "Despliega tu agente en WhatsApp o agrega un Widget Web a tu sitio. ¡Puedes activar ambos!"
+    },
+    "publish": {
+      "title": "Publica Tu Agente",
+      "description": "Cuando estés listo, publica para activar tu agente. Siempre puedes editar y volver a publicar después."
+    },
+    "preview": {
+      "title": "Prueba en Preview",
+      "description": "Prueba tu agente aquí antes de activarlo. Prueba diferentes escenarios para asegurarte de que funciona perfecto."
+    },
+    "getSnippet": {
+      "title": "Obtén el Código del Widget",
+      "description": "Copia este código y pégalo en tu sitio web. ¡Tu agente IA aparecerá como un widget de chat!"
+    },
+    "skipTour": "Saltar tour",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "finish": "¡Entendido!",
+    "stepOf": "Paso {current} de {total}",
+    "restartTour": "Reiniciar tour de onboarding"
   }
 }

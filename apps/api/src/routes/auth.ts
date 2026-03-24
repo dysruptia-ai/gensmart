@@ -254,4 +254,61 @@ router.put(
   }
 );
 
+// Update onboarding progress
+const onboardingSchema = z.object({
+  step: z.number().int().min(0).max(10).optional(),
+  completed: z.boolean().optional(),
+  editorTourCompleted: z.boolean().optional(),
+});
+
+router.put(
+  '/onboarding',
+  requireAuth,
+  validate(onboardingSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { step, completed, editorTourCompleted } = req.body as z.infer<typeof onboardingSchema>;
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let idx = 1;
+
+      if (completed === true) {
+        sets.push(`onboarding_completed = TRUE`);
+        sets.push(`onboarding_step = 0`);
+      } else {
+        if (completed === false) {
+          sets.push(`onboarding_completed = FALSE`);
+        }
+        if (step !== undefined) {
+          sets.push(`onboarding_step = $${idx++}`);
+          params.push(step);
+        }
+      }
+
+      if (editorTourCompleted === true) {
+        sets.push(`editor_tour_completed = TRUE`);
+      } else if (editorTourCompleted === false) {
+        sets.push(`editor_tour_completed = FALSE`);
+      }
+
+      if (sets.length === 0) {
+        res.json({ success: true });
+        return;
+      }
+
+      sets.push(`updated_at = NOW()`);
+      params.push(req.user!.userId);
+
+      await query(
+        `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx}`,
+        params
+      );
+
+      res.json({ success: true });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 export default router;

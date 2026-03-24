@@ -25,6 +25,7 @@ import Skeleton from '@/components/ui/Skeleton';
 import { Logo } from '@/components/ui/Logo';
 import UpgradeBanner from '@/components/billing/UpgradeBanner';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import WelcomeTour from '@/components/onboarding/WelcomeTour';
 import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 
@@ -106,7 +107,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
-          <Logo size="md" href="/dashboard" />
+          <div data-tour="logo">
+            <Logo size="md" href="/dashboard" />
+          </div>
           <button
             className={styles.sidebarCloseBtn}
             onClick={() => setSidebarOpen(false)}
@@ -215,6 +218,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {user && !user.onboardingCompleted && <WelcomeTour />}
     </div>
   );
 }

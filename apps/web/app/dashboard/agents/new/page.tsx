@@ -100,7 +100,7 @@ export default function NewAgentPage() {
         <div className={styles.step}>
           <h2 className={styles.stepTitle}>How would you like to start?</h2>
           <p className={styles.stepDesc}>You can always customize everything later.</p>
-          <div className={styles.methods}>
+          <div className={styles.methods} data-tour="agent-method">
             <button className={styles.methodCard} onClick={() => setMethod('template')}>
               <div className={styles.methodIcon}>
                 <Wand2 size={22} />

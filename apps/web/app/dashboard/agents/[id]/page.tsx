@@ -23,6 +23,7 @@ import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomi
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatDate } from '@/lib/formatters';
+import EditorTour from '@/components/onboarding/EditorTour';
 import styles from './editor.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -447,6 +448,7 @@ export default function AgentEditorPage() {
 
   return (
     <div className={styles.page}>
+      <EditorTour />
       {isDirty && (
         <div className={styles.unsavedBanner}>
           <AlertCircle size={14} /> {t('agents.editor.unsavedChanges')}
@@ -499,10 +501,11 @@ export default function AgentEditorPage() {
             size="sm"
             icon={Play}
             onClick={() => { setPreviewMessages([]); setShowPreview(true); }}
+            data-tour="preview-chat"
           >
             {t('agents.editor.preview')}
           </Button>
-          <Button size="sm" icon={Rocket} onClick={() => setShowPublishModal(true)}>
+          <Button size="sm" icon={Rocket} onClick={() => setShowPublishModal(true)} data-tour="publish-btn">
             {t('agents.editor.publish')}
           </Button>
         </div>
@@ -512,7 +515,7 @@ export default function AgentEditorPage() {
       <Tabs tabs={EDITOR_TABS} activeTab={activeTab} onChange={setActiveTab}>
         {activeTab === 'prompt' && (
           <div className={styles.tabContent}>
-            <div className={styles.promptSection}>
+            <div className={styles.promptSection} data-tour="prompt-editor">
               <div className={styles.promptToolbar}>
                 <span className={styles.promptLabel}>{t('agents.editor.prompt.label')}</span>
                 <Button
@@ -539,7 +542,7 @@ export default function AgentEditorPage() {
         )}
 
         {activeTab === 'variables' && (
-          <div className={styles.tabContent}>
+          <div className={styles.tabContent} data-tour="variables-tab">
             <VariablesEditor
               variables={variables}
               onChange={(v) => { setVariables(v); setIsDirty(true); }}
@@ -713,7 +716,7 @@ export default function AgentEditorPage() {
         )}
 
         {activeTab === 'channels' && (
-          <div className={styles.tabContent}>
+          <div className={styles.tabContent} data-tour="channels-section">
             <div className={styles.channelsGrid}>
               {/* Web Widget */}
               <div className={styles.channelSection}>
@@ -730,7 +733,7 @@ export default function AgentEditorPage() {
                   </div>
                 </div>
                 {channels.includes('web') && orgPlanLoaded && (
-                  <div className={styles.channelBody}>
+                  <div className={styles.channelBody} data-tour="snippet-section">
                     <WidgetCustomizer
                       agentId={agentId}
                       initialConfig={webConfig}

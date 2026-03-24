@@ -1299,5 +1299,49 @@
     "subtitle": "Insights on AI agents, automation, and growth",
     "readMore": "Read more",
     "noPosts": "No posts yet. Check back soon!"
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome to GenSmart!",
+      "description": "Let's create your first AI agent in minutes. This quick tour will show you the key features."
+    },
+    "createAgent": {
+      "title": "Create Your First Agent",
+      "description": "Click here to create a new AI agent. You can start from a template or build from scratch."
+    },
+    "chooseMethod": {
+      "title": "Choose How to Start",
+      "description": "Pick a pre-built template for common use cases, or start from scratch for full customization."
+    },
+    "configurePrompt": {
+      "title": "Configure the AI Prompt",
+      "description": "This is the brain of your agent. Write instructions for how it should behave and respond to users."
+    },
+    "addVariables": {
+      "title": "Add Smart Variables",
+      "description": "Variables let your agent capture information like names, emails, or preferences during conversations."
+    },
+    "configureChannel": {
+      "title": "Set Up a Channel",
+      "description": "Deploy your agent on WhatsApp or add a Web Widget to your website. You can enable both!"
+    },
+    "publish": {
+      "title": "Publish Your Agent",
+      "description": "When you're ready, publish to make your agent live. You can always edit and re-publish later."
+    },
+    "preview": {
+      "title": "Test in Preview",
+      "description": "Try your agent right here before going live. Test different scenarios to make sure it works perfectly."
+    },
+    "getSnippet": {
+      "title": "Get Your Widget Code",
+      "description": "Copy this code snippet and paste it into your website. Your AI agent will appear as a chat widget!"
+    },
+    "skipTour": "Skip tour",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Got it!",
+    "stepOf": "Step {current} of {total}",
+    "restartTour": "Restart onboarding tour"
   }
 }

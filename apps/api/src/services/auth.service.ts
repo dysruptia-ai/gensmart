@@ -28,6 +28,9 @@ export interface AuthTokens {
     orgName: string;
     totpEnabled: boolean;
     language: string;
+    onboardingCompleted: boolean;
+    onboardingStep: number;
+    editorTourCompleted: boolean;
   };
 }
 
@@ -47,6 +50,9 @@ interface UserRow {
   totp_secret_encrypted: string | null;
   last_login_at: string | null;
   language: string;
+  onboarding_completed: boolean;
+  onboarding_step: number;
+  editor_tour_completed: boolean;
 }
 
 interface OrgRow {
@@ -127,6 +133,9 @@ async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> 
       orgName: org.name,
       totpEnabled: user.totp_enabled,
       language: user.language ?? 'en',
+      onboardingCompleted: user.onboarding_completed ?? false,
+      onboardingStep: user.onboarding_step ?? 0,
+      editorTourCompleted: user.editor_tour_completed ?? false,
     },
   };
 }
@@ -215,6 +224,9 @@ export async function register(input: {
         orgName: org.name,
         totpEnabled: user.totp_enabled,
         language: user.language ?? 'en',
+        onboardingCompleted: false,
+        onboardingStep: 0,
+        editorTourCompleted: false,
       },
     };
   } catch (err) {
@@ -235,7 +247,8 @@ export async function login(input: {
 }): Promise<AuthTokens | TwoFactorRequired> {
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
-            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language
+            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
+            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed
      FROM users u
      WHERE u.email = $1`,
     [input.email.toLowerCase()]
@@ -280,7 +293,8 @@ export async function verify2FA(input: {
 
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
-            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language
+            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
+            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed
      FROM users u WHERE u.id = $1`,
     [payload.userId]
   );
@@ -350,7 +364,8 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
 
   const userResult = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
-            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language
+            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
+            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed
      FROM users u WHERE u.id = $1`,
     [storedToken.user_id]
   );

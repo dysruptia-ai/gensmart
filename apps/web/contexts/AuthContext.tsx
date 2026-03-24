@@ -19,6 +19,9 @@ export interface AuthUser {
   orgName: string;
   totpEnabled: boolean;
   language: string;
+  onboardingCompleted: boolean;
+  onboardingStep: number;
+  editorTourCompleted: boolean;
 }
 
 interface LoginResult {
@@ -35,6 +38,7 @@ interface AuthContextValue {
   register: (email: string, password: string, name: string, organizationName: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateOnboarding: (step?: number, completed?: boolean, editorTourCompleted?: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -154,6 +158,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
+  const updateOnboarding = useCallback(async (step?: number, completed?: boolean, editorTourCompleted?: boolean): Promise<void> => {
+    await api.put('/api/auth/onboarding', { step, completed, editorTourCompleted });
+    setUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        onboardingCompleted: completed === true ? true : (completed === false ? false : prev.onboardingCompleted),
+        onboardingStep: completed === true ? 0 : (step !== undefined ? step : prev.onboardingStep),
+        editorTourCompleted: editorTourCompleted !== undefined ? editorTourCompleted : prev.editorTourCompleted,
+      };
+    });
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -165,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         refreshUser,
+        updateOnboarding,
       }}
     >
       {children}
