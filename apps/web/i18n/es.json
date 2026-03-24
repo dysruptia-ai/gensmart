@@ -545,6 +545,10 @@
         "mcpServer": "Servidor MCP",
         "mcpServerDesc": "Servidor de Model Context Protocol"
       },
+      "multiCalendarHint": "Múltiples calendarios seleccionados. El agente IA determinará el calendario correcto según el contexto de la conversación y la lógica de tu prompt — NO le preguntará al usuario directamente.",
+      "selectCalendars": "Calendarios",
+      "selectCalendarsDesc": "Seleccione uno o más calendarios. Cuando hay varios seleccionados, el agente IA determina cuál usar según la conversación y la lógica de tu prompt.",
+      "createNewCalendar": "Crear Nuevo Calendario",
       "mcp": {
         "title": "Servidores MCP",
         "description": "Conecta servidores MCP externos para ampliar las capacidades de tu agente",

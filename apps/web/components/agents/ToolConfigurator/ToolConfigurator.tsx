@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, Calendar, Database, Code2, Wrench, Trash2, Settings, Upload, X,
-  Check, RefreshCw, ChevronDown, ChevronUp, Play,
+  Check, RefreshCw, ChevronDown, ChevronUp, Play, Info,
 } from 'lucide-react';
 import MCPConfigurator, { MCPConfig } from '../MCPConfigurator';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -78,6 +78,7 @@ interface ToolForm {
   schedulingType: string;
   timezone: string;
   calendarId: string;
+  calendarIds: string[];
   // rag
   collectionName: string;
   files: File[];
@@ -120,6 +121,7 @@ const DEFAULT_FORM: ToolForm = {
   schedulingType: 'appointment',
   timezone: 'UTC',
   calendarId: '',
+  calendarIds: [],
   collectionName: '',
   files: [],
   endpointUrl: '',
@@ -172,8 +174,9 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
       return {
         schedulingType: form.schedulingType,
         timezone: form.timezone,
-        calendar_id: form.calendarId || undefined,
-        calendarId: form.calendarId || undefined, // legacy compat
+        calendar_ids: form.calendarIds.length > 0 ? form.calendarIds : (form.calendarId ? [form.calendarId] : []),
+        calendar_id: form.calendarIds[0] ?? form.calendarId ?? undefined,
+        calendarId: form.calendarIds[0] ?? form.calendarId ?? undefined,
       };
     case 'rag':
       return {
@@ -402,7 +405,16 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       type: tool.type,
       schedulingType: (cfg['schedulingType'] as string) ?? 'appointment',
       timezone: (cfg['timezone'] as string) ?? 'UTC',
-      calendarId: (cfg['calendar_id'] as string) ?? (cfg['calendarId'] as string) ?? '',
+      calendarId: (() => {
+        const rawCalIds = cfg['calendar_ids'] as string[] | undefined;
+        const legacyCalId = (cfg['calendar_id'] as string) ?? (cfg['calendarId'] as string) ?? '';
+        return rawCalIds?.length ? rawCalIds[0] : legacyCalId;
+      })(),
+      calendarIds: (() => {
+        const rawCalIds = cfg['calendar_ids'] as string[] | undefined;
+        const legacyCalId = (cfg['calendar_id'] as string) ?? (cfg['calendarId'] as string) ?? '';
+        return rawCalIds?.length ? rawCalIds : (legacyCalId ? [legacyCalId] : []);
+      })(),
       collectionName: (cfg['collectionName'] as string) ?? '',
       endpointUrl: (cfg['endpointUrl'] as string) ?? '',
       httpMethod: (cfg['httpMethod'] as string) ?? 'POST',
@@ -882,6 +894,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       const newCal = res.calendar;
       setCalendars((prev) => [...prev, newCal]);
       setField('calendarId', newCal.id);
+      setField('calendarIds', [...form.calendarIds, newCal.id]);
       setShowCreateCal(false);
       success('Calendar created');
     } catch (err) {
@@ -928,53 +941,67 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
 
   function renderSchedulingPanel() {
     const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const selectedCalIds = form.calendarIds;
 
     return (
       <>
-        {/* Calendar selector */}
+        {/* Calendar selector — MULTI-SELECT */}
         <div className={styles.fieldGroup}>
-          <label className={styles.fieldLabel}>Calendar</label>
+          <label className={styles.fieldLabel}>{t('agents.tools.selectCalendars') || 'Calendars'}</label>
+          <p className={styles.fieldHint}>
+            {t('agents.tools.selectCalendarsDesc') || 'Select one or more calendars. When multiple are selected, the AI agent determines which to use based on the conversation and your prompt logic.'}
+          </p>
+
           {calendars.length > 0 && !showCreateCal && !showEditCal ? (
             <>
-              <select
-                className={styles.fieldSelect}
-                value={form.calendarId}
-                onChange={(e) => {
-                  if (e.target.value === '__new__') { setShowCreateCal(true); }
-                  else setField('calendarId', e.target.value);
-                }}
-              >
-                <option value="">— Select a calendar —</option>
-                {calendars.map((cal) => (
-                  <option key={cal.id} value={cal.id}>{cal.name}</option>
-                ))}
-                <option value="__new__">+ Create new calendar…</option>
-              </select>
-              {form.calendarId && (
-                <button
-                  className={styles.addParamBtn}
-                  style={{ marginTop: '0.375rem' }}
-                  onClick={() => {
-                    const cal = calendars.find((c) => c.id === form.calendarId);
-                    if (cal) {
-                      setEditingCalendar(cal);
-                      setCalForm({
-                        name: cal.name,
-                        timezone: cal.timezone ?? 'UTC',
-                        availableDays: Array.isArray(cal.available_days) ? cal.available_days.map(Number) : [1,2,3,4,5],
-                        startHour: cal.available_hours?.start ?? '09:00',
-                        endHour: cal.available_hours?.end ?? '17:00',
-                        slotDuration: Number(cal.slot_duration) || 30,
-                        bufferMinutes: Number(cal.buffer_minutes) || 15,
-                        maxAdvanceDays: Number(cal.max_advance_days) || 30,
-                      });
-                      setShowEditCal(true);
-                    }
-                  }}
-                >
-                  <Settings size={12} /> Edit Calendar
-                </button>
-              )}
+              <div className={styles.calendarCheckboxList}>
+                {calendars.map((cal) => {
+                  const isChecked = selectedCalIds.includes(cal.id);
+                  return (
+                    <label key={cal.id} className={styles.calendarCheckboxRow}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          const next = isChecked
+                            ? selectedCalIds.filter((id) => id !== cal.id)
+                            : [...selectedCalIds, cal.id];
+                          setField('calendarIds', next);
+                        }}
+                      />
+                      <span className={styles.calendarCheckboxName}>{cal.name}</span>
+                      <span className={styles.calendarCheckboxTz}>{cal.timezone ?? 'UTC'}</span>
+                      <button
+                        className={styles.iconBtn}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const c = calendars.find((x) => x.id === cal.id);
+                          if (c) {
+                            setEditingCalendar(c);
+                            setCalForm({
+                              name: c.name,
+                              timezone: c.timezone ?? 'UTC',
+                              availableDays: Array.isArray(c.available_days) ? c.available_days.map(Number) : [1,2,3,4,5],
+                              startHour: c.available_hours?.start ?? '09:00',
+                              endHour: c.available_hours?.end ?? '17:00',
+                              slotDuration: Number(c.slot_duration) || 30,
+                              bufferMinutes: Number(c.buffer_minutes) || 15,
+                              maxAdvanceDays: Number(c.max_advance_days) || 30,
+                            });
+                            setShowEditCal(true);
+                          }
+                        }}
+                        aria-label="Edit calendar"
+                      >
+                        <Settings size={13} />
+                      </button>
+                    </label>
+                  );
+                })}
+              </div>
+              <button className={styles.addParamBtn} onClick={() => setShowCreateCal(true)} style={{ marginTop: '0.5rem' }}>
+                <Plus size={12} /> {t('agents.tools.createNewCalendar') || 'Create New Calendar'}
+              </button>
             </>
           ) : !showCreateCal && !showEditCal ? (
             <div>
@@ -1232,19 +1259,31 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
             <div className={styles.agentFunctionRow}>
               <Check size={14} className={styles.agentFunctionIcon} aria-hidden="true" />
               <div>
-                <span className={styles.agentFunctionName}>check_availability(date)</span>
+                <span className={styles.agentFunctionName}>
+                  check_availability(date{selectedCalIds.length > 1 ? ', calendar_id' : ''})
+                </span>
                 <span className={styles.agentFunctionDesc}>Check available time slots for a given date</span>
               </div>
             </div>
             <div className={styles.agentFunctionRow}>
               <Check size={14} className={styles.agentFunctionIcon} aria-hidden="true" />
               <div>
-                <span className={styles.agentFunctionName}>book_appointment(date, time, name)</span>
-                <span className={styles.agentFunctionDesc}>Book an appointment in the configured calendar</span>
+                <span className={styles.agentFunctionName}>
+                  book_appointment(date, time, name{selectedCalIds.length > 1 ? ', calendar_id' : ''})
+                </span>
+                <span className={styles.agentFunctionDesc}>Book an appointment{selectedCalIds.length > 1 ? ' on the determined calendar' : ''}</span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Multi-calendar info banner */}
+        {selectedCalIds.length > 1 && (
+          <div className={styles.multiCalBanner}>
+            <Info size={14} />
+            <span>{t('agents.tools.multiCalendarHint') || 'Multiple calendars selected. The AI agent will determine the correct calendar based on the conversation context and your prompt logic — it will NOT ask the user directly.'}</span>
+          </div>
+        )}
       </>
     );
   }

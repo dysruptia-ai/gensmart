@@ -804,6 +804,10 @@ router.post(
           });
         }
         if (tool.type === 'scheduling') {
+          const { resolveCalendarIds } = await import('../services/calendar.service');
+          const calendarIds = resolveCalendarIds(tool.config as Record<string, unknown>);
+          const hasMultipleCalendars = calendarIds.length > 1;
+
           llmTools.push(
             {
               name: 'check_availability',
@@ -812,8 +816,11 @@ router.post(
                 type: 'object',
                 properties: {
                   date: { type: 'string', description: 'Date to check availability (YYYY-MM-DD)' },
+                  ...(hasMultipleCalendars ? {
+                    calendar_id: { type: 'string', description: 'ID of the specific calendar to check availability on. You MUST determine the correct calendar based on the conversation context and your instructions.' },
+                  } : {}),
                 },
-                required: ['date'],
+                required: hasMultipleCalendars ? ['date', 'calendar_id'] : ['date'],
               },
             },
             {
@@ -825,8 +832,11 @@ router.post(
                   date: { type: 'string', description: 'Appointment date (YYYY-MM-DD)' },
                   time: { type: 'string', description: 'Appointment start time (HH:MM)' },
                   name: { type: 'string', description: 'Name of the person booking' },
+                  ...(hasMultipleCalendars ? {
+                    calendar_id: { type: 'string', description: 'ID of the specific calendar to book on. You MUST determine the correct calendar based on the conversation context and your instructions.' },
+                  } : {}),
                 },
-                required: ['date', 'time'],
+                required: hasMultipleCalendars ? ['date', 'time', 'calendar_id'] : ['date', 'time'],
               },
             }
           );
@@ -835,10 +845,25 @@ router.post(
 
       // Add scheduling instructions to system prompt if a scheduling tool is enabled
       if (toolsResult.rows.some((t) => t.type === 'scheduling')) {
-        const todayDate = new Date().toISOString().split('T')[0]; // e.g. "2026-03-01"
-        const todayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' }); // e.g. "Sunday"
+        const { resolveCalendarIds } = await import('../services/calendar.service');
+        const todayDate = new Date().toISOString().split('T')[0];
+        const todayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
         const currentYear = new Date().getFullYear();
-        fullSystemPrompt += `\n\nToday's date is ${todayDate} (${todayDay}). Always use the current year (${currentYear}) when interpreting user-mentioned dates and always output dates in YYYY-MM-DD format.\n\nYou have access to a scheduling system. When the user wants to book an appointment:\n1. First call check_availability with the requested date (YYYY-MM-DD, year ${currentYear}) to see available time slots\n2. Present the available slots to the user\n3. When the user confirms a slot, call book_appointment with the date, time, and the user's name`;
+
+        const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
+        const calendarIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
+
+        if (calendarIds.length > 1) {
+          const calResult = await query<{ id: string; name: string }>(
+            'SELECT id, name FROM calendars WHERE id = ANY($1::uuid[])',
+            [calendarIds]
+          );
+          const calList = calResult.rows.map((c) => `- "${c.name}" → calendar_id: ${c.id}`).join('\n');
+
+          fullSystemPrompt += `\n\nToday's date is ${todayDate} (${todayDay}). Always use the current year (${currentYear}) when interpreting user-mentioned dates and always output dates in YYYY-MM-DD format.\n\nYou have access to a scheduling system with multiple calendars:\n${calList}\n\nIMPORTANT: Use your system prompt instructions and the conversation context to determine which calendar to use. Do NOT ask the user which calendar or doctor — infer it from the conversation logic defined in your prompt. When calling check_availability or book_appointment, you MUST include the correct calendar_id based on your reasoning.\n\nScheduling flow:\n1. Determine the correct calendar based on conversation context and your prompt rules\n2. Call check_availability with the date AND the calendar_id\n3. Present the available slots to the user\n4. When the user confirms a slot, call book_appointment with date, time, name, and calendar_id`;
+        } else {
+          fullSystemPrompt += `\n\nToday's date is ${todayDate} (${todayDay}). Always use the current year (${currentYear}) when interpreting user-mentioned dates and always output dates in YYYY-MM-DD format.\n\nYou have access to a scheduling system. When the user wants to book an appointment:\n1. First call check_availability with the requested date (YYYY-MM-DD, year ${currentYear}) to see available time slots\n2. Present the available slots to the user\n3. When the user confirms a slot, call book_appointment with the date, time, and the user's name`;
+        }
       }
 
       // LLM call
@@ -888,10 +913,17 @@ router.post(
             capturedVars[name] = val;
             previewToolResults.push({ toolCallId: tc.id, content: `Variable '${name}' captured: ${val}` });
           } else if (tc.name === 'check_availability') {
-            const { getAvailableSlots } = await import('../services/calendar.service');
+            const { getAvailableSlots, resolveCalendarIds } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
-            const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
-            const calendarId = schedulingTool ? String(schedulingTool.config['calendar_id'] ?? '') : '';
+
+            // Multi-calendar: prefer calendar_id from LLM args, fallback to first in config
+            let calendarId = String(tc.arguments['calendar_id'] ?? '');
+            if (!calendarId) {
+              const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
+              const calIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
+              calendarId = calIds[0] ?? '';
+            }
+
             let slotResult = 'No calendar configured for this agent.';
             if (calendarId && date) {
               try {
@@ -906,12 +938,19 @@ router.post(
             previewToolResults.push({ toolCallId: tc.id, content: slotResult });
           } else if (tc.name === 'book_appointment') {
             const { createAppointment } = await import('../services/appointment.service');
-            const { localTimeToUTC } = await import('../services/calendar.service');
+            const { localTimeToUTC, resolveCalendarIds } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
             const time = String(tc.arguments['time'] ?? '');
             const personName = String(tc.arguments['name'] ?? 'Guest');
-            const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
-            const calendarId = schedulingTool ? String(schedulingTool.config['calendar_id'] ?? '') : '';
+
+            // Multi-calendar: prefer calendar_id from LLM args, fallback to first in config
+            let calendarId = String(tc.arguments['calendar_id'] ?? '');
+            if (!calendarId) {
+              const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
+              const calIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
+              calendarId = calIds[0] ?? '';
+            }
+
             let bookResult = 'Could not book appointment — missing information.';
             if (calendarId && date && time) {
               try {

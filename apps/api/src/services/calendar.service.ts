@@ -31,6 +31,16 @@ export interface TimeSlot {
   end: string;
 }
 
+/**
+ * Resolves calendar IDs from a scheduling tool config.
+ * Supports both new format (calendar_ids: string[]) and legacy (calendar_id: string).
+ */
+export function resolveCalendarIds(toolConfig: Record<string, unknown>): string[] {
+  const rawCalIds = toolConfig['calendar_ids'] as string[] | undefined;
+  const legacyCalId = toolConfig['calendar_id'] as string | undefined;
+  return rawCalIds?.length ? rawCalIds : (legacyCalId ? [legacyCalId] : []);
+}
+
 export async function createCalendar(orgId: string, data: CalendarData): Promise<CalendarRow> {
   const {
     name,

@@ -545,6 +545,10 @@
         "mcpServer": "MCP Server",
         "mcpServerDesc": "Model Context Protocol server"
       },
+      "multiCalendarHint": "Multiple calendars selected. The AI agent will determine the correct calendar based on the conversation context and your prompt logic — it will NOT ask the user directly.",
+      "selectCalendars": "Calendars",
+      "selectCalendarsDesc": "Select one or more calendars. When multiple are selected, the AI agent determines which to use based on the conversation and your prompt logic.",
+      "createNewCalendar": "Create New Calendar",
       "mcp": {
         "title": "MCP Servers",
         "description": "Connect external MCP servers to extend your agent capabilities",
