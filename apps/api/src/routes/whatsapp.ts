@@ -12,8 +12,10 @@ import {
   encryptAccessToken,
   decryptAccessToken,
   getPhoneNumberInfo,
+  downloadMedia,
 } from '../services/whatsapp.service';
 import { pushToBuffer } from '../services/message-buffer.service';
+import type { BufferItem } from '../services/message-buffer.service';
 
 const router = Router();
 
@@ -93,6 +95,12 @@ router.post(
                 from: string;
                 type: string;
                 text?: { body: string };
+                image?: {
+                  id: string;
+                  mime_type: string;
+                  sha256: string;
+                  caption?: string;
+                };
                 timestamp: string;
               }>;
               statuses?: unknown[];
@@ -110,17 +118,36 @@ router.post(
       const message = value.messages[0];
       const phoneNumberId = value.metadata?.phone_number_id;
 
-      // Only handle text messages
-      if (message.type !== 'text' || !message.text?.body) {
-        console.log(`[whatsapp] Skipping non-text message type: ${message.type}`);
+      // Handle text and image messages
+      if (message.type !== 'text' && message.type !== 'image') {
+        console.log(`[whatsapp] Skipping unsupported message type: ${message.type}`);
         return;
       }
 
       const fromPhone = message.from;
-      const messageText = message.text.body;
       const messageId = message.id;
 
-      if (!fromPhone || !messageText || !phoneNumberId) return;
+      if (!fromPhone || !phoneNumberId) return;
+
+      // Extract content based on message type
+      let messageText = '';
+      let imageMediaId: string | null = null;
+      let imageCaption = '';
+
+      if (message.type === 'text') {
+        messageText = message.text?.body ?? '';
+        if (!messageText) return;
+      } else if (message.type === 'image') {
+        imageCaption = message.image?.caption ?? '';
+        imageMediaId = message.image?.id ?? null;
+
+        if (!imageMediaId) {
+          console.log('[whatsapp] Image message missing media ID');
+          return;
+        }
+
+        messageText = imageCaption || '[Image]';
+      }
 
       // Find active agent by phone_number_id
       const agentResult = await query<{
@@ -143,6 +170,30 @@ router.post(
       if (!agent) {
         console.log(`[whatsapp] No active agent for phone_number_id: ${phoneNumberId}`);
         return;
+      }
+
+      // Download image if this is an image message
+      let imageBufferItem: BufferItem | null = null;
+      if (imageMediaId) {
+        const waConfig = agent.whatsapp_config;
+        if (waConfig?.access_token_encrypted) {
+          try {
+            const accessToken = decryptAccessToken(String(waConfig.access_token_encrypted));
+            const media = await downloadMedia(imageMediaId, accessToken);
+            imageBufferItem = {
+              type: 'image',
+              content: imageCaption,
+              mimeType: media.mimeType,
+              data: media.data,
+            };
+            console.log(`[whatsapp] Downloaded image: ${media.mimeType}, ${Math.round(media.data.length * 0.75 / 1024)}KB`);
+          } catch (err) {
+            console.error('[whatsapp] Failed to download image:', (err as Error).message);
+            // Continue without image — treat as text-only with caption
+          }
+        } else {
+          console.warn('[whatsapp] Cannot download image — no access token');
+        }
       }
 
       // Check plan — Free cannot use WhatsApp
@@ -221,11 +272,18 @@ router.post(
       if (convStatus === 'human_takeover') {
         console.log(`[whatsapp] Conversation ${convId} in human takeover — saving message, skipping LLM`);
 
+        const userMsgMeta: Record<string, unknown> = {};
+        if (imageBufferItem?.data) {
+          userMsgMeta['hasImages'] = true;
+          userMsgMeta['imageCount'] = 1;
+          userMsgMeta['images'] = [{ mimeType: imageBufferItem.mimeType, hasCaption: !!imageBufferItem.content }];
+        }
+
         const msgResult = await query<{ id: string; created_at: string }>(
           `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
-           VALUES ($1, 'user', $2, '{}', NOW())
+           VALUES ($1, 'user', $2, $3, NOW())
            RETURNING id, created_at`,
-          [convId, messageText]
+          [convId, messageText, JSON.stringify(userMsgMeta)]
         );
 
         await query(
@@ -242,6 +300,7 @@ router.post(
               id: msgResult.rows[0]!.id,
               role: 'user',
               content: messageText,
+              metadata: userMsgMeta,
               createdAt: msgResult.rows[0]!.created_at,
             }],
           });
@@ -257,8 +316,12 @@ router.post(
         return;
       }
 
-      // Push to message buffer (LLM processing)
-      await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds);
+      // Push to message buffer — image or text
+      if (imageBufferItem?.data) {
+        await pushToBuffer(convId, agent.id, agent.organization_id, imageBufferItem, agent.message_buffer_seconds);
+      } else {
+        await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds);
+      }
     } catch (err) {
       console.error('[whatsapp] Webhook processing error:', err);
     }

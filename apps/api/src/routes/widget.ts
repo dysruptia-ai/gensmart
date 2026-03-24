@@ -1,9 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import express from 'express';
 import cors from 'cors';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { AppError } from '../middleware/errorHandler';
 import { pushToBuffer } from '../services/message-buffer.service';
+import type { BufferItem } from '../services/message-buffer.service';
 
 const router = Router();
 
@@ -15,6 +17,9 @@ const widgetCors = cors({
 });
 
 router.use(widgetCors);
+
+// Larger body limit for image uploads (base64 images can be ~6.7MB for 5MB files)
+router.use(express.json({ limit: '8mb' }));
 
 // ── Rate limiting helpers ─────────────────────────────────────────────────────
 
@@ -201,14 +206,39 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const agentId = String(req.params['agentId'] ?? '');
-      const { sessionId, message } = req.body as { sessionId: string; message: string };
+      const { sessionId, message, image, imageMimeType } = req.body as {
+        sessionId: string;
+        message?: string;
+        image?: string;        // base64-encoded image data (NO data: prefix)
+        imageMimeType?: string; // 'image/jpeg', 'image/png', etc.
+      };
 
-      if (!sessionId || !message?.trim()) {
-        throw new AppError(400, 'sessionId and message are required', 'VALIDATION_ERROR');
+      if (!sessionId) {
+        throw new AppError(400, 'sessionId is required', 'VALIDATION_ERROR');
+      }
+
+      const hasText = !!message?.trim();
+      const hasImage = !!image;
+
+      if (!hasText && !hasImage) {
+        throw new AppError(400, 'message or image is required', 'VALIDATION_ERROR');
+      }
+
+      // Validate image if present
+      if (hasImage) {
+        const validMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        if (!imageMimeType || !validMimeTypes.includes(imageMimeType)) {
+          throw new AppError(400, 'Invalid image type. Supported: JPEG, PNG, WebP, GIF', 'VALIDATION_ERROR');
+        }
+        const estimatedBytes = (image.length * 3) / 4;
+        const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+        if (estimatedBytes > MAX_IMAGE_SIZE) {
+          throw new AppError(400, 'Image too large. Maximum size is 5MB.', 'VALIDATION_ERROR');
+        }
       }
 
       // Sanitize message (basic XSS prevention)
-      const sanitizedMessage = message.trim().slice(0, 4000);
+      const sanitizedMessage = hasText ? message!.trim().slice(0, 4000) : '';
 
       // Rate limit per session
       const allowed = await checkMessageRateLimit(sessionId);
@@ -246,8 +276,18 @@ router.post(
       );
       const bufferSeconds = agentResult.rows[0]?.message_buffer_seconds ?? 5;
 
-      // Push to message buffer
-      await pushToBuffer(sessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
+      // Push to message buffer — image or text
+      if (hasImage) {
+        const imageItem: BufferItem = {
+          type: 'image',
+          content: sanitizedMessage,
+          mimeType: imageMimeType!,
+          data: image!,
+        };
+        await pushToBuffer(sessionId, agentId, conv.organization_id, imageItem, bufferSeconds);
+      } else {
+        await pushToBuffer(sessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
+      }
 
       res.json({ messageId: null, status: 'queued', conversationStatus: conv.status });
     } catch (err) {

@@ -12,9 +12,44 @@ export const LLM_MODELS = {
   },
 } as const;
 
+// ── Vision / Multimodal types ─────────────────────────────────────────────────
+
+export interface TextPart {
+  type: 'text';
+  text: string;
+}
+
+export interface ImagePart {
+  type: 'image';
+  mimeType: string;  // 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'
+  data: string;       // base64-encoded image data (NO data: URI prefix)
+}
+
+export type ContentPart = TextPart | ImagePart;
+
+/** Models that support image/vision input */
+const VISION_MODELS = new Set([
+  'gpt-4o',
+  'claude-sonnet-4-20250514',
+]);
+
+export function supportsVision(provider: string, model: string): boolean {
+  void provider;
+  return VISION_MODELS.has(model);
+}
+
+/** Extract plain text from string or ContentPart[] */
+export function getTextContent(content: string | ContentPart[]): string {
+  if (typeof content === 'string') return content;
+  return content
+    .filter((p): p is TextPart => p.type === 'text')
+    .map((p) => p.text)
+    .join('\n');
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string | ContentPart[];
   // For tool call responses (assistant message that invoked tools)
   toolCalls?: ToolCall[];
   // For tool result messages
@@ -103,12 +138,14 @@ async function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
 
   for (const m of params.messages) {
     if (m.role === 'system') {
-      messages.push({ role: 'system', content: m.content });
+      const sysText = typeof m.content === 'string' ? m.content : getTextContent(m.content);
+      messages.push({ role: 'system', content: sysText });
     } else if (m.toolCalls && m.toolCalls.length > 0) {
       // Assistant message with tool calls
+      const assistText = typeof m.content === 'string' ? m.content : getTextContent(m.content);
       messages.push({
         role: 'assistant',
-        content: m.content || null,
+        content: assistText || null,
         tool_calls: m.toolCalls.map((tc) => ({
           id: tc.id,
           type: 'function' as const,
@@ -127,8 +164,27 @@ async function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
           content: tr.content,
         } as OpenAI.ChatCompletionToolMessageParam);
       }
+    } else if (m.role === 'user' && Array.isArray(m.content)) {
+      // Multimodal user message (text + images)
+      const parts: OpenAI.ChatCompletionContentPart[] = [];
+      for (const part of m.content) {
+        if (part.type === 'text') {
+          parts.push({ type: 'text', text: part.text });
+        } else if (part.type === 'image') {
+          parts.push({
+            type: 'image_url',
+            image_url: {
+              url: `data:${part.mimeType};base64,${part.data}`,
+              detail: 'auto',
+            },
+          });
+        }
+      }
+      messages.push({ role: 'user', content: parts });
     } else {
-      messages.push({ role: m.role as 'user' | 'assistant', content: m.content });
+      // Plain text message
+      const textContent = typeof m.content === 'string' ? m.content : getTextContent(m.content);
+      messages.push({ role: m.role as 'user' | 'assistant', content: textContent });
     }
   }
 
@@ -187,8 +243,9 @@ async function chatAnthropic(params: ChatParams): Promise<ChatResponse> {
     if (m.toolCalls && m.toolCalls.length > 0) {
       // Assistant message with tool calls
       const content: Anthropic.ContentBlockParam[] = [];
-      if (m.content) {
-        content.push({ type: 'text', text: m.content });
+      const assistText = typeof m.content === 'string' ? m.content : getTextContent(m.content);
+      if (assistText) {
+        content.push({ type: 'text', text: assistText });
       }
       for (const tc of m.toolCalls) {
         content.push({
@@ -207,10 +264,30 @@ async function chatAnthropic(params: ChatParams): Promise<ChatResponse> {
         content: tr.content,
       }));
       rawMessages.push({ role: 'user', content });
+    } else if (m.role === 'user' && Array.isArray(m.content)) {
+      // Multimodal user message (text + images)
+      const parts: Anthropic.ContentBlockParam[] = [];
+      for (const part of m.content) {
+        if (part.type === 'text') {
+          parts.push({ type: 'text', text: part.text });
+        } else if (part.type === 'image') {
+          parts.push({
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: part.mimeType as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
+              data: part.data,
+            },
+          });
+        }
+      }
+      rawMessages.push({ role: 'user', content: parts });
     } else {
+      // Plain text message
+      const textContent = typeof m.content === 'string' ? m.content : getTextContent(m.content);
       rawMessages.push({
         role: m.role as 'user' | 'assistant',
-        content: m.content,
+        content: textContent,
       });
     }
   }

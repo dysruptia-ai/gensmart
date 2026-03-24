@@ -2,7 +2,7 @@ import { Worker, Job } from 'bullmq';
 import { createBullConnection } from '../config/queues';
 import { query } from '../config/database';
 import { PLAN_LIMITS } from '@gensmart/shared';
-import { chat, ChatMessage, ToolDefinition, ToolCall } from '../services/llm.service';
+import { chat, ChatMessage, ToolDefinition, ToolCall, type ContentPart, supportsVision } from '../services/llm.service';
 import { flushBuffer } from '../services/message-buffer.service';
 import { checkLimit, incrementMessages } from '../services/usage.service';
 import {
@@ -92,12 +92,25 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   const { conversationId, agentId, organizationId } = job.data;
 
   // Step 1: Flush buffer atomically
-  const bufferedMessages = await flushBuffer(conversationId);
-  if (!bufferedMessages.length) {
+  const bufferedItems = await flushBuffer(conversationId);
+  if (!bufferedItems.length) {
     console.log(`[msg-worker] No messages in buffer for ${conversationId}`);
     return;
   }
-  const userMessage = bufferedMessages.join('\n');
+
+  // Separate text items and image items
+  const textItems = bufferedItems.filter((item) => item.type === 'text');
+  const imageItems = bufferedItems.filter((item) => item.type === 'image');
+
+  // Plain text version (for DB storage + display + non-vision fallback)
+  const textParts: string[] = [];
+  for (const item of textItems) {
+    if (item.content) textParts.push(item.content);
+  }
+  for (const item of imageItems) {
+    if (item.content) textParts.push(item.content); // image captions
+  }
+  const userMessageText = textParts.join('\n') || '[Image]';
 
   // Step 2: Fetch conversation
   const convResult = await query<ConversationRow>(
@@ -114,16 +127,26 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   if (conv.status === 'human_takeover') {
     console.log(`[msg-worker] Human takeover — saving user message, skipping LLM`);
 
+    const takeoverUserMeta: Record<string, unknown> = {};
+    if (imageItems.length > 0) {
+      takeoverUserMeta['hasImages'] = true;
+      takeoverUserMeta['imageCount'] = imageItems.length;
+      takeoverUserMeta['images'] = imageItems.map((img) => ({
+        mimeType: img.mimeType,
+        hasCaption: !!img.content,
+      }));
+    }
+
     const msgResult = await query<{ id: string; created_at: string }>(
       `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
-       VALUES ($1, 'user', $2, '{}', NOW())
+       VALUES ($1, 'user', $2, $3, NOW())
        RETURNING id, created_at`,
-      [conversationId, userMessage]
+      [conversationId, userMessageText, JSON.stringify(takeoverUserMeta)]
     );
 
     await query(
       `UPDATE conversations SET last_message_at = NOW(), message_count = message_count + $1, updated_at = NOW() WHERE id = $2`,
-      [bufferedMessages.length, conversationId]
+      [bufferedItems.length, conversationId]
     );
 
     try {
@@ -131,14 +154,15 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       const takoverMsg = [{
         id: msgResult.rows[0]!.id,
         role: 'user',
-        content: userMessage,
+        content: userMessageText,
+        metadata: takeoverUserMeta,
         createdAt: msgResult.rows[0]!.created_at,
       }];
       io.to(`org:${organizationId}`).emit('message:new', { conversationId, messages: takoverMsg });
       io.to(`conv:${conversationId}`).emit('message:new', { conversationId, messages: takoverMsg });
       io.to(`org:${organizationId}`).emit('conversation:update', {
         conversationId,
-        lastMessage: userMessage.slice(0, 100),
+        lastMessage: userMessageText.slice(0, 100),
         updatedAt: new Date().toISOString(),
       });
     } catch {
@@ -226,7 +250,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // 7b. RAG context
   const hasRAG = await hasKnowledgeBase(agentId);
   if (hasRAG) {
-    const ragContext = await queryKnowledgeBase(agentId, userMessage);
+    const ragContext = await queryKnowledgeBase(agentId, userMessageText);
     if (ragContext) {
       fullSystemPrompt += '\n\n' + ragContext;
     }
@@ -440,8 +464,38 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     }
   }
 
-  // Step 9: LLM call with tool loop
-  const messages: ChatMessage[] = [...history, { role: 'user', content: userMessage }];
+  // Step 9: LLM call with tool loop — build vision-aware user content
+  const hasImages = imageItems.length > 0;
+  const modelSupportsVision = supportsVision(agent.llm_provider, agent.llm_model);
+
+  let userContent: string | ContentPart[];
+
+  if (hasImages && modelSupportsVision) {
+    const parts: ContentPart[] = [];
+    const combinedText = textParts.join('\n');
+    if (combinedText) {
+      parts.push({ type: 'text', text: combinedText });
+    }
+    for (const img of imageItems) {
+      if (img.data && img.mimeType) {
+        parts.push({ type: 'image', mimeType: img.mimeType, data: img.data });
+      }
+    }
+    if (!combinedText) {
+      parts.unshift({ type: 'text', text: 'The user sent this image. Please analyze it and respond appropriately.' });
+    }
+    userContent = parts;
+  } else if (hasImages && !modelSupportsVision) {
+    const imageNote = imageItems.length === 1
+      ? '[The user sent an image, but the current AI model does not support image analysis. Please let them know.]'
+      : `[The user sent ${imageItems.length} images, but the current AI model does not support image analysis. Please let them know.]`;
+    const combinedText = textParts.join('\n');
+    userContent = combinedText ? `${combinedText}\n\n${imageNote}` : imageNote;
+  } else {
+    userContent = userMessageText;
+  }
+
+  const messages: ChatMessage[] = [...history, { role: 'user', content: userContent }];
 
   let finalResponse = '';
   let totalTokensUsed = 0;
@@ -530,9 +584,9 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       // Save error message
       const errorMessage = 'I encountered an error processing your message. Please try again.';
       const errorMeta = { error: true, errorMessage: (retryErr as Error).message };
-      const errorSaved = await saveMessages(conversationId, userMessage, errorMessage, errorMeta);
+      const errorSaved = await saveMessages(conversationId, userMessageText, errorMessage, errorMeta);
       await updateConversation(conversationId, 2);
-      notifyClients(organizationId, conversationId, userMessage, errorMessage, errorSaved, errorMeta);
+      notifyClients(organizationId, conversationId, userMessageText, errorMessage, errorSaved, errorMeta);
       return;
     }
   }
@@ -542,16 +596,33 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   }
 
   // Step 10: Save messages
-  const msgMetadata = {
+  const msgMetadata: Record<string, unknown> = {
     tokensUsed: totalTokensUsed,
     toolsCalled: toolsCalledLog,
     model: agent.llm_model,
-    latencyMs: 0, // Could add timing if needed
+    latencyMs: 0,
   };
-  const savedMessages = await saveMessages(conversationId, userMessage, finalResponse, msgMetadata);
+
+  const userMsgMeta: Record<string, unknown> = {};
+  if (hasImages) {
+    userMsgMeta['hasImages'] = true;
+    userMsgMeta['imageCount'] = imageItems.length;
+    userMsgMeta['images'] = imageItems.map((img) => ({
+      mimeType: img.mimeType,
+      hasCaption: !!img.content,
+    }));
+  }
+
+  const savedMessages = await saveMessages(
+    conversationId,
+    userMessageText,
+    finalResponse,
+    msgMetadata,
+    Object.keys(userMsgMeta).length > 0 ? userMsgMeta : undefined
+  );
 
   // Step 11: Update conversation stats
-  await updateConversation(conversationId, bufferedMessages.length + 1);
+  await updateConversation(conversationId, bufferedItems.length + 1);
 
   // Step 12: Increment usage counter (skip for Enterprise BYO key users)
   if (!hasByoKey) {
@@ -559,10 +630,10 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   }
 
   // Step 13: Emit WebSocket events
-  notifyClients(organizationId, conversationId, userMessage, finalResponse, savedMessages, msgMetadata);
+  notifyClients(organizationId, conversationId, userMessageText, finalResponse, savedMessages, msgMetadata);
 
   // Step 14b: Trigger AI scoring after enough messages (threshold: 6)
-  const updatedMessageCount = (conv.message_count ?? 0) + bufferedMessages.length + 1;
+  const updatedMessageCount = (conv.message_count ?? 0) + bufferedItems.length + 1;
   if (updatedMessageCount >= 6) {
     try {
       const scoreCheck = await query<{ ai_score: number | null }>(
@@ -785,13 +856,14 @@ async function saveMessages(
   conversationId: string,
   userMessage: string,
   assistantMessage: string,
-  metadata: Record<string, unknown>
+  metadata: Record<string, unknown>,
+  userMetadata?: Record<string, unknown>
 ): Promise<SavedMessages> {
   const userResult = await query<{ id: string; created_at: string }>(
     `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
-     VALUES ($1, 'user', $2, '{}', NOW())
+     VALUES ($1, 'user', $2, $3, NOW())
      RETURNING id, created_at`,
-    [conversationId, userMessage]
+    [conversationId, userMessage, JSON.stringify(userMetadata ?? {})]
   );
   const assistantResult = await query<{ id: string; created_at: string }>(
     `INSERT INTO messages (conversation_id, role, content, metadata, created_at)

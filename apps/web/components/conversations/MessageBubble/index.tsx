@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Image as ImageIcon } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import styles from './MessageBubble.module.css';
 
@@ -14,6 +15,12 @@ interface MessageBubbleProps {
     toolsCalled?: string[];
     type?: string;
     error?: boolean;
+    hasImages?: boolean;
+    imageCount?: number;
+    images?: Array<{
+      mimeType: string;
+      hasCaption: boolean;
+    }>;
   };
 }
 
@@ -58,6 +65,12 @@ export default function MessageBubble({
       >
         {role === 'human' && (
           <span className={styles.humanLabel}>{t('conversations.chat.humanAgent')}</span>
+        )}
+        {metadata?.hasImages && (
+          <div className={styles.imageIndicator}>
+            <ImageIcon size={14} />
+            <span>{metadata.imageCount === 1 ? t('chat_image_indicator') : `${metadata.imageCount} ${t('chat_images_indicator')}`}</span>
+          </div>
         )}
         <p className={styles.content}>{content}</p>
         <div className={styles.meta}>

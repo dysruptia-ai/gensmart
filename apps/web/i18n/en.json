@@ -1347,5 +1347,7 @@
     "finish": "Got it!",
     "stepOf": "Step {current} of {total}",
     "restartTour": "Restart onboarding tour"
-  }
+  },
+  "chat_image_indicator": "Image",
+  "chat_images_indicator": "images"
 }

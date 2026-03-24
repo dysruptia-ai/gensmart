@@ -4,18 +4,30 @@ import { messageQueue } from '../config/queues';
 const BUFFER_PREFIX = 'buffer:';
 const JOB_KEY_PREFIX = 'job_id:';
 
+export interface BufferItem {
+  type: 'text' | 'image';
+  content: string;           // text content for 'text', caption for 'image'
+  mimeType?: string;         // only for 'image': 'image/jpeg', etc.
+  data?: string;             // only for 'image': base64 data
+}
+
 export async function pushToBuffer(
   conversationId: string,
   agentId: string,
   organizationId: string,
-  message: string,
+  message: string | BufferItem,
   bufferSeconds: number
 ): Promise<void> {
   const bufferKey = `${BUFFER_PREFIX}${conversationId}`;
   const jobKey = `${JOB_KEY_PREFIX}${conversationId}`;
 
-  // Push message to Redis list
-  await redis.rpush(bufferKey, message);
+  // Serialize: if string, wrap as text BufferItem for uniform handling
+  const item: BufferItem = typeof message === 'string'
+    ? { type: 'text', content: message }
+    : message;
+
+  // Push JSON to Redis list
+  await redis.rpush(bufferKey, JSON.stringify(item));
   // Ensure buffer expires (safety net)
   await redis.expire(bufferKey, Math.max(bufferSeconds * 3, 300));
 
@@ -48,7 +60,7 @@ export async function pushToBuffer(
   }
 }
 
-export async function flushBuffer(conversationId: string): Promise<string[]> {
+export async function flushBuffer(conversationId: string): Promise<BufferItem[]> {
   const bufferKey = `${BUFFER_PREFIX}${conversationId}`;
   const jobKey = `${JOB_KEY_PREFIX}${conversationId}`;
 
@@ -59,5 +71,16 @@ export async function flushBuffer(conversationId: string): Promise<string[]> {
   pipeline.del(jobKey);
   const results = await pipeline.exec();
 
-  return (results?.[0]?.[1] as string[] | null) ?? [];
+  const raw = (results?.[0]?.[1] as string[] | null) ?? [];
+
+  // Parse JSON items, with backward compat for plain strings (from old buffer entries)
+  return raw.map((str) => {
+    try {
+      const parsed = JSON.parse(str) as BufferItem;
+      if (parsed.type === 'text' || parsed.type === 'image') return parsed;
+      return { type: 'text' as const, content: str };
+    } catch {
+      return { type: 'text' as const, content: str };
+    }
+  });
 }

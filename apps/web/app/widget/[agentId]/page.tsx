@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { Send, X, Bot } from 'lucide-react';
+import { Send, X, Bot, Paperclip } from 'lucide-react';
 import styles from './widget.module.css';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? '';
@@ -24,6 +24,7 @@ interface ChatMessage {
   role: 'user' | 'assistant' | 'human';
   content: string;
   created_at?: string;
+  imagePreview?: string;  // data URI for local image preview
 }
 
 const SESSION_KEY_PREFIX = 'gs_widget_session_';
@@ -42,6 +43,13 @@ export default function WidgetPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastMessageTime, setLastMessageTime] = useState<string>(new Date(0).toISOString());
 
+  const [pendingImage, setPendingImage] = useState<{
+    data: string;
+    mimeType: string;
+    preview: string;
+    fileName: string;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -201,37 +209,85 @@ export default function WidgetPage() {
     return () => clearInterval(bgPoll);
   }, [sessionId, lastMessageTime, pollMessages]);
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Only JPEG, PNG, WebP, and GIF images are supported.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image is too large. Maximum size is 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUri = reader.result as string;
+      const base64Data = dataUri.split(',')[1] ?? '';
+      setPendingImage({
+        data: base64Data,
+        mimeType: file.type,
+        preview: dataUri,
+        fileName: file.name,
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  function handleRemoveImage() {
+    setPendingImage(null);
+  }
+
   function handleSend() {
     const text = input.trim();
-    if (!text || !sessionId) return;
+    if ((!text && !pendingImage) || !sessionId) return;
 
-    // 1. Show user message immediately
-    setMessages((prev) => [...prev, {
+    // 1. Show user message immediately (with image preview if present)
+    const displayContent = pendingImage
+      ? (text ? `[Image: ${pendingImage.fileName}]\n${text}` : `[Image: ${pendingImage.fileName}]`)
+      : text;
+
+    const userMsg: ChatMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
-      content: text,
+      content: displayContent,
       created_at: new Date().toISOString(),
-    }]);
+      imagePreview: pendingImage?.preview,
+    };
 
-    // 2. Clear input and keep focus so the user can keep typing
+    setMessages((prev) => [...prev, userMsg]);
+
+    // 2. Clear input and image
     setInput('');
+    const imageToSend = pendingImage;
+    setPendingImage(null);
     inputRef.current?.focus();
 
-    // 3. Send message and conditionally show typing indicator
+    // 3. Send message
     setLastMessageTime(new Date().toISOString());
+
+    const body: Record<string, string> = { sessionId };
+    if (text) body['message'] = text;
+    if (imageToSend) {
+      body['image'] = imageToSend.data;
+      body['imageMimeType'] = imageToSend.mimeType;
+    }
 
     fetch(`${API_BASE}/api/widget/${agentId}/message`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, message: text }),
+      body: JSON.stringify(body),
     })
       .then(async (r) => {
         if (r.ok) {
           const data = await r.json() as { messageId: string | null; status: string; conversationStatus?: string };
-          // Only show typing indicator when AI is handling the conversation
           if (data.conversationStatus !== 'human_takeover') {
             setPendingCount((n) => n + 1);
-            // Auto-clear after 30s as safety net
             setTimeout(() => {
               setPendingCount((n) => Math.max(0, n - 1));
             }, 30000);
@@ -239,7 +295,7 @@ export default function WidgetPage() {
         }
       })
       .catch(() => {
-        // POST failed — no typing indicator needed
+        // POST failed
       });
   }
 
@@ -344,7 +400,22 @@ export default function WidgetPage() {
               ].join(' ')}
               style={msg.role === 'user' ? { backgroundColor: config.primary_color } : undefined}
             >
-              {msg.content}
+              {msg.imagePreview && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={msg.imagePreview}
+                  alt="Uploaded image"
+                  className={styles.messageImage}
+                  onClick={() => window.open(msg.imagePreview, '_blank')}
+                />
+              )}
+              {msg.content && !msg.content.startsWith('[Image:') ? (
+                <span>{msg.content}</span>
+              ) : msg.content && msg.content.includes('\n') ? (
+                <span>{msg.content.split('\n').slice(1).join('\n')}</span>
+              ) : !msg.imagePreview ? (
+                <span>{msg.content}</span>
+              ) : null}
             </div>
           </div>
         ))}
@@ -372,28 +443,62 @@ export default function WidgetPage() {
 
       {/* Input */}
       <div className={styles.inputArea}>
-        <input
-          ref={inputRef}
-          className={styles.input}
-          type="text"
-          placeholder="Type a message..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          disabled={!sessionId}
-          maxLength={4000}
-          autoComplete="off"
-        />
-        <button
-          className={styles.sendBtn}
-          onClick={handleSend}
-          disabled={!input.trim() || !sessionId}
-          aria-label="Send message"
-          type="button"
-          style={{ backgroundColor: config.primary_color }}
-        >
-          <Send size={16} />
-        </button>
+        {pendingImage && (
+          <div className={styles.imagePreviewStrip}>
+            <div className={styles.imagePreviewThumb}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={pendingImage.preview} alt="Preview" />
+              <button
+                className={styles.imagePreviewRemove}
+                onClick={handleRemoveImage}
+                type="button"
+                aria-label="Remove image"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          </div>
+        )}
+        <div className={styles.inputRow}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={handleImageSelect}
+            style={{ display: 'none' }}
+          />
+          <button
+            className={styles.attachBtn}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!sessionId || !!pendingImage}
+            aria-label="Attach image"
+            type="button"
+          >
+            <Paperclip size={18} />
+          </button>
+          <input
+            ref={inputRef}
+            className={styles.input}
+            type="text"
+            placeholder="Type a message..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={!sessionId}
+            maxLength={4000}
+            autoComplete="off"
+          />
+          <button
+            className={styles.sendBtn}
+            onClick={handleSend}
+            disabled={(!input.trim() && !pendingImage) || !sessionId}
+            aria-label="Send message"
+            type="button"
+            style={{ backgroundColor: config.primary_color }}
+          >
+            <Send size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Footer — branding shown on Free plan only */}

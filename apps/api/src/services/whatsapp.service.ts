@@ -144,6 +144,70 @@ export async function getWABAAndPhoneNumber(accessToken: string): Promise<{
   };
 }
 
+/**
+ * Download media from WhatsApp via Meta Media API.
+ * Step 1: GET media URL from media ID
+ * Step 2: GET binary content from the temporary URL
+ */
+export async function downloadMedia(
+  mediaId: string,
+  accessToken: string
+): Promise<{ data: string; mimeType: string }> {
+  // Step 1: Get the media URL
+  const metaUrl = `${META_BASE_URL}/${mediaId}`;
+  const metaRes = await fetch(metaUrl, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!metaRes.ok) {
+    const err = await metaRes.json().catch(() => ({}));
+    throw new Error(`Failed to get media URL: ${JSON.stringify(err)}`);
+  }
+
+  const metaData = await metaRes.json() as {
+    url?: string;
+    mime_type?: string;
+    file_size?: number;
+  };
+
+  if (!metaData.url) {
+    throw new Error('No URL returned for media');
+  }
+
+  const mimeType = metaData.mime_type ?? 'image/jpeg';
+
+  // Only allow image types
+  if (!mimeType.startsWith('image/')) {
+    throw new Error(`Unsupported media type: ${mimeType}. Only images are supported.`);
+  }
+
+  // Reject files > 5MB
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+  if (metaData.file_size && metaData.file_size > MAX_IMAGE_SIZE) {
+    throw new Error(`Image too large (${Math.round(metaData.file_size / 1024 / 1024)}MB). Max 5MB.`);
+  }
+
+  // Step 2: Download the binary data from the temporary URL
+  const dataRes = await fetch(metaData.url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!dataRes.ok) {
+    throw new Error(`Failed to download media: ${dataRes.status}`);
+  }
+
+  const arrayBuffer = await dataRes.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  if (buffer.length > MAX_IMAGE_SIZE) {
+    throw new Error(`Downloaded image too large (${Math.round(buffer.length / 1024 / 1024)}MB). Max 5MB.`);
+  }
+
+  const data = buffer.toString('base64');
+
+  return { data, mimeType };
+}
+
 export function encryptAccessToken(token: string): string {
   return encrypt(token);
 }
