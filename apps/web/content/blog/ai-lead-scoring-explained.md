@@ -1,9 +1,9 @@
 ---
-title: "AI Lead Scoring: How Smart CRM Prioritizes Your Best Prospects"
-description: "Learn how AI-powered lead scoring helps you focus on high-value prospects and close more deals."
+title: "AI Lead Scoring: How a WhatsApp CRM with AI Scoring Prioritizes Your Best Prospects"
+description: "Learn how AI-powered lead scoring in GenSmart's WhatsApp CRM automatically captures and prioritizes high-value prospects. AI lead capture on WhatsApp made simple."
 date: "2026-02-15"
 author: "GenSmart Team"
-tags: ["crm", "ai-scoring", "sales"]
+tags: ["crm", "ai-scoring", "sales", "AI lead capture WhatsApp", "AI sales funnel automation"]
 cover_image: "/blog/cover-placeholder.svg"
 language: "en"
 ---
@@ -67,4 +67,4 @@ A few best practices:
 - **Set up notifications** — trigger an alert at score ≥ 8 so you never miss a hot lead
 - **Review weekly** — look at patterns in your high-score leads to refine your agent's targeting
 
-AI lead scoring won't replace your sales team. It will make them dramatically more effective by ensuring they spend their time on the conversations most likely to convert.
+AI lead scoring won't replace your sales team. It will make them dramatically more effective by ensuring they spend their time on the conversations most likely to convert. Combined with GenSmart's WhatsApp CRM with AI scoring and AI sales funnel automation, your entire pipeline becomes intelligent from first message to closed deal.

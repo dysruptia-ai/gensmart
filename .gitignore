@@ -12,3 +12,4 @@ coverage/
 *.log
 uploads/
 env.prod.txt
+docs/

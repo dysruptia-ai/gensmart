@@ -1,9 +1,9 @@
 ---
-title: "Lead Scoring con IA: cómo priorizar tus mejores prospectos automáticamente"
-description: "Descubre cómo el scoring automático de leads con inteligencia artificial puede triplicar tu tasa de conversión sin aumentar tu equipo de ventas."
+title: "Lead Scoring con IA: CRM WhatsApp con scoring inteligente para priorizar prospectos"
+description: "Descubre cómo el CRM con scoring IA de GenSmart captura leads por WhatsApp automáticamente y prioriza tus mejores prospectos. Automatización del embudo de ventas con IA."
 date: "2026-02-25"
 author: "Equipo GenSmart"
-tags: ["crm", "lead-scoring", "ventas", "ia"]
+tags: ["crm", "lead-scoring", "ventas", "ia", "CRM WhatsApp scoring IA", "captura leads WhatsApp"]
 cover_image: "/blog/cover-placeholder.svg"
 language: "es"
 ---
@@ -84,4 +84,4 @@ GenSmart combina ambos mundos: mantiene la estructura de un CRM (contactos, etap
 
 El resultado es un equipo de ventas que siempre sabe dónde enfocar su energía, sin necesidad de revisar manualmente cientos de conversaciones.
 
-¿Listo para ver tus primeros leads con score? Comienza gratis en GenSmart y el primer scoring automático aparecerá en tu dashboard en menos de 24 horas.
+¿Listo para ver tus primeros leads con score? GenSmart combina captura de leads por WhatsApp con IA, CRM con scoring inteligente y automatización del embudo de ventas en una sola plataforma. Comienza gratis y tu primer scoring automático aparecerá en el dashboard en menos de 24 horas.
