@@ -21,7 +21,7 @@ const PLANS = [
   {
     key: 'starter',
     monthlyPrice: 29,
-    features: ['3 AI Agents', '1,000 messages/mo', '500 contacts', 'WhatsApp + Web', '5 knowledge files', 'Email support'],
+    features: ['3 AI Agents', '1,000 messages/mo', '500 contacts', 'WhatsApp + Web', 'Voice messages', '5 knowledge files', 'Email support'],
     ctaKey: 'landing.pricing.getStarted',
     href: '/register?plan=starter',
     popular: false,
@@ -29,7 +29,7 @@ const PLANS = [
   {
     key: 'pro',
     monthlyPrice: 79,
-    features: ['10 AI Agents', '5,000 messages/mo', '2,000 contacts', 'WhatsApp + Web', '20 knowledge files', 'Priority support'],
+    features: ['10 AI Agents', '5,000 messages/mo', '2,000 contacts', 'WhatsApp + Web', 'Voice messages', 'Image analysis', '20 knowledge files', 'Priority support'],
     ctaKey: 'landing.pricing.getStarted',
     href: '/register?plan=pro',
     popular: true,
@@ -37,7 +37,7 @@ const PLANS = [
   {
     key: 'enterprise',
     monthlyPrice: 199,
-    features: ['Unlimited Agents', '25,000 messages/mo', 'Unlimited contacts', 'WhatsApp + Web', 'Unlimited files', 'Dedicated support'],
+    features: ['Unlimited Agents', '25,000 messages/mo', 'Unlimited contacts', 'WhatsApp + Web', 'Voice messages', 'Image analysis', 'Unlimited files', 'Dedicated support'],
     ctaKey: 'landing.pricing.contactSales',
     href: 'mailto:sales@gensmart.co',
     popular: false,

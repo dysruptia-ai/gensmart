@@ -7,6 +7,7 @@ import { AppError } from '../middleware/errorHandler';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { transcribeAudio } from '../services/whatsapp.service';
+import { PLAN_LIMITS } from '@gensmart/shared';
 
 const router = Router();
 
@@ -289,15 +290,31 @@ router.post(
         throw new AppError(400, 'This conversation has ended', 'SESSION_CLOSED');
       }
 
-      // Get agent's message buffer setting
-      const agentResult = await query<{ message_buffer_seconds: number }>(
-        'SELECT message_buffer_seconds FROM agents WHERE id = $1',
+      // Get agent's message buffer setting + org plan for multimodal gating
+      const agentResult = await query<{ message_buffer_seconds: number; organization_id: string }>(
+        'SELECT message_buffer_seconds, organization_id FROM agents WHERE id = $1',
         [agentId]
       );
       const bufferSeconds = agentResult.rows[0]?.message_buffer_seconds ?? 5;
 
-      // Push to message buffer — image, voice transcription, or text
-      if (hasImage) {
+      const orgPlanResult = await query<{ plan: string }>(
+        'SELECT plan FROM organizations WHERE id = $1',
+        [agentResult.rows[0]?.organization_id ?? conv.organization_id]
+      );
+      const widgetPlan = (orgPlanResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
+      const widgetPlanLimits = PLAN_LIMITS[widgetPlan] ?? PLAN_LIMITS.free;
+
+      // Push to message buffer — image, voice transcription, or text (with plan gating)
+      if (hasImage && !widgetPlanLimits.imageVision) {
+        // Image vision not available on this plan — send text fallback
+        const fallbackText = sanitizedMessage
+          ? `${sanitizedMessage}\n\n[The user also sent an image, but image analysis is not available on your current plan.]`
+          : '[The user sent an image, but image analysis is not available on your current plan. Please let them know they can upgrade to Pro for image analysis.]';
+        await pushToBuffer(sessionId, agentId, conv.organization_id, fallbackText, bufferSeconds);
+      } else if (hasAudio && !widgetPlanLimits.voiceMessages) {
+        // Voice messages not available on this plan — send text fallback
+        await pushToBuffer(sessionId, agentId, conv.organization_id, '[The user sent a voice message, but voice messages are not available on your current plan. Please let them know they can type their message instead.]', bufferSeconds);
+      } else if (hasImage) {
         const imageItem: BufferItem = {
           type: 'image',
           content: sanitizedMessage,

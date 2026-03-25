@@ -68,6 +68,8 @@ const FEATURE_GROUPS: FeatureGroup[] = [
     rows: [
       { label: 'Web widget', values: [true, true, true, true] },
       { label: 'WhatsApp Business', values: [false, true, true, true] },
+      { label: 'Voice messages', values: [false, true, true, true] },
+      { label: 'Image analysis', values: [false, false, true, true] },
     ],
   },
   {

@@ -18,6 +18,7 @@ import {
 } from '../services/whatsapp.service';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
+import { PLAN_LIMITS } from '@gensmart/shared';
 
 const router = Router();
 
@@ -186,68 +187,86 @@ router.post(
         return;
       }
 
-      // Download image if this is an image message
-      let imageBufferItem: BufferItem | null = null;
-      if (imageMediaId) {
-        const waConfig = agent.whatsapp_config;
-        if (waConfig?.access_token_encrypted) {
-          try {
-            const accessToken = decryptAccessToken(String(waConfig.access_token_encrypted));
-            const media = await downloadMedia(imageMediaId, accessToken);
-            imageBufferItem = {
-              type: 'image',
-              content: imageCaption,
-              mimeType: media.mimeType,
-              data: media.data,
-            };
-            console.log(`[whatsapp] Downloaded image: ${media.mimeType}, ${Math.round(media.data.length * 0.75 / 1024)}KB`);
-          } catch (err) {
-            console.error('[whatsapp] Failed to download image:', (err as Error).message);
-            // Continue without image — treat as text-only with caption
-          }
-        } else {
-          console.warn('[whatsapp] Cannot download image — no access token');
-        }
-      }
-
-      // Download and transcribe audio if this is an audio message
-      let audioTranscription: string | null = null;
-      if (audioMediaId) {
-        const waConfigAudio = agent.whatsapp_config;
-        if (waConfigAudio?.access_token_encrypted) {
-          try {
-            const accessToken = decryptAccessToken(String(waConfigAudio.access_token_encrypted));
-            const audio = await downloadAudio(audioMediaId, accessToken);
-            console.log(`[whatsapp] Downloaded audio: ${audio.mimeType}, ${Math.round(audio.buffer.length / 1024)}KB`);
-
-            const transcription = await transcribeAudio(audio.buffer, audio.mimeType);
-            if (transcription.trim()) {
-              audioTranscription = transcription.trim();
-              messageText = audioTranscription;
-              console.log(`[whatsapp] Audio transcribed: "${audioTranscription.slice(0, 100)}${audioTranscription.length > 100 ? '...' : ''}"`);
-            } else {
-              console.warn('[whatsapp] Whisper returned empty transcription');
-              messageText = '[Voice message — could not transcribe]';
-            }
-          } catch (err) {
-            console.error('[whatsapp] Failed to download/transcribe audio:', (err as Error).message);
-            messageText = '[Voice message — transcription failed]';
-          }
-        } else {
-          console.warn('[whatsapp] Cannot download audio — no access token');
-          messageText = '[Voice message — transcription unavailable]';
-        }
-      }
-
       // Check plan — Free cannot use WhatsApp
       const orgResult = await query<{ plan: string }>(
         'SELECT plan FROM organizations WHERE id = $1',
         [agent.organization_id]
       );
-      const plan = orgResult.rows[0]?.plan ?? 'free';
+      const plan = (orgResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
       if (plan === 'free') {
         console.log(`[whatsapp] Org ${agent.organization_id} on free plan — WhatsApp not available`);
         return;
+      }
+
+      const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+
+      // Download image if this is an image message (gate by plan)
+      let imageBufferItem: BufferItem | null = null;
+      if (imageMediaId) {
+        if (!planLimits.imageVision) {
+          // Plan doesn't support image analysis — skip download, notify via buffer
+          console.log(`[whatsapp] Org ${agent.organization_id} on ${plan} plan — image vision not available`);
+          imageMediaId = null;
+          messageText = imageCaption
+            ? `${imageCaption}\n\n[The user also sent an image, but image analysis is not available on your current plan. Let them know they can upgrade to Pro for image analysis.]`
+            : '[The user sent an image, but image analysis is not available on your current plan. Please let them know they can upgrade to Pro for image analysis.]';
+        } else {
+          const waConfig = agent.whatsapp_config;
+          if (waConfig?.access_token_encrypted) {
+            try {
+              const accessToken = decryptAccessToken(String(waConfig.access_token_encrypted));
+              const media = await downloadMedia(imageMediaId, accessToken);
+              imageBufferItem = {
+                type: 'image',
+                content: imageCaption,
+                mimeType: media.mimeType,
+                data: media.data,
+              };
+              console.log(`[whatsapp] Downloaded image: ${media.mimeType}, ${Math.round(media.data.length * 0.75 / 1024)}KB`);
+            } catch (err) {
+              console.error('[whatsapp] Failed to download image:', (err as Error).message);
+              // Continue without image — treat as text-only with caption
+            }
+          } else {
+            console.warn('[whatsapp] Cannot download image — no access token');
+          }
+        }
+      }
+
+      // Download and transcribe audio if this is an audio message (gate by plan)
+      let audioTranscription: string | null = null;
+      if (audioMediaId) {
+        if (!planLimits.voiceMessages) {
+          // Plan doesn't support voice messages — skip download, notify via buffer
+          console.log(`[whatsapp] Org ${agent.organization_id} on ${plan} plan — voice messages not available`);
+          audioMediaId = null;
+          messageText = '[The user sent a voice message, but voice messages are not available on your current plan. Please let them know they can type their message instead.]';
+        } else {
+          const waConfigAudio = agent.whatsapp_config;
+          if (waConfigAudio?.access_token_encrypted) {
+            try {
+              const accessToken = decryptAccessToken(String(waConfigAudio.access_token_encrypted));
+              const audio = await downloadAudio(audioMediaId, accessToken);
+              console.log(`[whatsapp] Downloaded audio: ${audio.mimeType}, ${Math.round(audio.buffer.length / 1024)}KB`);
+
+              const transcription = await transcribeAudio(audio.buffer, audio.mimeType);
+              if (transcription.trim()) {
+                audioTranscription = transcription.trim();
+                messageText = audioTranscription;
+                console.log(`[whatsapp] Audio transcribed: "${audioTranscription.slice(0, 100)}${audioTranscription.length > 100 ? '...' : ''}"`);
+              } else {
+                console.warn('[whatsapp] Whisper returned empty transcription');
+                messageText = '[Voice message — could not transcribe]';
+              }
+            } catch (err) {
+              console.error('[whatsapp] Failed to download/transcribe audio:', (err as Error).message);
+              messageText = '[Voice message — transcription failed]';
+            }
+          } else {
+            console.warn('[whatsapp] Cannot download audio — no access token');
+            messageText = '[Voice message — transcription unavailable]';
+          }
+        }
       }
 
       // Find or create contact by phone
