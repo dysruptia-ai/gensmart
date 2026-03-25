@@ -30,6 +30,31 @@ interface ChatMessage {
 const SESSION_KEY_PREFIX = 'gs_widget_session_';
 const MESSAGES_KEY_PREFIX = 'gs_widget_msgs_';
 
+function renderMarkdown(text: string): string {
+  // Escape HTML first to prevent XSS
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Headings: ### or ## at start of line
+  html = html.replace(/^#{2,3}\s+(.+)$/gm, '<strong style="display:block;margin:8px 0 4px">$1</strong>');
+
+  // Bold: **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic: *text* (but not inside bold which is already converted)
+  html = html.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+  // Inline code: `code`
+  html = html.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,.06);padding:1px 4px;border-radius:3px;font-size:0.9em">$1</code>');
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br/>');
+
+  return html;
+}
+
 export default function WidgetPage() {
   const params = useParams();
   const agentId = params['agentId'] as string;
@@ -549,11 +574,23 @@ export default function WidgetPage() {
                 />
               )}
               {msg.content && !msg.content.startsWith('[Image:') ? (
-                <span>{msg.content}</span>
+                msg.role === 'user' ? (
+                  <span>{msg.content}</span>
+                ) : (
+                  <span dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                )
               ) : msg.content && msg.content.includes('\n') ? (
-                <span>{msg.content.split('\n').slice(1).join('\n')}</span>
+                msg.role === 'user' ? (
+                  <span>{msg.content.split('\n').slice(1).join('\n')}</span>
+                ) : (
+                  <span dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content.split('\n').slice(1).join('\n')) }} />
+                )
               ) : !msg.imagePreview ? (
-                <span>{msg.content}</span>
+                msg.role === 'user' ? (
+                  <span>{msg.content}</span>
+                ) : (
+                  <span dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
+                )
               ) : null}
             </div>
           </div>

@@ -36,6 +36,7 @@
 
   var isOpen = false;
   var bubbleEl = null;
+  var bubbleTextEl = null;
   var containerEl = null;
 
   function fetchConfig(cb) {
@@ -60,13 +61,15 @@
   function createStyles(primaryColor, position) {
     var isRight = position !== 'bottom-left';
     var side = isRight ? 'right' : 'left';
+    var textSide = isRight ? 'right:96px' : 'left:96px';
     var style = document.createElement('style');
     style.textContent =
       '#gensmart-bubble{position:fixed;bottom:24px;' + side + ':24px;width:60px;height:60px;border-radius:50%;background:' + primaryColor + ';cursor:pointer;z-index:999999;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:transform .2s,box-shadow .2s,opacity .4s;opacity:0;transform:scale(0);}' +
       '#gensmart-bubble:hover{transform:scale(1.08)!important;box-shadow:0 6px 28px rgba(0,0,0,.28);}' +
+      '#gensmart-bubble-text{position:fixed;bottom:32px;' + textSide + ';background:#fff;color:' + primaryColor + ';border-radius:20px;padding:8px 16px;font-size:14px;font-weight:500;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.12);z-index:999999;opacity:0;transition:opacity .4s;pointer-events:none;}' +
       '#gensmart-container{position:fixed;bottom:100px;' + side + ':24px;width:380px;height:520px;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.15);z-index:999998;display:none;opacity:0;transform:translateY(20px);transition:opacity .25s,transform .25s;}' +
       '#gensmart-container iframe{width:100%;height:100%;border:0;display:block;}' +
-      '@media(max-width:767px){#gensmart-container{bottom:0;' + side + ':0;width:100vw;width:100dvw;height:100vh;height:100dvh;border-radius:0;}}';
+      '@media(max-width:767px){#gensmart-container{bottom:0;' + side + ':0;width:100vw;width:100dvw;height:100vh;height:100dvh;border-radius:0;}#gensmart-bubble-text{display:none!important;}}';
     document.head.appendChild(style);
   }
 
@@ -78,6 +81,7 @@
     isOpen = true;
     containerEl.style.display = 'block';
     bubbleEl.innerHTML = CLOSE_ICON;
+    if (bubbleTextEl) bubbleTextEl.style.display = 'none';
     requestAnimationFrame(function () {
       containerEl.style.opacity = '1';
       containerEl.style.transform = 'translateY(0)';
@@ -90,6 +94,7 @@
     containerEl.style.opacity = '0';
     containerEl.style.transform = 'translateY(20px)';
     bubbleEl.innerHTML = CHAT_ICON;
+    if (bubbleTextEl) bubbleTextEl.style.display = '';
     setTimeout(function () {
       if (!isOpen) containerEl.style.display = 'none';
     }, 250);
@@ -132,13 +137,23 @@
       if (data.type === 'gensmart:close') closeChat();
     });
 
+    // Create bubble text pill (if configured)
+    var bubbleText = config.bubble_text || '';
+    if (bubbleText) {
+      bubbleTextEl = document.createElement('span');
+      bubbleTextEl.id = 'gensmart-bubble-text';
+      bubbleTextEl.textContent = bubbleText;
+    }
+
     document.body.appendChild(bubbleEl);
+    if (bubbleTextEl) document.body.appendChild(bubbleTextEl);
     document.body.appendChild(containerEl);
 
     // Animate bubble in after short delay
     setTimeout(function () {
       bubbleEl.style.opacity = '1';
       bubbleEl.style.transform = 'scale(1)';
+      if (bubbleTextEl) bubbleTextEl.style.opacity = '1';
     }, 600);
   }
 
