@@ -17,6 +17,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'GenSmart Pricing — AI Chatbot Plans',
     description: 'Deploy AI chatbots in minutes. Plans from free to enterprise.',
+    images: ['/twitter-card.png'],
   },
   alternates: {
     canonical: 'https://www.gensmart.co/pricing',

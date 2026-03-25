@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     title: 'GenSmart — AI Agent Builder for WhatsApp & Web',
     description:
       'Create and deploy AI chatbots for WhatsApp and Web in minutes. No-code platform with CRM, lead scoring, and scheduling.',
-    images: ['/og-image.png'],
+    images: ['/twitter-card.png'],
     creator: '@gaborgenner',
   },
   alternates: {
