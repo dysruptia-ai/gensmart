@@ -51,6 +51,62 @@ function replacePlaceholders(
   return template;
 }
 
+function resolveFormatTemplate(format: string, data: unknown): string {
+  return format.replace(/\{\{(.+?)\}\}/g, (_match, expr: string) => {
+    const trimmed = expr.trim();
+
+    // {{value}} — entire extracted data
+    if (trimmed === 'value') {
+      return typeof data === 'object' ? JSON.stringify(data) : String(data ?? '');
+    }
+
+    // {{length}} — array length
+    if (trimmed === 'length') {
+      return Array.isArray(data) ? String(data.length) : '0';
+    }
+
+    // Resolve path expressions like [0].title, [0].price, name, etc.
+    try {
+      let current: unknown = data;
+      const parts = trimmed.split(/\./).filter(Boolean);
+
+      for (const part of parts) {
+        if (current === null || current === undefined) return '';
+
+        // Handle array index: [0], [1], etc.
+        const arrayMatch = part.match(/^\[(\d+)\]$/);
+        if (arrayMatch) {
+          const index = parseInt(arrayMatch[1], 10);
+          if (Array.isArray(current)) {
+            current = current[index];
+          } else {
+            return '';
+          }
+        } else {
+          // Handle combined like "[0]fieldName"
+          const combinedMatch = part.match(/^\[(\d+)\](.+)$/);
+          if (combinedMatch) {
+            const index = parseInt(combinedMatch[1], 10);
+            const prop = combinedMatch[2];
+            if (Array.isArray(current)) {
+              current = (current[index] as Record<string, unknown>)?.[prop];
+            } else {
+              return '';
+            }
+          } else {
+            current = (current as Record<string, unknown>)[part];
+          }
+        }
+      }
+
+      if (current === null || current === undefined) return '';
+      return typeof current === 'object' ? JSON.stringify(current) : String(current);
+    } catch {
+      return `{{${trimmed}}}`;
+    }
+  });
+}
+
 export async function executeCustomFunction(
   config: ToolConfig,
   toolArguments: Record<string, unknown>
@@ -92,6 +148,21 @@ export async function executeCustomFunction(
     finalUrl = `${finalUrl}${separator}${encodeURIComponent(auth.queryParam)}=${encodeURIComponent(auth.apiKey)}`;
   }
 
+  // For GET/HEAD requests, append tool arguments as query string parameters
+  if (['GET', 'HEAD'].includes(httpMethod.toUpperCase())) {
+    const queryParams = new URLSearchParams();
+    for (const [key, value] of Object.entries(toolArguments)) {
+      if (value !== undefined && value !== null) {
+        queryParams.append(key, String(value));
+      }
+    }
+    const queryString = queryParams.toString();
+    if (queryString) {
+      const separator = finalUrl.includes('?') ? '&' : '?';
+      finalUrl = `${finalUrl}${separator}${queryString}`;
+    }
+  }
+
   // Build body
   const body = bodyTemplate
     ? replacePlaceholders(bodyTemplate, toolArguments)
@@ -126,10 +197,7 @@ export async function executeCustomFunction(
     if (responseMapping?.path) {
       const extracted = resolvePath(responseData, responseMapping.path);
       if (mappingFormat) {
-        return mappingFormat.replace(
-          /\{\{value\}\}/g,
-          typeof extracted === 'object' ? JSON.stringify(extracted) : String(extracted ?? '')
-        );
+        return resolveFormatTemplate(mappingFormat, extracted);
       }
       // If extracted is an object, stringify it so the LLM gets readable JSON
       if (extracted === null || extracted === undefined) {
