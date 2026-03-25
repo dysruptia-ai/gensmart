@@ -35,7 +35,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
   verify2FA: (tempToken: string, code: string) => Promise<void>;
-  register: (email: string, password: string, name: string, organizationName: string) => Promise<void>;
+  register: (email: string, password: string, name: string, organizationName: string, promoCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateOnboarding: (step?: number, completed?: boolean, editorTourCompleted?: boolean) => Promise<void>;
@@ -125,12 +125,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string, name: string, organizationName: string): Promise<void> => {
+    async (email: string, password: string, name: string, organizationName: string, promoCode?: string): Promise<void> => {
       const data = await api.post<AuthResponse>('/api/auth/register', {
         email,
         password,
         name,
         organizationName,
+        ...(promoCode ? { promoCode } : {}),
       });
       setAccessToken(data.accessToken);
       setUser(data.user);

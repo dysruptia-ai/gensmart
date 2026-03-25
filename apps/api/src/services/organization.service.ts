@@ -22,12 +22,14 @@ export interface OrganizationData {
   settings: Record<string, unknown>;
   created_at: string;
   member_count: number;
+  trial_ends_at: string | null;
 }
 
 export async function getOrganization(orgId: string): Promise<OrganizationData> {
   const result = await query<OrganizationData>(
     `SELECT o.id, o.name, o.slug, o.plan, o.subscription_status,
             COALESCE(o.settings, '{}')::json as settings, o.created_at,
+            o.trial_ends_at,
             COUNT(u.id)::int as member_count
      FROM organizations o
      LEFT JOIN users u ON u.organization_id = o.id

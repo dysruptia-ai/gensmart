@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Mail, Lock, User, Building2, AlertCircle } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Mail, Lock, User, Building2, AlertCircle, Tag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
@@ -34,8 +34,10 @@ function useValidateForm() {
   };
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const codeFromUrl = searchParams.get('code') || '';
   const { register } = useAuth();
   const { success } = useToast();
   const { t } = useTranslation();
@@ -46,6 +48,7 @@ export default function RegisterPage() {
   const [orgName, setOrgName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [promoCode, setPromoCode] = useState(codeFromUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -59,8 +62,12 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await register(email, password, name, orgName);
-      success('Account created!', 'Welcome to GenSmart. Setting up your dashboard…');
+      await register(email, password, name, orgName, promoCode || undefined);
+      if (promoCode) {
+        success('Pro trial activated!', 'You have 30 days of Pro features. Enjoy!');
+      } else {
+        success('Account created!', 'Welcome to GenSmart. Setting up your dashboard…');
+      }
       router.replace('/dashboard');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('errors.generic'));
@@ -137,6 +144,14 @@ export default function RegisterPage() {
           required
           icon={Lock}
         />
+        <Input
+          label="Promo Code (optional)"
+          type="text"
+          value={promoCode}
+          onChange={(e) => setPromoCode(e.target.value)}
+          placeholder="Enter promo code"
+          icon={Tag}
+        />
         <Button type="submit" fullWidth loading={loading}>
           {t('auth.register.submit')}
         </Button>
@@ -147,5 +162,13 @@ export default function RegisterPage() {
         <Link href="/login">{t('auth.register.login')}</Link>
       </p>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }

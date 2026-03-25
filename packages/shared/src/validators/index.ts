@@ -11,6 +11,7 @@ export const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: passwordSchema,
   organizationName: z.string().min(2, 'Organization name must be at least 2 characters').max(255),
+  promoCode: z.string().max(100).optional(),
 });
 
 export const loginSchema = z.object({

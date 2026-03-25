@@ -203,6 +203,22 @@
   color: var(--color-text-primary);
 }
 
+/* ── Trial Banner ── */
+.trialBanner {
+  background: linear-gradient(90deg, #25D366, #128C7E);
+  color: white;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.trialBanner a {
+  color: white;
+  text-decoration: underline;
+  font-weight: 600;
+}
+
 /* ── Content ── */
 .content {
   flex: 1;

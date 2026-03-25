@@ -117,6 +117,25 @@ startScoringWorker();
 startReminderWorker();
 startExportWorker();
 
+// Trial expiration check — runs every hour
+import { query as dbQuery } from './config/database';
+setInterval(async () => {
+  try {
+    const result = await dbQuery<{ id: string; name: string }>(
+      `UPDATE organizations
+       SET plan = 'free', trial_ends_at = NULL, updated_at = NOW()
+       WHERE trial_ends_at IS NOT NULL AND trial_ends_at < NOW()
+       RETURNING id, name`
+    );
+    if (result.rows.length > 0) {
+      console.log(`[trial-cron] Downgraded ${result.rows.length} expired trials:`,
+        result.rows.map(r => r.name).join(', '));
+    }
+  } catch (err) {
+    console.error('[trial-cron] Error checking expired trials:', err);
+  }
+}, 60 * 60 * 1000);
+
 // Start server
 httpServer.listen(env.PORT, () => {
   console.log(`GenSmart API running on port ${env.PORT}`);

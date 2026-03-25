@@ -15,6 +15,7 @@ import notificationsRouter from './notifications';
 import dashboardRouter from './dashboard';
 import accountRouter from './account';
 import lookupRouter from './lookup';
+import promoRouter from './promo';
 
 const router = Router();
 
@@ -37,5 +38,6 @@ router.use('/notifications', notificationsRouter);
 router.use('/dashboard', dashboardRouter);
 router.use('/account', accountRouter);
 router.use('/lookup', lookupRouter);
+router.use('/promo', promoRouter);
 
 export default router;

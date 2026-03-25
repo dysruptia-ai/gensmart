@@ -52,6 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [usageSummary, setUsageSummary] = React.useState<UsageSummary | null>(null);
+  const [trialEndsAt, setTrialEndsAt] = React.useState<string | null>(null);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -65,6 +66,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     api.get<UsageSummary>('/api/billing/usage').then((data) => {
       setUsageSummary(data);
     }).catch(() => { /* ignore — non-critical */ });
+    api.get<{ trial_ends_at?: string | null }>('/api/organization').then((org) => {
+      if (org.trial_ends_at) setTrialEndsAt(org.trial_ends_at);
+    }).catch(() => {});
   }, [isAuthenticated]);
 
   // Close sidebar on route change
@@ -206,6 +210,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
+
+        {trialEndsAt && (
+          <div className={styles.trialBanner}>
+            <span>
+              Your Pro trial ends in {Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days
+              {' '}&mdash;{' '}
+              <Link href="/dashboard/billing">Upgrade to keep your agents</Link>
+            </span>
+          </div>
+        )}
 
         <main className={styles.content}>
           {usageSummary && (

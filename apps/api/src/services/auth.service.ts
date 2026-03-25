@@ -145,6 +145,7 @@ export async function register(input: {
   password: string;
   name: string;
   organizationName: string;
+  promoCode?: string;
 }): Promise<AuthTokens> {
   const existing = await query<{ id: string }>(
     'SELECT id FROM users WHERE email = $1',
@@ -197,6 +198,45 @@ export async function register(input: {
        VALUES ($1, $2, $3, $4, NOW())`,
       [tokenId, user.id, tokenHash, expiresAt.toISOString()]
     );
+
+    // If promo code provided, validate and apply
+    if (input.promoCode) {
+      const promoResult = await client.query<{
+        id: string;
+        plan: string;
+        duration_days: number;
+        max_uses: number | null;
+        used_count: number;
+        is_active: boolean;
+        expires_at: string | null;
+      }>(
+        `SELECT id, plan, duration_days, max_uses, used_count, is_active, expires_at
+         FROM promo_codes WHERE code = $1`,
+        [input.promoCode.toUpperCase().trim()]
+      );
+      const promo = promoResult.rows[0];
+
+      if (promo && promo.is_active
+        && (promo.max_uses === null || promo.used_count < promo.max_uses)
+        && (!promo.expires_at || new Date(promo.expires_at) > new Date())) {
+
+        const trialEndsAt = new Date();
+        trialEndsAt.setDate(trialEndsAt.getDate() + promo.duration_days);
+
+        await client.query(
+          `UPDATE organizations
+           SET plan = $1, trial_ends_at = $2, promo_code_id = $3, updated_at = NOW()
+           WHERE id = $4`,
+          [promo.plan, trialEndsAt.toISOString(), promo.id, org.id]
+        );
+
+        await client.query(
+          `UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1`,
+          [promo.id]
+        );
+      }
+      // If code is invalid, silently ignore — user still registers on Free plan
+    }
 
     await client.query('COMMIT');
 
