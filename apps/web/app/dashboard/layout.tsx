@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import {
@@ -234,6 +235,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       {user && !user.onboardingCompleted && <WelcomeTour />}
+
+      {/* GenSmart Support Widget — available to all users */}
+      <Script
+        src="https://www.gensmart.co/widget.js"
+        data-agent-id="f50cfd0c-b08a-42ed-acab-f34ac3413747"
+        strategy="afterInteractive"
+      />
     </div>
   );
 }
