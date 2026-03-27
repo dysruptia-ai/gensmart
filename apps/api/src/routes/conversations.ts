@@ -217,9 +217,9 @@ router.get(
         throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
       }
 
-      // Fetch messages (last 50, paginated)
+      // Fetch messages (last 200, paginated)
       const msgPage = parseInt((req.query['msgPage'] as string) ?? '1', 10);
-      const msgLimit = 50;
+      const msgLimit = 200;
       const msgOffset = (msgPage - 1) * msgLimit;
 
       const messagesResult = await query<{

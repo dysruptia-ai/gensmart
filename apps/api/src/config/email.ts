@@ -6,7 +6,7 @@ interface UserInfo {
   email: string;
 }
 
-function getFrontendUrl(): string {
+export function getFrontendUrl(): string {
   if (env.API_URL.includes('api.gensmart.co')) {
     return 'https://www.gensmart.co';
   }
@@ -15,7 +15,7 @@ function getFrontendUrl(): string {
 
 const FRONTEND_URL = getFrontendUrl();
 
-function emailTemplate(content: string): string {
+export function emailTemplate(content: string): string {
   return `
     <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; border-radius: 12px; overflow: hidden;">
       <div style="background: #FFFFFF; padding: 24px 32px; border-bottom: 3px solid #25D366; text-align: center;">

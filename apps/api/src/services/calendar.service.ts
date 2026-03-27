@@ -9,6 +9,7 @@ export interface CalendarData {
   slotDuration?: number;
   bufferMinutes?: number;
   maxAdvanceDays?: number;
+  notificationEmail?: string | null;
 }
 
 export interface CalendarRow {
@@ -22,6 +23,7 @@ export interface CalendarRow {
   slot_duration: number;
   buffer_minutes: number;
   max_advance_days: number;
+  notification_email: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -51,13 +53,14 @@ export async function createCalendar(orgId: string, data: CalendarData): Promise
     slotDuration = 30,
     bufferMinutes = 15,
     maxAdvanceDays = 30,
+    notificationEmail = null,
   } = data;
 
   const result = await query<CalendarRow>(
     `INSERT INTO calendars
        (organization_id, agent_id, name, timezone, available_days, available_hours,
-        slot_duration, buffer_minutes, max_advance_days)
-     VALUES ($1, $2, $3, $4, $5::integer[], $6::jsonb, $7, $8, $9)
+        slot_duration, buffer_minutes, max_advance_days, notification_email)
+     VALUES ($1, $2, $3, $4, $5::integer[], $6::jsonb, $7, $8, $9, $10)
      RETURNING *`,
     [
       orgId,
@@ -69,6 +72,7 @@ export async function createCalendar(orgId: string, data: CalendarData): Promise
       slotDuration,
       bufferMinutes,
       maxAdvanceDays,
+      notificationEmail,
     ]
   );
   return result.rows[0]!;
@@ -130,6 +134,10 @@ export async function updateCalendar(
   if (data.maxAdvanceDays !== undefined) {
     setClauses.push(`max_advance_days = $${idx++}`);
     values.push(data.maxAdvanceDays);
+  }
+  if (data.notificationEmail !== undefined) {
+    setClauses.push(`notification_email = $${idx++}`);
+    values.push(data.notificationEmail);
   }
 
   values.push(calendarId, orgId);

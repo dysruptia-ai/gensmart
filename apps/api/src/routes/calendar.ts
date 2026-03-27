@@ -35,6 +35,7 @@ const calendarCreateSchema = z.object({
   slotDuration: z.number().int().min(5).max(240).optional(),
   bufferMinutes: z.number().int().min(0).max(120).optional(),
   maxAdvanceDays: z.number().int().min(1).max(365).optional(),
+  notificationEmail: z.string().email().max(255).nullable().optional(),
 });
 
 const calendarUpdateSchema = calendarCreateSchema.partial();

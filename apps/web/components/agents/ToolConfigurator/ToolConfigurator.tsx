@@ -62,6 +62,7 @@ interface Calendar {
   slot_duration: number;
   buffer_minutes: number;
   max_advance_days: number;
+  notification_email: string | null;
 }
 
 interface TestResult {
@@ -279,6 +280,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     slotDuration: 30,
     bufferMinutes: 15,
     maxAdvanceDays: 30,
+    notificationEmail: '',
   });
   const [creatingCal, setCreatingCal] = useState(false);
   const [updatingCal, setUpdatingCal] = useState(false);
@@ -890,6 +892,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
         slotDuration: calForm.slotDuration,
         bufferMinutes: calForm.bufferMinutes,
         maxAdvanceDays: calForm.maxAdvanceDays,
+        notificationEmail: calForm.notificationEmail || null,
       });
       const newCal = res.calendar;
       setCalendars((prev) => [...prev, newCal]);
@@ -917,6 +920,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
         slotDuration: calForm.slotDuration,
         bufferMinutes: calForm.bufferMinutes,
         maxAdvanceDays: calForm.maxAdvanceDays,
+        notificationEmail: calForm.notificationEmail || null,
       });
       const res = await api.get<{ calendars: Calendar[] }>('/api/calendars');
       setCalendars(res.calendars || []);
@@ -987,6 +991,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                               slotDuration: Number(c.slot_duration) || 30,
                               bufferMinutes: Number(c.buffer_minutes) || 15,
                               maxAdvanceDays: Number(c.max_advance_days) || 30,
+                              notificationEmail: c.notification_email ?? '',
                             });
                             setShowEditCal(true);
                           }
@@ -1099,6 +1104,18 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
             <div className={styles.fieldGroup}>
               <label className={styles.fieldLabelSmall}>Max Advance Days</label>
               <input className={styles.fieldInput} type="number" min={1} max={365} value={calForm.maxAdvanceDays} onChange={(e) => setCalForm((f) => ({ ...f, maxAdvanceDays: Number(e.target.value) }))} />
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Notification Email (optional)</label>
+              <input
+                className={styles.fieldInput}
+                type="email"
+                value={calForm.notificationEmail}
+                onChange={(e) => setCalForm((f) => ({ ...f, notificationEmail: e.target.value }))}
+                placeholder="email@example.com"
+              />
+              <span className={styles.fieldHint}>Receive an email notification when a new appointment is booked</span>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
@@ -1237,6 +1254,18 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 onChange={(e) => setCalForm((f) => ({ ...f, maxAdvanceDays: Number(e.target.value) }))}
               />
               <span className={styles.fieldHint}>How many days ahead can appointments be booked</span>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabelSmall}>Notification Email (optional)</label>
+              <input
+                className={styles.fieldInput}
+                type="email"
+                value={calForm.notificationEmail}
+                onChange={(e) => setCalForm((f) => ({ ...f, notificationEmail: e.target.value }))}
+                placeholder="email@example.com"
+              />
+              <span className={styles.fieldHint}>Receive an email notification when a new appointment is booked</span>
             </div>
 
             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>

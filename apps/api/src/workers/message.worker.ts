@@ -826,6 +826,35 @@ async function executeTool(
         startTime,
         endTime,
       });
+
+      // Send email notification if calendar has notification_email configured
+      try {
+        const calNotifResult = await query<{ notification_email: string | null; name: string }>(
+          'SELECT notification_email, name FROM calendars WHERE id = $1',
+          [calendarId]
+        );
+        const notifEmail = calNotifResult.rows[0]?.notification_email;
+        const calName = calNotifResult.rows[0]?.name || 'Calendar';
+        if (notifEmail) {
+          const { sendEmail, emailTemplate, getFrontendUrl } = await import('../config/email');
+          await sendEmail({
+            to: notifEmail,
+            subject: `New Appointment: ${personName} — ${date} at ${time}`,
+            html: emailTemplate(
+              `<h2 style="margin:0 0 16px">New Appointment Booked</h2>
+               <p><strong>Calendar:</strong> ${calName}</p>
+               <p><strong>Client:</strong> ${personName}</p>
+               <p><strong>Date:</strong> ${date}</p>
+               <p><strong>Time:</strong> ${time}</p>
+               <p><strong>Phone:</strong> ${String(args['phone'] ?? 'Not provided')}</p>
+               <p style="margin-top:16px"><a href="${getFrontendUrl()}/dashboard/calendar" style="background:#25D366;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block">View Calendar</a></p>`
+            ),
+          });
+        }
+      } catch (emailErr) {
+        console.error('[worker] Failed to send appointment notification email:', emailErr);
+      }
+
       return `Appointment confirmed for ${date} at ${time}. We look forward to seeing you, ${personName}!`;
     } catch (err) {
       return `Could not book the appointment: ${(err as Error).message}. Please choose another slot.`;
