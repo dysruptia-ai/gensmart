@@ -136,6 +136,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       takeoverUserMeta['imageCount'] = imageItems.length;
       takeoverUserMeta['images'] = imageItems.map((img) => ({
         mimeType: img.mimeType,
+        data: img.data,
         hasCaption: !!img.content,
       }));
     }
@@ -612,6 +613,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     userMsgMeta['imageCount'] = imageItems.length;
     userMsgMeta['images'] = imageItems.map((img) => ({
       mimeType: img.mimeType,
+      data: img.data,
       hasCaption: !!img.content,
     }));
   }
@@ -827,7 +829,41 @@ async function executeTool(
         endTime,
       });
 
-      // Send email notification if calendar has notification_email configured
+      // Generate AI summary of the conversation for notification emails
+      let meetingSummary = '';
+      try {
+        const summaryMessages = await query<{ role: string; content: string }>(
+          `SELECT role, content FROM messages
+           WHERE conversation_id = $1 AND role IN ('user', 'assistant', 'human')
+           ORDER BY created_at DESC LIMIT 20`,
+          [conversationId]
+        );
+
+        if (summaryMessages.rows.length > 0) {
+          const transcript = summaryMessages.rows
+            .reverse()
+            .map((m) => `${m.role === 'user' ? 'Customer' : 'Agent'}: ${m.content}`)
+            .join('\n');
+
+          const { chat: llmChat } = await import('../services/llm.service');
+          const summaryResponse = await llmChat({
+            provider: 'openai',
+            model: 'gpt-4o-mini',
+            messages: [{
+              role: 'user',
+              content: `Based on this conversation, write a brief 2-3 sentence summary of what this upcoming meeting will be about. Focus on the customer's needs, interests, and any specific topics they want to discuss. Write in the same language the conversation was held in.\n\nConversation:\n${transcript}\n\nMeeting summary:`,
+            }],
+            temperature: 0.3,
+            maxTokens: 150,
+          });
+          meetingSummary = summaryResponse.content.trim();
+        }
+      } catch (summaryErr) {
+        console.error('[worker] Failed to generate meeting summary:', summaryErr);
+        // Non-fatal — continue without summary
+      }
+
+      // Send email notification to calendar owner
       try {
         const calNotifResult = await query<{ notification_email: string | null; name: string }>(
           'SELECT notification_email, name FROM calendars WHERE id = $1',
@@ -847,12 +883,69 @@ async function executeTool(
                <p><strong>Date:</strong> ${date}</p>
                <p><strong>Time:</strong> ${time}</p>
                <p><strong>Phone:</strong> ${String(args['phone'] ?? 'Not provided')}</p>
+               ${meetingSummary ? `<p style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #25D366;font-size:14px;color:#1A1A1A;line-height:1.5;"><strong>Meeting topic:</strong><br/>${meetingSummary}</p>` : ''}
                <p style="margin-top:16px"><a href="${getFrontendUrl()}/dashboard/calendar" style="background:#25D366;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block">View Calendar</a></p>`
             ),
           });
         }
       } catch (emailErr) {
         console.error('[worker] Failed to send appointment notification email:', emailErr);
+      }
+
+      // Send confirmation email to the end user (if email was captured)
+      try {
+        const contactEmailResult = await query<{ email: string | null; name: string | null }>(
+          `SELECT co.email, co.name FROM contacts co
+           JOIN conversations cv ON cv.contact_id = co.id
+           WHERE cv.id = $1`,
+          [conversationId]
+        );
+        const contactEmail = contactEmailResult.rows[0]?.email;
+        const contactName = contactEmailResult.rows[0]?.name || personName;
+
+        if (contactEmail) {
+          const { sendEmail, emailTemplate } = await import('../config/email');
+
+          const calNameResult = await query<{ name: string }>(
+            'SELECT name FROM calendars WHERE id = $1',
+            [calendarId]
+          );
+          const calName = calNameResult.rows[0]?.name || 'Calendar';
+          const summaryText = meetingSummary || 'Your appointment has been scheduled successfully.';
+
+          await sendEmail({
+            to: contactEmail,
+            subject: `Your Appointment is Confirmed — ${date} at ${time}`,
+            html: emailTemplate(
+              `<h2 style="margin:0 0 16px;color:#1A1A1A;">Your Appointment is Confirmed! ✓</h2>
+               <p style="color:#6B7280;font-size:15px;line-height:1.6;">Hi ${contactName}, your appointment has been booked. Here are the details:</p>
+               <div style="background:#FFFFFF;border:1px solid #E5E0DB;border-radius:8px;padding:20px;margin:20px 0;">
+                 <table style="width:100%;border-collapse:collapse;">
+                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;width:80px;">Date</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${date}</td></tr>
+                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Time</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${time}</td></tr>
+                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Calendar</td><td style="color:#1A1A1A;padding:6px 0;">${calName}</td></tr>
+                 </table>
+               </div>
+               <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0;border-left:3px solid #25D366;">
+                 <p style="margin:0 0 8px;font-weight:600;color:#1A1A1A;font-size:14px;">What we'll discuss:</p>
+                 <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">${summaryText}</p>
+               </div>
+               <div style="background:#FAF8F5;border-radius:8px;padding:16px;margin:16px 0;">
+                 <p style="margin:0 0 10px;font-weight:600;color:#1A1A1A;font-size:14px;">Before your appointment:</p>
+                 <table style="border-collapse:collapse;">
+                   <tr><td style="padding:4px 8px 4px 0;color:#25D366;font-size:16px;">✓</td><td style="padding:4px 0;color:#374151;font-size:14px;">Note down any questions you want to ask</td></tr>
+                   <tr><td style="padding:4px 8px 4px 0;color:#25D366;font-size:16px;">✓</td><td style="padding:4px 0;color:#374151;font-size:14px;">Have relevant documents or information ready</td></tr>
+                   <tr><td style="padding:4px 8px 4px 0;color:#25D366;font-size:16px;">✓</td><td style="padding:4px 0;color:#374151;font-size:14px;">Be available a few minutes before the scheduled time</td></tr>
+                 </table>
+               </div>
+               <p style="color:#9CA3AF;font-size:12px;margin-top:20px;">If you need to reschedule, please contact us directly.</p>`
+            ),
+          });
+          console.log(`[worker] Confirmation email sent to end user: ${contactEmail}`);
+        }
+      } catch (userEmailErr) {
+        console.error('[worker] Failed to send user confirmation email:', userEmailErr);
+        // Non-fatal — booking is already confirmed
       }
 
       return `Appointment confirmed for ${date} at ${time}. We look forward to seeing you, ${personName}!`;

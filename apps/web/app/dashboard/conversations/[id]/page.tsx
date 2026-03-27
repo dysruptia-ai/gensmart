@@ -10,6 +10,9 @@ import {
   Globe,
   Phone,
   MoreHorizontal,
+  Paperclip,
+  Mic,
+  Square,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -37,6 +40,9 @@ interface Message {
     toolsCalled?: string[];
     type?: string;
     error?: boolean;
+    hasImages?: boolean;
+    imageCount?: number;
+    isVoiceMessage?: boolean;
   };
   createdAt: string;
 }
@@ -92,9 +98,19 @@ export default function ConversationDetailPage() {
   const [inputValue, setInputValue] = useState('');
   const [orgPlan, setOrgPlan] = useState<string>('free');
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [oldestTimestamp, setOldestTimestamp] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<{ data: string; mimeType: string; preview: string } | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -106,9 +122,12 @@ export default function ConversationDetailPage() {
       const data = await api.get<{
         conversation: ConversationDetail;
         messages: Message[];
-      }>(`/api/conversations/${conversationId}`);
+        pagination: { total: number; hasMore: boolean; oldestTimestamp: string | null };
+      }>(`/api/conversations/${conversationId}?msgLimit=50`);
       setConversation(data.conversation);
       setMessages(data.messages);
+      setHasMoreMessages(data.pagination.hasMore);
+      setOldestTimestamp(data.pagination.oldestTimestamp);
     } catch (err) {
       console.error('[chat] Fetch failed:', err);
       showError('Failed to load conversation');
@@ -125,6 +144,26 @@ export default function ConversationDetailPage() {
       // ignore
     }
   }, []);
+
+  const loadMoreMessages = useCallback(async () => {
+    if (!conversationId || !oldestTimestamp || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const data = await api.get<{
+        conversation: ConversationDetail;
+        messages: Message[];
+        pagination: { total: number; hasMore: boolean; oldestTimestamp: string | null };
+      }>(`/api/conversations/${conversationId}?msgLimit=50&msgBefore=${oldestTimestamp}`);
+
+      setMessages((prev) => [...data.messages, ...prev]);
+      setHasMoreMessages(data.pagination.hasMore);
+      setOldestTimestamp(data.pagination.oldestTimestamp);
+    } catch (err) {
+      console.error('[chat] Load more failed:', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [conversationId, oldestTimestamp, loadingMore]);
 
   useEffect(() => {
     void fetchConversation();
@@ -143,8 +182,8 @@ export default function ConversationDetailPage() {
 
     const pollInterval = setInterval(async () => {
       try {
-        const data = await api.get<{ conversation: ConversationDetail; messages: Message[] }>(
-          `/api/conversations/${conversationId}`
+        const data = await api.get<{ conversation: ConversationDetail; messages: Message[]; pagination: { total: number; hasMore: boolean; oldestTimestamp: string | null } }>(
+          `/api/conversations/${conversationId}?msgLimit=50`
         );
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
@@ -310,41 +349,103 @@ export default function ConversationDetailPage() {
     }
   };
 
-  const handleSendMessage = async () => {
-    const content = inputValue.trim();
-    if (!content || sendLoading) return;
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showError('Please select an image file');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Image must be under 5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(',')[1] ?? '';
+      setPendingImage({ data: base64, mimeType: file.type, preview: reader.result as string });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
 
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const buffer = await blob.arrayBuffer();
+        const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+        await sendMultimedia(undefined, { data: base64, mimeType: 'audio/webm' });
+        setIsRecording(false);
+        setRecordingDuration(0);
+      };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      recordingTimerRef.current = setInterval(() => setRecordingDuration((d) => d + 1), 1000);
+    } catch {
+      showError('Could not access microphone');
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+  }
+
+  async function sendMultimedia(
+    image?: { data: string; mimeType: string },
+    audio?: { data: string; mimeType: string }
+  ) {
     setSendLoading(true);
-    setInputValue('');
+    const content = inputValue.trim();
 
-    // Optimistically add the message
     const optimisticMsg: Message = {
       id: `tmp-${Date.now()}`,
       role: 'human',
-      content,
-      metadata: {},
+      content: audio ? 'Voice message...' : (content || '[Image]'),
+      metadata: {
+        ...(image ? { hasImages: true, imageCount: 1 } : {}),
+        ...(audio ? { isVoiceMessage: true } : {}),
+      },
       createdAt: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimisticMsg]);
+    setInputValue('');
+    setPendingImage(null);
     setTimeout(scrollToBottom, 50);
 
     try {
-      const result = await api.post<{ message: { id: string; role: string; content: string; createdAt: string } }>(
+      const result = await api.post<{ message: { id: string; role: string; content: string; metadata: Record<string, unknown>; createdAt: string } }>(
         `/api/conversations/${conversationId}/message`,
-        { content }
+        { content: content || undefined, image, audio }
       );
       if (result.message) {
         setMessages((prev) => prev.map((m) =>
-          m.id === optimisticMsg.id ? { ...m, id: result.message.id, createdAt: result.message.createdAt } : m
+          m.id === optimisticMsg.id ? { ...m, id: result.message.id, content: result.message.content, metadata: result.message.metadata as Message['metadata'], createdAt: result.message.createdAt } : m
         ));
       }
     } catch (err) {
-      // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMsg.id));
       showError((err as Error).message);
-      setInputValue(content);
     } finally {
       setSendLoading(false);
+    }
+  }
+
+  const handleSendMessage = async () => {
+    const content = inputValue.trim();
+    if ((!content && !pendingImage) || sendLoading) return;
+
+    if (pendingImage) {
+      await sendMultimedia({ data: pendingImage.data, mimeType: pendingImage.mimeType });
+    } else {
+      await sendMultimedia();
     }
   };
 
@@ -473,6 +574,18 @@ export default function ConversationDetailPage() {
 
           {/* Messages */}
           <div className={styles.messages}>
+            {hasMoreMessages && (
+              <div className={styles.loadMore}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void loadMoreMessages()}
+                  loading={loadingMore}
+                >
+                  Load earlier messages
+                </Button>
+              </div>
+            )}
             {messages.length === 0 ? (
               <div className={styles.emptyMessages}>
                 <p>No messages yet in this conversation.</p>
@@ -495,31 +608,81 @@ export default function ConversationDetailPage() {
           {conversation.status !== 'closed' && (
             <div className={styles.inputArea}>
               {canSendMessage ? (
-                <div className={styles.inputRow}>
-                  <textarea
-                    ref={textareaRef}
-                    className={styles.textarea}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
-                    rows={2}
-                    disabled={sendLoading}
-                    aria-label="Message input"
-                  />
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    icon={Send}
-                    iconPosition="right"
-                    onClick={() => void handleSendMessage()}
-                    loading={sendLoading}
-                    disabled={!inputValue.trim()}
-                    aria-label="Send message"
-                  >
-                    Send
-                  </Button>
-                </div>
+                <>
+                  {pendingImage && (
+                    <div className={styles.imagePreviewStrip}>
+                      <div className={styles.imagePreviewThumb}>
+                        <img src={pendingImage.preview} alt="Preview" />
+                        <button className={styles.imagePreviewRemove} onClick={() => setPendingImage(null)}>
+                          <X size={10} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {isRecording && (
+                    <div className={styles.recordingStrip}>
+                      <span className={styles.recordingDot} />
+                      <span className={styles.recordingTime}>
+                        {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')}
+                      </span>
+                      <span className={styles.recordingLabel}>Recording...</span>
+                    </div>
+                  )}
+                  <div className={styles.inputRow}>
+                    {planLimits?.imageVision && (
+                      <>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          style={{ display: 'none' }}
+                        />
+                        <button
+                          className={styles.iconBtn}
+                          onClick={() => fileInputRef.current?.click()}
+                          title="Attach image"
+                          disabled={sendLoading || isRecording}
+                        >
+                          <Paperclip size={16} />
+                        </button>
+                      </>
+                    )}
+                    <textarea
+                      ref={textareaRef}
+                      className={styles.textarea}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
+                      rows={2}
+                      disabled={sendLoading || isRecording}
+                      aria-label="Message input"
+                    />
+                    {planLimits?.voiceMessages && !inputValue.trim() && !pendingImage ? (
+                      <button
+                        className={`${styles.iconBtn} ${isRecording ? styles.recordingBtn : ''}`}
+                        onClick={isRecording ? stopRecording : () => void startRecording()}
+                        title={isRecording ? 'Stop recording' : 'Record voice message'}
+                      >
+                        {isRecording ? <Square size={16} /> : <Mic size={16} />}
+                      </button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        icon={Send}
+                        iconPosition="right"
+                        onClick={() => void handleSendMessage()}
+                        loading={sendLoading}
+                        disabled={!inputValue.trim() && !pendingImage}
+                        aria-label="Send message"
+                      >
+                        Send
+                      </Button>
+                    )}
+                  </div>
+                </>
               ) : (
                 <div className={styles.inputDisabled}>
                   {conversation.status === 'human_takeover' && conversation.takenOverBy !== user?.id

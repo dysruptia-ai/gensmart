@@ -32,7 +32,6 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
   const [status, setStatus] = useState<WhatsAppStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showManual, setShowManual] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
 
   // Manual setup form
@@ -47,7 +46,12 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
   const isFreePlan = FREE_PLAN_PLANS.includes(orgPlan);
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
-  const hasEmbeddedSignup = !!fbAppId;
+  // Embedded Signup temporarily disabled in production while we polish the flow
+  // TODO: Re-enable when Feature #10 (auto WABA/Phone capture from callback) is complete
+  const hasEmbeddedSignup = false; // was: !!fbAppId;
+  void fbAppId; // keep variable to avoid unused lint error
+
+  const [showManual, setShowManual] = useState(!hasEmbeddedSignup);
 
   // Load Facebook SDK when component mounts (needed for Embedded Signup)
   useEffect(() => {
@@ -328,19 +332,27 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
             </div>
           )}
 
-          <div className={styles.divider}>
-            {hasEmbeddedSignup && <span>or setup manually</span>}
-          </div>
+          {!hasEmbeddedSignup && (
+            <div className={styles.sectionTitle}>Connect WhatsApp</div>
+          )}
 
-          <button
-            className={styles.toggleManual}
-            onClick={() => setShowManual((v) => !v)}
-            type="button"
-          >
-            {showManual ? '▲ Hide Manual Setup' : '▼ Manual Setup'}
-          </button>
+          {hasEmbeddedSignup && (
+            <>
+              <div className={styles.divider}>
+                <span>or setup manually</span>
+              </div>
 
-          {showManual && (
+              <button
+                className={styles.toggleManual}
+                onClick={() => setShowManual((v) => !v)}
+                type="button"
+              >
+                {showManual ? '▲ Hide Manual Setup' : '▼ Manual Setup'}
+              </button>
+            </>
+          )}
+
+          {(showManual || !hasEmbeddedSignup) && (
             <div className={styles.manualForm}>
               <div className={styles.sectionTitle}>Manual Setup</div>
               <p className={styles.fieldHint}>

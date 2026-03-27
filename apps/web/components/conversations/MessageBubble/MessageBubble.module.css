@@ -73,6 +73,26 @@
   opacity: 0.7;
 }
 
+.imageGallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.messageImage {
+  max-width: 240px;
+  max-height: 200px;
+  border-radius: 8px;
+  cursor: pointer;
+  object-fit: cover;
+  transition: opacity 0.15s;
+}
+
+.messageImage:hover {
+  opacity: 0.9;
+}
+
 .imageIndicator {
   display: flex;
   align-items: center;

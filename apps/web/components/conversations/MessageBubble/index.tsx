@@ -19,6 +19,7 @@ interface MessageBubbleProps {
     imageCount?: number;
     images?: Array<{
       mimeType: string;
+      data?: string;
       hasCaption: boolean;
     }>;
     isVoiceMessage?: boolean;
@@ -73,12 +74,36 @@ export default function MessageBubble({
             <span>{t('chat_voice_message')}</span>
           </div>
         )}
-        {metadata?.hasImages && (
+        {metadata?.hasImages && metadata?.images && metadata.images.some((img) => img.data) ? (
+          <div className={styles.imageGallery}>
+            {metadata.images.map((img, idx) => (
+              img.data ? (
+                <img
+                  key={idx}
+                  src={`data:${img.mimeType};base64,${img.data}`}
+                  alt={`Image ${idx + 1}`}
+                  className={styles.messageImage}
+                  onClick={() => {
+                    const win = window.open();
+                    if (win) {
+                      win.document.write(`<img src="data:${img.mimeType};base64,${img.data}" style="max-width:100%;height:auto;" />`);
+                    }
+                  }}
+                />
+              ) : (
+                <div key={idx} className={styles.imageIndicator}>
+                  <ImageIcon size={14} />
+                  <span>{metadata.imageCount === 1 ? t('chat_image_indicator') : `${metadata.imageCount} ${t('chat_images_indicator')}`}</span>
+                </div>
+              )
+            ))}
+          </div>
+        ) : metadata?.hasImages ? (
           <div className={styles.imageIndicator}>
             <ImageIcon size={14} />
             <span>{metadata.imageCount === 1 ? t('chat_image_indicator') : `${metadata.imageCount} ${t('chat_images_indicator')}`}</span>
           </div>
-        )}
+        ) : null}
         <p className={styles.content}>{content}</p>
         <div className={styles.meta}>
           <span className={styles.time}>{formatTime(createdAt)}</span>

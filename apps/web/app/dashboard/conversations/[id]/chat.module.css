@@ -156,6 +156,13 @@
   background: var(--color-bg-main);
 }
 
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
 .emptyMessages {
   flex: 1;
   display: flex;
@@ -209,6 +216,85 @@
   padding: 0.5rem;
   background: var(--color-bg-sidebar);
   border-radius: 0.5rem;
+}
+
+.imagePreviewStrip {
+  padding: 8px 12px 0;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+}
+
+.imagePreviewThumb {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-primary);
+}
+
+.imagePreviewThumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imagePreviewRemove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.recordingStrip {
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  border-top: 1px solid #fecaca;
+}
+
+.recordingDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse-recording 1s ease-in-out infinite;
+}
+
+.recordingTime {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ef4444;
+  font-variant-numeric: tabular-nums;
+}
+
+.recordingLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.recordingBtn {
+  color: #ef4444 !important;
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-recording {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Details sidebar */

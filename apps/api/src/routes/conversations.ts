@@ -217,11 +217,20 @@ router.get(
         throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
       }
 
-      // Fetch messages (last 200, paginated)
-      const msgPage = parseInt((req.query['msgPage'] as string) ?? '1', 10);
-      const msgLimit = 200;
-      const msgOffset = (msgPage - 1) * msgLimit;
+      // Fetch messages with cursor-based pagination
+      const msgBefore = req.query['msgBefore'] as string | undefined;
+      const msgLimit = Math.min(parseInt((req.query['msgLimit'] as string) ?? '50', 10), 100);
 
+      const msgConditions = ['conversation_id = $1'];
+      const msgParams: unknown[] = [conversationId];
+      let msgParamIdx = 2;
+
+      if (msgBefore) {
+        msgConditions.push(`created_at < $${msgParamIdx++}`);
+        msgParams.push(msgBefore);
+      }
+
+      // Fetch newest first for cursor pagination, then reverse for chronological order
       const messagesResult = await query<{
         id: string;
         role: string;
@@ -231,11 +240,14 @@ router.get(
       }>(
         `SELECT id, role, content, metadata, created_at
          FROM messages
-         WHERE conversation_id = $1
-         ORDER BY created_at ASC
-         LIMIT $2 OFFSET $3`,
-        [conversationId, msgLimit, msgOffset]
+         WHERE ${msgConditions.join(' AND ')}
+         ORDER BY created_at DESC
+         LIMIT $${msgParamIdx}`,
+        [...msgParams, msgLimit + 1]
       );
+
+      const hasMore = messagesResult.rows.length > msgLimit;
+      const messageRows = messagesResult.rows.slice(0, msgLimit).reverse();
 
       const msgCountResult = await query<{ count: string }>(
         'SELECT COUNT(*) as count FROM messages WHERE conversation_id = $1',
@@ -275,7 +287,7 @@ router.get(
           createdAt: conv.created_at,
           updatedAt: conv.updated_at,
         },
-        messages: messagesResult.rows.map((m) => ({
+        messages: messageRows.map((m) => ({
           id: m.id,
           role: m.role,
           content: m.content,
@@ -284,9 +296,8 @@ router.get(
         })),
         pagination: {
           total: totalMessages,
-          page: msgPage,
-          limit: msgLimit,
-          totalPages: Math.ceil(totalMessages / msgLimit),
+          hasMore,
+          oldestTimestamp: messageRows[0]?.created_at ?? null,
         },
       });
     } catch (err) {
@@ -303,11 +314,11 @@ router.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const conversationId = String(req.params['id']);
-      const { content } = req.body as { content?: string };
-
-      if (!content?.trim()) {
-        throw new AppError(400, 'Message content is required', 'MISSING_CONTENT');
-      }
+      const { content, image, audio } = req.body as {
+        content?: string;
+        image?: { data: string; mimeType: string };
+        audio?: { data: string; mimeType: string };
+      };
 
       const convResult = await query<{
         id: string;
@@ -332,19 +343,67 @@ router.post(
         throw new AppError(403, 'You are not the active agent for this conversation', 'FORBIDDEN');
       }
 
+      // Plan gating for multimedia
+      const orgPlan = req.org!.plan as PlanKey;
+      const orgPlanLimits = PLAN_LIMITS[orgPlan];
+
+      if (audio?.data && !orgPlanLimits.voiceMessages) {
+        throw new AppError(403, 'Voice messages require Starter plan or higher', 'PLAN_LIMIT');
+      }
+
+      if (image?.data && !orgPlanLimits.imageVision) {
+        throw new AppError(403, 'Image sending requires Pro plan or higher', 'PLAN_LIMIT');
+      }
+
+      let messageContent = content?.trim() || '';
+      const msgMetadata: Record<string, unknown> = {};
+
+      // Handle audio: transcribe with Whisper
+      if (audio?.data) {
+        try {
+          const { transcribeAudio } = await import('../services/whatsapp.service');
+          const audioBuffer = Buffer.from(audio.data, 'base64');
+          const transcription = await transcribeAudio(audioBuffer, audio.mimeType);
+          messageContent = transcription;
+          msgMetadata['isVoiceMessage'] = true;
+        } catch (err) {
+          console.error('[conversations] Audio transcription failed:', err);
+          throw new AppError(400, 'Failed to transcribe audio', 'TRANSCRIPTION_FAILED');
+        }
+      }
+
+      // Handle image: store in metadata
+      if (image?.data) {
+        msgMetadata['hasImages'] = true;
+        msgMetadata['imageCount'] = 1;
+        msgMetadata['images'] = [{
+          mimeType: image.mimeType,
+          data: image.data,
+          hasCaption: !!messageContent,
+        }];
+      }
+
+      if (!messageContent && !image?.data) {
+        throw new AppError(400, 'Message content is required', 'MISSING_CONTENT');
+      }
+
+      if (!messageContent) {
+        messageContent = '[Image]';
+      }
+
       // Save message
       const msgResult = await query<{ id: string; created_at: string }>(
         `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
-         VALUES ($1, 'human', $2, '{}', NOW())
+         VALUES ($1, 'human', $2, $3, NOW())
          RETURNING id, created_at`,
-        [conversationId, content.trim()]
+        [conversationId, messageContent, JSON.stringify(msgMetadata)]
       );
 
       const message = {
         id: msgResult.rows[0]!.id,
         role: 'human',
-        content: content.trim(),
-        metadata: {},
+        content: messageContent,
+        metadata: msgMetadata,
         createdAt: msgResult.rows[0]!.created_at,
       };
 
@@ -354,7 +413,7 @@ router.post(
         [conversationId]
       );
 
-      // Send via WhatsApp if channel is whatsapp
+      // Send via WhatsApp if channel is whatsapp (text only — image sending from takeover is post-MVP)
       if (conv.channel === 'whatsapp') {
         try {
           const agentResult = await query<{ whatsapp_config: Record<string, unknown> }>(
@@ -373,7 +432,7 @@ router.post(
             if (phone) {
               const { sendTextMessage, decryptAccessToken } = await import('../services/whatsapp.service');
               const accessToken = decryptAccessToken(String(waConfig['access_token_encrypted']));
-              await sendTextMessage(String(waConfig['phone_number_id']), accessToken, phone, content.trim());
+              await sendTextMessage(String(waConfig['phone_number_id']), accessToken, phone, messageContent);
             }
           }
         } catch (err) {
@@ -395,7 +454,7 @@ router.post(
         });
         io.to(`org:${conv.organization_id}`).emit('conversation:update', {
           conversationId,
-          lastMessage: content.trim().slice(0, 100),
+          lastMessage: messageContent.slice(0, 100),
           updatedAt: new Date().toISOString(),
         });
       } catch {
