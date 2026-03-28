@@ -44,6 +44,7 @@ export default function AdminSettingsPage() {
   const loadSettings = useCallback(async () => {
     try {
       const data = await api.get<PlatformSetting[]>('/api/admin/settings');
+      console.log('[admin-settings] Loaded settings:', data.map(s => ({ key: s.key, value: s.is_encrypted ? '(encrypted)' : s.value })));
       setSettings(data);
       // Initialize edit values — empty for encrypted (masked), actual value for non-encrypted
       const values: Record<string, string> = {};
@@ -72,6 +73,7 @@ export default function AdminSettingsPage() {
     setSaving((prev) => ({ ...prev, [key]: true }));
     try {
       await api.put(`/api/admin/settings/${key}`, { value });
+      console.log('[admin-settings] Saved key:', key, 'value length:', value.length);
       toast.success('Setting updated');
       // Reload to get fresh masked values
       await loadSettings();

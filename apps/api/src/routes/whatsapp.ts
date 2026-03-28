@@ -36,6 +36,22 @@ router.get('/webhook', async (req: Request, res: Response): Promise<void> => {
   }
 
   try {
+    // First try: platform-level verify token (global, for Embedded Signup)
+    const { getSettingValue } = await import('../services/platform-settings.service');
+    let platformVerifyToken = '';
+    try {
+      platformVerifyToken = await getSettingValue('whatsapp_verify_token');
+    } catch {
+      // Setting might not exist yet
+    }
+
+    if (platformVerifyToken && token === platformVerifyToken) {
+      console.log('[whatsapp] Webhook verified via platform verify token');
+      res.status(200).send(challenge);
+      return;
+    }
+
+    // Fallback: per-agent verify token (backward compat with existing agents)
     const result = await query<{ id: string }>(
       `SELECT id FROM agents
        WHERE whatsapp_config->>'verify_token' = $1
@@ -47,7 +63,7 @@ router.get('/webhook', async (req: Request, res: Response): Promise<void> => {
       console.log('[whatsapp] Webhook verified for agent:', result.rows[0]!.id);
       res.status(200).send(challenge);
     } else {
-      console.log('[whatsapp] Webhook verification failed — token not found');
+      console.log('[whatsapp] Webhook verification failed — token not found in platform or agents');
       res.status(403).json({ error: 'Verification failed' });
     }
   } catch (err) {
