@@ -15,6 +15,7 @@ import {
   downloadMedia,
   downloadAudio,
   transcribeAudio,
+  resolveAccessToken,
 } from '../services/whatsapp.service';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
@@ -212,23 +213,19 @@ router.post(
             : '[The user sent an image, but image analysis is not available on your current plan. Please let them know they can upgrade to Pro for image analysis.]';
         } else {
           const waConfig = agent.whatsapp_config;
-          if (waConfig?.access_token_encrypted) {
-            try {
-              const accessToken = decryptAccessToken(String(waConfig.access_token_encrypted));
-              const media = await downloadMedia(imageMediaId, accessToken);
-              imageBufferItem = {
-                type: 'image',
-                content: imageCaption,
-                mimeType: media.mimeType,
-                data: media.data,
-              };
-              console.log(`[whatsapp] Downloaded image: ${media.mimeType}, ${Math.round(media.data.length * 0.75 / 1024)}KB`);
-            } catch (err) {
-              console.error('[whatsapp] Failed to download image:', (err as Error).message);
-              // Continue without image — treat as text-only with caption
-            }
-          } else {
-            console.warn('[whatsapp] Cannot download image — no access token');
+          try {
+            const accessToken = await resolveAccessToken(waConfig);
+            const media = await downloadMedia(imageMediaId, accessToken);
+            imageBufferItem = {
+              type: 'image',
+              content: imageCaption,
+              mimeType: media.mimeType,
+              data: media.data,
+            };
+            console.log(`[whatsapp] Downloaded image: ${media.mimeType}, ${Math.round(media.data.length * 0.75 / 1024)}KB`);
+          } catch (err) {
+            console.error('[whatsapp] Failed to download image:', (err as Error).message);
+            // Continue without image — treat as text-only with caption
           }
         }
       }
@@ -243,10 +240,9 @@ router.post(
           messageText = '[The user sent a voice message, but voice messages are not available on your current plan. Please let them know they can type their message instead.]';
         } else {
           const waConfigAudio = agent.whatsapp_config;
-          if (waConfigAudio?.access_token_encrypted) {
-            try {
-              const accessToken = decryptAccessToken(String(waConfigAudio.access_token_encrypted));
-              const audio = await downloadAudio(audioMediaId, accessToken);
+          try {
+            const accessToken = await resolveAccessToken(waConfigAudio);
+            const audio = await downloadAudio(audioMediaId, accessToken);
               console.log(`[whatsapp] Downloaded audio: ${audio.mimeType}, ${Math.round(audio.buffer.length / 1024)}KB`);
 
               const transcription = await transcribeAudio(audio.buffer, audio.mimeType);
@@ -262,10 +258,6 @@ router.post(
               console.error('[whatsapp] Failed to download/transcribe audio:', (err as Error).message);
               messageText = '[Voice message — transcription failed]';
             }
-          } else {
-            console.warn('[whatsapp] Cannot download audio — no access token');
-            messageText = '[Voice message — transcription unavailable]';
-          }
         }
       }
 
@@ -321,13 +313,11 @@ router.post(
 
       // Mark message as read (fire and forget) — always, regardless of takeover status
       const waConfig = agent.whatsapp_config;
-      if (waConfig?.access_token_encrypted) {
-        try {
-          const accessToken = decryptAccessToken(String(waConfig.access_token_encrypted));
-          markAsRead(phoneNumberId, accessToken, messageId).catch(() => {});
-        } catch {
-          // Ignore decryption errors for mark-as-read
-        }
+      try {
+        const accessToken = await resolveAccessToken(waConfig);
+        markAsRead(phoneNumberId, accessToken, messageId).catch(() => {});
+      } catch {
+        // Ignore token errors for mark-as-read — non-critical
       }
 
       // During human takeover — save message + notify dashboard, skip LLM
@@ -445,10 +435,21 @@ router.post(
       let finalAccessToken = accessToken?.trim() ?? '';
       if (!finalAccessToken) {
         const savedEncrypted = agentCheck.rows[0]!.whatsapp_config?.['access_token_encrypted'] as string | undefined;
-        if (!savedEncrypted) {
-          throw new AppError(400, 'No access token provided or saved. Please reconnect with Facebook.', 'VALIDATION_ERROR');
+        if (savedEncrypted) {
+          finalAccessToken = decryptAccessToken(savedEncrypted);
+        } else {
+          // Fallback to platform token
+          try {
+            const { getWhatsAppToken } = await import('../services/platform-settings.service');
+            finalAccessToken = await getWhatsAppToken();
+            if (!finalAccessToken) {
+              throw new AppError(400, 'No access token provided, saved, or configured at platform level.', 'VALIDATION_ERROR');
+            }
+          } catch (err) {
+            if (err instanceof AppError) throw err;
+            throw new AppError(400, 'No access token available. Please reconnect with Facebook.', 'VALIDATION_ERROR');
+          }
         }
-        finalAccessToken = decryptAccessToken(savedEncrypted);
       }
 
       // Validate access token by calling Meta API

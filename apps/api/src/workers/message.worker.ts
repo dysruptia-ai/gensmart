@@ -16,7 +16,7 @@ import { executeCustomFunction } from '../services/custom-function.service';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
-import { sendTextMessage, decryptAccessToken } from '../services/whatsapp.service';
+import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
 import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
 import { createAppointment } from '../services/appointment.service';
 
@@ -670,7 +670,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       );
       const waConfig = agentWaResult.rows[0]?.whatsapp_config;
 
-      if (waConfig?.connected && waConfig?.phone_number_id && waConfig?.access_token_encrypted) {
+      if (waConfig?.connected && waConfig?.phone_number_id) {
         const contactResult = await query<{ phone: string | null }>(
           'SELECT phone FROM contacts WHERE id = $1',
           [conv.contact_id]
@@ -678,7 +678,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         const phone = contactResult.rows[0]?.phone;
 
         if (phone) {
-          const accessToken = decryptAccessToken(String(waConfig.access_token_encrypted));
+          const accessToken = await resolveAccessToken(waConfig);
           await sendTextMessage(String(waConfig.phone_number_id), accessToken, phone, finalResponse);
           console.log(`[msg-worker] WhatsApp message sent to ${phone.slice(0, 4)}*** conv: ${conversationId}`);
         } else {

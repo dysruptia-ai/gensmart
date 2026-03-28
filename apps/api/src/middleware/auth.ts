@@ -7,6 +7,7 @@ export interface JwtPayload {
   orgId: string;
   role: string;
   email: string;
+  isSuperAdmin?: boolean;
 }
 
 declare global {

@@ -305,6 +305,31 @@ export async function transcribeAudio(
   return response.text;
 }
 
+/**
+ * Resolve the WhatsApp access token for an agent.
+ * Priority: agent's stored token > platform system user token.
+ */
+export async function resolveAccessToken(
+  waConfig: Record<string, unknown> | null | undefined
+): Promise<string> {
+  // 1. Try agent-level token
+  if (waConfig?.access_token_encrypted) {
+    try {
+      return decryptAccessToken(String(waConfig.access_token_encrypted));
+    } catch {
+      console.warn('[whatsapp] Failed to decrypt agent token, falling back to platform token');
+    }
+  }
+
+  // 2. Fallback to platform-level token
+  const { getWhatsAppToken } = await import('./platform-settings.service');
+  const platformToken = await getWhatsAppToken();
+  if (!platformToken) {
+    throw new Error('No WhatsApp access token available (agent or platform)');
+  }
+  return platformToken;
+}
+
 export function encryptAccessToken(token: string): string {
   return encrypt(token);
 }

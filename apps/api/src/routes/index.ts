@@ -16,6 +16,7 @@ import dashboardRouter from './dashboard';
 import accountRouter from './account';
 import lookupRouter from './lookup';
 import promoRouter from './promo';
+import adminRouter from './admin';
 
 const router = Router();
 
@@ -39,5 +40,6 @@ router.use('/dashboard', dashboardRouter);
 router.use('/account', accountRouter);
 router.use('/lookup', lookupRouter);
 router.use('/promo', promoRouter);
+router.use('/admin', adminRouter);
 
 export default router;

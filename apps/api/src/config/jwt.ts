@@ -6,6 +6,7 @@ export interface AccessTokenPayload {
   orgId: string;
   role: string;
   email: string;
+  isSuperAdmin?: boolean;
 }
 
 export interface RefreshTokenPayload {
