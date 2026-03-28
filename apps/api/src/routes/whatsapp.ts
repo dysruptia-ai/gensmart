@@ -666,8 +666,78 @@ router.post(
       }
 
       if (sharedWabaIds.length === 0) {
-        console.error('[embedded-signup] No shared WABAs found in debug_token response:', JSON.stringify(debugData.data.granular_scopes));
-        throw new AppError(400, 'No WhatsApp Business Account was shared. Please try again and make sure to complete the setup.', 'NO_WABA_SHARED');
+        // Fallback for reconnections: granular_scopes may have the scope but no target_ids
+        // Try using the user's FB token to list shared WABA IDs via the Business endpoint
+        console.log('[embedded-signup] No target_ids in granular_scopes, trying fallback via user token...');
+
+        try {
+          // Try getting shared WABA list using the user's token
+          const sharedWabaRes = await fetch(
+            `https://graph.facebook.com/v21.0/me?fields=businesses{id,name}`,
+            { headers: { Authorization: `Bearer ${fbAccessToken}` } }
+          );
+
+          if (sharedWabaRes.ok) {
+            const bizData = await sharedWabaRes.json() as {
+              businesses?: { data?: Array<{ id: string; name: string }> };
+            };
+
+            // For each business, try to find WABA
+            for (const biz of bizData.businesses?.data ?? []) {
+              const wabaRes = await fetch(
+                `https://graph.facebook.com/v21.0/${biz.id}/owned_whatsapp_business_accounts?fields=id`,
+                { headers: { Authorization: `Bearer ${fbAccessToken}` } }
+              );
+              if (wabaRes.ok) {
+                const wabaData = await wabaRes.json() as { data?: Array<{ id: string }> };
+                for (const w of wabaData.data ?? []) {
+                  sharedWabaIds.push(w.id);
+                }
+              }
+            }
+          }
+
+          if (sharedWabaIds.length === 0) {
+            console.log('[embedded-signup] Business fallback failed, trying direct WABA list with user token...');
+
+            // Last resort: try /me/whatsapp_business_accounts with the user token
+            // (might work for some permission configurations)
+            const directRes = await fetch(
+              `https://graph.facebook.com/v21.0/me/whatsapp_business_accounts?fields=id`,
+              { headers: { Authorization: `Bearer ${fbAccessToken}` } }
+            );
+            if (directRes.ok) {
+              const directData = await directRes.json() as { data?: Array<{ id: string }> };
+              for (const w of directData.data ?? []) {
+                sharedWabaIds.push(w.id);
+              }
+            }
+          }
+
+          if (sharedWabaIds.length === 0) {
+            // Final fallback: check WABAs already known to the platform
+            console.log('[embedded-signup] All user-token fallbacks failed, trying known WABAs from database...');
+
+            const knownWaba = await query<{ waba_id: string }>(
+              `SELECT DISTINCT whatsapp_config->>'waba_id' as waba_id
+               FROM agents
+               WHERE whatsapp_config->>'waba_id' IS NOT NULL
+               LIMIT 5`
+            );
+            for (const row of knownWaba.rows) {
+              if (row.waba_id) sharedWabaIds.push(row.waba_id);
+            }
+          }
+        } catch (fallbackErr) {
+          console.error('[embedded-signup] Fallback WABA discovery failed:', (fallbackErr as Error).message);
+        }
+
+        if (sharedWabaIds.length === 0) {
+          console.error('[embedded-signup] All WABA discovery methods failed. Scopes:', JSON.stringify(debugData.data.granular_scopes));
+          throw new AppError(400, 'Could not find your WhatsApp Business Account. Please use Manual Setup instead.', 'NO_WABA_SHARED');
+        }
+
+        console.log(`[embedded-signup] Fallback found ${sharedWabaIds.length} WABA(s): ${sharedWabaIds.join(', ')}`);
       }
 
       const wabaId = sharedWabaIds[0]!;
