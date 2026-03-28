@@ -46,10 +46,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
   const isFreePlan = FREE_PLAN_PLANS.includes(orgPlan);
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
-  // Embedded Signup temporarily disabled in production while we polish the flow
-  // TODO: Re-enable when Feature #10 (auto WABA/Phone capture from callback) is complete
-  const hasEmbeddedSignup = false; // was: !!fbAppId;
-  void fbAppId; // keep variable to avoid unused lint error
+  const hasEmbeddedSignup = !!fbAppId;
 
   const [showManual, setShowManual] = useState(!hasEmbeddedSignup);
 
@@ -107,11 +104,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
       toastError('Please fill in Phone Number ID and WABA ID');
       return;
     }
-    const tokenSavedViaSignup = accessToken === 'EMBEDDED_SIGNUP_TOKEN_SAVED';
-    if (!tokenSavedViaSignup && !accessToken.trim()) {
-      toastError('Please fill in all fields');
-      return;
-    }
+    // Access token is optional — if empty, the platform token will be used as fallback
 
     setConnecting(true);
     try {
@@ -123,8 +116,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         agentId,
         phoneNumberId: phoneNumberId.trim(),
         wabaId: wabaId.trim(),
-        // Empty string signals backend to use the token saved via Embedded Signup
-        accessToken: tokenSavedViaSignup ? '' : accessToken.trim(),
+        accessToken: accessToken.trim(),
       });
 
       success(`Connected! Phone: ${data.phoneNumber}`);
@@ -163,29 +155,40 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     } }).FB;
 
     if (!FB) {
-      toastError('Facebook SDK not loaded. Please try the manual setup.');
+      toastError('Facebook SDK not loaded. Please refresh and try again.');
       return;
     }
 
     const configId = process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID'] ?? '';
 
-    // fbLoginEmbeddedSignup lives in an isolated module with no async functions in scope.
-    // The FB.login callback inside it is 100% synchronous — the SDK's closure scan finds nothing.
-    fbLoginEmbeddedSignup(FB, configId, function(accessToken) {
-      if (!accessToken) {
+    fbLoginEmbeddedSignup(FB, configId, function(fbToken) {
+      if (!fbToken) {
         toastError('Facebook login was cancelled or failed.');
         return;
       }
-      api.post<{ success: boolean; message: string }>('/api/whatsapp/embedded-signup', { agentId, accessToken })
+
+      // Call the new automated endpoint
+      setConnecting(true);
+      api.post<{
+        success: boolean;
+        phoneNumber: string;
+        phoneNumberId: string;
+        wabaId: string;
+      }>('/api/whatsapp/embedded-signup-complete', {
+        agentId,
+        fbAccessToken: fbToken,
+      })
         .then(function(data) {
-          success(data.message ?? 'Access token saved. Complete setup below.');
-          setShowManual(true);
-          // Mark token as already saved — user only needs Phone Number ID + WABA ID
-          setAccessToken('EMBEDDED_SIGNUP_TOKEN_SAVED');
+          success(`WhatsApp connected! Phone: ${data.phoneNumber}`);
+          setShowManual(false);
           return loadStatus();
         })
         .catch(function(err: unknown) {
-          toastError(err instanceof ApiError ? err.message : 'Failed to complete WhatsApp setup');
+          toastError(err instanceof ApiError ? err.message : 'Failed to connect WhatsApp. Try manual setup.');
+          setShowManual(true);
+        })
+        .finally(function() {
+          setConnecting(false);
         });
     });
   }
@@ -318,14 +321,15 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         <div className={styles.section}>
           {hasEmbeddedSignup && (
             <div className={styles.embeddedSignup}>
-              <div className={styles.sectionTitle}>Quick Setup</div>
+              <div className={styles.sectionTitle}>Quick Setup (Recommended)</div>
               <p className={styles.fieldHint}>
-                Connect using Facebook Login — automatically configures your WhatsApp Business account.
+                Connect using Facebook Login — we&apos;ll automatically configure your WhatsApp Business account, subscribe the webhook, and register your number.
               </p>
               <Button
                 size="sm"
                 onClick={handleEmbeddedSignup}
                 icon={MessageSquare}
+                loading={connecting}
               >
                 Connect with Facebook
               </Button>

@@ -12,6 +12,7 @@ import {
   encryptAccessToken,
   decryptAccessToken,
   getPhoneNumberInfo,
+  getWABAAndPhoneNumber,
   downloadMedia,
   downloadAudio,
   transcribeAudio,
@@ -573,6 +574,154 @@ router.post(
       res.json({
         success: true,
         message: 'Access token saved. Now enter your Phone Number ID and WABA ID below to complete setup.',
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/whatsapp/embedded-signup-complete ─────────────────────────────
+// Full automated flow: discover WABA + phone, subscribe webhook, register number, connect agent
+router.post(
+  '/embedded-signup-complete',
+  requireAuth,
+  orgContext,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // 1. Plan check
+      const orgResult = await query<{ plan: string }>(
+        'SELECT plan FROM organizations WHERE id = $1',
+        [req.org!.id]
+      );
+      if (orgResult.rows[0]?.plan === 'free') {
+        throw new AppError(403, 'WhatsApp requires Starter plan or higher', 'PLAN_LIMIT');
+      }
+
+      const { agentId, fbAccessToken } = req.body as { agentId: string; fbAccessToken: string };
+      if (!agentId || !fbAccessToken) {
+        throw new AppError(400, 'Missing agentId or fbAccessToken', 'VALIDATION_ERROR');
+      }
+
+      // 2. Verify agent belongs to org
+      const agentCheck = await query<{ id: string }>(
+        'SELECT id FROM agents WHERE id = $1 AND organization_id = $2',
+        [agentId, req.org!.id]
+      );
+      if (!agentCheck.rows[0]) {
+        throw new AppError(404, 'Agent not found', 'NOT_FOUND');
+      }
+
+      // 3. Use the user's FB access token to discover WABA + Phone Number
+      console.log(`[embedded-signup] Discovering WABA and phone for agent ${agentId}...`);
+      const { wabaId, phoneNumberId, displayPhone } = await getWABAAndPhoneNumber(fbAccessToken);
+      console.log(`[embedded-signup] Found WABA: ${wabaId}, Phone: ${phoneNumberId} (${displayPhone})`);
+
+      // 4. Get the Platform System User token for webhook subscription and number registration
+      const { getWhatsAppToken } = await import('../services/platform-settings.service');
+      const platformToken = await getWhatsAppToken();
+      if (!platformToken) {
+        throw new AppError(503, 'Platform WhatsApp token not configured. Contact admin.', 'NOT_CONFIGURED');
+      }
+
+      // 5. Subscribe the webhook to this WABA using platform token
+      console.log(`[embedded-signup] Subscribing webhook for WABA ${wabaId}...`);
+      const subscribeRes = await fetch(
+        `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${platformToken}`,
+          },
+        }
+      );
+      if (!subscribeRes.ok) {
+        const subErr = await subscribeRes.json().catch(() => ({}));
+        console.error('[embedded-signup] Webhook subscribe failed:', JSON.stringify(subErr));
+        throw new AppError(500, 'Failed to subscribe webhook. Ensure the System User has whatsapp_business_management permission.', 'WEBHOOK_SUBSCRIBE_FAILED');
+      }
+      console.log(`[embedded-signup] Webhook subscribed for WABA ${wabaId}`);
+
+      // 6. Register the phone number using platform token
+      console.log(`[embedded-signup] Registering phone ${phoneNumberId}...`);
+      const pin = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit random pin
+      const registerRes = await fetch(
+        `https://graph.facebook.com/v21.0/${phoneNumberId}/register`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${platformToken}`,
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            pin,
+          }),
+        }
+      );
+      if (!registerRes.ok) {
+        const regErr = await registerRes.json().catch(() => ({}));
+        const errorMsg = JSON.stringify(regErr);
+        if (errorMsg.includes('already registered') || errorMsg.includes('already exists')) {
+          console.log(`[embedded-signup] Phone ${phoneNumberId} already registered — continuing`);
+        } else {
+          console.error('[embedded-signup] Phone registration failed:', errorMsg);
+          // Don't throw — number might already be registered, continue with connect
+          console.warn('[embedded-signup] Continuing despite registration error...');
+        }
+      } else {
+        console.log(`[embedded-signup] Phone ${phoneNumberId} registered successfully`);
+      }
+
+      // 7. Validate the platform token can access this phone number
+      let verifiedPhoneDisplay = displayPhone;
+      try {
+        const info = await getPhoneNumberInfo(phoneNumberId, platformToken);
+        verifiedPhoneDisplay = info.display_phone_number || displayPhone;
+      } catch {
+        console.warn(`[embedded-signup] Platform token cannot access phone ${phoneNumberId} — using display from user token`);
+      }
+
+      // 8. Save agent config — NO user token stored, only phone_number_id + waba_id
+      //    The platform token will be used via resolveAccessToken fallback
+      const agentVerifyToken = crypto.randomUUID();
+      await query(
+        `UPDATE agents
+         SET whatsapp_config = $1::jsonb,
+             updated_at = NOW()
+         WHERE id = $2`,
+        [
+          JSON.stringify({
+            phone_number_id: phoneNumberId,
+            waba_id: wabaId,
+            verify_token: agentVerifyToken,
+            connected: true,
+          }),
+          agentId,
+        ]
+      );
+
+      // 9. Ensure 'whatsapp' is in channels array
+      await query(
+        `UPDATE agents
+         SET channels = (
+           SELECT jsonb_agg(DISTINCT elem ORDER BY elem)
+           FROM jsonb_array_elements_text(COALESCE(channels, '[]'::jsonb) || '["whatsapp"]'::jsonb) elem
+         )
+         WHERE id = $1`,
+        [agentId]
+      );
+
+      console.log(`[embedded-signup] Agent ${agentId} connected to WhatsApp: ${verifiedPhoneDisplay}`);
+
+      res.json({
+        success: true,
+        phoneNumber: verifiedPhoneDisplay,
+        phoneNumberId,
+        wabaId,
+        verifyToken: agentVerifyToken,
+        webhookUrl: `${env.API_URL}/api/whatsapp/webhook`,
       });
     } catch (err) {
       next(err);
