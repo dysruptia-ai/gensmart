@@ -17,6 +17,7 @@ import {
   ChevronDown,
   Menu,
   X,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -190,6 +191,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <span className={styles.userOrg}>{user?.orgName}</span>
                     </div>
                     <div className={styles.userDropdownDivider} />
+                    {user?.isSuperAdmin && (
+                      <Link
+                        href="/admin"
+                        className={styles.userDropdownItem}
+                        role="menuitem"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Shield size={14} aria-hidden="true" /> Admin Panel
+                      </Link>
+                    )}
                     <Link
                       href="/dashboard/settings"
                       className={styles.userDropdownItem}

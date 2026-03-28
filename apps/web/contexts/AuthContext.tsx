@@ -22,6 +22,7 @@ export interface AuthUser {
   onboardingCompleted: boolean;
   onboardingStep: number;
   editorTourCompleted: boolean;
+  isSuperAdmin: boolean;
 }
 
 interface LoginResult {
