@@ -12,7 +12,6 @@ import {
   encryptAccessToken,
   decryptAccessToken,
   getPhoneNumberInfo,
-  getWABAAndPhoneNumber,
   downloadMedia,
   downloadAudio,
   transcribeAudio,
@@ -612,19 +611,95 @@ router.post(
         throw new AppError(404, 'Agent not found', 'NOT_FOUND');
       }
 
-      // 3. Use the user's FB access token to discover WABA + Phone Number
-      console.log(`[embedded-signup] Discovering WABA and phone for agent ${agentId}...`);
-      const { wabaId, phoneNumberId, displayPhone } = await getWABAAndPhoneNumber(fbAccessToken);
-      console.log(`[embedded-signup] Found WABA: ${wabaId}, Phone: ${phoneNumberId} (${displayPhone})`);
-
-      // 4. Get the Platform System User token for webhook subscription and number registration
+      // 3. Get the Platform System User token (needed for debug_token, webhook, registration)
       const { getWhatsAppToken } = await import('../services/platform-settings.service');
       const platformToken = await getWhatsAppToken();
       if (!platformToken) {
         throw new AppError(503, 'Platform WhatsApp token not configured. Contact admin.', 'NOT_CONFIGURED');
       }
 
-      // 5. Subscribe the webhook to this WABA using platform token
+      // 4. Use debug_token to discover shared WABAs from the Embedded Signup callback
+      //    The user's FB token does NOT have scope for /me/whatsapp_business_accounts —
+      //    Meta Embedded Signup exposes shared WABAs via granular_scopes in debug_token.
+      console.log(`[embedded-signup] Using debug_token to discover shared WABAs for agent ${agentId}...`);
+
+      const debugRes = await fetch(
+        `https://graph.facebook.com/v21.0/debug_token?input_token=${encodeURIComponent(fbAccessToken)}&access_token=${encodeURIComponent(platformToken)}`
+      );
+      if (!debugRes.ok) {
+        const debugErr = await debugRes.json().catch(() => ({}));
+        console.error('[embedded-signup] debug_token failed:', JSON.stringify(debugErr));
+        throw new AppError(500, 'Failed to validate Facebook token', 'DEBUG_TOKEN_FAILED');
+      }
+
+      const debugData = await debugRes.json() as {
+        data?: {
+          is_valid?: boolean;
+          granular_scopes?: Array<{
+            scope: string;
+            target_ids?: string[];
+          }>;
+        };
+      };
+
+      if (!debugData.data?.is_valid) {
+        throw new AppError(401, 'Facebook token is invalid or expired', 'INVALID_FB_TOKEN');
+      }
+
+      // Extract WABA IDs from granular_scopes
+      const sharedWabaIds: string[] = [];
+      const wabaScope = debugData.data.granular_scopes?.find(
+        (s) => s.scope === 'whatsapp_business_management'
+      );
+      if (wabaScope?.target_ids?.length) {
+        sharedWabaIds.push(...wabaScope.target_ids);
+      }
+
+      if (sharedWabaIds.length === 0) {
+        // Fallback: try whatsapp_business_messaging scope
+        const msgScope = debugData.data.granular_scopes?.find(
+          (s) => s.scope === 'whatsapp_business_messaging'
+        );
+        if (msgScope?.target_ids?.length) {
+          sharedWabaIds.push(...msgScope.target_ids);
+        }
+      }
+
+      if (sharedWabaIds.length === 0) {
+        console.error('[embedded-signup] No shared WABAs found in debug_token response:', JSON.stringify(debugData.data.granular_scopes));
+        throw new AppError(400, 'No WhatsApp Business Account was shared. Please try again and make sure to complete the setup.', 'NO_WABA_SHARED');
+      }
+
+      const wabaId = sharedWabaIds[0]!;
+      console.log(`[embedded-signup] Found shared WABA: ${wabaId}`);
+
+      // 5. Get phone numbers from this WABA using the platform token
+      const phoneRes = await fetch(
+        `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
+        { headers: { Authorization: `Bearer ${platformToken}` } }
+      );
+
+      let phoneNumberId = '';
+      let displayPhone = '';
+
+      if (phoneRes.ok) {
+        const phoneData = await phoneRes.json() as {
+          data?: Array<{ id: string; display_phone_number: string; verified_name?: string }>;
+        };
+        const phone = phoneData.data?.[0];
+        if (phone) {
+          phoneNumberId = phone.id;
+          displayPhone = phone.display_phone_number;
+          console.log(`[embedded-signup] Found phone: ${phoneNumberId} (${displayPhone})`);
+        }
+      }
+
+      if (!phoneNumberId) {
+        console.error('[embedded-signup] No phone numbers found for WABA:', wabaId);
+        throw new AppError(400, 'No phone number found in the shared WhatsApp Business Account. Please complete WhatsApp Business setup first.', 'NO_PHONE_FOUND');
+      }
+
+      // 6. Subscribe the webhook to this WABA using platform token
       console.log(`[embedded-signup] Subscribing webhook for WABA ${wabaId}...`);
       const subscribeRes = await fetch(
         `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`,
@@ -643,7 +718,7 @@ router.post(
       }
       console.log(`[embedded-signup] Webhook subscribed for WABA ${wabaId}`);
 
-      // 6. Register the phone number using platform token
+      // 7. Register the phone number using platform token
       console.log(`[embedded-signup] Registering phone ${phoneNumberId}...`);
       const pin = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit random pin
       const registerRes = await fetch(
@@ -667,14 +742,13 @@ router.post(
           console.log(`[embedded-signup] Phone ${phoneNumberId} already registered — continuing`);
         } else {
           console.error('[embedded-signup] Phone registration failed:', errorMsg);
-          // Don't throw — number might already be registered, continue with connect
           console.warn('[embedded-signup] Continuing despite registration error...');
         }
       } else {
         console.log(`[embedded-signup] Phone ${phoneNumberId} registered successfully`);
       }
 
-      // 7. Validate the platform token can access this phone number
+      // 8. Validate the platform token can access this phone number
       let verifiedPhoneDisplay = displayPhone;
       try {
         const info = await getPhoneNumberInfo(phoneNumberId, platformToken);
@@ -683,7 +757,7 @@ router.post(
         console.warn(`[embedded-signup] Platform token cannot access phone ${phoneNumberId} — using display from user token`);
       }
 
-      // 8. Save agent config — NO user token stored, only phone_number_id + waba_id
+      // 9. Save agent config — NO user token stored, only phone_number_id + waba_id
       //    The platform token will be used via resolveAccessToken fallback
       const agentVerifyToken = crypto.randomUUID();
       await query(
@@ -702,7 +776,7 @@ router.post(
         ]
       );
 
-      // 9. Ensure 'whatsapp' is in channels array
+      // 10. Ensure 'whatsapp' is in channels array
       await query(
         `UPDATE agents
          SET channels = (
