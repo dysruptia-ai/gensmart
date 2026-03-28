@@ -1004,7 +1004,20 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                   );
                 })}
               </div>
-              <button className={styles.addParamBtn} onClick={() => setShowCreateCal(true)} style={{ marginTop: '0.5rem' }}>
+              <button className={styles.addParamBtn} onClick={() => {
+                setCalForm({
+                  name: '',
+                  timezone: 'UTC',
+                  availableDays: [1, 2, 3, 4, 5],
+                  startHour: '09:00',
+                  endHour: '17:00',
+                  slotDuration: 30,
+                  bufferMinutes: 15,
+                  maxAdvanceDays: 30,
+                  notificationEmail: '',
+                });
+                setShowCreateCal(true);
+              }} style={{ marginTop: '0.5rem' }}>
                 <Plus size={12} /> {t('agents.tools.createNewCalendar') || 'Create New Calendar'}
               </button>
             </>
@@ -1013,7 +1026,20 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
               <p className={styles.fieldHint} style={{ marginBottom: '0.5rem' }}>
                 No calendars yet. Create one below.
               </p>
-              <button className={styles.addParamBtn} onClick={() => setShowCreateCal(true)}>
+              <button className={styles.addParamBtn} onClick={() => {
+                setCalForm({
+                  name: '',
+                  timezone: 'UTC',
+                  availableDays: [1, 2, 3, 4, 5],
+                  startHour: '09:00',
+                  endHour: '17:00',
+                  slotDuration: 30,
+                  bufferMinutes: 15,
+                  maxAdvanceDays: 30,
+                  notificationEmail: '',
+                });
+                setShowCreateCal(true);
+              }}>
                 <Plus size={12} /> Create Calendar
               </button>
             </div>
@@ -1084,6 +1110,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 <label className={styles.fieldLabelSmall}>Slot Duration (min)</label>
                 <select className={styles.fieldSelect} value={calForm.slotDuration} onChange={(e) => setCalForm((f) => ({ ...f, slotDuration: Number(e.target.value) }))}>
                   <option value={15}>15 min</option>
+                  <option value={20}>20 min</option>
                   <option value={30}>30 min</option>
                   <option value={45}>45 min</option>
                   <option value={60}>60 min</option>
@@ -1222,6 +1249,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                   onChange={(e) => setCalForm((f) => ({ ...f, slotDuration: Number(e.target.value) }))}
                 >
                   <option value={15}>15 min</option>
+                  <option value={20}>20 min</option>
                   <option value={30}>30 min</option>
                   <option value={45}>45 min</option>
                   <option value={60}>60 min</option>
