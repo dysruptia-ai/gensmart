@@ -339,40 +339,76 @@ async function withStreamableHTTPSession<T>(
       const contentType = response.headers.get('content-type') ?? '';
 
       if (contentType.includes('text/event-stream')) {
-        // SSE response — parse events to find JSON-RPC response with matching id
-        const text = await response.text();
-        const lines = text.split('\n');
-        let lastData = '';
+        // SSE response — read body stream incrementally (some servers keep the stream open)
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('No readable body in SSE response');
+        }
 
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            lastData = line.slice(5).trim();
-          } else if (line === '' && lastData) {
-            // End of SSE event
-            try {
-              const msg = JSON.parse(lastData) as JsonRpcResponse;
-              if (msg.id === id) {
-                if (msg.error) {
-                  throw new Error(msg.error.message);
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete SSE events (separated by double newline)
+            const events = buffer.split('\n\n');
+            buffer = events.pop() ?? ''; // keep incomplete event in buffer
+
+            for (const event of events) {
+              if (!event.trim()) continue;
+
+              let data = '';
+              for (const line of event.split('\n')) {
+                if (line.startsWith('data:')) {
+                  data += line.slice(5).trim();
                 }
-                return msg.result;
               }
-            } catch (e) {
-              if (e instanceof SyntaxError) continue; // skip non-JSON
-              throw e;
+
+              if (!data) continue;
+
+              try {
+                const msg = JSON.parse(data) as JsonRpcResponse;
+                if (msg.id === id) {
+                  reader.cancel().catch(() => {}); // close the stream
+                  if (msg.error) {
+                    throw new Error(msg.error.message);
+                  }
+                  return msg.result;
+                }
+              } catch (e) {
+                if (e instanceof SyntaxError) continue; // skip non-JSON
+                throw e;
+              }
             }
-            lastData = '';
+          }
+        } finally {
+          reader.cancel().catch(() => {});
+        }
+
+        // Also check remaining buffer
+        if (buffer.trim()) {
+          for (const line of buffer.split('\n')) {
+            if (line.startsWith('data:')) {
+              const data = line.slice(5).trim();
+              try {
+                const msg = JSON.parse(data) as JsonRpcResponse;
+                if (msg.id === id) {
+                  if (msg.error) throw new Error(msg.error.message);
+                  return msg.result;
+                }
+              } catch {
+                // ignore
+              }
+            }
           }
         }
 
-        // If we got through all events without finding our response, try parsing the last data
-        try {
-          const msg = JSON.parse(lastData || text) as JsonRpcResponse;
-          if (msg.error) throw new Error(msg.error.message);
-          return msg.result;
-        } catch {
-          throw new Error('No matching JSON-RPC response found in SSE stream');
-        }
+        throw new Error('No matching JSON-RPC response found in SSE stream');
       } else {
         // Direct JSON response
         const msg = (await response.json()) as JsonRpcResponse;
