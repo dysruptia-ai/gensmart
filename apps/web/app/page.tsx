@@ -103,7 +103,7 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <PublicNavbar />
-      <main style={{ paddingTop: '72px' }}>
+      <main style={{ paddingTop: '72px' }} suppressHydrationWarning>
         <HeroSection />
         <SocialProofBar />
         <ProblemSolution />
