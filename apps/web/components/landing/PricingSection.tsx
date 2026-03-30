@@ -15,7 +15,7 @@ const PLANS = [
     monthlyPrice: 0,
     features: ['1 AI Agent', '50 messages/mo', '25 contacts', 'Web channel only', '1 knowledge file', 'Community support'],
     ctaKey: 'landing.pricing.startFree',
-    href: '/register',
+    href: '/register?code=GENSMART-LAUNCH',
     popular: false,
   },
   {
@@ -23,7 +23,7 @@ const PLANS = [
     monthlyPrice: 29,
     features: ['3 AI Agents', '1,000 messages/mo', '500 contacts', 'WhatsApp + Web', 'Voice messages', '5 knowledge files', 'Email support'],
     ctaKey: 'landing.pricing.getStarted',
-    href: '/register?plan=starter',
+    href: '/register?plan=starter&code=GENSMART-LAUNCH',
     popular: false,
   },
   {
@@ -31,7 +31,7 @@ const PLANS = [
     monthlyPrice: 79,
     features: ['10 AI Agents', '5,000 messages/mo', '2,000 contacts', 'WhatsApp + Web', 'Voice messages', 'Image analysis', '20 knowledge files', 'Priority support'],
     ctaKey: 'landing.pricing.getStarted',
-    href: '/register?plan=pro',
+    href: '/register?plan=pro&code=GENSMART-LAUNCH',
     popular: true,
   },
   {

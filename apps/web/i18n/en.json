@@ -63,18 +63,18 @@
     },
     "hero": {
       "title": "Build & Deploy AI Agents for WhatsApp & Web in Minutes",
-      "subtitle": "No-code platform to create intelligent chatbots with built-in CRM, lead scoring, and scheduling. Replace weeks of setup with minutes.",
+      "subtitle": "Build AI agents for WhatsApp and Web with built-in CRM, lead scoring, appointment scheduling, and one-click channel connection. No coding required.",
       "cta": "Start Free",
-      "ctaSecondary": "See Demo",
+      "ctaSecondary": "See How It Works",
       "noCard": "No credit card required",
       "agentsActive": "AI agents active",
       "leadsMonth": "Leads captured/mo",
       "uptime": "Uptime",
-      "badge": "AI Agents for WhatsApp & Web",
-      "freeForeverHint": "No credit card required · Free forever plan",
-      "titleStart": "Build & Deploy ",
+      "badge": "Now with One-Click WhatsApp Connect",
+      "freeForeverHint": "Free forever · No credit card required",
+      "titleStart": "Create & Deploy",
       "titleHighlight": "AI Agents",
-      "titleEnd": " for WhatsApp & Web in Minutes"
+      "titleEnd": " in Minutes, Not Weeks"
     },
     "features": {
       "title": "Everything you need to convert visitors into customers",
@@ -103,16 +103,16 @@
         "title": "Appointment Scheduling",
         "description": "Let your AI agent book appointments directly in your calendar. No back-and-forth emails."
       },
-      "eyebrow": "Everything you need",
-      "gridTitle": "One Platform. Every Feature.",
-      "gridSubtitle": "Replace your entire automation stack with a single, integrated platform built for AI-powered customer conversations.",
+      "eyebrow": "EVERYTHING YOU NEED",
+      "gridTitle": "One Platform, Zero Complexity",
+      "gridSubtitle": "Everything to deploy AI agents that capture leads, schedule appointments, and close deals — no coding, no complex integrations.",
       "aiAgents": {
         "title": "AI Agents",
         "description": "Create intelligent conversational agents powered by GPT-4o & Claude"
       },
       "channelsFeature": {
-        "title": "WhatsApp & Web",
-        "description": "Deploy on WhatsApp Business and your website with one click"
+        "title": "One-Click WhatsApp + Web",
+        "description": "Connect WhatsApp in 2 clicks via Embedded Signup. Add a web widget with one script tag. Zero friction."
       },
       "smartCrm": {
         "title": "Smart CRM",
@@ -154,24 +154,24 @@
         "title": "Capture leads automatically",
         "description": "Your agent qualifies prospects, captures contact info, and books appointments — 24/7."
       },
-      "eyebrow": "Simple by design",
-      "gridTitle": "From Idea to Live Agent in 4 Steps",
-      "gridSubtitle": "No complex setup, no developer needed. Just you and your AI agent.",
+      "eyebrow": "SIMPLE SETUP",
+      "gridTitle": "Live in Under 5 Minutes",
+      "gridSubtitle": "From zero to a fully functional AI agent answering WhatsApp messages — faster than making coffee.",
       "gridStep1": {
         "title": "Create",
-        "description": "Start from a template or build your own agent from scratch"
+        "description": "Pick a template or describe your agent. AI generates the prompt for you."
       },
       "gridStep2": {
         "title": "Configure",
-        "description": "Set personality, knowledge base, and tools"
+        "description": "Add your knowledge base, set variables, and connect tools."
       },
       "gridStep3": {
-        "title": "Deploy",
-        "description": "Connect to WhatsApp or embed on your website instantly"
+        "title": "Connect",
+        "description": "One click to connect WhatsApp. One script tag for Web. That's it."
       },
       "gridStep4": {
         "title": "Track",
-        "description": "Monitor leads, conversations, and conversions in real-time"
+        "description": "Leads scored by AI, CRM updated, funnel managed — all automatic."
       }
     },
     "pricing": {
@@ -243,11 +243,11 @@
       }
     },
     "channels": {
-      "eyebrow": "Multi-channel deployment",
-      "title": "Meet Your Customers Where They Are",
-      "subtitle": "Deploy the same AI agent across WhatsApp and your website simultaneously — from a single dashboard.",
-      "whatsappDesc": "Connect via Meta Cloud API. Reach 2B+ WhatsApp users instantly.",
-      "webDesc": "Embed with one line of code. Customizable to match your brand."
+      "eyebrow": "DEPLOY EVERYWHERE",
+      "title": "WhatsApp & Web in One Click",
+      "subtitle": "Connect your WhatsApp Business number instantly with our one-click setup. No API keys, no developer needed. Deploy a web widget with a single line of code.",
+      "whatsappDesc": "One-click connection via Meta Embedded Signup. Your AI agent responds to WhatsApp messages 24/7 with zero manual configuration.",
+      "webDesc": "Embed a branded chat widget on any website. Copy one script tag and your AI agent is live."
     },
     "crmPreview": {
       "eyebrow": "Built-in CRM",

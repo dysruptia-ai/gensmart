@@ -22,7 +22,7 @@ export function FinalCTA() {
             {t('landing.finalCta.altSubtitle', { count: '500' })}
           </p>
           <div className={styles.actions}>
-            <Link href="/register" className={styles.cta}>
+            <Link href="/register?code=GENSMART-LAUNCH" className={styles.cta}>
               {t('landing.hero.cta')}
               <ArrowRight size={18} aria-hidden="true" />
             </Link>

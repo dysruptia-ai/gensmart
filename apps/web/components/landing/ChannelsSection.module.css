@@ -304,6 +304,94 @@
   box-shadow: var(--shadow-md);
 }
 
+/* One-click connect flow mockup */
+.connectFlowMockup {
+  background: var(--color-bg-card);
+  padding: var(--space-4);
+}
+
+.connectFlowSvg {
+  display: block;
+}
+
+.flowStep1,
+.flowStep2,
+.flowStep3,
+.flowArrow1,
+.flowArrow2,
+.flowResult,
+.flowCheck {
+  opacity: 0;
+}
+
+.inView .flowStep1 {
+  animation: flowFadeSlide 0.5s ease-out 0.3s forwards;
+}
+
+.inView .flowArrow1 {
+  animation: flowFadeIn 0.3s ease-out 0.7s forwards;
+}
+
+.inView .flowStep2 {
+  animation: flowFadeSlide 0.5s ease-out 0.9s forwards;
+}
+
+.inView .flowArrow2 {
+  animation: flowFadeIn 0.3s ease-out 1.3s forwards;
+}
+
+.inView .flowStep3 {
+  animation: flowFadeSlide 0.5s ease-out 1.5s forwards;
+}
+
+.inView .flowResult {
+  animation: flowFadeSlide 0.5s ease-out 2.0s forwards;
+}
+
+.inView .flowCheck {
+  animation: flowPop 0.4s ease-out 2.4s both;
+}
+
+@keyframes flowFadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flowFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes flowPop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inView .flowStep1,
+  .inView .flowStep2,
+  .inView .flowStep3,
+  .inView .flowArrow1,
+  .inView .flowArrow2,
+  .inView .flowResult,
+  .inView .flowCheck {
+    opacity: 1;
+    animation: none;
+  }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .cards {

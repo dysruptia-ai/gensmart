@@ -25,7 +25,7 @@ export function HeroSection() {
             {t('landing.hero.subtitle')}
           </p>
           <div className={styles.ctas}>
-            <Link href="/register" className={styles.ctaPrimary}>
+            <Link href="/register?code=GENSMART-LAUNCH" className={styles.ctaPrimary}>
               {t('landing.hero.cta')}
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
