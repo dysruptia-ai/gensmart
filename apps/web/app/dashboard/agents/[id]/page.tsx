@@ -219,6 +219,11 @@ export default function AgentEditorPage() {
     }
   }, []);
 
+  const handleWidgetChange = useCallback((cfg: WebConfig) => {
+    setWebConfig(cfg);
+    setIsDirty(true);
+  }, []);
+
   useEffect(() => { loadAgent(); loadVersions(); loadOrgPlan(); }, [loadAgent, loadVersions, loadOrgPlan]);
 
   // Scroll preview to bottom when new messages arrive
@@ -779,7 +784,7 @@ export default function AgentEditorPage() {
                       agentId={agentId}
                       initialConfig={webConfig}
                       channels={channels}
-                      onChange={(cfg: WebConfig) => { setWebConfig(cfg); setIsDirty(true); }}
+                      onChange={handleWidgetChange}
                       onSaved={(cfg: WebConfig) => setWebConfig(cfg)}
                     />
                   </div>

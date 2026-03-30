@@ -50,11 +50,22 @@ export default function WidgetCustomizer({ agentId, initialConfig, onChange }: W
 
   // Notify parent of config changes (deferred to avoid setState-during-render)
   const isFirstRender = useRef(true);
+  const prevConfigRef = useRef(config);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
+    // Only notify parent if config actually changed (not just onChange ref)
+    if (
+      prevConfigRef.current.primary_color === config.primary_color &&
+      prevConfigRef.current.welcome_message === config.welcome_message &&
+      prevConfigRef.current.bubble_text === config.bubble_text &&
+      prevConfigRef.current.position === config.position
+    ) {
+      return;
+    }
+    prevConfigRef.current = config;
     onChange?.(config);
   }, [config, onChange]);
 
