@@ -576,6 +576,17 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     }
   }
 
+  async function handleDeleteFile(fileId: string, filename: string) {
+    if (!confirm(`Delete "${filename}"? This will remove all indexed chunks for this file.`)) return;
+    try {
+      await api.delete(`/api/agents/${agentId}/knowledge/${fileId}`);
+      await loadKnowledgeFiles();
+      success('File deleted');
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : 'Failed to delete file');
+    }
+  }
+
   async function handleRunTest() {
     if (!editTool) return;
     setTestRunning(true);
@@ -1495,6 +1506,14 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                       title="Reprocess"
                     >
                       <RefreshCw size={13} />
+                    </button>
+                    <button
+                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                      onClick={() => handleDeleteFile(kf.id, kf.sourceUrl ?? kf.filename)}
+                      aria-label="Delete file"
+                      title="Delete file"
+                    >
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 ))}
