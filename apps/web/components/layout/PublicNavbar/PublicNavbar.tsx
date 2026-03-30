@@ -12,7 +12,7 @@ import styles from './PublicNavbar.module.css';
 export function PublicNavbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { t } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -79,7 +79,7 @@ export function PublicNavbar() {
         </nav>
 
         <div className={styles.actions}>
-          {isAuthenticated ? (
+          {!isLoading && isAuthenticated ? (
             <Link href="/dashboard" className={styles.ctaBtn}>
               <LayoutDashboard
                 size={15}
@@ -137,7 +137,7 @@ export function PublicNavbar() {
           </Link>
         </nav>
         <div className={styles.mobileActions}>
-          {isAuthenticated ? (
+          {!isLoading && isAuthenticated ? (
             <Link href="/dashboard" className={styles.ctaBtn} onClick={closeMobile}>
               {t('nav.dashboard')}
             </Link>
