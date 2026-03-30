@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Copy, Check, MessageSquare, Globe } from 'lucide-react';
 import ColorPicker from '@/components/ui/ColorPicker';
 import Input from '@/components/ui/Input';
@@ -38,13 +38,25 @@ export default function WidgetCustomizer({ agentId, initialConfig, onChange }: W
   });
   const [copied, setCopied] = useState(false);
 
+  const latestConfigRef = useRef(config);
+
   const update = useCallback(<K extends keyof WebConfig>(key: K, value: WebConfig[K]) => {
     setConfig((prev) => {
       const next = { ...prev, [key]: value };
-      onChange?.(next);
+      latestConfigRef.current = next;
       return next;
     });
-  }, [onChange]);
+  }, []);
+
+  // Notify parent of config changes (deferred to avoid setState-during-render)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    onChange?.(config);
+  }, [config, onChange]);
 
   const snippetCode = `<script src="${process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://app.gensmart.co'}/widget.js" data-agent-id="${agentId}"></script>`;
 
