@@ -262,12 +262,14 @@ router.post(
   validateUUID('id'),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { server_url } = req.body as { server_url?: string };
+      const { server_url, transport } = req.body as { server_url?: string; transport?: string };
 
       if (!server_url || typeof server_url !== 'string') {
         res.status(400).json({ success: false, error: 'server_url is required' });
         return;
       }
+
+      const mcpTransport = (transport === 'streamable-http' ? 'streamable-http' : 'sse') as 'sse' | 'streamable-http';
 
       // Validate URL
       let parsed: URL;
@@ -285,7 +287,7 @@ router.post(
         return;
       }
 
-      const tools = await connectAndListTools(server_url);
+      const tools = await connectAndListTools(server_url, mcpTransport);
       res.json({ success: true, tools });
     } catch (err) {
       const message = (err as Error).message;

@@ -268,15 +268,176 @@ async function withMCPSession<T>(
   }
 }
 
+// ── Streamable HTTP session ───────────────────────────────────────────────────
+
+/**
+ * Streamable HTTP transport (spec 2025-03-26).
+ * Uses a single endpoint for all communication via POST.
+ * Server may respond with JSON or SSE stream.
+ */
+async function withStreamableHTTPSession<T>(
+  serverUrl: string,
+  operation: (
+    send: (method: string, params?: unknown) => Promise<unknown>
+  ) => Promise<T>
+): Promise<T> {
+  // Validate URL
+  let parsed: URL;
+  try {
+    parsed = new URL(serverUrl);
+  } catch {
+    throw new Error(`Invalid MCP server URL: ${serverUrl}`);
+  }
+
+  if (
+    parsed.protocol !== 'https:' &&
+    !(parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') &&
+    env.NODE_ENV !== 'development'
+  ) {
+    throw new Error('MCP server URL must use HTTPS');
+  }
+
+  let sessionId: string | null = null;
+  let reqCounter = 0;
+
+  async function send(method: string, params?: unknown): Promise<unknown> {
+    const id = ++reqCounter;
+    const body = JSON.stringify({ jsonrpc: '2.0', id, method, params });
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+    };
+    if (sessionId) {
+      headers['Mcp-Session-Id'] = sessionId;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(serverUrl, {
+        method: 'POST',
+        headers,
+        body,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => '');
+        throw new Error(`MCP server returned HTTP ${response.status}: ${errText}`);
+      }
+
+      // Capture session ID from response headers
+      const newSessionId = response.headers.get('mcp-session-id');
+      if (newSessionId) {
+        sessionId = newSessionId;
+      }
+
+      const contentType = response.headers.get('content-type') ?? '';
+
+      if (contentType.includes('text/event-stream')) {
+        // SSE response — parse events to find JSON-RPC response with matching id
+        const text = await response.text();
+        const lines = text.split('\n');
+        let lastData = '';
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            lastData = line.slice(5).trim();
+          } else if (line === '' && lastData) {
+            // End of SSE event
+            try {
+              const msg = JSON.parse(lastData) as JsonRpcResponse;
+              if (msg.id === id) {
+                if (msg.error) {
+                  throw new Error(msg.error.message);
+                }
+                return msg.result;
+              }
+            } catch (e) {
+              if (e instanceof SyntaxError) continue; // skip non-JSON
+              throw e;
+            }
+            lastData = '';
+          }
+        }
+
+        // If we got through all events without finding our response, try parsing the last data
+        try {
+          const msg = JSON.parse(lastData || text) as JsonRpcResponse;
+          if (msg.error) throw new Error(msg.error.message);
+          return msg.result;
+        } catch {
+          throw new Error('No matching JSON-RPC response found in SSE stream');
+        }
+      } else {
+        // Direct JSON response
+        const msg = (await response.json()) as JsonRpcResponse;
+        if (msg.error) {
+          throw new Error(msg.error.message);
+        }
+        return msg.result;
+      }
+    } catch (err) {
+      clearTimeout(timer);
+      if ((err as Error).name === 'AbortError') {
+        throw new Error(`MCP request timeout: ${method} (30s)`);
+      }
+      throw err;
+    }
+  }
+
+  async function notify(method: string, params?: unknown): Promise<void> {
+    const notifyBody = JSON.stringify({ jsonrpc: '2.0', method, params });
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json, text/event-stream',
+    };
+    if (sessionId) {
+      headers['Mcp-Session-Id'] = sessionId;
+    }
+
+    try {
+      await fetch(serverUrl, {
+        method: 'POST',
+        headers,
+        body: notifyBody,
+      });
+    } catch {
+      // Notifications don't require a response
+    }
+  }
+
+  // Initialize
+  await send('initialize', {
+    protocolVersion: '2025-03-26',
+    capabilities: {},
+    clientInfo: { name: 'GenSmart', version: '1.0.0' },
+  });
+
+  await notify('notifications/initialized', {});
+
+  return await operation(send);
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
  * Connect to an MCP server and retrieve the list of available tools.
  */
-export async function connectAndListTools(serverUrl: string): Promise<MCPToolInfo[]> {
-  console.log(`[MCP] Connecting to ${serverUrl} to list tools`);
+export async function connectAndListTools(
+  serverUrl: string,
+  transport: 'sse' | 'streamable-http' = 'sse'
+): Promise<MCPToolInfo[]> {
+  console.log(`[MCP] Connecting to ${serverUrl} via ${transport} to list tools`);
 
-  const result = await withMCPSession(serverUrl, async (send) => {
+  const withSession = transport === 'streamable-http' ? withStreamableHTTPSession : withMCPSession;
+
+  const result = await withSession(serverUrl, async (send) => {
     return send('tools/list', {});
   });
 
@@ -306,12 +467,15 @@ export async function connectAndListTools(serverUrl: string): Promise<MCPToolInf
 export async function executeMCPTool(
   serverUrl: string,
   toolName: string,
-  toolArguments: Record<string, unknown>
+  toolArguments: Record<string, unknown>,
+  transport: 'sse' | 'streamable-http' = 'sse'
 ): Promise<MCPToolResult> {
-  console.log(`[MCP] Executing tool "${toolName}" on ${serverUrl}`);
+  console.log(`[MCP] Executing tool "${toolName}" on ${serverUrl} via ${transport}`);
+
+  const withSession = transport === 'streamable-http' ? withStreamableHTTPSession : withMCPSession;
 
   try {
-    const result = await withMCPSession(serverUrl, async (send) => {
+    const result = await withSession(serverUrl, async (send) => {
       return send('tools/call', { name: toolName, arguments: toolArguments });
     });
 

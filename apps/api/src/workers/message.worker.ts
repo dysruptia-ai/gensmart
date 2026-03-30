@@ -86,6 +86,7 @@ const MAX_TOOL_ITERATIONS = 5;
 interface MCPToolMapping {
   serverUrl: string;
   originalToolName: string;
+  transport: 'sse' | 'streamable-http';
 }
 
 async function processMessage(job: Job<MessageJobData>): Promise<void> {
@@ -386,6 +387,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
     const serverName = cfg.name ?? cfg.serverName ?? 'mcp';
     const selectedTools = cfg.selected_tools ?? [];
+    const mcpTransport = (cfg.transport === 'streamable-http' ? 'streamable-http' : 'sse') as 'sse' | 'streamable-http';
 
     if (!serverUrl || selectedTools.length === 0) continue;
 
@@ -406,7 +408,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
       if (!toolDefs) {
         // Fetch from MCP server
-        const fetched = await connectAndListTools(serverUrl);
+        const fetched = await connectAndListTools(serverUrl, mcpTransport);
         toolDefs = fetched;
         // Cache for 1 hour
         await redis.setex(cacheKey, MCP_TOOLS_CACHE_TTL, JSON.stringify(toolDefs)).catch(() => {});
@@ -426,7 +428,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           parameters: toolDef.inputSchema as ToolDefinition['parameters'],
         });
 
-        mcpToolMap[prefixedName] = { serverUrl, originalToolName: toolDef.name };
+        mcpToolMap[prefixedName] = { serverUrl, originalToolName: toolDef.name, transport: mcpTransport };
       }
     } catch (err) {
       // Graceful degradation: log but continue without MCP tools
@@ -716,8 +718,8 @@ async function executeTool(
 
   // MCP tools (prefixed with mcp_)
   if (name.startsWith('mcp_') && mcpToolMap[name]) {
-    const { serverUrl, originalToolName } = mcpToolMap[name];
-    const result = await executeMCPTool(serverUrl, originalToolName, args);
+    const { serverUrl, originalToolName, transport } = mcpToolMap[name];
+    const result = await executeMCPTool(serverUrl, originalToolName, args, transport);
     return result.content;
   }
 
