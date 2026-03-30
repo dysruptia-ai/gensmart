@@ -49,6 +49,11 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const hasEmbeddedSignup = !!fbAppId;
 
   const [showManual, setShowManual] = useState(!hasEmbeddedSignup);
+  const [signupStep, setSignupStep] = useState<string | null>(null);
+  const [selectionType, setSelectionType] = useState<'waba' | 'phone' | null>(null);
+  const [selectionOptions, setSelectionOptions] = useState<Array<{ id: string; name: string; verifiedName?: string }>>([]);
+  const [pendingFbToken, setPendingFbToken] = useState<string | null>(null);
+  const [pendingWabaId, setPendingWabaId] = useState<string | null>(null);
 
   // Load Facebook SDK when component mounts (needed for Embedded Signup)
   useEffect(() => {
@@ -163,34 +168,101 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     fbLoginEmbeddedSignup(FB, configId, function(fbToken) {
       if (!fbToken) {
-        toastError('Facebook login was cancelled or failed.');
+        toastError('Connection cancelled. Click "Connect with Facebook" to try again. Make sure to complete all steps in the Facebook popup.');
         return;
       }
 
       // Call the new automated endpoint
       setConnecting(true);
-      api.post<{
-        success: boolean;
-        phoneNumber: string;
-        phoneNumberId: string;
-        wabaId: string;
-      }>('/api/whatsapp/embedded-signup-complete', {
+      setSignupStep('Discovering your WhatsApp account...');
+      api.post<Record<string, unknown>>('/api/whatsapp/embedded-signup-complete', {
         agentId,
         fbAccessToken: fbToken,
       })
         .then(function(data) {
-          success(`WhatsApp connected! Phone: ${data.phoneNumber}`);
+          if (data.requiresSelection) {
+            // Backend found multiple options, ask user to select
+            setSignupStep(null);
+            setConnecting(false);
+            setSelectionType(data.requiresSelection as 'waba' | 'phone');
+            setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
+            setPendingFbToken(data.fbAccessToken as string);
+            if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
+            return;
+          }
+          setSignupStep(null);
+          success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
           setShowManual(false);
           return loadStatus();
         })
         .catch(function(err: unknown) {
-          toastError(err instanceof ApiError ? err.message : 'Failed to connect WhatsApp. Try manual setup.');
+          setSignupStep(null);
+          let msg = 'Failed to connect WhatsApp.';
+          if (err instanceof ApiError) {
+            if (err.message.includes('NO_WABA_SHARED') || err.message.includes('Could not find your WhatsApp Business Account')) {
+              msg = 'We couldn\'t find your WhatsApp Business Account. Make sure you completed all steps in the Facebook popup, or use Manual Setup below.';
+            } else if (err.message.includes('NO_PHONE_FOUND')) {
+              msg = 'No phone number found in your WhatsApp Business Account. Complete your WhatsApp Business setup in Meta Business Manager first.';
+            } else if (err.message.includes('PLAN_LIMIT')) {
+              msg = 'WhatsApp requires a Starter plan or higher.';
+            } else {
+              msg = err.message;
+            }
+          }
+          toastError(msg);
           setShowManual(true);
         })
         .finally(function() {
           setConnecting(false);
+          setSignupStep(null);
         });
     });
+  }
+
+  function handleSelectionContinue(selectedId: string) {
+    if (!pendingFbToken) return;
+
+    setConnecting(true);
+    setSelectionType(null);
+    setSelectionOptions([]);
+    setSignupStep(selectionType === 'waba' ? 'Connecting your WhatsApp account...' : 'Registering your phone number...');
+
+    const body: Record<string, string> = {
+      agentId,
+      fbAccessToken: pendingFbToken,
+    };
+    if (selectionType === 'waba') {
+      body.selectedWabaId = selectedId;
+    } else {
+      body.selectedWabaId = pendingWabaId || '';
+      body.selectedPhoneId = selectedId;
+    }
+
+    api.post<Record<string, unknown>>('/api/whatsapp/embedded-signup-complete', body)
+      .then(function(data) {
+        if (data.requiresSelection) {
+          setSignupStep(null);
+          setConnecting(false);
+          setSelectionType(data.requiresSelection as 'waba' | 'phone');
+          setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
+          if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
+          return;
+        }
+        setSignupStep(null);
+        success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
+        setShowManual(false);
+        setPendingFbToken(null);
+        setPendingWabaId(null);
+        return loadStatus();
+      })
+      .catch(function(err: unknown) {
+        setSignupStep(null);
+        toastError(err instanceof ApiError ? err.message : 'Failed to connect WhatsApp.');
+        setShowManual(true);
+      })
+      .finally(function() {
+        setConnecting(false);
+      });
   }
 
   async function copyText(text: string, type: 'webhook' | 'token') {
@@ -333,6 +405,46 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
               >
                 Connect with Facebook
               </Button>
+              {connecting && signupStep && (
+                <div className={styles.signupProgress}>
+                  <Spinner size="sm" />
+                  <span>{signupStep}</span>
+                </div>
+              )}
+              {selectionType && selectionOptions.length > 0 && (
+                <div className={styles.selectionPanel}>
+                  <div className={styles.selectionTitle}>
+                    {selectionType === 'waba'
+                      ? 'Select your WhatsApp Business Account'
+                      : 'Select your phone number'}
+                  </div>
+                  <div className={styles.selectionOptions}>
+                    {selectionOptions.map((opt) => (
+                      <button
+                        key={opt.id}
+                        className={styles.selectionOption}
+                        onClick={() => handleSelectionContinue(opt.id)}
+                        type="button"
+                      >
+                        <span className={styles.selectionOptName}>
+                          {opt.name}
+                          {opt.verifiedName && (
+                            <span className={styles.selectionOptVerified}> — {opt.verifiedName}</span>
+                          )}
+                        </span>
+                        <span className={styles.selectionOptId}>{opt.id}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    className={styles.toggleManual}
+                    onClick={() => { setSelectionType(null); setSelectionOptions([]); setPendingFbToken(null); setShowManual(true); }}
+                    type="button"
+                  >
+                    Cancel — use Manual Setup instead
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

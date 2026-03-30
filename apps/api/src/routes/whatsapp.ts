@@ -597,7 +597,12 @@ router.post(
         throw new AppError(403, 'WhatsApp requires Starter plan or higher', 'PLAN_LIMIT');
       }
 
-      const { agentId, fbAccessToken } = req.body as { agentId: string; fbAccessToken: string };
+      const { agentId, fbAccessToken, selectedWabaId, selectedPhoneId } = req.body as {
+        agentId: string;
+        fbAccessToken: string;
+        selectedWabaId?: string;
+        selectedPhoneId?: string;
+      };
       if (!agentId || !fbAccessToken) {
         throw new AppError(400, 'Missing agentId or fbAccessToken', 'VALIDATION_ERROR');
       }
@@ -740,8 +745,37 @@ router.post(
         console.log(`[embedded-signup] Fallback found ${sharedWabaIds.length} WABA(s): ${sharedWabaIds.join(', ')}`);
       }
 
-      const wabaId = sharedWabaIds[0]!;
-      console.log(`[embedded-signup] Found shared WABA: ${wabaId}`);
+      // If multiple WABAs found, return them for user selection
+      if (sharedWabaIds.length > 1 && !selectedWabaId) {
+        const wabaOptions: Array<{ id: string; name: string }> = [];
+        for (const wId of sharedWabaIds.slice(0, 5)) {
+          try {
+            const wabaInfoRes = await fetch(
+              `https://graph.facebook.com/v21.0/${wId}?fields=id,name`,
+              { headers: { Authorization: `Bearer ${platformToken}` } }
+            );
+            if (wabaInfoRes.ok) {
+              const wabaInfo = await wabaInfoRes.json() as { id: string; name?: string };
+              wabaOptions.push({ id: wabaInfo.id, name: wabaInfo.name ?? wId });
+            } else {
+              wabaOptions.push({ id: wId, name: wId });
+            }
+          } catch {
+            wabaOptions.push({ id: wId, name: wId });
+          }
+        }
+
+        res.json({
+          success: false,
+          requiresSelection: 'waba',
+          options: wabaOptions,
+          fbAccessToken: fbAccessToken,
+        });
+        return;
+      }
+
+      const wabaId = selectedWabaId || sharedWabaIds[0]!;
+      console.log(`[embedded-signup] Using WABA: ${wabaId}`);
 
       // 5. Get phone numbers from this WABA using the platform token
       const phoneRes = await fetch(
@@ -751,16 +785,43 @@ router.post(
 
       let phoneNumberId = '';
       let displayPhone = '';
+      type PhoneDataType = { data?: Array<{ id: string; display_phone_number: string; verified_name?: string }> };
+      let phoneData: PhoneDataType | null = null;
 
       if (phoneRes.ok) {
-        const phoneData = await phoneRes.json() as {
-          data?: Array<{ id: string; display_phone_number: string; verified_name?: string }>;
-        };
-        const phone = phoneData.data?.[0];
+        phoneData = await phoneRes.json() as PhoneDataType;
+        const phone = phoneData?.data?.[0];
         if (phone) {
           phoneNumberId = phone.id;
           displayPhone = phone.display_phone_number;
           console.log(`[embedded-signup] Found phone: ${phoneNumberId} (${displayPhone})`);
+        }
+      }
+
+      // If multiple phones found, return them for user selection
+      if (phoneData?.data && phoneData.data.length > 1 && !selectedPhoneId) {
+        const phoneOptions = phoneData.data.map((p) => ({
+          id: p.id,
+          name: p.display_phone_number || p.id,
+          verifiedName: p.verified_name,
+        }));
+
+        res.json({
+          success: false,
+          requiresSelection: 'phone',
+          options: phoneOptions,
+          selectedWabaId: wabaId,
+          fbAccessToken: fbAccessToken,
+        });
+        return;
+      }
+
+      // If user already selected a phone, use it
+      if (selectedPhoneId && phoneData?.data) {
+        const selected = phoneData.data.find((p) => p.id === selectedPhoneId);
+        if (selected) {
+          phoneNumberId = selected.id;
+          displayPhone = selected.display_phone_number;
         }
       }
 
