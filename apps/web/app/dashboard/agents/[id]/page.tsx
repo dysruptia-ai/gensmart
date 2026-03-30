@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, usePathname } from 'next/navigation';
 import {
   Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench,
 } from 'lucide-react';
@@ -105,6 +105,7 @@ export default function AgentEditorPage() {
   const agentId = routeParams['id'] as string;
 
   const router = useRouter();
+  const pathname = usePathname();
   const { success, error: toastError } = useToast();
   const { t, language } = useTranslation();
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -122,6 +123,8 @@ export default function AgentEditorPage() {
   const [showPromptGen, setShowPromptGen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [activeTab, setActiveTab] = useState('prompt');
+  const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   // Plan state
   const [orgPlan, setOrgPlan] = useState<PlanKey>('free');
@@ -223,6 +226,35 @@ export default function AgentEditorPage() {
     previewBottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [previewMessages]);
 
+  // Warn before closing tab/browser with unsaved changes
+  useEffect(() => {
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      if (isDirty) {
+        e.preventDefault();
+      }
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Intercept internal navigation when dirty
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      const anchor = (e.target as HTMLElement).closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href');
+      if (!href || !href.startsWith('/')) return;
+      if (href === pathname) return;
+      if (!isDirty) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setPendingUrl(href);
+      setShowLeaveModal(true);
+    }
+    document.addEventListener('click', handleClick, true);
+    return () => document.removeEventListener('click', handleClick, true);
+  }, [isDirty, pathname]);
+
   async function handleSave() {
     setSaving(true);
     try {
@@ -242,6 +274,15 @@ export default function AgentEditorPage() {
       setAgent(updated.agent);
       setChannels(updated.agent.channels ?? []);
       setIsDirty(false);
+      // Sync webConfig state back (in case backend normalized values)
+      if (updated.agent.webConfig) {
+        setWebConfig({
+          primary_color: updated.agent.webConfig.primary_color ?? '#25D366',
+          welcome_message: updated.agent.webConfig.welcome_message ?? 'Hello! How can I help you?',
+          bubble_text: updated.agent.webConfig.bubble_text ?? 'Chat with us',
+          position: (updated.agent.webConfig.position as 'bottom-right' | 'bottom-left') ?? 'bottom-right',
+        });
+      }
       success(t('agents.editor.saved'));
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : t('agents.editor.saveFailed'));
@@ -738,6 +779,7 @@ export default function AgentEditorPage() {
                       agentId={agentId}
                       initialConfig={webConfig}
                       channels={channels}
+                      onChange={(cfg: WebConfig) => { setWebConfig(cfg); setIsDirty(true); }}
                       onSaved={(cfg: WebConfig) => setWebConfig(cfg)}
                     />
                   </div>
@@ -936,6 +978,31 @@ export default function AgentEditorPage() {
               {t('agents.editor.previewModal.reset')}
             </Button>
           </div>
+        </div>
+      </Modal>
+
+      {/* Leave confirmation modal */}
+      <Modal isOpen={showLeaveModal} onClose={() => { setShowLeaveModal(false); setPendingUrl(null); }} title="Unsaved Changes" size="sm">
+        <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: '1.25rem' }}>
+          You have unsaved changes. Do you want to save before leaving?
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          <Button variant="secondary" onClick={() => {
+            setShowLeaveModal(false);
+            setIsDirty(false);
+            if (pendingUrl) router.push(pendingUrl);
+            setPendingUrl(null);
+          }}>
+            Discard
+          </Button>
+          <Button onClick={async () => {
+            await handleSave();
+            setShowLeaveModal(false);
+            if (pendingUrl) router.push(pendingUrl);
+            setPendingUrl(null);
+          }} loading={saving}>
+            Save &amp; Leave
+          </Button>
         </div>
       </Modal>
 

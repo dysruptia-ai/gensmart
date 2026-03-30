@@ -2,10 +2,8 @@
 
 import React, { useState, useCallback } from 'react';
 import { Copy, Check, MessageSquare, Globe } from 'lucide-react';
-import { api, ApiError } from '@/lib/api';
 import ColorPicker from '@/components/ui/ColorPicker';
 import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import styles from './WidgetCustomizer.module.css';
 
@@ -20,6 +18,7 @@ interface WidgetCustomizerProps {
   agentId: string;
   initialConfig: WebConfig;
   channels: string[];
+  onChange?: (config: WebConfig) => void;
   onSaved?: (config: WebConfig) => void;
 }
 
@@ -30,32 +29,22 @@ const DEFAULT_CONFIG: WebConfig = {
   position: 'bottom-right',
 };
 
-export default function WidgetCustomizer({ agentId, initialConfig, channels, onSaved }: WidgetCustomizerProps) {
+export default function WidgetCustomizer({ agentId, initialConfig, onChange }: WidgetCustomizerProps) {
   const { success, error: toastError } = useToast();
 
   const [config, setConfig] = useState<WebConfig>({
     ...DEFAULT_CONFIG,
     ...initialConfig,
   });
-  const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const update = useCallback(<K extends keyof WebConfig>(key: K, value: WebConfig[K]) => {
-    setConfig((prev) => ({ ...prev, [key]: value }));
-  }, []);
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      await api.put(`/api/agents/${agentId}`, { webConfig: config, channels });
-      success('Widget settings saved');
-      onSaved?.(config);
-    } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to save widget settings');
-    } finally {
-      setSaving(false);
-    }
-  }
+    setConfig((prev) => {
+      const next = { ...prev, [key]: value };
+      onChange?.(next);
+      return next;
+    });
+  }, [onChange]);
 
   const snippetCode = `<script src="${process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://app.gensmart.co'}/widget.js" data-agent-id="${agentId}"></script>`;
 
@@ -121,9 +110,6 @@ export default function WidgetCustomizer({ agentId, initialConfig, channels, onS
             </select>
           </div>
 
-          <Button onClick={handleSave} loading={saving} size="sm">
-            Save Widget Settings
-          </Button>
         </div>
 
         {/* Preview column */}
