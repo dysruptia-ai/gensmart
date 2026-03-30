@@ -215,8 +215,11 @@ export default function MCPConfigurator({
           }
         >
           <option value="sse">{t('agents.tools.mcp.transportSse')}</option>
-          <option value="streamable-http">Streamable HTTP</option>
+          <option value="streamable-http">{t('agents.tools.mcp.transportStreamableHttp')}</option>
         </select>
+        <span className={styles.fieldHint}>
+          {t('agents.tools.mcp.transportHint')}
+        </span>
       </div>
 
       {/* Tools list — shown after live test OR in edit mode with saved tools */}

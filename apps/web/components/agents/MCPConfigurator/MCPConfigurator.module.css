@@ -213,3 +213,10 @@
   color: var(--color-warning);
   margin: 0;
 }
+
+.fieldHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 4px 0 0;
+  display: block;
+}

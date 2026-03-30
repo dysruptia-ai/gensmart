@@ -136,7 +136,7 @@
       },
       "customFunctionsMcp": {
         "title": "Funciones personalizadas y MCP",
-        "description": "Conéctate a cualquier API o servidor MCP para datos en tiempo real"
+        "description": "Conecta servidores MCP (SSE + Streamable HTTP) y APIs externas para ampliar tu agente con cualquier herramienta"
       }
     },
     "howItWorks": {
@@ -560,6 +560,8 @@
         "serverUrlPlaceholder": "https://mcp.example.com/sse",
         "transport": "Transporte",
         "transportSse": "SSE (Server-Sent Events)",
+        "transportStreamableHttp": "Streamable HTTP",
+        "transportHint": "SSE (legacy, spec 2024-11-05) y Streamable HTTP (spec 2025-03-26) — GenSmart soporta ambos transportes MCP",
         "testConnection": "Probar Conexión",
         "testing": "Probando...",
         "connectionSuccess": "¡Conexión exitosa! {count} herramientas disponibles.",
