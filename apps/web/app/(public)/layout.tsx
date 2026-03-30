@@ -9,7 +9,7 @@ export default function PublicLayout({
   return (
     <>
       <PublicNavbar />
-      <main style={{ paddingTop: '72px' }} suppressHydrationWarning>{children}</main>
+      <main style={{ paddingTop: '72px' }}>{children}</main>
       <Footer />
     </>
   );

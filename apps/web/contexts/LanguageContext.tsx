@@ -43,16 +43,26 @@ function getInitialLanguage(userLanguage?: string): SupportedLanguage {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [language, setLanguageState] = useState<SupportedLanguage>('en');
 
-  // Sync language from user object on auth state change
+  // Start with 'en' to match SSR — prevents hydration mismatch.
+  // Real language is applied in useEffect after hydration completes.
+  const [language, setLanguageState] = useState<SupportedLanguage>('en');
+  const [hydrated, setHydrated] = useState(false);
+
+  // Mark as hydrated after first client render
   useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  // Sync language AFTER hydration to avoid mismatch
+  useEffect(() => {
+    if (!hydrated) return;
     const lang = getInitialLanguage((user as { language?: string } | null)?.language);
     setLanguageState(lang);
     if (typeof window !== 'undefined') {
       localStorage.setItem(LS_KEY, lang);
     }
-  }, [user]);
+  }, [hydrated, user]);
 
   const setLanguage = useCallback(
     (lang: SupportedLanguage) => {
