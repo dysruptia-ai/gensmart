@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Facebook, Globe } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
@@ -29,9 +30,17 @@ const LANGUAGES = [
   { code: 'es' as const, label: 'ES' },
 ];
 
+// Use a fixed year during SSR to avoid hydration mismatch with client clock
+const SSR_YEAR = 2026;
+
 export function Footer() {
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation();
+  const [year, setYear] = useState(SSR_YEAR);
+
+  useEffect(() => {
+    setYear(new Date().getFullYear());
+  }, []);
 
   return (
     <footer className={styles.footer}>
@@ -89,7 +98,7 @@ export function Footer() {
             <Logo size="md" variant="full" color="white" href="/" />
             <div className={styles.copyright}>
               <p className={styles.trademark}>GenSmart is a registered trademark of Dysruptia LLC</p>
-              <p>&copy; {new Date().getFullYear()} Dysruptia LLC. All rights reserved.</p>
+              <p>&copy; {year} Dysruptia LLC. All rights reserved.</p>
             </div>
           </div>
 
