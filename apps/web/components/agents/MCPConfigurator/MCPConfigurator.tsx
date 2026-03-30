@@ -75,6 +75,7 @@ export default function MCPConfigurator({
         error?: string;
       }>(`/api/agents/${agentId}/tools/mcp/test-connection`, {
         server_url: config.server_url.trim(),
+        transport: config.transport,
       });
 
       if (data.success && data.tools) {
