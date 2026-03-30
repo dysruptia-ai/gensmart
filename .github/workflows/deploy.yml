@@ -23,6 +23,7 @@ jobs:
             git pull origin main
             npm ci --production=false
             cd packages/shared && npm run build && cd ../..
+            rm -rf apps/web/.next
             cd apps/web && npm run build && cd ../..
             export $(grep -v '^#' .env | xargs)
             cd apps/api && npx node-pg-migrate --migrations-dir=src/db/migrations --migration-file-language=sql up && cd ../..
