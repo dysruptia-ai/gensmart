@@ -83,6 +83,17 @@ export default function ConversationsPage() {
   const [total, setTotal] = useState(0);
   const { on, off } = useWebSocket();
 
+  // Force re-render periodically so live dots disappear after 2 min
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const hasRecent = conversations.some(c =>
+      c.lastMessageAt && Date.now() - new Date(c.lastMessageAt).getTime() < 3 * 60 * 1000
+    );
+    if (!hasRecent) return;
+    const interval = setInterval(() => setTick(t => t + 1), 30000);
+    return () => clearInterval(interval);
+  }, [conversations]);
+
   // Selection state for bulk delete
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
