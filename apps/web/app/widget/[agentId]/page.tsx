@@ -137,30 +137,11 @@ export default function WidgetPage() {
             }]);
           }
         } else {
-          // Create new session
-          const sessRes = await fetch(`${API_BASE}/api/widget/${agentId}/session`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              referrer: document.referrer.slice(0, 500),
-              userAgent: navigator.userAgent.slice(0, 200),
-            }),
-          });
-
-          if (!sessRes.ok) {
-            setError('Could not start a chat session. Please try again.');
-            setIsLoading(false);
-            return;
-          }
-
-          const sess = await sessRes.json() as { sessionId: string; welcomeMessage: string };
-          setSessionId(sess.sessionId);
-          localStorage.setItem(SESSION_KEY_PREFIX + agentId, sess.sessionId);
-
+          // No session yet — show welcome message from config, defer session creation to first message
           const welcomeMsg: ChatMessage = {
             id: 'welcome',
             role: 'assistant',
-            content: sess.welcomeMessage,
+            content: cfg.welcome_message,
             created_at: new Date(0).toISOString(),
           };
           setMessages([welcomeMsg]);
@@ -368,8 +349,6 @@ export default function WidgetPage() {
   }
 
   function sendAudioMessage(base64Audio: string, mimeType: string) {
-    if (!sessionId) return;
-
     // Show user message immediately
     setMessages((prev) => [...prev, {
       id: `user-${Date.now()}`,
@@ -380,16 +359,20 @@ export default function WidgetPage() {
 
     setLastMessageTime(new Date().toISOString());
 
-    fetch(`${API_BASE}/api/widget/${agentId}/message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId,
-        audio: base64Audio,
-        audioMimeType: mimeType,
-      }),
-    })
-      .then(async (r) => {
+    void (async () => {
+      const sid = await ensureSession();
+      if (!sid) return;
+
+      try {
+        const r = await fetch(`${API_BASE}/api/widget/${agentId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sid,
+            audio: base64Audio,
+            audioMimeType: mimeType,
+          }),
+        });
         if (r.ok) {
           const data = await r.json() as { conversationStatus?: string };
           if (data.conversationStatus !== 'human_takeover') {
@@ -397,8 +380,10 @@ export default function WidgetPage() {
             setTimeout(() => setPendingCount((n) => Math.max(0, n - 1)), 30000);
           }
         }
-      })
-      .catch(() => {});
+      } catch {
+        // Send failed
+      }
+    })();
   }
 
   function formatRecordingTime(seconds: number): string {
@@ -407,9 +392,30 @@ export default function WidgetPage() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   }
 
+  async function ensureSession(): Promise<string | null> {
+    if (sessionId) return sessionId;
+    try {
+      const sessRes = await fetch(`${API_BASE}/api/widget/${agentId}/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referrer: document.referrer.slice(0, 500),
+          userAgent: navigator.userAgent.slice(0, 200),
+        }),
+      });
+      if (!sessRes.ok) return null;
+      const sess = await sessRes.json() as { sessionId: string };
+      setSessionId(sess.sessionId);
+      localStorage.setItem(SESSION_KEY_PREFIX + agentId, sess.sessionId);
+      return sess.sessionId;
+    } catch {
+      return null;
+    }
+  }
+
   function handleSend() {
     const text = input.trim();
-    if ((!text && !pendingImage) || !sessionId) return;
+    if (!text && !pendingImage) return;
 
     // 1. Show user message immediately (with image preview if present)
     const displayContent = pendingImage
@@ -432,24 +438,33 @@ export default function WidgetPage() {
     setPendingImage(null);
     inputRef.current?.focus();
 
-    // 3. Send message
+    // 3. Send message (create session first if needed)
     setLastMessageTime(new Date().toISOString());
 
-    const body: Record<string, string> = { sessionId };
-    if (text) body['message'] = text;
-    if (imageToSend) {
-      body['image'] = imageToSend.data;
-      body['imageMimeType'] = imageToSend.mimeType;
-    }
+    void (async () => {
+      const sid = await ensureSession();
+      if (!sid) return;
 
-    fetch(`${API_BASE}/api/widget/${agentId}/message`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-      .then(async (r) => {
+      const body: Record<string, string> = { sessionId: sid };
+      if (text) body['message'] = text;
+      if (imageToSend) {
+        body['image'] = imageToSend.data;
+        body['imageMimeType'] = imageToSend.mimeType;
+      }
+
+      try {
+        const r = await fetch(`${API_BASE}/api/widget/${agentId}/message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
         if (r.ok) {
-          const data = await r.json() as { messageId: string | null; status: string; conversationStatus?: string };
+          const data = await r.json() as { messageId: string | null; status: string; conversationStatus?: string; sessionId?: string };
+          // Store sessionId if returned from backend (first message fallback)
+          if (data.sessionId && !sessionId) {
+            setSessionId(data.sessionId);
+            localStorage.setItem(SESSION_KEY_PREFIX + agentId, data.sessionId);
+          }
           if (data.conversationStatus !== 'human_takeover') {
             setPendingCount((n) => n + 1);
             setTimeout(() => {
@@ -457,10 +472,10 @@ export default function WidgetPage() {
             }, 30000);
           }
         }
-      })
-      .catch(() => {
+      } catch {
         // POST failed
-      });
+      }
+    })();
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -653,7 +668,7 @@ export default function WidgetPage() {
           <button
             className={styles.attachBtn}
             onClick={() => fileInputRef.current?.click()}
-            disabled={!sessionId || !!pendingImage || isRecording}
+            disabled={!!pendingImage || isRecording}
             aria-label="Attach image"
             type="button"
           >
@@ -662,7 +677,7 @@ export default function WidgetPage() {
           <button
             className={`${styles.attachBtn} ${isRecording ? styles.recordingBtn : ''}`}
             onClick={isRecording ? handleStopRecording : handleStartRecording}
-            disabled={!sessionId || !!pendingImage}
+            disabled={!!pendingImage}
             aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
             type="button"
           >
@@ -676,14 +691,13 @@ export default function WidgetPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            disabled={!sessionId}
             maxLength={4000}
             autoComplete="off"
           />
           <button
             className={styles.sendBtn}
             onClick={handleSend}
-            disabled={(!input.trim() && !pendingImage) || !sessionId || isRecording}
+            disabled={(!input.trim() && !pendingImage) || isRecording}
             aria-label="Send message"
             type="button"
             style={{ backgroundColor: config.primary_color }}

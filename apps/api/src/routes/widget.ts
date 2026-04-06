@@ -217,9 +217,7 @@ router.post(
         audioMimeType?: string; // 'audio/webm', 'audio/mp4', etc.
       };
 
-      if (!sessionId) {
-        throw new AppError(400, 'sessionId is required', 'VALIDATION_ERROR');
-      }
+      let resolvedSessionId = sessionId;
 
       const hasText = !!message?.trim();
       const hasImage = !!image;
@@ -261,8 +259,49 @@ router.post(
       // Sanitize message (basic XSS prevention)
       const sanitizedMessage = hasText ? message!.trim().slice(0, 4000) : '';
 
+      // If no sessionId provided, create session on the fly (first message scenario)
+      if (!resolvedSessionId) {
+        const ip = getClientIp(req);
+        const ipAllowed = await checkSessionRateLimit(ip);
+        if (!ipAllowed) {
+          throw new AppError(429, 'Too many sessions created. Please try again later.', 'RATE_LIMIT');
+        }
+
+        const agentCheck = await query<{
+          id: string;
+          organization_id: string;
+          status: string;
+          channels: string[];
+          web_config: Record<string, unknown>;
+        }>(
+          `SELECT id, organization_id, status, channels, web_config FROM agents WHERE id = $1`,
+          [agentId]
+        );
+        const ag = agentCheck.rows[0];
+        if (!ag || ag.status !== 'active' || !(ag.channels ?? []).includes('web')) {
+          throw new AppError(404, 'Agent not found or not published', 'NOT_FOUND');
+        }
+
+        const contactRes = await query<{ id: string }>(
+          `INSERT INTO contacts (organization_id, agent_id, source_channel, custom_variables, created_at, updated_at)
+           VALUES ($1, $2, 'web', '{}'::jsonb, NOW(), NOW())
+           RETURNING id`,
+          [ag.organization_id, ag.id]
+        );
+        const newContactId = contactRes.rows[0]!.id;
+
+        const convRes = await query<{ id: string }>(
+          `INSERT INTO conversations (organization_id, agent_id, contact_id, channel, status,
+                                      channel_metadata, created_at, updated_at)
+           VALUES ($1, $2, $3, 'web', 'active', '{}'::jsonb, NOW(), NOW())
+           RETURNING id`,
+          [ag.organization_id, ag.id, newContactId]
+        );
+        resolvedSessionId = convRes.rows[0]!.id;
+      }
+
       // Rate limit per session
-      const allowed = await checkMessageRateLimit(sessionId);
+      const allowed = await checkMessageRateLimit(resolvedSessionId);
       if (!allowed) {
         throw new AppError(429, 'Message limit reached for this session', 'RATE_LIMIT');
       }
@@ -278,7 +317,7 @@ router.post(
         `SELECT id, agent_id, organization_id, status, contact_id
          FROM conversations
          WHERE id = $1 AND agent_id = $2 AND channel = 'web'`,
-        [sessionId, agentId]
+        [resolvedSessionId, agentId]
       );
 
       const conv = convResult.rows[0];
@@ -346,7 +385,7 @@ router.post(
         await pushToBuffer(sessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
       }
 
-      res.json({ messageId: null, status: 'queued', conversationStatus: conv.status });
+      res.json({ messageId: null, status: 'queued', conversationStatus: conv.status, sessionId: resolvedSessionId });
     } catch (err) {
       next(err);
     }
