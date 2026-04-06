@@ -1371,5 +1371,17 @@
   "variables_map_name": "Nombre del Contacto",
   "variables_map_email": "Email del Contacto",
   "variables_map_phone": "Teléfono del Contacto",
-  "variables_map_already_mapped": "ya mapeado"
+  "variables_map_already_mapped": "ya mapeado",
+  "contactSales": {
+    "title": "Contactar Ventas",
+    "subtitle": "Cuéntanos sobre tus necesidades y te responderemos en 24 horas.",
+    "company": "Empresa",
+    "message": "Mensaje",
+    "namePlaceholder": "Tu nombre",
+    "emailPlaceholder": "tu@email.com",
+    "companyPlaceholder": "Nombre de tu empresa",
+    "messagePlaceholder": "Cuéntanos sobre el tamaño de tu equipo, caso de uso y cualquier pregunta...",
+    "send": "Enviar Mensaje",
+    "success": "¡Gracias! Te responderemos en un plazo de 24 horas."
+  }
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Check, ArrowRight } from 'lucide-react';
 import { ScrollReveal } from './ScrollReveal';
 import { useTranslation } from '@/hooks/useTranslation';
+import ContactSalesModal from './ContactSalesModal/ContactSalesModal';
 import styles from './PricingSection.module.css';
 
 type BillingCycle = 'monthly' | 'yearly';
@@ -56,6 +57,7 @@ function getDisplayPrice(monthly: number, cycle: BillingCycle, perMonthLabel: st
 export function PricingSection() {
   const { t } = useTranslation();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
+  const [contactOpen, setContactOpen] = useState(false);
 
   return (
     <section id="pricing" className={styles.section} aria-label="Pricing">
@@ -114,9 +116,19 @@ export function PricingSection() {
                       </li>
                     ))}
                   </ul>
-                  <Link href={href} className={`${styles.planCta} ${popular ? styles.ctaPrimary : styles.ctaSecondary}`}>
-                    {t(ctaKey)}
-                  </Link>
+                  {key === 'enterprise' ? (
+                    <button
+                      className={`${styles.planCta} ${styles.ctaSecondary}`}
+                      onClick={() => setContactOpen(true)}
+                      type="button"
+                    >
+                      {t(ctaKey)}
+                    </button>
+                  ) : (
+                    <Link href={href} className={`${styles.planCta} ${popular ? styles.ctaPrimary : styles.ctaSecondary}`}>
+                      {t(ctaKey)}
+                    </Link>
+                  )}
                 </div>
               </ScrollReveal>
             );
@@ -130,6 +142,8 @@ export function PricingSection() {
           </Link>
         </div>
       </div>
+
+      <ContactSalesModal isOpen={contactOpen} onClose={() => setContactOpen(false)} />
     </section>
   );
 }

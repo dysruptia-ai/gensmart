@@ -1371,5 +1371,17 @@
   "variables_map_name": "Contact Name",
   "variables_map_email": "Contact Email",
   "variables_map_phone": "Contact Phone",
-  "variables_map_already_mapped": "already mapped"
+  "variables_map_already_mapped": "already mapped",
+  "contactSales": {
+    "title": "Contact Sales",
+    "subtitle": "Tell us about your needs and we'll get back to you within 24 hours.",
+    "company": "Company",
+    "message": "Message",
+    "namePlaceholder": "Your name",
+    "emailPlaceholder": "your@email.com",
+    "companyPlaceholder": "Your company name",
+    "messagePlaceholder": "Tell us about your team size, use case, and any questions...",
+    "send": "Send Message",
+    "success": "Thank you! We'll get back to you within 24 hours."
+  }
 }

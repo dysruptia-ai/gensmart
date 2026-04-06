@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Check, Minus } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import ContactSalesModal from '@/components/landing/ContactSalesModal/ContactSalesModal';
 import styles from './pricing.module.css';
 
 type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
@@ -119,6 +120,7 @@ export default function PricingPage() {
   const { t } = useTranslation();
   const [cycle, setCycle] = useState<BillingCycle>('monthly');
   const [faqOpen, setFaqOpen] = useState<number | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   function getDisplayPrice(monthly: number) {
     if (monthly === 0) return { price: '0', note: t('pricing.foreverFree') };
@@ -190,12 +192,22 @@ export default function PricingPage() {
                     <span className={styles.pricePeriod}>{t('pricing.perMonth')}</span>
                   </div>
                   <p className={styles.priceNote}>{note}</p>
-                  <Link
-                    href={href}
-                    className={highlight ? styles.ctaPrimary : styles.ctaOutline}
-                  >
-                    {t(ctaKey)}
-                  </Link>
+                  {id === 'enterprise' ? (
+                    <button
+                      className={styles.ctaOutline}
+                      onClick={() => setContactOpen(true)}
+                      type="button"
+                    >
+                      {t(ctaKey)}
+                    </button>
+                  ) : (
+                    <Link
+                      href={href}
+                      className={highlight ? styles.ctaPrimary : styles.ctaOutline}
+                    >
+                      {t(ctaKey)}
+                    </Link>
+                  )}
                 </div>
               );
             })}
@@ -297,6 +309,8 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
+      <ContactSalesModal isOpen={contactOpen} onClose={() => setContactOpen(false)} />
     </div>
   );
 }

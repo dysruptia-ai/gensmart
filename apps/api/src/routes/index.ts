@@ -17,6 +17,7 @@ import accountRouter from './account';
 import lookupRouter from './lookup';
 import promoRouter from './promo';
 import adminRouter from './admin';
+import contactSalesRouter from './contact';
 
 const router = Router();
 
@@ -41,5 +42,6 @@ router.use('/account', accountRouter);
 router.use('/lookup', lookupRouter);
 router.use('/promo', promoRouter);
 router.use('/admin', adminRouter);
+router.use('/contact-sales', contactSalesRouter);
 
 export default router;
