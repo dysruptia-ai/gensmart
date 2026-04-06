@@ -348,8 +348,10 @@ export default function ConversationsPage() {
                   <input
                     type="checkbox"
                     checked={selected.has(conv.id)}
-                    readOnly
+                    onChange={() => {}}
+                    onClick={(e) => e.stopPropagation()}
                     className={styles.checkbox}
+                    style={{ pointerEvents: 'none' }}
                   />
                 </div>
                 <Link
