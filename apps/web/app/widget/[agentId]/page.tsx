@@ -119,22 +119,48 @@ export default function WidgetPage() {
         const storedMessages = localStorage.getItem(MESSAGES_KEY_PREFIX + agentId);
 
         if (storedSession) {
-          setSessionId(storedSession);
-          if (storedMessages) {
-            const parsed = JSON.parse(storedMessages) as ChatMessage[];
-            setMessages(parsed);
-            if (parsed.length > 0) {
-              const last = parsed[parsed.length - 1];
-              setLastMessageTime(last.created_at ?? new Date().toISOString());
+          // Validate that the session still exists in the backend before resuming
+          let sessionValid = false;
+          try {
+            const validateRes = await fetch(
+              `${API_BASE}/api/widget/${agentId}/messages?sessionId=${storedSession}&after=${encodeURIComponent(new Date(0).toISOString())}`,
+              { signal: AbortSignal.timeout(5000) }
+            );
+            sessionValid = validateRes.status !== 404;
+          } catch {
+            // Network error — assume valid to avoid losing session on transient failures
+            sessionValid = true;
+          }
+
+          if (sessionValid) {
+            setSessionId(storedSession);
+            if (storedMessages) {
+              const parsed = JSON.parse(storedMessages) as ChatMessage[];
+              setMessages(parsed);
+              if (parsed.length > 0) {
+                const last = parsed[parsed.length - 1];
+                setLastMessageTime(last.created_at ?? new Date().toISOString());
+              }
+            } else {
+              // Add welcome message for resumed session
+              setMessages([{
+                id: 'welcome',
+                role: 'assistant',
+                content: cfg.welcome_message,
+                created_at: new Date(0).toISOString(),
+              }]);
             }
           } else {
-            // Add welcome message for resumed session
-            setMessages([{
+            // Session was deleted — clear stale data and start fresh
+            localStorage.removeItem(SESSION_KEY_PREFIX + agentId);
+            localStorage.removeItem(MESSAGES_KEY_PREFIX + agentId);
+            const welcomeMsg: ChatMessage = {
               id: 'welcome',
               role: 'assistant',
               content: cfg.welcome_message,
               created_at: new Date(0).toISOString(),
-            }]);
+            };
+            setMessages([welcomeMsg]);
           }
         } else {
           // No session yet — show welcome message from config, defer session creation to first message
@@ -163,6 +189,22 @@ export default function WidgetPage() {
     }
   }, [messages, agentId]);
 
+  // Reset stale session — clears localStorage and state so next message creates a fresh session
+  const resetSession = useCallback((cfg?: WidgetConfig | null) => {
+    localStorage.removeItem(SESSION_KEY_PREFIX + agentId);
+    localStorage.removeItem(MESSAGES_KEY_PREFIX + agentId);
+    setSessionId(null);
+    setPendingCount(0);
+    const welcome = cfg?.welcome_message ?? config?.welcome_message ?? 'Hello! How can I help you?';
+    setMessages([{
+      id: 'welcome',
+      role: 'assistant',
+      content: welcome,
+      created_at: new Date(0).toISOString(),
+    }]);
+    setLastMessageTime(new Date(0).toISOString());
+  }, [agentId, config]);
+
   // Poll for new assistant messages
   const pollMessages = useCallback(async (sid: string, after: string) => {
     try {
@@ -170,6 +212,13 @@ export default function WidgetPage() {
         `${API_BASE}/api/widget/${agentId}/messages?sessionId=${sid}&after=${encodeURIComponent(after)}`,
         { signal: AbortSignal.timeout(35000) }
       );
+
+      // Session was deleted — reset so next message creates a new one
+      if (res.status === 404) {
+        resetSession();
+        return;
+      }
+
       if (!res.ok) return;
 
       const data = await res.json() as { messages: ChatMessage[] };
@@ -186,7 +235,7 @@ export default function WidgetPage() {
     } catch {
       // Ignore poll errors — will retry
     }
-  }, [agentId]);
+  }, [agentId, resetSession]);
 
   // Start / stop polling based on whether there are pending (unanswered) messages
   const isPending = pendingCount > 0;

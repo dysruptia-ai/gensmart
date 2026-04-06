@@ -407,14 +407,15 @@ router.get(
         throw new AppError(400, 'sessionId is required', 'VALIDATION_ERROR');
       }
 
-      // Validate session
+      // Validate session — return empty messages if session was deleted (not 404)
       const convResult = await query<{ id: string; agent_id: string }>(
         'SELECT id, agent_id FROM conversations WHERE id = $1 AND agent_id = $2 AND channel = $3',
         [sessionId, agentId, 'web']
       );
 
       if (!convResult.rows[0]) {
-        throw new AppError(404, 'Session not found', 'SESSION_NOT_FOUND');
+        res.json({ messages: [] });
+        return;
       }
 
       const after = afterParam ? new Date(afterParam) : new Date(0);
