@@ -597,8 +597,37 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     }
   }
 
-  if (!finalResponse.trim()) {
-    finalResponse = '...';
+  // Guard against minimal/empty responses (e.g. "...", ".", empty)
+  const isMinimalResponse = (text: string): boolean => {
+    const stripped = text.replace(/[\s\p{P}]/gu, '');
+    return stripped.length < 5;
+  };
+
+  if (isMinimalResponse(finalResponse)) {
+    console.warn(`[msg-worker] Minimal LLM response detected: "${finalResponse}" — retrying`);
+    try {
+      const retryResponse = await chat({
+        provider: agent.llm_provider as 'openai' | 'anthropic',
+        model: agent.llm_model,
+        system: fullSystemPrompt,
+        messages,
+        temperature: parseFloat(agent.temperature),
+        maxTokens,
+        byoApiKey: resolvedByoKey,
+      });
+      if (!isMinimalResponse(retryResponse.content)) {
+        finalResponse = retryResponse.content;
+        totalTokensUsed += retryResponse.usage.totalTokens;
+      } else {
+        console.warn(`[msg-worker] Retry also returned minimal response: "${retryResponse.content}"`);
+        finalResponse = agent.llm_provider === 'anthropic'
+          ? 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?'
+          : 'Sorry, I could not process your message. Could you please repeat it?';
+      }
+    } catch (retryErr) {
+      console.error('[msg-worker] Retry for minimal response failed:', retryErr);
+      finalResponse = 'Sorry, I could not process your message. Could you please repeat it?';
+    }
   }
 
   // Step 10: Save messages

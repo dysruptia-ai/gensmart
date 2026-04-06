@@ -1007,7 +1007,9 @@ router.post(
         if (response.content.trim()) finalResponse = response.content;
       }
 
-      if (!finalResponse.trim()) finalResponse = '...';
+      if (!finalResponse.trim() || finalResponse.replace(/[\s.…]+/g, '').length < 3) {
+        finalResponse = 'Sorry, I could not generate a response. Could you please try again?';
+      }
 
       // Persist updated history
       const updatedHistory = [
