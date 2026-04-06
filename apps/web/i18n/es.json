@@ -698,7 +698,15 @@
     },
     "messageBubble": {
       "aiResumed": "Agente de IA retomado"
-    }
+    },
+    "deleteConfirm": "¿Eliminar esta conversación? También se eliminará el contacto asociado si no tiene otras conversaciones.",
+    "deleteSelected": "Eliminar seleccionadas",
+    "bulkDeleteConfirm": "¿Eliminar {count} conversaciones? Los contactos asociados sin otras conversaciones también serán eliminados.",
+    "deleted": "Conversación eliminada",
+    "bulkDeleted": "{count} conversaciones eliminadas",
+    "allAgents": "Todos los agentes",
+    "needsHelp": "Necesita ayuda",
+    "live": "En vivo"
   },
   "contacts": {
     "title": "Contactos",

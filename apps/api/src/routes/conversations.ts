@@ -689,6 +689,103 @@ router.put(
   }
 );
 
+// ── DELETE /api/conversations/bulk ──────────────────────────────────────────
+// Must be registered before /:id to avoid Express matching "bulk" as a UUID
+router.delete(
+  '/bulk',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { conversationIds } = req.body as { conversationIds: string[] };
+      if (!Array.isArray(conversationIds) || conversationIds.length === 0) {
+        throw new AppError(400, 'conversationIds array is required', 'VALIDATION_ERROR');
+      }
+      if (conversationIds.length > 50) {
+        throw new AppError(400, 'Maximum 50 conversations at a time', 'VALIDATION_ERROR');
+      }
+
+      // Fetch all valid conversations
+      const placeholders = conversationIds.map((_, i) => `$${i + 2}`).join(', ');
+      const convs = await query<{ id: string; contact_id: string | null }>(
+        `SELECT id, contact_id FROM conversations WHERE id IN (${placeholders}) AND organization_id = $1`,
+        [req.org!.id, ...conversationIds]
+      );
+
+      const validIds = convs.rows.map((r) => r.id);
+      const contactIds = [...new Set(convs.rows.map((r) => r.contact_id).filter(Boolean))] as string[];
+
+      if (validIds.length === 0) {
+        res.json({ deleted: 0, contactsDeleted: 0 });
+        return;
+      }
+
+      // Delete messages and conversations
+      const idPlaceholders = validIds.map((_, i) => `$${i + 1}`).join(', ');
+      await query(`DELETE FROM messages WHERE conversation_id IN (${idPlaceholders})`, validIds);
+      await query(`DELETE FROM conversations WHERE id IN (${idPlaceholders})`, validIds);
+
+      // Delete orphan contacts
+      let contactsDeleted = 0;
+      for (const contactId of contactIds) {
+        const remaining = await query<{ count: string }>(
+          'SELECT COUNT(*) as count FROM conversations WHERE contact_id = $1',
+          [contactId]
+        );
+        if (parseInt(remaining.rows[0]?.count ?? '0', 10) === 0) {
+          await query('DELETE FROM contacts WHERE id = $1', [contactId]);
+          contactsDeleted++;
+        }
+      }
+
+      res.json({ deleted: validIds.length, contactsDeleted });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── DELETE /api/conversations/:id ────────────────────────────────────────────
+router.delete(
+  '/:id',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const conversationId = String(req.params['id']);
+
+      const convResult = await query<{
+        id: string;
+        organization_id: string;
+        contact_id: string | null;
+      }>(
+        'SELECT id, organization_id, contact_id FROM conversations WHERE id = $1 AND organization_id = $2',
+        [conversationId, req.org!.id]
+      );
+
+      const conv = convResult.rows[0];
+      if (!conv) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+
+      // Delete messages first (in case CASCADE isn't set)
+      await query('DELETE FROM messages WHERE conversation_id = $1', [conversationId]);
+      // Delete the conversation
+      await query('DELETE FROM conversations WHERE id = $1', [conversationId]);
+
+      // Check if the contact has other conversations; if not, delete the orphan contact
+      if (conv.contact_id) {
+        const otherConvs = await query<{ count: string }>(
+          'SELECT COUNT(*) as count FROM conversations WHERE contact_id = $1',
+          [conv.contact_id]
+        );
+        if (parseInt(otherConvs.rows[0]?.count ?? '0', 10) === 0) {
+          await query('DELETE FROM contacts WHERE id = $1', [conv.contact_id]);
+        }
+      }
+
+      res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // ── POST /api/conversations (create from widget/API) ────────────────────────
 router.post(
   '/',

@@ -698,7 +698,15 @@
     },
     "messageBubble": {
       "aiResumed": "AI Agent resumed"
-    }
+    },
+    "deleteConfirm": "Delete this conversation? This will also delete the associated contact if they have no other conversations.",
+    "deleteSelected": "Delete Selected",
+    "bulkDeleteConfirm": "Delete {count} conversations? Associated contacts with no other conversations will also be deleted.",
+    "deleted": "Conversation deleted",
+    "bulkDeleted": "{count} conversations deleted",
+    "allAgents": "All agents",
+    "needsHelp": "Needs Help",
+    "live": "Live"
   },
   "contacts": {
     "title": "Contacts",
