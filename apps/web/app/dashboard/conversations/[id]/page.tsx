@@ -13,6 +13,7 @@ import {
   Paperclip,
   Mic,
   Square,
+  ExternalLink,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,6 +26,7 @@ import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import styles from './chat.module.css';
 
@@ -68,6 +70,7 @@ interface ConversationDetail {
   takenOverAt: string | null;
   aiScore: number | null;
   capturedVariables: Record<string, unknown>;
+  channelMetadata: Record<string, unknown>;
   messageCount: number;
   lastMessageAt: string | null;
   createdAt: string;
@@ -84,9 +87,41 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral'> = {
   closed: 'neutral',
 };
 
+function ReferralCard({ referral, language }: { referral: Record<string, string>; language: string }) {
+  return (
+    <div className={styles.referralCard}>
+      {(referral.image_url || referral.thumbnail_url) && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={referral.image_url ?? referral.thumbnail_url}
+          alt={referral.headline ?? 'Ad'}
+          className={styles.referralThumb}
+        />
+      )}
+      <div className={styles.referralContent}>
+        <Badge variant="info" size="sm">
+          {language === 'es' ? 'Desde anuncio Meta' : 'From Meta Ad'}
+        </Badge>
+        {referral.headline && <p className={styles.referralHeadline}>{referral.headline}</p>}
+        {referral.body && (
+          <p className={styles.referralBody}>
+            {referral.body.slice(0, 100)}{referral.body.length > 100 ? '...' : ''}
+          </p>
+        )}
+        {referral.source_url && (
+          <a href={referral.source_url} target="_blank" rel="noopener noreferrer" className={styles.referralLink}>
+            <ExternalLink size={12} /> {language === 'es' ? 'Ver anuncio' : 'View ad'}
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function ConversationDetailPage() {
   const { id: conversationId } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { language } = useTranslation();
   const { error: showError, success: showSuccess } = useToast();
   const { on, off, joinConversation, leaveConversation } = useWebSocket();
 
@@ -586,6 +621,11 @@ export default function ConversationDetailPage() {
                 </Button>
               </div>
             )}
+            {/* Meta Ads referral card */}
+            {conversation.channelMetadata?.referral ? (
+              <ReferralCard referral={conversation.channelMetadata.referral as Record<string, string>} language={language} />
+            ) : null}
+
             {messages.length === 0 ? (
               <div className={styles.emptyMessages}>
                 <p>No messages yet in this conversation.</p>

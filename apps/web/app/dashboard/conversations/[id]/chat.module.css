@@ -341,3 +341,57 @@
     padding: 0.625rem 0.75rem;
   }
 }
+
+/* Meta Ads referral card */
+.referralCard {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  margin: 0.75rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid var(--color-info, #3B82F6);
+  border-radius: 0.5rem;
+}
+
+.referralThumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 0.375rem;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.referralContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.referralHeadline {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #1A1A1A);
+  margin: 0;
+}
+
+.referralBody {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #6B7280);
+  margin: 0;
+}
+
+.referralLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-info, #3B82F6);
+  text-decoration: none;
+  margin-top: 0.25rem;
+}
+
+.referralLink:hover {
+  text-decoration: underline;
+}

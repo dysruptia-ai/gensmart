@@ -125,6 +125,20 @@ router.post(
                   id: string;
                   mime_type: string;
                 };
+                referral?: {
+                  source_url?: string;
+                  source_type?: string;
+                  source_id?: string;
+                  headline?: string;
+                  body?: string;
+                  media_type?: string;
+                  image_url?: string;
+                  video_url?: string;
+                  thumbnail_url?: string;
+                };
+                context?: {
+                  referred_product?: Record<string, unknown>;
+                };
                 timestamp: string;
               }>;
               statuses?: unknown[];
@@ -152,6 +166,10 @@ router.post(
       const messageId = message.id;
 
       if (!fromPhone || !phoneNumberId) return;
+
+      // Capture Meta Ads referral if present (Click-to-WhatsApp Ads)
+      const referral = message.referral ?? null;
+      const referredProduct = message.context?.referred_product ?? null;
 
       // Extract content based on message type
       let messageText = '';
@@ -316,12 +334,26 @@ router.post(
       if (existingConv.rows[0]) {
         convId = existingConv.rows[0].id;
         convStatus = existingConv.rows[0].status;
+
+        // If this is the first message with a referral on an existing conv, update channel_metadata
+        if (referral) {
+          await query(
+            `UPDATE conversations SET channel_metadata = COALESCE(channel_metadata, '{}'::jsonb) || $1::jsonb, updated_at = NOW() WHERE id = $2`,
+            [JSON.stringify({ referral, referredProduct }), convId]
+          );
+        }
       } else {
+        const channelMeta: Record<string, unknown> = {};
+        if (referral) {
+          channelMeta['referral'] = referral;
+          if (referredProduct) channelMeta['referredProduct'] = referredProduct;
+        }
+
         const newConv = await query<{ id: string; status: string }>(
-          `INSERT INTO conversations (organization_id, agent_id, contact_id, channel, status, created_at, updated_at)
-           VALUES ($1, $2, $3, 'whatsapp', 'active', NOW(), NOW())
+          `INSERT INTO conversations (organization_id, agent_id, contact_id, channel, status, channel_metadata, created_at, updated_at)
+           VALUES ($1, $2, $3, 'whatsapp', 'active', $4::jsonb, NOW(), NOW())
            RETURNING id, status`,
-          [agent.organization_id, agent.id, contactId]
+          [agent.organization_id, agent.id, contactId, JSON.stringify(channelMeta)]
         );
         convId = newConv.rows[0]!.id;
         convStatus = newConv.rows[0]!.status;
