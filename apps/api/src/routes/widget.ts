@@ -349,10 +349,10 @@ router.post(
         const fallbackText = sanitizedMessage
           ? `${sanitizedMessage}\n\n[The user also sent an image, but image analysis is not available on your current plan.]`
           : '[The user sent an image, but image analysis is not available on your current plan. Please let them know they can upgrade to Pro for image analysis.]';
-        await pushToBuffer(sessionId, agentId, conv.organization_id, fallbackText, bufferSeconds);
+        await pushToBuffer(resolvedSessionId, agentId, conv.organization_id, fallbackText, bufferSeconds);
       } else if (hasAudio && !widgetPlanLimits.voiceMessages) {
         // Voice messages not available on this plan — send text fallback
-        await pushToBuffer(sessionId, agentId, conv.organization_id, '[The user sent a voice message, but voice messages are not available on your current plan. Please let them know they can type their message instead.]', bufferSeconds);
+        await pushToBuffer(resolvedSessionId, agentId, conv.organization_id, '[The user sent a voice message, but voice messages are not available on your current plan. Please let them know they can type their message instead.]', bufferSeconds);
       } else if (hasImage) {
         const imageItem: BufferItem = {
           type: 'image',
@@ -360,7 +360,7 @@ router.post(
           mimeType: imageMimeType!,
           data: image!,
         };
-        await pushToBuffer(sessionId, agentId, conv.organization_id, imageItem, bufferSeconds);
+        await pushToBuffer(resolvedSessionId, agentId, conv.organization_id, imageItem, bufferSeconds);
       } else if (hasAudio) {
         // Transcribe audio with Whisper, then push as text
         try {
@@ -373,16 +373,16 @@ router.post(
               content: transcription.trim(),
               mimeType: 'audio/voice-transcription',
             };
-            await pushToBuffer(sessionId, agentId, conv.organization_id, voiceItem, bufferSeconds);
+            await pushToBuffer(resolvedSessionId, agentId, conv.organization_id, voiceItem, bufferSeconds);
           } else {
-            await pushToBuffer(sessionId, agentId, conv.organization_id, '[Voice message — could not transcribe]', bufferSeconds);
+            await pushToBuffer(resolvedSessionId, agentId, conv.organization_id, '[Voice message — could not transcribe]', bufferSeconds);
           }
         } catch (err) {
           console.error('[widget] Audio transcription failed:', (err as Error).message);
-          await pushToBuffer(sessionId, agentId, conv.organization_id, '[Voice message — transcription failed]', bufferSeconds);
+          await pushToBuffer(resolvedSessionId, agentId, conv.organization_id, '[Voice message — transcription failed]', bufferSeconds);
         }
       } else {
-        await pushToBuffer(sessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
+        await pushToBuffer(resolvedSessionId, agentId, conv.organization_id, sanitizedMessage, bufferSeconds);
       }
 
       res.json({ messageId: null, status: 'queued', conversationStatus: conv.status, sessionId: resolvedSessionId });
