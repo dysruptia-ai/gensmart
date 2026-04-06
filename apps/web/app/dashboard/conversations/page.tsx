@@ -94,6 +94,9 @@ export default function ConversationsPage() {
     return () => clearInterval(interval);
   }, [conversations]);
 
+  // Refresh feedback
+  const [refreshing, setRefreshing] = useState(false);
+
   // Selection state for bulk delete
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -233,6 +236,15 @@ export default function ConversationsPage() {
     }
   }
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    try {
+      await fetchConversations();
+    } finally {
+      setTimeout(() => setRefreshing(false), 500);
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
@@ -254,9 +266,12 @@ export default function ConversationsPage() {
           <Button
             variant="ghost"
             size="sm"
-            icon={RefreshCw}
-            onClick={() => void fetchConversations()}
+            onClick={() => void handleRefresh()}
+            disabled={refreshing}
           >
+            <span className={refreshing ? styles.refreshing : ''}>
+              <RefreshCw size={14} aria-hidden="true" />
+            </span>
             {t('conversations.refresh')}
           </Button>
         </div>
