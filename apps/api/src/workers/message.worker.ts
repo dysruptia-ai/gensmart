@@ -944,6 +944,13 @@ async function executeTool(
           const calName = calNameResult.rows[0]?.name || 'Calendar';
           const summaryText = meetingSummary || 'Your appointment has been scheduled successfully.';
 
+          // Generate Google Calendar link
+          const gcalStart = new Date(startTime).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+          const gcalEnd = new Date(endTime).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+          const gcalTitle = encodeURIComponent(`Appointment — ${contactName}`);
+          const gcalDetails = encodeURIComponent(summaryText);
+          const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${gcalStart}/${gcalEnd}&details=${gcalDetails}`;
+
           await sendEmail({
             to: contactEmail,
             subject: `Your Appointment is Confirmed — ${date} at ${time}`,
@@ -956,6 +963,11 @@ async function executeTool(
                    <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Time</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${time}</td></tr>
                    <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Calendar</td><td style="color:#1A1A1A;padding:6px 0;">${calName}</td></tr>
                  </table>
+               </div>
+               <div style="text-align:center;margin:20px 0;">
+                 <a href="${gcalUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#25D366;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+                   &#128197; Add to Google Calendar
+                 </a>
                </div>
                <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0;border-left:3px solid #25D366;">
                  <p style="margin:0 0 8px;font-weight:600;color:#1A1A1A;font-size:14px;">What we'll discuss:</p>
