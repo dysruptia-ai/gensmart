@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Image as ImageIcon, Mic } from 'lucide-react';
+import { Image as ImageIcon, Mic, FileText } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import styles from './MessageBubble.module.css';
 
@@ -23,6 +23,11 @@ interface MessageBubbleProps {
       hasCaption: boolean;
     }>;
     isVoiceMessage?: boolean;
+    media?: {
+      type: 'image' | 'video' | 'document';
+      url: string;
+      caption?: string | null;
+    };
   };
 }
 
@@ -72,6 +77,41 @@ export default function MessageBubble({
           <div className={styles.voiceIndicator}>
             <Mic size={14} />
             <span>{t('chat_voice_message')}</span>
+          </div>
+        )}
+        {metadata?.media && (
+          <div className={styles.mediaMessage}>
+            {metadata.media.type === 'image' && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={metadata.media.url}
+                alt={metadata.media.caption ?? t('conversations.chat.mediaSentByAgent')}
+                className={styles.mediaImage}
+                loading="lazy"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            )}
+            {metadata.media.type === 'document' && (
+              <a
+                href={metadata.media.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.mediaDocument}
+              >
+                <FileText size={20} />
+                <span>{t('conversations.chat.viewDocument')}</span>
+              </a>
+            )}
+            {metadata.media.type === 'video' && (
+              <video
+                src={metadata.media.url}
+                controls
+                className={styles.mediaVideo}
+              />
+            )}
+            {metadata.media.caption && (
+              <p className={styles.mediaCaption}>{metadata.media.caption}</p>
+            )}
           </div>
         )}
         {metadata?.hasImages && metadata?.images && metadata.images.some((img) => img.data) ? (

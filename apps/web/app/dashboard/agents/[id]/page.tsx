@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import {
-  Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench,
+  Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { PLAN_LIMITS } from '@gensmart/shared';
@@ -70,6 +70,14 @@ interface Agent {
   publishedAt?: string | null;
 }
 
+interface PreviewMedia {
+  type: string;
+  url: string;
+  caption?: string;
+  valid: boolean;
+  error?: string;
+}
+
 interface PreviewMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -78,6 +86,7 @@ interface PreviewMessage {
     latencyMs?: number;
     toolsCalled?: string[];
     capturedVariables?: Record<string, string>;
+    previewMedia?: PreviewMedia[];
     model?: string;
   };
 }
@@ -422,6 +431,7 @@ export default function AgentEditorPage() {
         latencyMs?: number;
         toolsCalled?: string[];
         capturedVariables?: Record<string, string>;
+        previewMedia?: PreviewMedia[];
         model?: string;
       };
     }>(`/api/agents/${agentId}/preview`, { message: msg, systemPrompt })
@@ -913,6 +923,41 @@ export default function AgentEditorPage() {
                 >
                   {msg.content}
                 </div>
+                {msg.role === 'assistant' && msg.metadata?.previewMedia?.map((media, idx) => (
+                  <div key={idx} className={styles.previewMediaPlaceholder}>
+                    <div className={styles.previewMediaBadge}>
+                      <Eye size={11} aria-hidden="true" />
+                      <span>{t('preview.mediaPreview')}</span>
+                    </div>
+                    {media.valid && media.type === 'image' ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={media.url}
+                        alt={media.caption ?? 'Preview image'}
+                        className={styles.previewMediaImage}
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                      />
+                    ) : media.valid && media.type === 'document' ? (
+                      <div className={styles.previewMediaInfo}>
+                        <FileText size={15} aria-hidden="true" />
+                        <span>{media.url}</span>
+                      </div>
+                    ) : media.valid && media.type === 'video' ? (
+                      <div className={styles.previewMediaInfo}>
+                        <FileText size={15} aria-hidden="true" />
+                        <span>Video: {media.url}</span>
+                      </div>
+                    ) : (
+                      <div className={styles.previewMediaError}>
+                        <AlertCircle size={13} aria-hidden="true" />
+                        <span>{media.error ?? t('preview.mediaValidationFailed')}</span>
+                      </div>
+                    )}
+                    {media.caption && (
+                      <p className={styles.previewMediaCaption}>{media.caption}</p>
+                    )}
+                  </div>
+                ))}
                 {msg.role === 'assistant' && msg.metadata && (
                   <div className={styles.previewMeta}>
                     <span>

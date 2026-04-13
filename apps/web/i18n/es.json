@@ -665,7 +665,10 @@
       "humanAgent": "Agente humano",
       "visitor": "Visitante",
       "sendingAs": "Enviando como agente humano",
-      "interventionSummary": "Resumen de intervención generado"
+      "interventionSummary": "Resumen de intervención generado",
+      "viewDocument": "Ver documento",
+      "mediaSentByAgent": "Multimedia enviado",
+      "mediaCouldNotLoad": "No se pudo cargar el multimedia"
     },
     "variables": {
       "title": "Variables capturadas",
@@ -1345,7 +1348,9 @@
     },
     "preview": {
       "title": "Prueba en Preview",
-      "description": "Prueba tu agente aquí antes de activarlo. Prueba diferentes escenarios para asegurarte de que funciona perfecto."
+      "description": "Prueba tu agente aquí antes de activarlo. Prueba diferentes escenarios para asegurarte de que funciona perfecto.",
+      "mediaPreview": "Vista previa — no se envió realmente",
+      "mediaValidationFailed": "Validación de URL multimedia falló"
     },
     "getSnippet": {
       "title": "Obtén el Código del Widget",

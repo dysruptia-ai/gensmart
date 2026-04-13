@@ -25,6 +25,13 @@ interface ChatMessage {
   content: string;
   created_at?: string;
   imagePreview?: string;  // data URI for local image preview
+  metadata?: {
+    media?: {
+      type: 'image' | 'video' | 'document';
+      url: string;
+      caption?: string | null;
+    };
+  };
 }
 
 const SESSION_KEY_PREFIX = 'gs_widget_session_';
@@ -636,6 +643,50 @@ export default function WidgetPage() {
                   className={styles.messageImage}
                   onClick={() => window.open(msg.imagePreview, '_blank')}
                 />
+              )}
+              {msg.metadata?.media && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxWidth: '260px' }}>
+                  {msg.metadata.media.type === 'image' && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={msg.metadata.media.url}
+                      alt={msg.metadata.media.caption ?? 'Image'}
+                      style={{ borderRadius: '10px', maxWidth: '100%', height: 'auto', display: 'block' }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  )}
+                  {msg.metadata.media.type === 'document' && (
+                    <a
+                      href={msg.metadata.media.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '10px 14px',
+                        background: 'rgba(0,0,0,0.08)',
+                        borderRadius: '10px',
+                        color: 'inherit',
+                        textDecoration: 'none',
+                        fontSize: '0.8125rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      📄 View document
+                    </a>
+                  )}
+                  {msg.metadata.media.type === 'video' && (
+                    <video
+                      src={msg.metadata.media.url}
+                      controls
+                      style={{ borderRadius: '10px', maxWidth: '100%', display: 'block', background: '#000' }}
+                    />
+                  )}
+                  {msg.metadata.media.caption && (
+                    <span style={{ fontSize: '0.8125rem', lineHeight: 1.4 }}>{msg.metadata.media.caption}</span>
+                  )}
+                </div>
               )}
               {msg.content && !msg.content.startsWith('[Image:') ? (
                 msg.role === 'user' ? (

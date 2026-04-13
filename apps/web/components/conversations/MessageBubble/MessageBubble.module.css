@@ -119,6 +119,56 @@
   width: fit-content;
 }
 
+/* Media messages sent by agent */
+.mediaMessage {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+  margin-bottom: 4px;
+}
+
+.mediaImage {
+  border-radius: 12px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  background: var(--color-bg-sidebar);
+}
+
+.mediaDocument {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--color-bg-sidebar);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  color: var(--color-primary-dark);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.mediaDocument:hover {
+  background: var(--color-bg-card);
+}
+
+.mediaVideo {
+  border-radius: 12px;
+  max-width: 100%;
+  display: block;
+  background: #000;
+}
+
+.mediaCaption {
+  font-size: 0.8125rem;
+  color: var(--color-text-primary);
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Intervention summary divider */
 .divider {
   display: flex;

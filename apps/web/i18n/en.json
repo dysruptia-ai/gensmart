@@ -665,7 +665,10 @@
       "humanAgent": "Human Agent",
       "visitor": "Visitor",
       "sendingAs": "Sending as human agent",
-      "interventionSummary": "Intervention summary generated"
+      "interventionSummary": "Intervention summary generated",
+      "viewDocument": "View document",
+      "mediaSentByAgent": "Media sent",
+      "mediaCouldNotLoad": "Media could not be loaded"
     },
     "variables": {
       "title": "Captured Variables",
@@ -1345,7 +1348,9 @@
     },
     "preview": {
       "title": "Test in Preview",
-      "description": "Try your agent right here before going live. Test different scenarios to make sure it works perfectly."
+      "description": "Try your agent right here before going live. Test different scenarios to make sure it works perfectly.",
+      "mediaPreview": "Preview — not actually sent",
+      "mediaValidationFailed": "Media URL validation failed"
     },
     "getSnippet": {
       "title": "Get Your Widget Code",

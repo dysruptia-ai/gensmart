@@ -430,8 +430,9 @@ router.get(
           role: string;
           content: string;
           created_at: string;
+          metadata: Record<string, unknown> | null;
         }>(
-          `SELECT id, role, content, created_at
+          `SELECT id, role, content, created_at, metadata
            FROM messages
            WHERE conversation_id = $1
              AND role IN ('assistant', 'human')

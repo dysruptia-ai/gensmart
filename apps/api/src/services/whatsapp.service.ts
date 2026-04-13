@@ -330,6 +330,124 @@ export async function resolveAccessToken(
   return platformToken;
 }
 
+/**
+ * Send an image message via WhatsApp Cloud API.
+ * Image must be a publicly accessible HTTPS URL.
+ * Meta downloads the image from this URL and delivers it to the recipient.
+ */
+export async function sendImageMessage(
+  phoneNumberId: string,
+  accessToken: string,
+  to: string,
+  imageUrl: string,
+  caption?: string
+): Promise<void> {
+  const normalizedTo = to.startsWith('+') ? to : `+${to}`;
+  const url = `${META_BASE_URL}/${phoneNumberId}/messages`;
+
+  const payload: Record<string, unknown> = {
+    messaging_product: 'whatsapp',
+    to: normalizedTo,
+    type: 'image',
+    image: {
+      link: imageUrl,
+      ...(caption ? { caption } : {}),
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`WhatsApp send image error: ${JSON.stringify(errorData)}`);
+  }
+}
+
+/**
+ * Send a document (PDF, DOCX, etc.) via WhatsApp Cloud API.
+ */
+export async function sendDocumentMessage(
+  phoneNumberId: string,
+  accessToken: string,
+  to: string,
+  documentUrl: string,
+  filename?: string,
+  caption?: string
+): Promise<void> {
+  const normalizedTo = to.startsWith('+') ? to : `+${to}`;
+  const url = `${META_BASE_URL}/${phoneNumberId}/messages`;
+
+  const payload: Record<string, unknown> = {
+    messaging_product: 'whatsapp',
+    to: normalizedTo,
+    type: 'document',
+    document: {
+      link: documentUrl,
+      ...(filename ? { filename } : {}),
+      ...(caption ? { caption } : {}),
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`WhatsApp send document error: ${JSON.stringify(errorData)}`);
+  }
+}
+
+/**
+ * Send a video via WhatsApp Cloud API.
+ */
+export async function sendVideoMessage(
+  phoneNumberId: string,
+  accessToken: string,
+  to: string,
+  videoUrl: string,
+  caption?: string
+): Promise<void> {
+  const normalizedTo = to.startsWith('+') ? to : `+${to}`;
+  const url = `${META_BASE_URL}/${phoneNumberId}/messages`;
+
+  const payload: Record<string, unknown> = {
+    messaging_product: 'whatsapp',
+    to: normalizedTo,
+    type: 'video',
+    video: {
+      link: videoUrl,
+      ...(caption ? { caption } : {}),
+    },
+  };
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`WhatsApp send video error: ${JSON.stringify(errorData)}`);
+  }
+}
+
 export function encryptAccessToken(token: string): string {
   return encrypt(token);
 }

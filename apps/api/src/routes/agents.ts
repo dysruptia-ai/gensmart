@@ -730,6 +730,8 @@ router.post(
         buildVariableCaptureInstructions,
         captureVariableToolDef,
       } = await import('../services/variable-capture.service');
+      const { sendMediaToolDef } = await import('../services/send-media.service');
+      const { validateMediaUrl } = await import('../services/media-validator.service');
       const { queryKnowledgeBase, hasKnowledgeBase } = await import('../services/rag.service');
       const { executeCustomFunction } = await import('../services/custom-function.service');
 
@@ -774,6 +776,9 @@ router.post(
 
       const llmTools: Array<{ name: string; description: string; parameters: Record<string, unknown> }> = [];
       if (variables.length > 0) llmTools.push(captureVariableToolDef);
+
+      // send_media is always available in preview (will be mocked — no real send)
+      llmTools.push(sendMediaToolDef);
 
       for (const tool of toolsResult.rows) {
         if (tool.type === 'custom_function' && tool.is_enabled) {
@@ -872,6 +877,7 @@ router.post(
       const startTime = Date.now();
       let capturedVars: Record<string, string> = {};
       const toolsCalledLog: string[] = [];
+      const previewMedia: Array<{ type: string; url: string; caption?: string; valid: boolean; error?: string }> = [];
       let finalResponse = '';
       let totalTokens = 0;
 
@@ -978,6 +984,47 @@ router.post(
               }
             }
             previewToolResults.push({ toolCallId: tc.id, content: bookResult });
+          } else if (tc.name === 'send_media') {
+            // In preview mode: validate URL but do NOT actually send to WhatsApp/widget.
+            const mediaType = String(tc.arguments['type'] ?? 'image');
+            const mediaUrl = String(tc.arguments['url'] ?? '');
+            const mediaCaption = tc.arguments['caption'] ? String(tc.arguments['caption']) : undefined;
+
+            let previewResult: string;
+            let mediaValid = false;
+            let mediaError: string | undefined;
+
+            if (!mediaUrl) {
+              previewResult = '[Preview] send_media: URL is required.';
+              mediaError = 'URL is required';
+            } else {
+              try {
+                const validation = await validateMediaUrl(
+                  mediaUrl,
+                  mediaType as 'image' | 'video' | 'document'
+                );
+                if (validation.valid) {
+                  mediaValid = true;
+                  previewResult = `[Preview] Media (${mediaType}) would be sent successfully. Caption: "${mediaCaption ?? '(none)'}"`;
+                } else {
+                  mediaError = validation.error ?? validation.errorCode ?? 'Invalid URL';
+                  previewResult = `[Preview] Could not send media: ${mediaError}`;
+                }
+              } catch {
+                mediaError = 'URL validation failed';
+                previewResult = `[Preview] Could not send media: ${mediaError}`;
+              }
+            }
+
+            previewMedia.push({
+              type: mediaType,
+              url: mediaUrl,
+              caption: mediaCaption,
+              valid: mediaValid,
+              error: mediaError,
+            });
+
+            previewToolResults.push({ toolCallId: tc.id, content: previewResult });
           } else {
             const toolDef = toolsResult.rows.find(
               (t) => t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
@@ -1027,6 +1074,7 @@ router.post(
           tokensUsed: totalTokens,
           toolsCalled: toolsCalledLog,
           capturedVariables: capturedVars,
+          previewMedia,
           latencyMs,
           model: agentResult.llmModel,
         },

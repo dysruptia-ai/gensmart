@@ -17,6 +17,7 @@ import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/m
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
+import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
 import { createAppointment } from '../services/appointment.service';
 
@@ -290,6 +291,11 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // Internal: capture_variable (always included if there are variables)
   if (variables.length > 0) {
     llmTools.push(captureVariableToolDef);
+  }
+
+  // send_media native tool — available on WhatsApp and Web
+  if (conv.channel === 'whatsapp' || conv.channel === 'web') {
+    llmTools.push(sendMediaToolDef);
   }
 
   // Custom functions
@@ -764,6 +770,52 @@ async function executeTool(
       const result = await handleCaptureVariable(conversationId, varName, varValue, variables);
       return result.message;
     }
+  }
+
+  // Internal tool: send_media
+  if (name === 'send_media') {
+    // Single query to get all context needed
+    const ctxRes = await query<{
+      channel: string;
+      agent_id: string;
+      contact_phone: string | null;
+      waba_config: Record<string, unknown> | null;
+    }>(
+      `SELECT
+         c.channel,
+         c.agent_id,
+         co.phone AS contact_phone,
+         a.whatsapp_config AS waba_config
+       FROM conversations c
+       JOIN agents a ON a.id = c.agent_id
+       LEFT JOIN contacts co ON co.id = c.contact_id
+       WHERE c.id = $1`,
+      [conversationId]
+    );
+
+    const ctx = ctxRes.rows[0];
+    if (!ctx) return 'Error: conversation not found';
+
+    const mediaContext: SendMediaContext = {
+      conversationId,
+      agentId: ctx.agent_id,
+      organizationId,
+      channel: ctx.channel as 'whatsapp' | 'web',
+    };
+
+    if (
+      ctx.channel === 'whatsapp' &&
+      ctx.waba_config?.connected &&
+      ctx.waba_config?.phone_number_id &&
+      ctx.contact_phone
+    ) {
+      mediaContext.accessToken = await resolveAccessToken(ctx.waba_config);
+      mediaContext.phoneNumberId = String(ctx.waba_config.phone_number_id);
+      mediaContext.contactPhone = ctx.contact_phone;
+    }
+
+    const result = await handleSendMedia(args, mediaContext);
+    return result.message;
   }
 
   // Scheduling tool — check available slots
