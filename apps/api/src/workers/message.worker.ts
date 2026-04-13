@@ -18,6 +18,11 @@ import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
+import {
+  buildEmailNotificationToolDef,
+  handleSendEmailNotification,
+  type EmailNotificationToolConfig,
+} from '../services/send-email-notification.service';
 import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
 import { createAppointment } from '../services/appointment.service';
 
@@ -373,6 +378,10 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         }
       );
     }
+    if (tool.type === 'email_notification' && tool.is_enabled) {
+      const cfg = tool.config as unknown as EmailNotificationToolConfig;
+      llmTools.push(buildEmailNotificationToolDef(tool.name, tool.description ?? tool.name, cfg));
+    }
   }
 
   // MCP tools — load definitions (with Redis cache) and add to llmTools
@@ -549,6 +558,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           variables,
           conversationId,
           organizationId,
+          agentId,
           mcpToolMap
         );
         toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
@@ -747,6 +757,7 @@ async function executeTool(
   variables: AgentVariable[],
   conversationId: string,
   organizationId: string,
+  agentId: string,
   mcpToolMap: Record<string, MCPToolMapping> = {}
 ): Promise<string> {
   const { name, arguments: args } = toolCall;
@@ -1047,6 +1058,25 @@ async function executeTool(
     } catch (err) {
       return `Could not book the appointment: ${(err as Error).message}. Please choose another slot.`;
     }
+  }
+
+  // Internal tool: email_notification (per-tool-instance config)
+  const emailNotifTool = agentTools.find(
+    (t) =>
+      t.type === 'email_notification' &&
+      t.name.replace(/\s+/g, '_').toLowerCase() === name
+  );
+
+  if (emailNotifTool) {
+    const result = await handleSendEmailNotification(args, {
+      conversationId,
+      agentId,
+      organizationId,
+      toolId: emailNotifTool.id,
+      toolName: emailNotifTool.name,
+      config: emailNotifTool.config as unknown as EmailNotificationToolConfig,
+    });
+    return result.message;
   }
 
   // Custom function tools

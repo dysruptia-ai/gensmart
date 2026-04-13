@@ -51,16 +51,30 @@ export async function sendEmail({
   to,
   subject,
   html,
+  cc,
+  from,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html: string;
-}): Promise<void> {
+  cc?: string | string[];
+  from?: string;
+  replyTo?: string;
+}): Promise<{ messageId: string | null }> {
   if (!env.SMTP_HOST) {
     console.log(`[Email] To: ${to} | Subject: ${subject} (SMTP not configured — skipping send)`);
-    return;
+    return { messageId: null };
   }
-  await transporter.sendMail({ from: env.SMTP_FROM, to, subject, html });
+  const info = await transporter.sendMail({
+    from: from ?? env.SMTP_FROM,
+    to,
+    cc,
+    replyTo,
+    subject,
+    html,
+  });
+  return { messageId: (info.messageId as string | undefined) ?? null };
 }
 
 export async function sendWelcomeEmail(user: UserInfo): Promise<void> {

@@ -15,6 +15,7 @@ export const PLAN_LIMITS = {
     contextWindowMessages: 10,
     maxTokensPerResponse: 512,
     byoApiKey: false,
+    emailNotificationTools: 0,
   },
   starter: {
     agents: 3,
@@ -32,6 +33,7 @@ export const PLAN_LIMITS = {
     contextWindowMessages: 15,
     maxTokensPerResponse: 1024,
     byoApiKey: false,
+    emailNotificationTools: 2,
   },
   pro: {
     agents: 10,
@@ -49,6 +51,7 @@ export const PLAN_LIMITS = {
     contextWindowMessages: 25,
     maxTokensPerResponse: 2048,
     byoApiKey: false,
+    emailNotificationTools: 10,
   },
   enterprise: {
     agents: Infinity,
@@ -66,6 +69,7 @@ export const PLAN_LIMITS = {
     contextWindowMessages: 50,
     maxTokensPerResponse: 4096,
     byoApiKey: true,
+    emailNotificationTools: Infinity,
   },
 } as const;
 

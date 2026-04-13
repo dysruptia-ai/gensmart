@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Plus, Calendar, Database, Code2, Wrench, Trash2, Settings, Upload, X,
-  Check, RefreshCw, ChevronDown, ChevronUp, Play, Info,
+  Check, RefreshCw, ChevronDown, ChevronUp, Play, Info, Mail,
 } from 'lucide-react';
 import MCPConfigurator, { MCPConfig } from '../MCPConfigurator';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -19,7 +19,7 @@ import styles from './ToolConfigurator.module.css';
 // ── Types ────────────────────────────────────────────────────────────────────
 
 // web_scraping kept for backwards compat with existing DB records; not creatable in UI
-type ToolType = 'scheduling' | 'rag' | 'web_scraping' | 'custom_function' | 'mcp';
+type ToolType = 'scheduling' | 'rag' | 'web_scraping' | 'custom_function' | 'mcp' | 'email_notification';
 
 interface AgentTool {
   id: string;
@@ -105,6 +105,14 @@ interface ToolForm {
   mcpSelectedTools: string[];
   // web_scraping
   allowedDomains: string;
+  // email_notification
+  emailRecipient: string;
+  emailCc: string;
+  emailFromName: string;
+  emailReplyTo: string;
+  emailSubject: string;
+  emailBodyTemplate: string;
+  emailParams: Array<{ name: string; type: string; required: boolean; description: string }>;
 }
 
 const CALENDAR_TIMEZONES = [
@@ -144,6 +152,13 @@ const DEFAULT_FORM: ToolForm = {
   mcpTransport: 'sse',
   mcpSelectedTools: [],
   allowedDomains: '',
+  emailRecipient: '',
+  emailCc: '',
+  emailFromName: '',
+  emailReplyTo: '',
+  emailSubject: '',
+  emailBodyTemplate: '',
+  emailParams: [],
 };
 
 // ── Catalog entries ───────────────────────────────────────────────────────────
@@ -153,6 +168,7 @@ const TOOL_CATALOG: { type: ToolType; labelKey: string; icon: React.ElementType;
   { type: 'scheduling', labelKey: 'agents.tools.types.scheduling', icon: Calendar, descKey: 'agents.tools.types.schedulingDesc' },
   { type: 'rag', labelKey: 'agents.tools.types.knowledgeBase', icon: Database, descKey: 'agents.tools.types.knowledgeBaseDesc' },
   { type: 'mcp', labelKey: 'agents.tools.types.mcpServer', icon: Wrench, descKey: 'agents.tools.types.mcpServerDesc' },
+  { type: 'email_notification', labelKey: 'agents.tools.types.emailNotification', icon: Mail, descKey: 'agents.tools.types.emailNotificationDesc' },
 ];
 
 const TOOL_ICONS: Partial<Record<ToolType, React.ElementType>> = {
@@ -160,6 +176,7 @@ const TOOL_ICONS: Partial<Record<ToolType, React.ElementType>> = {
   scheduling: Calendar,
   rag: Database,
   mcp: Wrench,
+  email_notification: Mail,
   // web_scraping: legacy type, falls back to Wrench
 };
 
@@ -234,6 +251,18 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
         transport: form.mcpTransport,
         selected_tools: form.mcpSelectedTools,
       };
+    case 'email_notification':
+      return {
+        recipientEmail: form.emailRecipient,
+        ccEmails: form.emailCc
+          ? form.emailCc.split(',').map((e) => e.trim()).filter(Boolean)
+          : [],
+        fromName: form.emailFromName || undefined,
+        replyTo: form.emailReplyTo || undefined,
+        subject: form.emailSubject,
+        bodyTemplate: form.emailBodyTemplate,
+        parameters: form.emailParams,
+      };
     default:
       return {};
   }
@@ -291,6 +320,9 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
   const [testRunning, setTestRunning] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
 
+  // Email notification — test send state
+  const [emailTestSending, setEmailTestSending] = useState(false);
+
   // Plan limits
   const planKey = (orgPlan as keyof typeof PLAN_LIMITS) in PLAN_LIMITS
     ? (orgPlan as keyof typeof PLAN_LIMITS)
@@ -299,14 +331,18 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
   const cfLimit = limits.customFunctions as number;
   const mcpLimit = limits.mcpServers as number;
   const knowledgeLimit = limits.knowledgeFiles as number;
+  const emailNotifLimit = (limits as Record<string, number | boolean | readonly string[]>)['emailNotificationTools'] as number ?? 0;
   // Count current tools by type for limit checking
   const customFnCount = tools.filter((t) => t.type === 'custom_function').length;
   const mcpCount = tools.filter((t) => t.type === 'mcp').length;
+  const emailNotifCount = tools.filter((t) => t.type === 'email_notification').length;
   // Plan says 0 → must upgrade; plan > 0 but count reached → limit hit
   const customFnNeedsUpgrade = cfLimit === 0;
   const mcpNeedsUpgrade = mcpLimit === 0;
+  const emailNotifNeedsUpgrade = emailNotifLimit === 0;
   const customFnLimitReached = !customFnNeedsUpgrade && cfLimit !== Infinity && customFnCount >= cfLimit;
   const mcpLimitReached = !mcpNeedsUpgrade && mcpLimit !== Infinity && mcpCount >= mcpLimit;
+  const emailNotifLimitReached = !emailNotifNeedsUpgrade && emailNotifLimit !== Infinity && emailNotifCount >= emailNotifLimit;
 
   const loadTools = useCallback(async () => {
     try {
@@ -436,6 +472,15 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       mcpApiKey: (cfg['apiKey'] as string) ?? '',
       mcpTransport: ((cfg['transport'] as string) ?? 'sse') as 'sse' | 'streamable-http',
       mcpSelectedTools: (cfg['selected_tools'] as string[]) ?? [],
+      emailRecipient: (cfg['recipientEmail'] as string) ?? '',
+      emailCc: Array.isArray(cfg['ccEmails'])
+        ? (cfg['ccEmails'] as string[]).join(', ')
+        : '',
+      emailFromName: (cfg['fromName'] as string) ?? '',
+      emailReplyTo: (cfg['replyTo'] as string) ?? '',
+      emailSubject: (cfg['subject'] as string) ?? '',
+      emailBodyTemplate: (cfg['bodyTemplate'] as string) ?? '',
+      emailParams: (cfg['parameters'] as Array<{ name: string; type: string; required: boolean; description: string }>) ?? [],
       allowedDomains: Array.isArray(cfg['allowedDomains'])
         ? (cfg['allowedDomains'] as string[]).join(', ')
         : '',
@@ -1547,6 +1592,177 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
     );
   }
 
+  async function handleEmailTestSend() {
+    if (!editTool) {
+      toastError('Save the tool first before sending a test email');
+      return;
+    }
+    setEmailTestSending(true);
+    try {
+      const data = await api.post<{ success: boolean; message: string }>(
+        `/api/agents/${agentId}/tools/${editTool.id}/test-email-notification`,
+        {}
+      );
+      if (data.success) {
+        success(t('agents.tools.emailNotification.testSentSuccess'));
+      } else {
+        toastError(`${t('agents.tools.emailNotification.testSentError')}: ${data.message}`);
+      }
+    } catch (err) {
+      toastError(err instanceof ApiError ? err.message : t('agents.tools.emailNotification.testSentError'));
+    } finally {
+      setEmailTestSending(false);
+    }
+  }
+
+  function addEmailParam() {
+    setField('emailParams', [...form.emailParams, { name: '', type: 'string', required: false, description: '' }]);
+  }
+
+  function updateEmailParam(idx: number, patch: Partial<{ name: string; type: string; required: boolean; description: string }>) {
+    setField('emailParams', form.emailParams.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+  }
+
+  function removeEmailParam(idx: number) {
+    setField('emailParams', form.emailParams.filter((_, i) => i !== idx));
+  }
+
+  function renderEmailNotificationPanel() {
+    return (
+      <>
+        <div className={styles.fieldRow}>
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>{t('agents.tools.emailNotification.recipientEmail')}</label>
+            <input
+              className={styles.fieldInput}
+              type="email"
+              value={form.emailRecipient}
+              onChange={(e) => setField('emailRecipient', e.target.value)}
+              placeholder="team@company.com"
+            />
+          </div>
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>{t('agents.tools.emailNotification.ccEmails')}</label>
+            <input
+              className={styles.fieldInput}
+              value={form.emailCc}
+              onChange={(e) => setField('emailCc', e.target.value)}
+              placeholder="cc1@company.com, cc2@company.com"
+            />
+          </div>
+        </div>
+
+        <div className={styles.fieldRow}>
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>{t('agents.tools.emailNotification.fromName')}</label>
+            <input
+              className={styles.fieldInput}
+              value={form.emailFromName}
+              onChange={(e) => setField('emailFromName', e.target.value)}
+              placeholder="GenSmart Notifications"
+            />
+          </div>
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>{t('agents.tools.emailNotification.replyTo')}</label>
+            <input
+              className={styles.fieldInput}
+              type="email"
+              value={form.emailReplyTo}
+              onChange={(e) => setField('emailReplyTo', e.target.value)}
+              placeholder="replies@company.com"
+            />
+          </div>
+        </div>
+
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>{t('agents.tools.emailNotification.subject')}</label>
+          <input
+            className={styles.fieldInput}
+            value={form.emailSubject}
+            onChange={(e) => setField('emailSubject', e.target.value)}
+            placeholder="New lead: {{customer_name}}"
+          />
+          <span className={styles.fieldHint}>{t('agents.tools.emailNotification.subjectHelp')}</span>
+        </div>
+
+        <div className={styles.fieldGroup}>
+          <label className={styles.fieldLabel}>{t('agents.tools.emailNotification.bodyTemplate')}</label>
+          <textarea
+            className={styles.fieldTextarea}
+            rows={6}
+            value={form.emailBodyTemplate}
+            onChange={(e) => setField('emailBodyTemplate', e.target.value)}
+            placeholder={'<p>Customer: <strong>{{customer_name}}</strong></p>\n<p>Phone: {{customer_phone}}</p>'}
+          />
+          <span className={styles.fieldHint}>{t('agents.tools.emailNotification.systemPlaceholders')}</span>
+        </div>
+
+        <div className={styles.fieldGroup}>
+          <div className={styles.paramsHeader}>
+            <label className={styles.fieldLabel}>{t('agents.tools.emailNotification.parameters')}</label>
+          </div>
+          <div className={styles.paramsList}>
+            {form.emailParams.map((p, i) => (
+              <div key={i} className={styles.paramRow}>
+                <input
+                  className={styles.fieldInput}
+                  value={p.name}
+                  onChange={(e) => updateEmailParam(i, { name: e.target.value })}
+                  placeholder={t('agents.tools.emailNotification.parameterName')}
+                />
+                <select
+                  className={styles.fieldSelect}
+                  value={p.type}
+                  onChange={(e) => updateEmailParam(i, { type: e.target.value })}
+                >
+                  <option value="string">string</option>
+                  <option value="number">number</option>
+                  <option value="boolean">boolean</option>
+                </select>
+                <label className={styles.paramRequired} title="Required">
+                  <input
+                    type="checkbox"
+                    checked={p.required}
+                    onChange={(e) => updateEmailParam(i, { required: e.target.checked })}
+                  />
+                  <span>Req</span>
+                </label>
+                <input
+                  className={styles.fieldInput}
+                  value={p.description}
+                  onChange={(e) => updateEmailParam(i, { description: e.target.value })}
+                  placeholder={t('agents.tools.emailNotification.parameterDescription')}
+                />
+                <button className={styles.iconBtn} onClick={() => removeEmailParam(i)} aria-label="Remove parameter">
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <button className={styles.addParamBtn} onClick={addEmailParam}>
+            <Plus size={12} /> {t('agents.tools.emailNotification.addParameter')}
+          </button>
+        </div>
+
+        {editTool && (
+          <div className={styles.fieldGroup}>
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={Mail}
+              onClick={() => { void handleEmailTestSend(); }}
+              loading={emailTestSending}
+            >
+              {emailTestSending
+                ? t('agents.tools.emailNotification.testSending')
+                : t('agents.tools.emailNotification.testSend')}
+            </Button>
+          </div>
+        )}
+      </>
+    );
+  }
+
   function renderConfigPanel() {
     switch (activeType) {
       case 'custom_function':
@@ -1557,6 +1773,8 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
         return renderRagPanel();
       case 'mcp':
         return renderMcpPanel();
+      case 'email_notification':
+        return renderEmailNotificationPanel();
       default:
         return null;
     }
@@ -1645,14 +1863,17 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 const CatIcon = cat.icon;
                 const isCustomFn = cat.type === 'custom_function';
                 const isMcp = cat.type === 'mcp';
+                const isEmailNotif = cat.type === 'email_notification';
                 // Only apply plan restrictions after orgPlan has loaded (avoids flash on 'free' default)
                 const planNeedsUpgrade = orgPlanLoaded && (
                   (isCustomFn && customFnNeedsUpgrade) ||
-                  (isMcp && mcpNeedsUpgrade)
+                  (isMcp && mcpNeedsUpgrade) ||
+                  (isEmailNotif && emailNotifNeedsUpgrade)
                 );
                 const planLimitReached = orgPlanLoaded && (
                   (isCustomFn && customFnLimitReached) ||
-                  (isMcp && mcpLimitReached)
+                  (isMcp && mcpLimitReached) ||
+                  (isEmailNotif && emailNotifLimitReached)
                 );
                 const isDisabled = !!editTool || planNeedsUpgrade || planLimitReached;
                 const badgeLabel = !orgPlanLoaded ? null

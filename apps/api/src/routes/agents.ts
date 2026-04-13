@@ -14,6 +14,10 @@ import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS } from '@gensmart/sha
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
 import { connectAndListTools } from '../services/mcp-client.service';
+import {
+  buildEmailNotificationToolDef,
+  type EmailNotificationToolConfig,
+} from '../services/send-email-notification.service';
 import { redis } from '../config/redis';
 
 const router = Router();
@@ -80,7 +84,7 @@ const uploadKnowledge = multer({
 // ── Schemas ───────────────────────────────────────────────────────────────────
 
 const toolSchema = z.object({
-  type: z.enum(['scheduling', 'rag', 'custom_function', 'mcp']),
+  type: z.enum(['scheduling', 'rag', 'custom_function', 'mcp', 'email_notification']),
   name: z.string().min(1).max(255),
   description: z.string().max(1000).optional(),
   config: z.record(z.unknown()),
@@ -248,6 +252,32 @@ router.post(
         }
       }
 
+      // Enforce plan limits for email_notification
+      if (toolType === 'email_notification') {
+        const limit = (planLimits as Record<string, number | boolean | readonly string[]>)['emailNotificationTools'] as number ?? 0;
+        if (limit === 0) {
+          res.status(403).json({
+            error: {
+              message: 'Email notification tools are not available in your plan. Upgrade to Starter or above.',
+              code: 'PLAN_LIMIT_REACHED',
+            },
+          });
+          return;
+        }
+        if (limit !== Infinity) {
+          const currentCount = await agentService.countToolsByType(agentId, 'email_notification');
+          if (currentCount >= limit) {
+            res.status(403).json({
+              error: {
+                message: `Email notification tool limit reached (${limit}). Upgrade your plan to add more.`,
+                code: 'PLAN_LIMIT_REACHED',
+              },
+            });
+            return;
+          }
+        }
+      }
+
       const tool = await agentService.createTool(req.org!.id, agentId, req.body);
       res.status(201).json({ tool });
     } catch (err) {
@@ -360,6 +390,91 @@ router.post(
         (req.body as { params?: Record<string, unknown> }).params ?? {}
       );
       res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/agents/:id/tools/:toolId/test-email-notification
+router.post(
+  '/:id/tools/:toolId/test-email-notification',
+  validateUUID('id', 'toolId'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const toolId = String(req.params['toolId']);
+
+      const toolResult = await query<{
+        id: string;
+        type: string;
+        name: string;
+        config: Record<string, unknown>;
+      }>(
+        `SELECT t.id, t.type, t.name, t.config
+         FROM agent_tools t
+         JOIN agents a ON a.id = t.agent_id
+         WHERE t.id = $1 AND a.id = $2 AND a.organization_id = $3`,
+        [toolId, agentId, req.org!.id]
+      );
+
+      const tool = toolResult.rows[0];
+      if (!tool || tool.type !== 'email_notification') {
+        res.status(404).json({ error: { message: 'Email notification tool not found', code: 'NOT_FOUND' } });
+        return;
+      }
+
+      const cfg = tool.config as unknown as EmailNotificationToolConfig;
+
+      if (!cfg.recipientEmail) {
+        res.status(400).json({ success: false, message: 'Tool has no recipient email configured' });
+        return;
+      }
+
+      // Generate dummy values for each parameter
+      const dummyArgs: Record<string, unknown> = {};
+      for (const param of cfg.parameters || []) {
+        if (param.type === 'number') {
+          dummyArgs[param.name] = 100;
+        } else if (param.type === 'boolean') {
+          dummyArgs[param.name] = true;
+        } else {
+          dummyArgs[param.name] = `[Test value for ${param.name}]`;
+        }
+      }
+
+      const { emailTemplate: emailTmpl, sendEmail: sendEmailFn } = await import('../config/email');
+
+      const fullHtml = emailTmpl(`
+        <h2 style="margin:0 0 16px;color:#1A1A1A;">${cfg.subject} (TEST)</h2>
+        <div style="background:#fff3cd;border-radius:8px;padding:16px;margin:16px 0;border-left:4px solid #f59e0b;">
+          <p style="margin:0;color:#92400e;font-size:13px;">
+            <strong>This is a test email</strong> sent from the GenSmart dashboard to validate your email notification tool configuration.
+            Real notifications will be triggered by your AI agent during conversations.
+          </p>
+        </div>
+        <p style="color:#6B7280;font-size:14px;">Tool name: <strong>${tool.name}</strong></p>
+        <p style="color:#6B7280;font-size:14px;">Recipient: <strong>${cfg.recipientEmail}</strong></p>
+        <p style="color:#6B7280;font-size:14px;">Dummy parameters: <code>${JSON.stringify(dummyArgs)}</code></p>
+      `);
+
+      const fromAddress = cfg.fromName
+        ? `${cfg.fromName} <${process.env['SMTP_FROM'] ?? 'noreply@gensmart.co'}>`
+        : undefined;
+
+      try {
+        await sendEmailFn({
+          to: cfg.recipientEmail,
+          cc: cfg.ccEmails,
+          subject: `[TEST] ${cfg.subject}`,
+          html: fullHtml,
+          from: fromAddress,
+          replyTo: cfg.replyTo,
+        });
+        res.json({ success: true, message: `Test email sent to ${cfg.recipientEmail}` });
+      } catch (err) {
+        res.json({ success: false, message: `Failed: ${(err as Error).message}` });
+      }
     } catch (err) {
       next(err);
     }
@@ -810,6 +925,12 @@ router.post(
             parameters,
           });
         }
+        if (tool.type === 'email_notification' && tool.is_enabled) {
+          const cfg = tool.config as unknown as EmailNotificationToolConfig;
+          llmTools.push(
+            buildEmailNotificationToolDef(tool.name, tool.description ?? tool.name, cfg)
+          );
+        }
         if (tool.type === 'scheduling') {
           const { resolveCalendarIds } = await import('../services/calendar.service');
           const calendarIds = resolveCalendarIds(tool.config as Record<string, unknown>);
@@ -1026,15 +1147,50 @@ router.post(
 
             previewToolResults.push({ toolCallId: tc.id, content: previewResult });
           } else {
-            const toolDef = toolsResult.rows.find(
-              (t) => t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
+            // Check if this is an email_notification tool
+            const emailNotifTool = toolsResult.rows.find(
+              (t) =>
+                t.type === 'email_notification' &&
+                t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
             );
-            if (toolDef) {
-              const result = await executeCustomFunction(
-                toolDef.config as unknown as Parameters<typeof executeCustomFunction>[0],
-                tc.arguments
+
+            if (emailNotifTool) {
+              // In preview mode: validate parameters but do NOT actually send the email
+              const cfg = emailNotifTool.config as unknown as EmailNotificationToolConfig;
+              const missingParams: string[] = [];
+              for (const p of cfg.parameters || []) {
+                if (
+                  p.required &&
+                  (tc.arguments[p.name] === undefined ||
+                    tc.arguments[p.name] === null ||
+                    tc.arguments[p.name] === '')
+                ) {
+                  missingParams.push(p.name);
+                }
+              }
+
+              if (missingParams.length > 0) {
+                previewToolResults.push({
+                  toolCallId: tc.id,
+                  content: `[Preview] Missing required parameters: ${missingParams.join(', ')}`,
+                });
+              } else {
+                previewToolResults.push({
+                  toolCallId: tc.id,
+                  content: `[Preview] Email notification would be sent to ${cfg.recipientEmail}. Subject: "${cfg.subject}". Parameters captured: ${JSON.stringify(tc.arguments)}`,
+                });
+              }
+            } else {
+              const toolDef = toolsResult.rows.find(
+                (t) => t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
               );
-              previewToolResults.push({ toolCallId: tc.id, content: result });
+              if (toolDef) {
+                const result = await executeCustomFunction(
+                  toolDef.config as unknown as Parameters<typeof executeCustomFunction>[0],
+                  tc.arguments
+                );
+                previewToolResults.push({ toolCallId: tc.id, content: result });
+              }
             }
           }
         }
