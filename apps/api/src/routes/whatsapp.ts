@@ -505,8 +505,27 @@ router.post(
       try {
         const info = await getPhoneNumberInfo(phoneNumberId, finalAccessToken);
         phoneDisplay = info.display_phone_number;
-      } catch {
-        throw new AppError(400, 'Invalid access token or phone number ID. Please check your credentials.', 'INVALID_CREDENTIALS');
+      } catch (tokenErr) {
+        // If the token we tried was the platform token, try the user's FB token from Embedded Signup
+        if (!accessToken?.trim()) {
+          // We were using platform token and it failed — try user token from Embedded Signup if saved
+          const savedEncrypted = agentCheck.rows[0]!.whatsapp_config?.['access_token_encrypted'] as string | undefined;
+          if (savedEncrypted) {
+            try {
+              const userToken = decryptAccessToken(savedEncrypted);
+              const info = await getPhoneNumberInfo(phoneNumberId, userToken);
+              phoneDisplay = info.display_phone_number;
+              // User token worked — use it instead
+              finalAccessToken = userToken;
+            } catch {
+              throw new AppError(400, 'Neither platform token nor saved user token can access this phone number. Please ensure Dysruptia is assigned as a partner to this WABA with "Manage phone numbers" permission, then wait 5 minutes and try again.', 'INVALID_CREDENTIALS');
+            }
+          } else {
+            throw new AppError(400, 'Platform token cannot access this phone number. Please ensure Dysruptia is assigned as a partner to this WABA with "Manage phone numbers" permission, then wait 5 minutes and try again.', 'INVALID_CREDENTIALS');
+          }
+        } else {
+          throw new AppError(400, 'Invalid access token or phone number ID. Please check your credentials.', 'INVALID_CREDENTIALS');
+        }
       }
 
       const encryptedToken = encryptAccessToken(finalAccessToken);
@@ -752,17 +771,41 @@ router.post(
           }
 
           if (sharedWabaIds.length === 0) {
-            // Final fallback: check WABAs already known to the platform
-            console.log('[embedded-signup] All user-token fallbacks failed, trying known WABAs from database...');
+            // Final fallback: check WABAs already known to this organization only
+            console.log('[embedded-signup] All user-token fallbacks failed, trying known WABAs from database for this org...');
 
             const knownWaba = await query<{ waba_id: string }>(
               `SELECT DISTINCT whatsapp_config->>'waba_id' as waba_id
                FROM agents
                WHERE whatsapp_config->>'waba_id' IS NOT NULL
-               LIMIT 5`
+                 AND organization_id = $1
+               LIMIT 5`,
+              [req.org!.id]
             );
             for (const row of knownWaba.rows) {
               if (row.waba_id) sharedWabaIds.push(row.waba_id);
+            }
+
+            // If still nothing for this org, try platform token to list WABAs the System User can access
+            if (sharedWabaIds.length === 0) {
+              console.log('[embedded-signup] No WABAs in DB for this org, trying platform token to list accessible WABAs...');
+              try {
+                const platformWabaRes = await fetch(
+                  `https://graph.facebook.com/v21.0/me/whatsapp_business_accounts?fields=id,name`,
+                  { headers: { Authorization: `Bearer ${platformToken}` } }
+                );
+                if (platformWabaRes.ok) {
+                  const platformWabaData = await platformWabaRes.json() as { data?: Array<{ id: string }> };
+                  for (const w of platformWabaData.data ?? []) {
+                    sharedWabaIds.push(w.id);
+                  }
+                  if (sharedWabaIds.length > 0) {
+                    console.log(`[embedded-signup] Platform token found ${sharedWabaIds.length} accessible WABA(s): ${sharedWabaIds.join(', ')}`);
+                  }
+                }
+              } catch (platformErr) {
+                console.warn('[embedded-signup] Platform token WABA list failed:', (platformErr as Error).message);
+              }
             }
           }
         } catch (fallbackErr) {
@@ -809,16 +852,16 @@ router.post(
       const wabaId = selectedWabaId || sharedWabaIds[0]!;
       console.log(`[embedded-signup] Using WABA: ${wabaId}`);
 
-      // 5. Get phone numbers from this WABA using the platform token
-      const phoneRes = await fetch(
-        `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
-        { headers: { Authorization: `Bearer ${platformToken}` } }
-      );
-
+      // 5. Get phone numbers from this WABA — try platform token first, fallback to user's FB token
       let phoneNumberId = '';
       let displayPhone = '';
       type PhoneDataType = { data?: Array<{ id: string; display_phone_number: string; verified_name?: string }> };
       let phoneData: PhoneDataType | null = null;
+
+      const phoneRes = await fetch(
+        `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
+        { headers: { Authorization: `Bearer ${platformToken}` } }
+      );
 
       if (phoneRes.ok) {
         phoneData = await phoneRes.json() as PhoneDataType;
@@ -826,7 +869,29 @@ router.post(
         if (phone) {
           phoneNumberId = phone.id;
           displayPhone = phone.display_phone_number;
-          console.log(`[embedded-signup] Found phone: ${phoneNumberId} (${displayPhone})`);
+          console.log(`[embedded-signup] Found phone via platform token: ${phoneNumberId} (${displayPhone})`);
+        }
+      }
+
+      // Fallback: if platform token can't see phones, try user's FB token
+      if (!phoneNumberId) {
+        console.log(`[embedded-signup] Platform token found no phones for WABA ${wabaId}, trying user FB token...`);
+        try {
+          const userPhoneRes = await fetch(
+            `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
+            { headers: { Authorization: `Bearer ${fbAccessToken}` } }
+          );
+          if (userPhoneRes.ok) {
+            phoneData = await userPhoneRes.json() as PhoneDataType;
+            const phone = phoneData?.data?.[0];
+            if (phone) {
+              phoneNumberId = phone.id;
+              displayPhone = phone.display_phone_number;
+              console.log(`[embedded-signup] Found phone via user FB token: ${phoneNumberId} (${displayPhone})`);
+            }
+          }
+        } catch (fbErr) {
+          console.warn('[embedded-signup] User FB token phone lookup failed:', (fbErr as Error).message);
         }
       }
 
