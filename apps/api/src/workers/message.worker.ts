@@ -25,6 +25,7 @@ import {
 } from '../services/send-email-notification.service';
 import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
 import { createAppointment } from '../services/appointment.service';
+import { stripToolCallsXml } from '../utils/text';
 
 // MCP cache TTL: 1 hour
 const MCP_TOOLS_CACHE_TTL = 3600;
@@ -544,7 +545,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
       if (!response.toolCalls || response.toolCalls.length === 0) {
         // Final text response
-        finalResponse = response.content;
+        finalResponse = stripToolCallsXml(response.content);
         break;
       }
 
@@ -584,7 +585,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
       // If LLM also returned text alongside tool calls, keep it
       if (response.content.trim()) {
-        finalResponse = response.content;
+        finalResponse = stripToolCallsXml(response.content);
       }
     }
   } catch (err) {
@@ -599,7 +600,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         maxTokens,
         byoApiKey: resolvedByoKey,
       });
-      finalResponse = retryResponse.content;
+      finalResponse = stripToolCallsXml(retryResponse.content);
       totalTokensUsed = retryResponse.usage.totalTokens;
     } catch (retryErr) {
       console.error('[msg-worker] LLM failed after retry:', retryErr);
@@ -632,7 +633,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         byoApiKey: resolvedByoKey,
       });
       if (!isMinimalResponse(retryResponse.content)) {
-        finalResponse = retryResponse.content;
+        finalResponse = stripToolCallsXml(retryResponse.content);
         totalTokensUsed += retryResponse.usage.totalTokens;
       } else {
         console.warn(`[msg-worker] Retry also returned minimal response: "${retryResponse.content}"`);

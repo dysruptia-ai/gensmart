@@ -19,6 +19,7 @@ import {
   type EmailNotificationToolConfig,
 } from '../services/send-email-notification.service';
 import { redis } from '../config/redis';
+import { stripToolCallsXml } from '../utils/text';
 
 const router = Router();
 
@@ -1028,7 +1029,7 @@ router.post(
         totalTokens += response.usage.totalTokens;
 
         if (!response.toolCalls?.length) {
-          finalResponse = response.content;
+          finalResponse = stripToolCallsXml(response.content);
           break;
         }
 
@@ -1207,7 +1208,7 @@ router.post(
           toolResults: previewToolResults,
         });
 
-        if (response.content.trim()) finalResponse = response.content;
+        if (response.content.trim()) finalResponse = stripToolCallsXml(response.content);
       }
 
       if (!finalResponse.trim() || finalResponse.replace(/[\s.…]+/g, '').length < 3) {
