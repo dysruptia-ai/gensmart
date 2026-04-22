@@ -10,6 +10,7 @@ import {
   captureVariableToolDef,
   handleCaptureVariable,
   AgentVariable,
+  extractedCapturesToToolCalls,
 } from '../services/variable-capture.service';
 import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
@@ -25,7 +26,7 @@ import {
 } from '../services/send-email-notification.service';
 import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
 import { createAppointment } from '../services/appointment.service';
-import { stripToolCallsXml } from '../utils/text';
+import { stripAndExtractToolCallArtifacts } from '../utils/text';
 
 // MCP cache TTL: 1 hour
 const MCP_TOOLS_CACHE_TTL = 3600;
@@ -544,8 +545,35 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       totalTokensUsed += response.usage.totalTokens;
 
       if (!response.toolCalls || response.toolCalls.length === 0) {
-        // Final text response
-        finalResponse = stripToolCallsXml(response.content);
+        // Final text response — strip artifacts AND recover any leaked capture_variable calls.
+        const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
+
+        if (extractedCaptures.length > 0) {
+          console.warn(
+            `[msg-worker] Recovered ${extractedCaptures.length} leaked capture_variable call(s) from LLM text. Conversation ${conversationId}.`
+          );
+          const syntheticCalls = extractedCapturesToToolCalls(extractedCaptures);
+          const syntheticResults: Array<{ toolCallId: string; content: string }> = [];
+
+          for (const tc of syntheticCalls) {
+            const result = await executeTool(
+              tc,
+              agentTools,
+              variables,
+              conversationId,
+              organizationId,
+              agentId,
+              mcpToolMap
+            );
+            toolsCalledLog.push(`${tc.name}(${JSON.stringify(tc.arguments)})[recovered]`);
+            syntheticResults.push({ toolCallId: tc.id, content: result });
+          }
+
+          // Side effects ran; results not fed back to LLM since this is the final response.
+          void syntheticResults;
+        }
+
+        finalResponse = cleaned;
         break;
       }
 
@@ -583,9 +611,32 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         })),
       });
 
-      // If LLM also returned text alongside tool calls, keep it
+      // If LLM also returned text alongside tool calls, keep it (cleaned).
+      // Recover any capture_variable artifacts that leaked into the text.
       if (response.content.trim()) {
-        finalResponse = stripToolCallsXml(response.content);
+        const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
+
+        if (extractedCaptures.length > 0) {
+          console.warn(
+            `[msg-worker] Recovered ${extractedCaptures.length} leaked capture_variable call(s) in mixed response. Conversation ${conversationId}.`
+          );
+          const syntheticCalls = extractedCapturesToToolCalls(extractedCaptures);
+          for (const tc of syntheticCalls) {
+            const result = await executeTool(
+              tc,
+              agentTools,
+              variables,
+              conversationId,
+              organizationId,
+              agentId,
+              mcpToolMap
+            );
+            toolsCalledLog.push(`${tc.name}(${JSON.stringify(tc.arguments)})[recovered]`);
+            void result;
+          }
+        }
+
+        finalResponse = cleaned;
       }
     }
   } catch (err) {
@@ -600,7 +651,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         maxTokens,
         byoApiKey: resolvedByoKey,
       });
-      finalResponse = stripToolCallsXml(retryResponse.content);
+      finalResponse = stripAndExtractToolCallArtifacts(retryResponse.content).cleaned;
       totalTokensUsed = retryResponse.usage.totalTokens;
     } catch (retryErr) {
       console.error('[msg-worker] LLM failed after retry:', retryErr);
@@ -633,7 +684,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         byoApiKey: resolvedByoKey,
       });
       if (!isMinimalResponse(retryResponse.content)) {
-        finalResponse = stripToolCallsXml(retryResponse.content);
+        finalResponse = stripAndExtractToolCallArtifacts(retryResponse.content).cleaned;
         totalTokensUsed += retryResponse.usage.totalTokens;
       } else {
         console.warn(`[msg-worker] Retry also returned minimal response: "${retryResponse.content}"`);

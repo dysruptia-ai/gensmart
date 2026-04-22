@@ -19,7 +19,7 @@ import {
   type EmailNotificationToolConfig,
 } from '../services/send-email-notification.service';
 import { redis } from '../config/redis';
-import { stripToolCallsXml } from '../utils/text';
+import { stripAndExtractToolCallArtifacts } from '../utils/text';
 
 const router = Router();
 
@@ -1029,7 +1029,15 @@ router.post(
         totalTokens += response.usage.totalTokens;
 
         if (!response.toolCalls?.length) {
-          finalResponse = stripToolCallsXml(response.content);
+          const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
+
+          // Preview: recover leaked captures into capturedVars (no DB writes in preview).
+          for (const ec of extractedCaptures) {
+            capturedVars[ec.variableName] = ec.variableValue;
+            toolsCalledLog.push(`capture_variable[recovered]`);
+          }
+
+          finalResponse = cleaned;
           break;
         }
 
@@ -1208,7 +1216,14 @@ router.post(
           toolResults: previewToolResults,
         });
 
-        if (response.content.trim()) finalResponse = stripToolCallsXml(response.content);
+        if (response.content.trim()) {
+          const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
+          for (const ec of extractedCaptures) {
+            capturedVars[ec.variableName] = ec.variableValue;
+            toolsCalledLog.push(`capture_variable[recovered]`);
+          }
+          finalResponse = cleaned;
+        }
       }
 
       if (!finalResponse.trim() || finalResponse.replace(/[\s.…]+/g, '').length < 3) {

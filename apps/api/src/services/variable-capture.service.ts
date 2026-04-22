@@ -1,5 +1,7 @@
+import crypto from 'crypto';
 import { query } from '../config/database';
-import { ToolDefinition } from './llm.service';
+import { ToolDefinition, ToolCall } from './llm.service';
+import type { ExtractedCaptureCall } from '../utils/text';
 
 export interface AgentVariable {
   name: string;
@@ -26,16 +28,21 @@ export function buildVariableCaptureInstructions(variables: AgentVariable[]): st
   return [
     '---',
     'VARIABLE CAPTURE INSTRUCTIONS:',
-    'During the conversation, naturally capture the following variables from the user.',
-    'Do not ask for all variables at once — extract them organically as the conversation flows.',
-    'When you identify a variable value, call the capture_variable tool.',
+    'During the conversation, naturally extract the following variables from the user.',
+    'Do not ask for all variables at once — gather them organically as the conversation flows.',
     '',
     'Variables to capture:',
     ...variableLines,
     '',
-    'Tool: capture_variable',
-    'Parameters: { "variable_name": "string", "variable_value": "string" }',
-    'Call this tool each time you identify a variable value. You can capture multiple variables across different messages.',
+    'HOW TO CAPTURE VARIABLES:',
+    'You have access to a function/tool named `capture_variable`. When you identify a value, invoke it through the normal tool-use mechanism provided by this API.',
+    'If you need to capture multiple variables in the same turn, invoke the tool multiple times — once per variable.',
+    '',
+    'CRITICAL — DO NOT DO THIS:',
+    '- Never write JSON, code fences, or ```json blocks in your reply to the user.',
+    '- Never output anything that looks like { "variable_name": ..., "variable_value": ... } as plain text.',
+    '- Never describe the tool call in prose ("I am calling capture_variable with...").',
+    'The tool invocation happens silently through the API. The user must only see your natural-language reply, not the mechanics of capture.',
   ].join('\n');
 }
 
@@ -239,4 +246,23 @@ async function syncVariableToContact(
       [JSON.stringify({ [varName]: varValue }), contactId]
     );
   }
+}
+
+/**
+ * Convert capture calls extracted from leaked text artifacts into synthetic
+ * ToolCall objects so the worker's normal tool loop can process them.
+ * Each synthetic call gets a unique ID prefixed with `synthetic_capture_`
+ * so it's distinguishable in logs.
+ */
+export function extractedCapturesToToolCalls(
+  extracted: ExtractedCaptureCall[]
+): ToolCall[] {
+  return extracted.map((e) => ({
+    id: `synthetic_capture_${crypto.randomBytes(6).toString('hex')}`,
+    name: 'capture_variable',
+    arguments: {
+      variable_name: e.variableName,
+      variable_value: e.variableValue,
+    },
+  }));
 }
