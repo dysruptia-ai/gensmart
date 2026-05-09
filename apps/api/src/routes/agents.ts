@@ -441,7 +441,22 @@ router.post(
           profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
         }
       }
-      const extraHeaders = { ...profileAutoHeaders, ...userExtraHeaders };
+
+      // System auto-headers — required by tenant-aware MCPs (e.g. Mastershop).
+      // Test isn't tied to a real conversation/tool, so we use a fresh session
+      // UUID and an ephemeral webhook secret. Real secrets are persisted only
+      // on tool creation. System headers always win the merge.
+      const systemAutoHeaders: Record<string, string> = {
+        'X-Agent-ID': String(req.params['id']),
+        'X-Session-ID': randomUUID(),
+        'X-Webhook-Secret': generateWebhookSecret(),
+      };
+
+      const extraHeaders = {
+        ...profileAutoHeaders,
+        ...userExtraHeaders,
+        ...systemAutoHeaders,
+      };
 
       const tools = await connectAndListTools(server_url, mcpTransport, extraHeaders);
       res.json({ success: true, tools });
