@@ -267,6 +267,7 @@ export default function MCPConfigurator({
         server_url: config.server_url.trim(),
         transport: config.transport,
         headers: testHeaders,
+        ...(config.providerId ? { providerId: config.providerId } : {}),
       });
 
       if (data.success && data.tools) {
