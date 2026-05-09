@@ -628,7 +628,22 @@
         "webhookSecretCreated": "Webhook secret generated. Copy it now — it won't be shown again.",
         "webhookSecretRegenerated": "Webhook secret regenerated. Copy the new value and update your MCP server.",
         "regenerate": "Regenerate",
-        "regenerateConfirm": "This will invalidate the current secret. You must update your MCP server with the new value or webhooks will fail. Continue?"
+        "regenerateConfirm": "This will invalidate the current secret. You must update your MCP server with the new value or webhooks will fail. Continue?",
+        "provider": {
+          "detectedBanner": "Detected: {name}",
+          "emptyStateTitle": "Connect an MCP",
+          "emptyStateSubtitle": "Choose a provider or enter a custom URL",
+          "customUrlLink": "Connect another MCP (custom URL)",
+          "howToGetKey": "How to get this key →",
+          "advancedModeLink": "Advanced mode",
+          "advancedModeConfirmTitle": "Switch to advanced mode?",
+          "advancedModeConfirmBody": "This lets you view and edit all headers manually. Continue?",
+          "loadingProviders": "Loading providers...",
+          "resolvingProvider": "Detecting provider...",
+          "requiredHeaderMissing": "{label} is required",
+          "minLengthError": "{label} must be at least {min} characters",
+          "backToProviders": "Back to providers"
+        }
       }
     },
     "knowledge": {

@@ -105,6 +105,7 @@ interface ToolForm {
   mcpSelectedTools: string[];
   mcpHeaders: MCPHeader[];
   mcpWebhookSecret: string;
+  mcpProviderId: string;
   // web_scraping
   allowedDomains: string;
   // email_notification
@@ -155,6 +156,7 @@ const DEFAULT_FORM: ToolForm = {
   mcpSelectedTools: [],
   mcpHeaders: [],
   mcpWebhookSecret: '',
+  mcpProviderId: '',
   allowedDomains: '',
   emailRecipient: '',
   emailCc: '',
@@ -258,6 +260,7 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
         // "keep existing encrypted value" on PUT (edit mode).
         headers: form.mcpHeaders.filter((h) => h.key.trim().length > 0),
         // webhookSecret_encrypted is server-managed; never sent from frontend
+        ...(form.mcpProviderId ? { providerId: form.mcpProviderId } : {}),
       };
     case 'email_notification':
       return {
@@ -489,6 +492,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
             .map((h) => ({ key: h.key as string, value: '' }))
         : [],
       mcpWebhookSecret: '',
+      mcpProviderId: (cfg['providerId'] as string) ?? '',
       emailRecipient: (cfg['recipientEmail'] as string) ?? '',
       emailCc: Array.isArray(cfg['ccEmails'])
         ? (cfg['ccEmails'] as string[]).join(', ')
@@ -1603,6 +1607,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       selected_tools: form.mcpSelectedTools,
       headers: form.mcpHeaders,
       webhookSecret: form.mcpWebhookSecret || undefined,
+      providerId: form.mcpProviderId || undefined,
     };
 
     return (
@@ -1617,6 +1622,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
           if (patch.selected_tools !== undefined) setField('mcpSelectedTools', patch.selected_tools);
           if (patch.headers !== undefined) setField('mcpHeaders', patch.headers);
           if (patch.webhookSecret !== undefined) setField('mcpWebhookSecret', patch.webhookSecret);
+          if ('providerId' in patch) setField('mcpProviderId', patch.providerId ?? '');
         }}
         onConnectionError={toastError}
         onSecretRegenerated={(newSecret) => {

@@ -9,6 +9,7 @@ import {
   Building2,
   LogOut,
   ArrowLeft,
+  Plug,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Avatar from '@/components/ui/Avatar';
@@ -20,6 +21,7 @@ const ADMIN_NAV = [
   { label: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Settings', path: '/admin/settings', icon: Settings },
   { label: 'Organizations', path: '/admin/organizations', icon: Building2 },
+  { label: 'MCP Providers', path: '/admin/mcp-providers', icon: Plug },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

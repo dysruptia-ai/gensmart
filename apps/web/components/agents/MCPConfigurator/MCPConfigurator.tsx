@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Plug, Check, X, ChevronDown, ChevronUp, Info,
-  Plus, Eye, EyeOff, Copy, RefreshCw,
+  Plus, Eye, EyeOff, Copy, RefreshCw, Wrench, ArrowLeft,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { api, ApiError } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
+import ProviderLogoPlaceholder from './ProviderLogoPlaceholder';
 import styles from './MCPConfigurator.module.css';
 
 export interface MCPToolInfo {
@@ -31,6 +32,32 @@ export interface MCPConfig {
   headers: MCPHeader[];
   /** Plain webhook secret. Only set after creation or regeneration. */
   webhookSecret?: string;
+  /** When set, this tool is bound to a known provider profile. The
+   *  guided UI hides infrastructural fields and only shows the headers
+   *  the user must fill in. */
+  providerId?: string;
+}
+
+/** Public profile shape returned by GET /agents/:id/tools/mcp/providers
+ *  (sensitive fields stripped server-side). */
+export interface MCPProviderProfile {
+  id: string;
+  name: string;
+  description?: string;
+  logo_url?: string;
+  default_server_url?: string;
+  default_transport: 'sse' | 'streamable-http';
+  user_configurable_headers: Array<{
+    key: string;
+    label_en: string;
+    label_es: string;
+    help_url?: string;
+    help_text_en?: string;
+    help_text_es?: string;
+    required: boolean;
+    min_length?: number;
+  }>;
+  supported_events: string[];
 }
 
 interface MCPConfiguratorProps {
@@ -51,7 +78,7 @@ export default function MCPConfigurator({
   onConnectionError,
   onSecretRegenerated,
 }: MCPConfiguratorProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [testing, setTesting] = useState(false);
   // Whether we have live data from the MCP server (vs. only saved names)
@@ -85,6 +112,141 @@ export default function MCPConfigurator({
   const [revealedHeaders, setRevealedHeaders] = useState<Record<number, boolean>>({});
   const [regenerating, setRegenerating] = useState(false);
   const [secretCopied, setSecretCopied] = useState(false);
+
+  // Provider profiles state
+  const [providersList, setProvidersList] = useState<MCPProviderProfile[]>([]);
+  const [providersLoaded, setProvidersLoaded] = useState(false);
+  const [detectedProvider, setDetectedProvider] = useState<MCPProviderProfile | null>(null);
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
+  const [isResolvingProvider, setIsResolvingProvider] = useState(false);
+  void isResolvingProvider;
+
+  // Mount: fetch all active providers; if config already has a providerId
+  // (edit mode), hydrate detectedProvider from the freshly-fetched list.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.get<{ providers: MCPProviderProfile[] }>(
+          `/api/agents/${agentId}/tools/mcp/providers`
+        );
+        if (cancelled) return;
+        setProvidersList(data.providers ?? []);
+        if (config.providerId) {
+          const match = (data.providers ?? []).find((p) => p.id === config.providerId);
+          if (match) setDetectedProvider(match);
+        }
+      } catch {
+        // Silent — empty state still works without providers list
+      } finally {
+        if (!cancelled) setProvidersLoaded(true);
+      }
+    })();
+    return () => { cancelled = true; };
+    // Intentionally only on mount + agentId. config.providerId hydration is one-shot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentId]);
+
+  // Debounced URL detection. Skip in advanced mode and when URL is too short.
+  const detectionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (isAdvancedMode) return;
+    const url = config.server_url.trim();
+    if (url.length < 8) {
+      if (detectedProvider) setDetectedProvider(null);
+      return;
+    }
+    // Already locked-in to a provider whose default URL matches: keep it.
+    if (
+      detectedProvider &&
+      detectedProvider.default_server_url &&
+      url.startsWith(detectedProvider.default_server_url)
+    ) {
+      return;
+    }
+
+    if (detectionTimeoutRef.current) clearTimeout(detectionTimeoutRef.current);
+    detectionTimeoutRef.current = setTimeout(async () => {
+      setIsResolvingProvider(true);
+      try {
+        const data = await api.get<{ profile: MCPProviderProfile | null }>(
+          `/api/agents/${agentId}/tools/mcp/resolve-profile?url=${encodeURIComponent(url)}`
+        );
+        if (data.profile) {
+          setDetectedProvider(data.profile);
+          if (config.providerId !== data.profile.id) {
+            onChange({ providerId: data.profile.id });
+          }
+        } else {
+          setDetectedProvider(null);
+          if (config.providerId) {
+            onChange({ providerId: undefined });
+          }
+        }
+      } catch {
+        // Silent — fall back to advanced UI
+      } finally {
+        setIsResolvingProvider(false);
+      }
+    }, 500);
+
+    return () => {
+      if (detectionTimeoutRef.current) clearTimeout(detectionTimeoutRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.server_url, isAdvancedMode]);
+
+  function handleSelectProvider(profile: MCPProviderProfile) {
+    setDetectedProvider(profile);
+    setIsAdvancedMode(false);
+    onChange({
+      server_url: profile.default_server_url ?? '',
+      transport: profile.default_transport,
+      providerId: profile.id,
+      // Use the profile id as the server name so tool prefixes
+      // (mcp_<serverName>_<toolName>) are stable across renames.
+      name: config.name && config.name !== 'mcp' ? config.name : profile.id,
+      // Preserve any user-typed headers that map to this provider's
+      // configurable keys; drop the rest.
+      headers: profile.user_configurable_headers.map((h) => {
+        const existing = config.headers.find((eh) => eh.key === h.key);
+        return existing ?? { key: h.key, value: '' };
+      }),
+    });
+  }
+
+  function handleBackToProviders() {
+    setDetectedProvider(null);
+    setIsAdvancedMode(false);
+    onChange({
+      server_url: '',
+      transport: 'sse',
+      providerId: undefined,
+      headers: [],
+      selected_tools: [],
+      name: '',
+    });
+  }
+
+  function handleEnterAdvancedMode() {
+    if (!confirm(t('agents.tools.mcp.provider.advancedModeConfirmBody'))) return;
+    setIsAdvancedMode(true);
+    setDetectedProvider(null);
+    onChange({ providerId: undefined });
+  }
+
+  // Find/update the value of a guided header by its key.
+  function getGuidedHeaderValue(key: string): string {
+    return config.headers.find((h) => h.key === key)?.value ?? '';
+  }
+  function setGuidedHeaderValue(key: string, value: string) {
+    const exists = config.headers.some((h) => h.key === key);
+    const next = exists
+      ? config.headers.map((h) => (h.key === key ? { ...h, value } : h))
+      : [...config.headers, { key, value }];
+    onChange({ headers: next });
+  }
+  const [revealedGuided, setRevealedGuided] = useState<Record<string, boolean>>({});
 
   async function handleTestConnection() {
     if (!config.server_url.trim()) return;
@@ -201,6 +363,323 @@ export default function MCPConfigurator({
 
   const canTest = config.server_url.trim().length > 0 && !testing;
   const selectedCount = config.selected_tools.length;
+
+  // Top-level UI mode:
+  // 1. Empty-state catalog: no URL, no detected provider, not in advanced mode
+  // 2. Guided UI: provider detected/selected, not in advanced mode
+  // 3. Full advanced UI: user opted in OR no provider matches their URL
+  const showEmptyState =
+    !isAdvancedMode &&
+    !detectedProvider &&
+    config.server_url.trim() === '' &&
+    config.selected_tools.length === 0 &&
+    !config.providerId;
+
+  const showGuidedUI = !isAdvancedMode && detectedProvider !== null;
+
+  if (showEmptyState) {
+    return (
+      <div className={styles.root}>
+        <div className={styles.emptyState}>
+          <h3 className={styles.emptyStateTitle}>
+            {t('agents.tools.mcp.provider.emptyStateTitle')}
+          </h3>
+          <p className={styles.emptyStateSubtitle}>
+            {t('agents.tools.mcp.provider.emptyStateSubtitle')}
+          </p>
+
+          {!providersLoaded && (
+            <div className={styles.providersLoading}>
+              <Spinner size="sm" />
+              <span>{t('agents.tools.mcp.provider.loadingProviders')}</span>
+            </div>
+          )}
+
+          {providersLoaded && providersList.length > 0 && (
+            <div className={styles.providersGrid}>
+              {providersList.map((profile) => (
+                <button
+                  type="button"
+                  key={profile.id}
+                  className={styles.providerCard}
+                  onClick={() => handleSelectProvider(profile)}
+                >
+                  <ProviderLogoPlaceholder
+                    id={profile.id}
+                    name={profile.name}
+                    logoUrl={profile.logo_url}
+                    size={48}
+                  />
+                  <div className={styles.providerCardInfo}>
+                    <span className={styles.providerCardName}>{profile.name}</span>
+                    {profile.description && (
+                      <span className={styles.providerCardDesc}>{profile.description}</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button
+            type="button"
+            className={styles.urlPersonalizadaLink}
+            onClick={() => setIsAdvancedMode(true)}
+          >
+            <Wrench size={14} />
+            <span>{t('agents.tools.mcp.provider.customUrlLink')}</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showGuidedUI && detectedProvider) {
+    const profile = detectedProvider;
+    return (
+      <div className={styles.root}>
+        {/* Detected banner */}
+        <div className={styles.detectedBanner}>
+          <ProviderLogoPlaceholder
+            id={profile.id}
+            name={profile.name}
+            logoUrl={profile.logo_url}
+            size={36}
+          />
+          <div className={styles.detectedBannerText}>
+            <span className={styles.detectedBannerTitle}>
+              {t('agents.tools.mcp.provider.detectedBanner', { name: profile.name })}
+            </span>
+            {profile.description && (
+              <span className={styles.detectedBannerDesc}>{profile.description}</span>
+            )}
+          </div>
+          <Check size={20} className={styles.detectedCheck} />
+        </div>
+
+        {/* Back to providers */}
+        <button
+          type="button"
+          className={styles.linkBtn}
+          onClick={handleBackToProviders}
+          style={{ alignSelf: 'flex-start' }}
+        >
+          <ArrowLeft size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+          {t('agents.tools.mcp.provider.backToProviders')}
+        </button>
+
+        {/* URL field readonly */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.label}>{t('agents.tools.mcp.serverUrl')}</label>
+          <input
+            className={styles.input}
+            value={config.server_url}
+            readOnly
+            style={{ background: 'var(--color-bg-sidebar)', cursor: 'not-allowed' }}
+          />
+        </div>
+
+        {/* Transport readonly */}
+        <div className={styles.fieldGroup}>
+          <label className={styles.label}>{t('agents.tools.mcp.transport')}</label>
+          <input
+            className={styles.input}
+            value={profile.default_transport === 'streamable-http' ? t('agents.tools.mcp.transportStreamableHttp') : t('agents.tools.mcp.transportSse')}
+            readOnly
+            style={{ background: 'var(--color-bg-sidebar)', cursor: 'not-allowed' }}
+          />
+        </div>
+
+        {/* Guided headers — one per user_configurable_header */}
+        <div className={styles.guidedHeadersSection}>
+          {profile.user_configurable_headers.map((h) => {
+            const value = getGuidedHeaderValue(h.key);
+            const label = language === 'es' ? h.label_es : h.label_en;
+            const helpText = language === 'es' ? h.help_text_es : h.help_text_en;
+            const showError =
+              h.required && value !== '' && h.min_length && value.length < h.min_length;
+            return (
+              <div className={styles.guidedHeaderRow} key={h.key}>
+                <label className={styles.label}>
+                  {label}
+                  {h.required && <span style={{ color: 'var(--color-danger)' }}> *</span>}
+                </label>
+                <div className={styles.urlRow}>
+                  <input
+                    className={styles.input}
+                    type={revealedGuided[h.key] ? 'text' : 'password'}
+                    value={value}
+                    onChange={(e) => setGuidedHeaderValue(h.key, e.target.value)}
+                    placeholder={h.required ? '••••••••' : ''}
+                    autoComplete="off"
+                  />
+                  <button
+                    type="button"
+                    className={styles.headerToggleBtn}
+                    onClick={() =>
+                      setRevealedGuided((r) => ({ ...r, [h.key]: !r[h.key] }))
+                    }
+                    title={revealedGuided[h.key] ? t('agents.tools.mcp.headerHide') : t('agents.tools.mcp.headerShow')}
+                  >
+                    {revealedGuided[h.key] ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+                {h.help_url && (
+                  <a
+                    href={h.help_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.helpLink}
+                  >
+                    {t('agents.tools.mcp.provider.howToGetKey')}
+                  </a>
+                )}
+                {helpText && <span className={styles.helpText}>{helpText}</span>}
+                {showError && (
+                  <span className={styles.helpText} style={{ color: 'var(--color-danger)' }}>
+                    {t('agents.tools.mcp.provider.minLengthError', {
+                      label,
+                      min: String(h.min_length ?? 0),
+                    })}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Webhook secret + tools section reused from advanced UI */}
+        {(config.webhookSecret || toolId) && (
+          <>
+            {config.webhookSecret ? (
+              <div className={styles.fieldGroup}>
+                <label className={styles.label}>{t('agents.tools.mcp.webhookSecret')}</label>
+                <div className={styles.secretRow}>
+                  <input
+                    className={styles.secretInput}
+                    type="text"
+                    value={config.webhookSecret}
+                    readOnly
+                  />
+                  <button
+                    type="button"
+                    className={styles.copyBtn}
+                    onClick={handleCopySecret}
+                    title={t('agents.tools.mcp.headerCopy')}
+                  >
+                    <Copy size={14} />
+                    <span>{secretCopied ? t('agents.tools.mcp.copied') : t('agents.tools.mcp.headerCopy')}</span>
+                  </button>
+                  {toolId && (
+                    <button
+                      type="button"
+                      className={styles.regenBtn}
+                      onClick={handleRegenerateSecret}
+                      disabled={regenerating}
+                    >
+                      {regenerating ? <Spinner size="sm" /> : <RefreshCw size={14} />}
+                      <span>{t('agents.tools.mcp.regenerate')}</span>
+                    </button>
+                  )}
+                </div>
+                <p className={styles.fieldHint}>{t('agents.tools.mcp.webhookSecretHint')}</p>
+              </div>
+            ) : null}
+          </>
+        )}
+
+        {/* Test connection + tools list */}
+        <div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleTestConnection}
+            disabled={!canTest}
+          >
+            {testing ? (
+              <>
+                <Spinner size="sm" />
+                <span>{t('agents.tools.mcp.testing')}</span>
+              </>
+            ) : (
+              t('agents.tools.mcp.testConnection')
+            )}
+          </Button>
+          {liveTested && !urlChanged && (
+            <div className={styles.statusOk}>
+              <Check size={14} />
+              <span>
+                {t('agents.tools.mcp.connectionSuccess', { count: String(availableTools.length) })}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {showToolsSection && (
+          <div className={styles.toolsSection}>
+            <button
+              type="button"
+              className={styles.toolsToggle}
+              onClick={() => setShowTools((s) => !s)}
+            >
+              <Plug size={14} />
+              <span>
+                {t('agents.tools.mcp.availableTools')}{' '}
+                <span className={styles.toolsBadge}>
+                  {t('agents.tools.mcp.selectedTools', { count: String(selectedCount) })}
+                  {displayTools.length > 0 && ` / ${displayTools.length}`}
+                </span>
+              </span>
+              {showTools ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            {showTools && (
+              <div className={styles.toolsList}>
+                <div className={styles.toolsActions}>
+                  <button type="button" className={styles.linkBtn} onClick={selectAll}>
+                    {t('agents.tools.mcp.selectAll')}
+                  </button>
+                  <span className={styles.dot}>·</span>
+                  <button type="button" className={styles.linkBtn} onClick={deselectAll}>
+                    {t('agents.tools.mcp.deselectAll')}
+                  </button>
+                </div>
+                {displayTools.map((tool) => (
+                  <label key={tool.name} className={styles.toolItem}>
+                    <input
+                      type="checkbox"
+                      className={styles.checkbox}
+                      checked={config.selected_tools.includes(tool.name)}
+                      onChange={() => toggleTool(tool.name)}
+                    />
+                    <div className={styles.toolInfo}>
+                      <span className={styles.toolName}>{tool.name}</span>
+                      {tool.description && (
+                        <span className={styles.toolDesc}>{tool.description}</span>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {(liveTested || isEditMode) && !urlChanged && selectedCount === 0 && (
+          <p className={styles.hint}>{t('agents.tools.mcp.noToolsSelected')}</p>
+        )}
+
+        {/* Advanced mode escape hatch */}
+        <button
+          type="button"
+          className={styles.advancedModeLink}
+          onClick={handleEnterAdvancedMode}
+        >
+          <Wrench size={12} />
+          <span>{t('agents.tools.mcp.provider.advancedModeLink')}</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.root}>

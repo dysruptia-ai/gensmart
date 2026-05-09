@@ -16,6 +16,7 @@ import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
 import { decryptHeaders } from '../services/mcp-headers.service';
+import * as mcpProviders from '../services/mcp-providers.service';
 import { decrypt } from '../config/encryption';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
@@ -405,6 +406,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       selected_tools?: string[];
       headers?: Array<{ key: string; value_encrypted: string }>;
       webhookSecret_encrypted?: string;
+      providerId?: string;
     };
 
     const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
@@ -414,10 +416,25 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
     if (!serverUrl || selectedTools.length === 0) continue;
 
-    // Build effective headers: user-configured (decrypted) + auto-injected.
-    // See docs/INTEGRATION.md §3 — X-Agent-ID and X-Session-ID identify the
-    // tool call, X-Webhook-Secret is mirrored back when the MCP signs webhooks.
-    // Auto-injected wins on key collision.
+    // Build effective headers in 3 layers (left → right wins):
+    //   1. profile auto-injected headers (master keys, fixed webhook URL,
+    //      resolved on every call from platform_settings — never persisted)
+    //   2. user-configured headers (encrypted in agent_tools.config.headers,
+    //      can override profile in advanced mode)
+    //   3. system auto-headers (X-Agent-ID, X-Session-ID, X-Webhook-Secret —
+    //      identity & HMAC, always win)
+    // See docs/INTEGRATION.md §3 + MCP-INT-2 design.
+    let profileAutoHeaders: Record<string, string> = {};
+    if (cfg.providerId) {
+      try {
+        const profile = await mcpProviders.findProfileById(cfg.providerId);
+        if (profile && profile.is_active) {
+          profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+        }
+      } catch (err) {
+        console.error(`[msg-worker] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);
+      }
+    }
     const userHeaders = decryptHeaders(cfg.headers);
     const autoHeaders: Record<string, string> = {
       'X-Agent-ID': agentId,
@@ -430,7 +447,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         console.error(`[msg-worker] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
       }
     }
-    const allHeaders = { ...userHeaders, ...autoHeaders };
+    const allHeaders = { ...profileAutoHeaders, ...userHeaders, ...autoHeaders };
 
     const cacheKey = `mcp:tools:${tool.id}`;
 

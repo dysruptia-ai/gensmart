@@ -20,6 +20,7 @@ import {
   generateWebhookSecret,
   type EncryptedHeader,
 } from '../services/mcp-headers.service';
+import * as mcpProviders from '../services/mcp-providers.service';
 import { encrypt, decrypt } from '../config/encryption';
 import {
   buildEmailNotificationToolDef,
@@ -120,7 +121,34 @@ const mcpConfigInputSchema = z.object({
   transport: z.enum(['sse', 'streamable-http']).optional().default('sse'),
   selected_tools: z.array(z.string()).optional().default([]),
   headers: z.array(mcpHeaderInputSchema).max(20).optional().default([]),
+  providerId: z.string().min(1).max(50).optional(),
 });
+
+/**
+ * Validate that all required user_configurable_headers from a profile are
+ * present (and meet min_length) in the supplied headers array. Throws an
+ * Error with message "<headerKey>: <reason>" suitable for HTTP 400.
+ */
+function validateProviderHeaders(
+  profile: mcpProviders.MCPProviderProfile,
+  headers: Array<{ key: string; value: string }>,
+): void {
+  const headerMap = new Map<string, string>();
+  for (const h of headers) {
+    if (h?.key) headerMap.set(h.key, h.value ?? '');
+  }
+  for (const required of profile.user_configurable_headers) {
+    if (!required.required) continue;
+    const value = headerMap.get(required.key);
+    if (value === undefined) {
+      throw new Error(`Missing required header for ${profile.name}: ${required.key}`);
+    }
+    // value === '' is allowed on PUT (signals "keep existing ciphertext")
+    if (value !== '' && required.min_length && value.length < required.min_length) {
+      throw new Error(`Header ${required.key} must be at least ${required.min_length} characters`);
+    }
+  }
+}
 
 // GET /api/agents/templates — must be before /:id routes
 router.get(
@@ -309,6 +337,27 @@ router.post(
       let plainWebhookSecret: string | null = null;
       if (toolType === 'mcp') {
         const validated = mcpConfigInputSchema.parse(req.body.config ?? {});
+
+        // If providerId is supplied: resolve profile, validate required user
+        // headers. auto_injected_headers are NOT persisted — they are resolved
+        // every time from platform_settings at runtime so master keys can be
+        // rotated centrally.
+        if (validated.providerId) {
+          const profile = await mcpProviders.findProfileById(validated.providerId);
+          if (!profile || !profile.is_active) {
+            res.status(400).json({
+              error: { message: `Unknown or inactive MCP provider: ${validated.providerId}`, code: 'INVALID_PROVIDER' },
+            });
+            return;
+          }
+          try {
+            validateProviderHeaders(profile, validated.headers);
+          } catch (err) {
+            res.status(400).json({ error: { message: (err as Error).message, code: 'INVALID_PROVIDER_HEADERS' } });
+            return;
+          }
+        }
+
         plainWebhookSecret = generateWebhookSecret();
         req.body.config = {
           server_url: validated.server_url,
@@ -317,6 +366,7 @@ router.post(
           selected_tools: validated.selected_tools,
           headers: encryptHeaders(validated.headers),
           webhookSecret_encrypted: encrypt(plainWebhookSecret),
+          ...(validated.providerId ? { providerId: validated.providerId } : {}),
         };
       }
 
@@ -338,10 +388,11 @@ router.post(
   validateUUID('id'),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { server_url, transport, headers: rawHeaders } = req.body as {
+      const { server_url, transport, headers: rawHeaders, providerId } = req.body as {
         server_url?: string;
         transport?: string;
         headers?: Array<{ key: string; value: string }>;
+        providerId?: string;
       };
 
       if (!server_url || typeof server_url !== 'string') {
@@ -369,16 +420,28 @@ router.post(
 
       // Test-time headers come from the form in plain text (not yet persisted).
       // Skip empty entries and trim names.
-      const extraHeaders: Record<string, string> = {};
+      const userExtraHeaders: Record<string, string> = {};
       if (Array.isArray(rawHeaders)) {
         for (const h of rawHeaders) {
           const k = h?.key?.trim();
           const v = h?.value;
           if (k && typeof v === 'string' && v.length > 0) {
-            extraHeaders[k] = v;
+            userExtraHeaders[k] = v;
           }
         }
       }
+
+      // Resolve provider auto-injected headers BEFORE handing off to the
+      // agnostic MCP client. Same merge order as worker/preview: profile
+      // platform headers first, user headers may override.
+      let profileAutoHeaders: Record<string, string> = {};
+      if (providerId) {
+        const profile = await mcpProviders.findProfileById(providerId);
+        if (profile && profile.is_active) {
+          profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+        }
+      }
+      const extraHeaders = { ...profileAutoHeaders, ...userExtraHeaders };
 
       const tools = await connectAndListTools(server_url, mcpTransport, extraHeaders);
       res.json({ success: true, tools });
@@ -386,6 +449,41 @@ router.post(
       const message = (err as Error).message;
       console.error('[agents] MCP test-connection failed:', message);
       res.json({ success: false, error: message });
+    }
+  }
+);
+
+// GET /api/agents/:id/tools/mcp/providers — list active provider profiles
+// (sensitive fields stripped). Used by MCPConfigurator empty-state catalog.
+router.get(
+  '/:id/tools/mcp/providers',
+  validateUUID('id'),
+  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const profiles = await mcpProviders.listActiveProfiles();
+      res.json({ providers: profiles.map(mcpProviders.toPublicProfile) });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /api/agents/:id/tools/mcp/resolve-profile?url=...
+// Returns the matching provider profile for a pasted URL (or { profile: null }).
+router.get(
+  '/:id/tools/mcp/resolve-profile',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const url = String(req.query['url'] ?? '');
+      if (!url || url.length > 500) {
+        res.status(400).json({ error: { message: 'Invalid url parameter', code: 'INVALID_URL' } });
+        return;
+      }
+      const profile = await mcpProviders.findProfileByUrl(url);
+      res.json({ profile: profile ? mcpProviders.toPublicProfile(profile) : null });
+    } catch (err) {
+      next(err);
     }
   }
 );
@@ -412,8 +510,28 @@ router.put(
           const existingCfg = existingTool.rows[0].config as {
             headers?: EncryptedHeader[];
             webhookSecret_encrypted?: string;
+            providerId?: string;
           };
           const validated = mcpConfigInputSchema.parse(req.body.config);
+
+          // Preserve providerId across updates if not explicitly changed.
+          const effectiveProviderId = validated.providerId ?? existingCfg.providerId;
+
+          if (effectiveProviderId) {
+            const profile = await mcpProviders.findProfileById(effectiveProviderId);
+            if (!profile || !profile.is_active) {
+              res.status(400).json({
+                error: { message: `Unknown or inactive MCP provider: ${effectiveProviderId}`, code: 'INVALID_PROVIDER' },
+              });
+              return;
+            }
+            try {
+              validateProviderHeaders(profile, validated.headers);
+            } catch (err) {
+              res.status(400).json({ error: { message: (err as Error).message, code: 'INVALID_PROVIDER_HEADERS' } });
+              return;
+            }
+          }
 
           // Merge headers: keep existing ciphertext when user submits an empty
           // value (UI cannot show decrypted secrets back).
@@ -436,6 +554,7 @@ router.put(
             headers: mergedHeaders,
             // Preserve secret — rotation is explicit via /regenerate-webhook-secret
             webhookSecret_encrypted: existingCfg.webhookSecret_encrypted,
+            ...(effectiveProviderId ? { providerId: effectiveProviderId } : {}),
           };
         }
       }
@@ -1159,6 +1278,7 @@ router.post(
           selected_tools?: string[];
           headers?: EncryptedHeader[];
           webhookSecret_encrypted?: string;
+          providerId?: string;
         };
 
         const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
@@ -1168,6 +1288,18 @@ router.post(
 
         if (!serverUrl || selectedTools.length === 0) continue;
 
+        // Same 3-layer merge as message.worker.ts (profile → user → system).
+        let profileAutoHeaders: Record<string, string> = {};
+        if (cfg.providerId) {
+          try {
+            const profile = await mcpProviders.findProfileById(cfg.providerId);
+            if (profile && profile.is_active) {
+              profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+            }
+          } catch (err) {
+            console.error(`[preview] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);
+          }
+        }
         const userHeaders = decryptHeaders(cfg.headers);
         const autoHeaders: Record<string, string> = {
           'X-Agent-ID': agentId,
@@ -1180,7 +1312,7 @@ router.post(
             console.error(`[preview] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
           }
         }
-        const allHeaders = { ...userHeaders, ...autoHeaders };
+        const allHeaders = { ...profileAutoHeaders, ...userHeaders, ...autoHeaders };
 
         try {
           const cacheKey = `mcp:tools:${tool.id}`;

@@ -5,6 +5,7 @@ import { requireSuperAdmin } from '../middleware/superAdmin';
 import { validate } from '../middleware/validate';
 import { query } from '../config/database';
 import * as platformSettings from '../services/platform-settings.service';
+import * as mcpProviders from '../services/mcp-providers.service';
 
 const router = Router();
 
@@ -439,6 +440,128 @@ router.get(
         'SELECT id, name, plan, created_at FROM organizations ORDER BY created_at DESC LIMIT 10'
       );
       res.json(result.rows);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ─── MCP Provider Profiles ───────────────────────────────────
+
+const valueRefSchema = z.string().regex(/^(platform_setting|fixed):/, 'value_ref must start with platform_setting: or fixed:');
+
+const autoInjectedHeaderSchema = z.object({
+  key: z.string().min(1).max(100),
+  value_ref: valueRefSchema,
+  description: z.string().max(500).optional(),
+});
+
+const userConfigurableHeaderSchema = z.object({
+  key: z.string().min(1).max(100),
+  label_en: z.string().min(1).max(100),
+  label_es: z.string().min(1).max(100),
+  help_url: z.string().url().optional(),
+  help_text_en: z.string().max(500).optional(),
+  help_text_es: z.string().max(500).optional(),
+  required: z.boolean(),
+  min_length: z.number().int().min(1).max(1000).optional(),
+});
+
+const matchStrategyEnum = z.enum(['domain_contains', 'domain_exact', 'url_prefix', 'regex']);
+const transportEnum = z.enum(['sse', 'streamable-http']);
+
+const providerCreateSchema = z.object({
+  id: z.string().min(1).max(50).regex(/^[a-z0-9_-]+$/, 'id must be lowercase alphanumeric with - or _'),
+  name: z.string().min(1).max(100),
+  description: z.string().max(2000).optional(),
+  logo_url: z.string().url().optional().or(z.literal('').transform(() => undefined)),
+  match_url_pattern: z.string().min(1).max(500),
+  match_strategy: matchStrategyEnum,
+  default_transport: transportEnum,
+  default_server_url: z.string().url().optional().or(z.literal('').transform(() => undefined)),
+  auto_injected_headers: z.array(autoInjectedHeaderSchema).max(20),
+  user_configurable_headers: z.array(userConfigurableHeaderSchema).max(20),
+  supported_events: z.array(z.string().min(1).max(100)).max(50),
+  is_active: z.boolean(),
+});
+
+const providerUpdateSchema = providerCreateSchema.partial().omit({ id: true });
+
+router.get(
+  '/mcp-providers',
+  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const profiles = await mcpProviders.listAllProfiles();
+      res.json({ providers: profiles });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/mcp-providers/:id',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const profile = await mcpProviders.findProfileById(String(req.params['id']));
+      if (!profile) {
+        res.status(404).json({ error: { message: 'Provider not found', code: 'NOT_FOUND' } });
+        return;
+      }
+      res.json({ provider: profile });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/mcp-providers',
+  validate(providerCreateSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const data = req.body as z.infer<typeof providerCreateSchema>;
+      const existing = await mcpProviders.findProfileById(data.id);
+      if (existing) {
+        res.status(409).json({ error: { message: `Provider with id "${data.id}" already exists`, code: 'CONFLICT' } });
+        return;
+      }
+      const profile = await mcpProviders.createProfile(data);
+      res.status(201).json({ provider: profile });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.put(
+  '/mcp-providers/:id',
+  validate(providerUpdateSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = String(req.params['id']);
+      const profile = await mcpProviders.updateProfile(id, req.body as z.infer<typeof providerUpdateSchema>);
+      if (!profile) {
+        res.status(404).json({ error: { message: 'Provider not found', code: 'NOT_FOUND' } });
+        return;
+      }
+      res.json({ provider: profile });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.delete(
+  '/mcp-providers/:id',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const ok = await mcpProviders.deleteProfile(String(req.params['id']));
+      if (!ok) {
+        res.status(404).json({ error: { message: 'Provider not found', code: 'NOT_FOUND' } });
+        return;
+      }
+      res.json({ message: 'Provider deactivated successfully' });
     } catch (err) {
       next(err);
     }

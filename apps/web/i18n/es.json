@@ -628,7 +628,22 @@
         "webhookSecretCreated": "Webhook secret generado. Cópialo ahora — no se mostrará de nuevo.",
         "webhookSecretRegenerated": "Webhook secret regenerado. Copia el nuevo valor y actualiza tu MCP server.",
         "regenerate": "Regenerar",
-        "regenerateConfirm": "Esto invalidará el secreto actual. Debes actualizar tu MCP server con el nuevo valor o los webhooks fallarán. ¿Continuar?"
+        "regenerateConfirm": "Esto invalidará el secreto actual. Debes actualizar tu MCP server con el nuevo valor o los webhooks fallarán. ¿Continuar?",
+        "provider": {
+          "detectedBanner": "Detectado: {name}",
+          "emptyStateTitle": "Conectar un MCP",
+          "emptyStateSubtitle": "Elige un proveedor o ingresa una URL personalizada",
+          "customUrlLink": "Conectar otro MCP (URL personalizada)",
+          "howToGetKey": "Cómo obtener esta key →",
+          "advancedModeLink": "Modo avanzado",
+          "advancedModeConfirmTitle": "¿Cambiar a modo avanzado?",
+          "advancedModeConfirmBody": "Esto te permitirá ver y editar todos los headers manualmente. ¿Continuar?",
+          "loadingProviders": "Cargando proveedores...",
+          "resolvingProvider": "Detectando proveedor...",
+          "requiredHeaderMissing": "{label} es requerido",
+          "minLengthError": "{label} debe tener al menos {min} caracteres",
+          "backToProviders": "Volver a proveedores"
+        }
       }
     },
     "knowledge": {
