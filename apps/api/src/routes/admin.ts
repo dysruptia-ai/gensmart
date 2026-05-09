@@ -28,6 +28,20 @@ router.get(
   }
 );
 
+// GET /api/admin/settings/all — All settings with category metadata for dynamic UI
+// Encrypted values never leave the server — only has_value flag is returned.
+router.get(
+  '/settings/all',
+  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const settings = await platformSettings.getAllSettingsWithMeta();
+      res.json(settings);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // GET /api/admin/settings/:key — Get single setting
 router.get(
   '/settings/:key',

@@ -1432,6 +1432,32 @@
   "variables_map_email": "Contact Email",
   "variables_map_phone": "Contact Phone",
   "variables_map_already_mapped": "already mapped",
+  "admin": {
+    "settings": {
+      "title": "Platform Settings",
+      "description": "Configure platform-wide credentials and integrations",
+      "loading": "Loading settings...",
+      "loadError": "Failed to load settings",
+      "save": "Save",
+      "saved": "Setting updated",
+      "saveError": "Failed to save setting",
+      "emptyValueWarning": "Enter a value before saving",
+      "configuredPlaceholder": "•••• (configured)",
+      "newValuePlaceholder": "Enter new value to update",
+      "testWhatsApp": "Test WhatsApp Connection",
+      "testValid": "Valid — App ID: {appId}, Expires: {expiresAt}",
+      "testInvalid": "Invalid token",
+      "testSuccess": "WhatsApp token is valid",
+      "testFailed": "Failed to test token",
+      "categories": {
+        "whatsapp": "WhatsApp Configuration",
+        "mastershop": "Mastershop MCP",
+        "dropi": "Dropi MCP",
+        "zendrop": "Zendrop MCP",
+        "other": "Other Settings"
+      }
+    }
+  },
   "contactSales": {
     "title": "Contact Sales",
     "subtitle": "Tell us about your needs and we'll get back to you within 24 hours.",

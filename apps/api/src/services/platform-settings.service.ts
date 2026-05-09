@@ -114,6 +114,54 @@ export async function getAllSettings(): Promise<Array<{
   }));
 }
 
+export type SettingCategory = 'whatsapp' | 'mastershop' | 'dropi' | 'zendrop' | 'other';
+
+export interface PlatformSettingMeta {
+  key: string;
+  description: string | null;
+  is_encrypted: boolean;
+  has_value: boolean;
+  value: string | null;
+  category: SettingCategory;
+  updated_at: string;
+}
+
+/**
+ * Infer the UI grouping category from the setting key prefix.
+ */
+export function inferCategory(key: string): SettingCategory {
+  if (key.startsWith('whatsapp_') || key === 'meta_app_id' || key === 'meta_config_id') {
+    return 'whatsapp';
+  }
+  if (key.startsWith('mastershop_')) return 'mastershop';
+  if (key.startsWith('dropi_')) return 'dropi';
+  if (key.startsWith('zendrop_')) return 'zendrop';
+  return 'other';
+}
+
+/**
+ * Get all platform settings with safe metadata for the admin UI.
+ * Encrypted values are NEVER returned in plain text — only `has_value` flag.
+ */
+export async function getAllSettingsWithMeta(): Promise<PlatformSettingMeta[]> {
+  const result = await query<PlatformSetting>(
+    'SELECT key, value, is_encrypted, description, updated_at FROM platform_settings ORDER BY key'
+  );
+
+  return result.rows.map((row) => {
+    const hasValue = row.value !== null && row.value !== '';
+    return {
+      key: row.key,
+      description: row.description,
+      is_encrypted: row.is_encrypted,
+      has_value: hasValue,
+      value: row.is_encrypted ? null : row.value,
+      category: inferCategory(row.key),
+      updated_at: row.updated_at,
+    };
+  });
+}
+
 /**
  * Get a single setting (masked for display).
  */

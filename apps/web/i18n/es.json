@@ -1432,6 +1432,32 @@
   "variables_map_email": "Email del Contacto",
   "variables_map_phone": "Teléfono del Contacto",
   "variables_map_already_mapped": "ya mapeado",
+  "admin": {
+    "settings": {
+      "title": "Configuración de la Plataforma",
+      "description": "Configura credenciales e integraciones a nivel de plataforma",
+      "loading": "Cargando configuraciones...",
+      "loadError": "Error al cargar configuraciones",
+      "save": "Guardar",
+      "saved": "Configuración actualizada",
+      "saveError": "Error al guardar la configuración",
+      "emptyValueWarning": "Ingresa un valor antes de guardar",
+      "configuredPlaceholder": "•••• (configurado)",
+      "newValuePlaceholder": "Ingresa un nuevo valor para actualizar",
+      "testWhatsApp": "Probar Conexión de WhatsApp",
+      "testValid": "Válido — App ID: {appId}, Expira: {expiresAt}",
+      "testInvalid": "Token inválido",
+      "testSuccess": "El token de WhatsApp es válido",
+      "testFailed": "Error al probar el token",
+      "categories": {
+        "whatsapp": "Configuración de WhatsApp",
+        "mastershop": "Mastershop MCP",
+        "dropi": "Dropi MCP",
+        "zendrop": "Zendrop MCP",
+        "other": "Otras Configuraciones"
+      }
+    }
+  },
   "contactSales": {
     "title": "Contactar Ventas",
     "subtitle": "Cuéntanos sobre tus necesidades y te responderemos en 24 horas.",
