@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plug, Check, X, ChevronDown, ChevronUp, Info } from 'lucide-react';
+import {
+  Plug, Check, X, ChevronDown, ChevronUp, Info,
+  Plus, Eye, EyeOff, Copy, RefreshCw,
+} from 'lucide-react';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { api, ApiError } from '@/lib/api';
@@ -14,25 +17,39 @@ export interface MCPToolInfo {
   inputSchema: Record<string, unknown>;
 }
 
+export interface MCPHeader {
+  key: string;
+  /** In edit mode: '' means "keep the existing encrypted value untouched". */
+  value: string;
+}
+
 export interface MCPConfig {
   server_url: string;
   name: string;
   transport: 'sse' | 'streamable-http';
   selected_tools: string[];
+  headers: MCPHeader[];
+  /** Plain webhook secret. Only set after creation or regeneration. */
+  webhookSecret?: string;
 }
 
 interface MCPConfiguratorProps {
   agentId: string;
+  /** Tool ID — only set in edit mode. Required for the "Regenerate" button. */
+  toolId?: string;
   config: MCPConfig;
   onChange: (patch: Partial<MCPConfig>) => void;
   onConnectionError?: (msg: string) => void;
+  onSecretRegenerated?: (newSecret: string) => void;
 }
 
 export default function MCPConfigurator({
   agentId,
+  toolId,
   config,
   onChange,
   onConnectionError,
+  onSecretRegenerated,
 }: MCPConfiguratorProps) {
   const { t } = useTranslation();
 
@@ -64,11 +81,22 @@ export default function MCPConfigurator({
     if (isEditMode) setShowTools(true);
   }, [isEditMode]);
 
+  // Header value visibility — per-row, default hidden
+  const [revealedHeaders, setRevealedHeaders] = useState<Record<number, boolean>>({});
+  const [regenerating, setRegenerating] = useState(false);
+  const [secretCopied, setSecretCopied] = useState(false);
+
   async function handleTestConnection() {
     if (!config.server_url.trim()) return;
 
     setTesting(true);
     try {
+      // Send only headers that have both a key and a non-empty value. Empty
+      // values in edit mode mean "keep existing encrypted value", which the
+      // server can't see — so skip them for the connection test.
+      const testHeaders = config.headers.filter(
+        (h) => h.key.trim().length > 0 && h.value.length > 0
+      );
       const data = await api.post<{
         success: boolean;
         tools?: MCPToolInfo[];
@@ -76,6 +104,7 @@ export default function MCPConfigurator({
       }>(`/api/agents/${agentId}/tools/mcp/test-connection`, {
         server_url: config.server_url.trim(),
         transport: config.transport,
+        headers: testHeaders,
       });
 
       if (data.success && data.tools) {
@@ -117,6 +146,57 @@ export default function MCPConfigurator({
 
   function deselectAll() {
     onChange({ selected_tools: [] });
+  }
+
+  function addHeader() {
+    onChange({ headers: [...config.headers, { key: '', value: '' }] });
+  }
+
+  function updateHeader(idx: number, patch: Partial<MCPHeader>) {
+    const next = config.headers.map((h, i) => (i === idx ? { ...h, ...patch } : h));
+    onChange({ headers: next });
+  }
+
+  function removeHeader(idx: number) {
+    onChange({ headers: config.headers.filter((_, i) => i !== idx) });
+    setRevealedHeaders((r) => {
+      const next: Record<number, boolean> = {};
+      for (const k of Object.keys(r)) {
+        const i = Number(k);
+        if (i < idx) next[i] = r[i]!;
+        else if (i > idx) next[i - 1] = r[i]!;
+      }
+      return next;
+    });
+  }
+
+  async function handleCopySecret() {
+    if (!config.webhookSecret) return;
+    try {
+      await navigator.clipboard.writeText(config.webhookSecret);
+      setSecretCopied(true);
+      setTimeout(() => setSecretCopied(false), 2000);
+    } catch {
+      // Clipboard may be denied; ignore silently
+    }
+  }
+
+  async function handleRegenerateSecret() {
+    if (!toolId) return;
+    if (!confirm(t('agents.tools.mcp.regenerateConfirm'))) return;
+    setRegenerating(true);
+    try {
+      const data = await api.post<{ webhookSecret: string }>(
+        `/api/agents/${agentId}/tools/${toolId}/regenerate-webhook-secret`,
+        {}
+      );
+      onChange({ webhookSecret: data.webhookSecret });
+      onSecretRegenerated?.(data.webhookSecret);
+    } catch (err) {
+      onConnectionError?.(err instanceof ApiError ? err.message : 'Failed to regenerate webhook secret');
+    } finally {
+      setRegenerating(false);
+    }
   }
 
   const canTest = config.server_url.trim().length > 0 && !testing;
@@ -221,6 +301,126 @@ export default function MCPConfigurator({
         <span className={styles.fieldHint}>
           {t('agents.tools.mcp.transportHint')}
         </span>
+      </div>
+
+      {/* Webhook Secret — only visible after creation or regeneration. Plain
+          text is shown ONCE; subsequent reads from the server return nothing
+          (it's stored encrypted). */}
+      {config.webhookSecret && (
+        <div className={styles.fieldGroup}>
+          <label className={styles.label}>{t('agents.tools.mcp.webhookSecret')}</label>
+          <div className={styles.secretRow}>
+            <input
+              className={styles.secretInput}
+              type="text"
+              value={config.webhookSecret}
+              readOnly
+            />
+            <button
+              type="button"
+              className={styles.copyBtn}
+              onClick={handleCopySecret}
+              title={t('agents.tools.mcp.headerCopy')}
+            >
+              <Copy size={14} />
+              <span>{secretCopied ? t('agents.tools.mcp.copied') : t('agents.tools.mcp.headerCopy')}</span>
+            </button>
+            {toolId && (
+              <button
+                type="button"
+                className={styles.regenBtn}
+                onClick={handleRegenerateSecret}
+                disabled={regenerating}
+                title={t('agents.tools.mcp.regenerate')}
+              >
+                {regenerating ? <Spinner size="sm" /> : <RefreshCw size={14} />}
+                <span>{t('agents.tools.mcp.regenerate')}</span>
+              </button>
+            )}
+          </div>
+          <p className={styles.fieldHint}>{t('agents.tools.mcp.webhookSecretHint')}</p>
+        </div>
+      )}
+
+      {/* In edit mode without a freshly-shown secret: still expose the
+          regenerate button so the user can rotate. */}
+      {!config.webhookSecret && toolId && (
+        <div className={styles.fieldGroup}>
+          <label className={styles.label}>{t('agents.tools.mcp.webhookSecret')}</label>
+          <div className={styles.secretRow}>
+            <input
+              className={styles.secretInput}
+              type="text"
+              value="••••••••••••••••••••••••••••••••"
+              readOnly
+            />
+            <button
+              type="button"
+              className={styles.regenBtn}
+              onClick={handleRegenerateSecret}
+              disabled={regenerating}
+              title={t('agents.tools.mcp.regenerate')}
+            >
+              {regenerating ? <Spinner size="sm" /> : <RefreshCw size={14} />}
+              <span>{t('agents.tools.mcp.regenerate')}</span>
+            </button>
+          </div>
+          <p className={styles.fieldHint}>{t('agents.tools.mcp.webhookSecretRotateHint')}</p>
+        </div>
+      )}
+
+      {/* Custom Headers */}
+      <div className={styles.fieldGroup}>
+        <div className={styles.headersHeader}>
+          <label className={styles.label}>{t('agents.tools.mcp.customHeaders')}</label>
+          <button
+            type="button"
+            className={styles.addHeaderBtn}
+            onClick={addHeader}
+          >
+            <Plus size={14} /> {t('agents.tools.mcp.addHeader')}
+          </button>
+        </div>
+
+        {config.headers.length === 0 && (
+          <p className={styles.headersEmpty}>{t('agents.tools.mcp.noHeadersYet')}</p>
+        )}
+
+        {config.headers.map((header, idx) => (
+          <div key={idx} className={styles.headerRow}>
+            <input
+              className={styles.headerKey}
+              placeholder={t('agents.tools.mcp.headerKeyPlaceholder')}
+              value={header.key}
+              onChange={(e) => updateHeader(idx, { key: e.target.value })}
+            />
+            <input
+              className={styles.headerValue}
+              type={revealedHeaders[idx] ? 'text' : 'password'}
+              placeholder={t('agents.tools.mcp.headerValuePlaceholder')}
+              value={header.value}
+              onChange={(e) => updateHeader(idx, { value: e.target.value })}
+            />
+            <button
+              type="button"
+              className={styles.headerToggleBtn}
+              onClick={() => setRevealedHeaders((r) => ({ ...r, [idx]: !r[idx] }))}
+              title={revealedHeaders[idx] ? t('agents.tools.mcp.headerHide') : t('agents.tools.mcp.headerShow')}
+            >
+              {revealedHeaders[idx] ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+            <button
+              type="button"
+              className={styles.headerRemoveBtn}
+              onClick={() => removeHeader(idx)}
+              title={t('agents.tools.mcp.headerRemove')}
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+
+        <p className={styles.fieldHint}>{t('agents.tools.mcp.headersHint')}</p>
       </div>
 
       {/* Tools list — shown after live test OR in edit mode with saved tools */}

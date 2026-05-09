@@ -220,3 +220,135 @@
   margin: 4px 0 0;
   display: block;
 }
+
+/* Custom Headers */
+.headersHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.addHeaderBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--color-primary-dark);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.addHeaderBtn:hover {
+  background: var(--color-bg-sidebar);
+}
+
+.headersEmpty {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin: 4px 0;
+}
+
+.headerRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) auto auto;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.headerKey,
+.headerValue {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-family: monospace;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  outline: none;
+  min-width: 0;
+}
+
+.headerKey:focus,
+.headerValue:focus {
+  border-color: var(--color-primary);
+}
+
+.headerToggleBtn,
+.headerRemoveBtn {
+  height: 32px;
+  width: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.headerToggleBtn:hover,
+.headerRemoveBtn:hover {
+  background: var(--color-bg-sidebar);
+  color: var(--color-text-primary);
+}
+
+.headerRemoveBtn:hover {
+  color: var(--color-danger);
+}
+
+/* Webhook secret display */
+.secretRow {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.secretInput {
+  flex: 1;
+  min-width: 200px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: 13px;
+  font-family: monospace;
+  background: var(--color-bg-sidebar);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-primary);
+}
+
+.copyBtn,
+.regenBtn {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--color-primary-dark);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.copyBtn:hover,
+.regenBtn:hover {
+  background: var(--color-bg-sidebar);
+}
+
+.regenBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

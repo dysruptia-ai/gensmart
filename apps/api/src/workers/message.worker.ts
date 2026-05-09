@@ -15,6 +15,8 @@ import {
 import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
+import { decryptHeaders } from '../services/mcp-headers.service';
+import { decrypt } from '../config/encryption';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
@@ -95,6 +97,8 @@ interface MCPToolMapping {
   serverUrl: string;
   originalToolName: string;
   transport: 'sse' | 'streamable-http';
+  /** Decrypted user headers + auto-injected (X-Agent-ID, X-Session-ID, X-Webhook-Secret). */
+  extraHeaders: Record<string, string>;
 }
 
 async function processMessage(job: Job<MessageJobData>): Promise<void> {
@@ -399,6 +403,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       serverName?: string;
       transport?: string;
       selected_tools?: string[];
+      headers?: Array<{ key: string; value_encrypted: string }>;
+      webhookSecret_encrypted?: string;
     };
 
     const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
@@ -408,10 +414,28 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
     if (!serverUrl || selectedTools.length === 0) continue;
 
+    // Build effective headers: user-configured (decrypted) + auto-injected.
+    // See docs/INTEGRATION.md §3 — X-Agent-ID and X-Session-ID identify the
+    // tool call, X-Webhook-Secret is mirrored back when the MCP signs webhooks.
+    // Auto-injected wins on key collision.
+    const userHeaders = decryptHeaders(cfg.headers);
+    const autoHeaders: Record<string, string> = {
+      'X-Agent-ID': agentId,
+      'X-Session-ID': conversationId,
+    };
+    if (cfg.webhookSecret_encrypted) {
+      try {
+        autoHeaders['X-Webhook-Secret'] = decrypt(cfg.webhookSecret_encrypted);
+      } catch (err) {
+        console.error(`[msg-worker] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
+      }
+    }
+    const allHeaders = { ...userHeaders, ...autoHeaders };
+
     const cacheKey = `mcp:tools:${tool.id}`;
 
     try {
-      // Try Redis cache first
+      // Try Redis cache first (only the tool definition list — headers never cached)
       let toolDefs: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> | null = null;
 
       const cached = await redis.get(cacheKey).catch(() => null);
@@ -424,8 +448,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       }
 
       if (!toolDefs) {
-        // Fetch from MCP server
-        const fetched = await connectAndListTools(serverUrl, mcpTransport);
+        // Fetch from MCP server (with auth headers if configured)
+        const fetched = await connectAndListTools(serverUrl, mcpTransport, allHeaders);
         toolDefs = fetched;
         // Cache for 1 hour
         await redis.setex(cacheKey, MCP_TOOLS_CACHE_TTL, JSON.stringify(toolDefs)).catch(() => {});
@@ -445,7 +469,12 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           parameters: toolDef.inputSchema as ToolDefinition['parameters'],
         });
 
-        mcpToolMap[prefixedName] = { serverUrl, originalToolName: toolDef.name, transport: mcpTransport };
+        mcpToolMap[prefixedName] = {
+          serverUrl,
+          originalToolName: toolDef.name,
+          transport: mcpTransport,
+          extraHeaders: allHeaders,
+        };
       }
     } catch (err) {
       // Graceful degradation: log but continue without MCP tools
@@ -816,8 +845,8 @@ async function executeTool(
 
   // MCP tools (prefixed with mcp_)
   if (name.startsWith('mcp_') && mcpToolMap[name]) {
-    const { serverUrl, originalToolName, transport } = mcpToolMap[name];
-    const result = await executeMCPTool(serverUrl, originalToolName, args, transport);
+    const { serverUrl, originalToolName, transport, extraHeaders } = mcpToolMap[name];
+    const result = await executeMCPTool(serverUrl, originalToolName, args, transport, extraHeaders);
     return result.content;
   }
 

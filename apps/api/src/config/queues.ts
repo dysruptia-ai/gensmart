@@ -55,4 +55,18 @@ export const exportQueue = new Queue('data-export', {
   },
 });
 
+// Inbound MCP webhook processing (signature already verified by the endpoint;
+// the worker fetches the conversation, formats the message and notifies the
+// channel). 3 attempts with exponential backoff so a transient WhatsApp/DB
+// failure doesn't drop the event.
+export const mcpWebhookQueue = new Queue('mcp-webhook-processing', {
+  connection: createBullConnection(),
+  defaultJobOptions: {
+    removeOnComplete: 200,
+    removeOnFail: 100,
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 2000 },
+  },
+});
+
 export { createBullConnection };

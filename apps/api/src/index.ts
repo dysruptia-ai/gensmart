@@ -23,6 +23,13 @@ import { startScrapingWorker } from './workers/scraping.worker';
 import { startScoringWorker } from './workers/scoring.worker';
 import { startReminderWorker } from './workers/reminder.worker';
 import { startExportWorker } from './workers/export.worker';
+import { startMcpWebhookWorker } from './workers/mcp-webhook.worker';
+import { mcpWebhookQueue } from './config/queues';
+import {
+  verifyMcpSignature,
+  getWebhookSecretForAgent,
+  recordDelivery,
+} from './services/mcp-webhook.service';
 
 const app = express();
 
@@ -83,6 +90,119 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), asyn
   res.json({ received: true });
 });
 
+// ─── MCP Webhook Endpoint ────────────────────────────────────────────────────
+// Inbound side of the Mastershop MCP integration. Receives signed events from
+// the MCP when orders change state in Mastershop and notifies the customer
+// through the conversation's channel.
+//
+// Contract: docs/INTEGRATION.md §6 (5 supported events), §7 (CanonicalOrder
+// payload shape), §8 (HMAC-SHA256 signing algorithm).
+//
+// 4-step flow (handler owns 1-3, worker owns 4):
+//   1. Validate HMAC — verifyMcpSignature() over the RAW body bytes against
+//      the per-agent secret resolved from agent_tools.config (the same secret
+//      GenSmart auto-injects as the outbound X-Webhook-Secret header on tool
+//      calls — symmetric, see services/mcp-webhook.service.ts).
+//   2. Dedup — recordDelivery() does INSERT ON CONFLICT DO NOTHING on the
+//      mcp_deliveries table, keyed by X-Delivery-ID. Defense-in-depth on top
+//      of the MCP's own upstream dedup (INTEGRATION.md §10.3).
+//   3. Enqueue — push the validated payload into mcpWebhookQueue and return
+//      200 within ~50ms, well under the MCP's 5s SLO (INTEGRATION.md §9.2).
+//   4. Worker processes — see workers/mcp-webhook.worker.ts: looks up the
+//      conversation, formats the message, pushes it via WhatsApp/Web channel.
+//
+// Registered inline BEFORE express.json() so express.raw() preserves the body
+// bytes for signature verification. Same pattern as the Stripe webhook above.
+const VALID_MCP_EVENTS = new Set([
+  'order.created',
+  'order.status_changed',
+  'order.guide_generated',
+  'order.delivered',
+  'order.incident',
+]);
+
+app.post('/api/webhooks/mcp', express.raw({ type: 'application/json' }), async (req, res): Promise<void> => {
+  const t0 = Date.now();
+  try {
+    const rawBody = req.body as Buffer;
+    const signature = req.headers['x-mcp-signature'] as string | undefined;
+    const event = req.headers['x-event'] as string | undefined;
+    const deliveryId = req.headers['x-delivery-id'] as string | undefined;
+    const agentId = req.headers['x-agent-id'] as string | undefined;
+    const source = req.headers['x-mcp-source'] as string | undefined;
+
+    if (!signature || !event || !deliveryId || !agentId) {
+      res.status(400).json({ error: 'Missing required headers' });
+      return;
+    }
+
+    if (source && source !== 'mastershop-mcp') {
+      // Don't reject — keep room for additional MCP providers in the future,
+      // but log so unexpected sources are visible.
+      console.warn(`[mcp-webhook] Unknown source: ${source}`);
+    }
+
+    if (!VALID_MCP_EVENTS.has(event)) {
+      res.status(400).json({ error: `Unknown event: ${event}` });
+      return;
+    }
+
+    const secret = await getWebhookSecretForAgent(agentId);
+    if (!secret) {
+      // Mask: don't reveal "no secret configured" — same response as a bad
+      // signature so an attacker can't enumerate agents.
+      console.warn(`[mcp-webhook] No webhook secret for agent ${agentId}`);
+      res.status(401).json({ error: 'invalid_signature' });
+      return;
+    }
+
+    if (!verifyMcpSignature(rawBody, signature, secret)) {
+      console.warn(
+        `[mcp-webhook] Invalid signature agent=${agentId} delivery=${deliveryId}`
+      );
+      res.status(401).json({ error: 'invalid_signature' });
+      return;
+    }
+
+    // Defense-in-depth dedup. The MCP also dedups upstream by delivery_key
+    // (see INTEGRATION.md §10.3) but we record every delivery_id we accept.
+    const isNew = await recordDelivery(deliveryId, agentId, event);
+    if (!isNew) {
+      console.log(
+        `[mcp-webhook] Duplicate delivery=${deliveryId} agent=${agentId}, acking`
+      );
+      res.json({ received: true, status: 'duplicate' });
+      return;
+    }
+
+    let payload: { event: string; delivered_at: string; data: { order: unknown } };
+    try {
+      payload = JSON.parse(rawBody.toString('utf-8'));
+    } catch (err) {
+      console.error('[mcp-webhook] Failed to parse payload:', (err as Error).message);
+      res.status(400).json({ error: 'invalid_json' });
+      return;
+    }
+
+    await mcpWebhookQueue.add('process-mcp-event', {
+      agentId,
+      event,
+      deliveryId,
+      payload,
+    });
+
+    const t1 = Date.now();
+    console.log(
+      `[mcp-webhook] ACK ${t1 - t0}ms agent=${agentId} event=${event} delivery=${deliveryId}`
+    );
+
+    res.json({ received: true });
+  } catch (err) {
+    console.error('[mcp-webhook] Unexpected error:', (err as Error).message);
+    res.status(500).json({ error: 'internal_error' });
+  }
+});
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -116,6 +236,7 @@ startScrapingWorker();
 startScoringWorker();
 startReminderWorker();
 startExportWorker();
+startMcpWebhookWorker();
 
 // Trial expiration check — runs every hour
 import { query as dbQuery } from './config/database';
@@ -140,7 +261,7 @@ setInterval(async () => {
 httpServer.listen(env.PORT, () => {
   console.log(`GenSmart API running on port ${env.PORT}`);
   console.log(`WebSocket server ready`);
-  console.log(`Workers started: message, rag, scraping, scoring, reminder, export`);
+  console.log(`Workers started: message, rag, scraping, scoring, reminder, export, mcp-webhook`);
 });
 
 export default app;

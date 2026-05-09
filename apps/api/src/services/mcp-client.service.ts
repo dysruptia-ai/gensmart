@@ -35,7 +35,11 @@ const REQUEST_TIMEOUT_MS = 30_000;
 
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
-function postJson(url: string, body: unknown): Promise<{ statusCode: number }> {
+function postJson(
+  url: string,
+  body: unknown,
+  extraHeaders?: Record<string, string>
+): Promise<{ statusCode: number }> {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
     const isHttps = parsed.protocol === 'https:';
@@ -49,6 +53,7 @@ function postJson(url: string, body: unknown): Promise<{ statusCode: number }> {
         path: parsed.pathname + parsed.search,
         method: 'POST',
         headers: {
+          ...(extraHeaders ?? {}),
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(payload),
         },
@@ -76,7 +81,8 @@ async function withMCPSession<T>(
   serverUrl: string,
   operation: (
     send: (method: string, params?: unknown) => Promise<unknown>
-  ) => Promise<T>
+  ) => Promise<T>,
+  extraHeaders?: Record<string, string>
 ): Promise<T> {
   // Validate URL
   let parsed: URL;
@@ -121,6 +127,7 @@ async function withMCPSession<T>(
         path: parsed.pathname + parsed.search,
         method: 'GET',
         headers: {
+          ...(extraHeaders ?? {}),
           Accept: 'text/event-stream',
           'Cache-Control': 'no-cache',
           Connection: 'keep-alive',
@@ -236,14 +243,14 @@ async function withMCPSession<T>(
       });
     });
 
-    await postJson(postEndpoint, { jsonrpc: '2.0', id, method, params });
+    await postJson(postEndpoint, { jsonrpc: '2.0', id, method, params }, extraHeaders);
 
     return responsePromise;
   }
 
   async function notify(method: string, params?: unknown): Promise<void> {
     if (!postEndpoint) throw new Error('Not connected to MCP server');
-    await postJson(postEndpoint, { jsonrpc: '2.0', method, params });
+    await postJson(postEndpoint, { jsonrpc: '2.0', method, params }, extraHeaders);
   }
 
   try {
@@ -279,7 +286,8 @@ async function withStreamableHTTPSession<T>(
   serverUrl: string,
   operation: (
     send: (method: string, params?: unknown) => Promise<unknown>
-  ) => Promise<T>
+  ) => Promise<T>,
+  extraHeaders?: Record<string, string>
 ): Promise<T> {
   // Validate URL
   let parsed: URL;
@@ -305,6 +313,7 @@ async function withStreamableHTTPSession<T>(
     const body = JSON.stringify({ jsonrpc: '2.0', id, method, params });
 
     const headers: Record<string, string> = {
+      ...(extraHeaders ?? {}),
       'Content-Type': 'application/json',
       'Accept': 'application/json, text/event-stream',
     };
@@ -430,6 +439,7 @@ async function withStreamableHTTPSession<T>(
     const notifyBody = JSON.stringify({ jsonrpc: '2.0', method, params });
 
     const headers: Record<string, string> = {
+      ...(extraHeaders ?? {}),
       'Content-Type': 'application/json',
       'Accept': 'application/json, text/event-stream',
     };
@@ -464,18 +474,28 @@ async function withStreamableHTTPSession<T>(
 
 /**
  * Connect to an MCP server and retrieve the list of available tools.
+ *
+ * `extraHeaders` are sent on every underlying HTTP request (SSE GET, JSON-RPC POST,
+ * notification POST). Use for per-tenant auth headers (e.g. X-MCP-API-Key) and
+ * GenSmart's auto-injected identity headers (X-Agent-ID, X-Session-ID,
+ * X-Webhook-Secret). See docs/INTEGRATION.md §3.
  */
 export async function connectAndListTools(
   serverUrl: string,
-  transport: 'sse' | 'streamable-http' = 'sse'
+  transport: 'sse' | 'streamable-http' = 'sse',
+  extraHeaders?: Record<string, string>
 ): Promise<MCPToolInfo[]> {
-  console.log(`[MCP] Connecting to ${serverUrl} via ${transport} to list tools`);
+  if (extraHeaders && Object.keys(extraHeaders).length > 0) {
+    console.log(
+      `[MCP] Connecting to ${serverUrl} via ${transport} to list tools (extra headers: ${Object.keys(extraHeaders).join(', ')})`
+    );
+  } else {
+    console.log(`[MCP] Connecting to ${serverUrl} via ${transport} to list tools`);
+  }
 
-  const withSession = transport === 'streamable-http' ? withStreamableHTTPSession : withMCPSession;
-
-  const result = await withSession(serverUrl, async (send) => {
-    return send('tools/list', {});
-  });
+  const result = transport === 'streamable-http'
+    ? await withStreamableHTTPSession(serverUrl, async (send) => send('tools/list', {}), extraHeaders)
+    : await withMCPSession(serverUrl, async (send) => send('tools/list', {}), extraHeaders);
 
   type ListResult = {
     tools?: Array<{
@@ -499,21 +519,36 @@ export async function connectAndListTools(
 
 /**
  * Execute a tool on an MCP server.
+ *
+ * `extraHeaders` are sent on every underlying HTTP request — see `connectAndListTools`.
  */
 export async function executeMCPTool(
   serverUrl: string,
   toolName: string,
   toolArguments: Record<string, unknown>,
-  transport: 'sse' | 'streamable-http' = 'sse'
+  transport: 'sse' | 'streamable-http' = 'sse',
+  extraHeaders?: Record<string, string>
 ): Promise<MCPToolResult> {
-  console.log(`[MCP] Executing tool "${toolName}" on ${serverUrl} via ${transport}`);
-
-  const withSession = transport === 'streamable-http' ? withStreamableHTTPSession : withMCPSession;
+  if (extraHeaders && Object.keys(extraHeaders).length > 0) {
+    console.log(
+      `[MCP] Executing tool "${toolName}" on ${serverUrl} via ${transport} (extra headers: ${Object.keys(extraHeaders).join(', ')})`
+    );
+  } else {
+    console.log(`[MCP] Executing tool "${toolName}" on ${serverUrl} via ${transport}`);
+  }
 
   try {
-    const result = await withSession(serverUrl, async (send) => {
-      return send('tools/call', { name: toolName, arguments: toolArguments });
-    });
+    const result = transport === 'streamable-http'
+      ? await withStreamableHTTPSession(
+          serverUrl,
+          async (send) => send('tools/call', { name: toolName, arguments: toolArguments }),
+          extraHeaders
+        )
+      : await withMCPSession(
+          serverUrl,
+          async (send) => send('tools/call', { name: toolName, arguments: toolArguments }),
+          extraHeaders
+        );
 
     type CallResult = {
       content?: Array<{ type: string; text?: string }> | string;

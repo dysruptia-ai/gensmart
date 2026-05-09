@@ -13,13 +13,21 @@ import * as agentService from '../services/agent.service';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
-import { connectAndListTools } from '../services/mcp-client.service';
+import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
+import {
+  encryptHeaders,
+  decryptHeaders,
+  generateWebhookSecret,
+  type EncryptedHeader,
+} from '../services/mcp-headers.service';
+import { encrypt, decrypt } from '../config/encryption';
 import {
   buildEmailNotificationToolDef,
   type EmailNotificationToolConfig,
 } from '../services/send-email-notification.service';
 import { redis } from '../config/redis';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
+import { randomUUID } from 'crypto';
 
 const router = Router();
 
@@ -96,6 +104,22 @@ const toolUpdateSchema = z.object({
   description: z.string().max(1000).optional(),
   config: z.record(z.unknown()).optional(),
   isEnabled: z.boolean().optional(),
+});
+
+// MCP-specific schema. Validated only when type === 'mcp'; toolSchema keeps
+// `config` as a free record so other tool types (custom_function etc.) are
+// unaffected. See docs/INTEGRATION.md §3.
+const mcpHeaderInputSchema = z.object({
+  key: z.string().min(1).max(100).regex(/^[A-Za-z0-9-]+$/, 'Invalid header name'),
+  value: z.string().max(2000),
+});
+
+const mcpConfigInputSchema = z.object({
+  server_url: z.string().url(),
+  name: z.string().min(1).max(100).optional().default('mcp'),
+  transport: z.enum(['sse', 'streamable-http']).optional().default('sse'),
+  selected_tools: z.array(z.string()).optional().default([]),
+  headers: z.array(mcpHeaderInputSchema).max(20).optional().default([]),
 });
 
 // GET /api/agents/templates — must be before /:id routes
@@ -279,8 +303,29 @@ router.post(
         }
       }
 
+      // For MCP tools: encrypt user-supplied headers and auto-generate the
+      // webhook secret. The plain secret is returned ONCE so the frontend can
+      // show it for copy; subsequent reads must use /regenerate-webhook-secret.
+      let plainWebhookSecret: string | null = null;
+      if (toolType === 'mcp') {
+        const validated = mcpConfigInputSchema.parse(req.body.config ?? {});
+        plainWebhookSecret = generateWebhookSecret();
+        req.body.config = {
+          server_url: validated.server_url,
+          name: validated.name,
+          transport: validated.transport,
+          selected_tools: validated.selected_tools,
+          headers: encryptHeaders(validated.headers),
+          webhookSecret_encrypted: encrypt(plainWebhookSecret),
+        };
+      }
+
       const tool = await agentService.createTool(req.org!.id, agentId, req.body);
-      res.status(201).json({ tool });
+      if (plainWebhookSecret) {
+        res.status(201).json({ tool, webhookSecret: plainWebhookSecret });
+      } else {
+        res.status(201).json({ tool });
+      }
     } catch (err) {
       next(err);
     }
@@ -293,7 +338,11 @@ router.post(
   validateUUID('id'),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { server_url, transport } = req.body as { server_url?: string; transport?: string };
+      const { server_url, transport, headers: rawHeaders } = req.body as {
+        server_url?: string;
+        transport?: string;
+        headers?: Array<{ key: string; value: string }>;
+      };
 
       if (!server_url || typeof server_url !== 'string') {
         res.status(400).json({ success: false, error: 'server_url is required' });
@@ -318,7 +367,20 @@ router.post(
         return;
       }
 
-      const tools = await connectAndListTools(server_url, mcpTransport);
+      // Test-time headers come from the form in plain text (not yet persisted).
+      // Skip empty entries and trim names.
+      const extraHeaders: Record<string, string> = {};
+      if (Array.isArray(rawHeaders)) {
+        for (const h of rawHeaders) {
+          const k = h?.key?.trim();
+          const v = h?.value;
+          if (k && typeof v === 'string' && v.length > 0) {
+            extraHeaders[k] = v;
+          }
+        }
+      }
+
+      const tools = await connectAndListTools(server_url, mcpTransport, extraHeaders);
       res.json({ success: true, tools });
     } catch (err) {
       const message = (err as Error).message;
@@ -336,9 +398,51 @@ router.put(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const toolId = String(req.params['toolId']);
+      const agentId = String(req.params['id']);
+
+      // For MCP tools with a config update: re-encrypt headers, preserve any
+      // header whose plain value is '' (UI sends empty when user didn't re-type
+      // an existing encrypted value), and preserve the existing webhook secret.
+      if (req.body.config !== undefined) {
+        const existingTool = await query<{ type: string; config: Record<string, unknown> }>(
+          'SELECT type, config FROM agent_tools WHERE id = $1 AND agent_id = $2',
+          [toolId, agentId]
+        );
+        if (existingTool.rows.length > 0 && existingTool.rows[0].type === 'mcp') {
+          const existingCfg = existingTool.rows[0].config as {
+            headers?: EncryptedHeader[];
+            webhookSecret_encrypted?: string;
+          };
+          const validated = mcpConfigInputSchema.parse(req.body.config);
+
+          // Merge headers: keep existing ciphertext when user submits an empty
+          // value (UI cannot show decrypted secrets back).
+          const mergedHeaders: EncryptedHeader[] = [];
+          for (const h of validated.headers) {
+            if (h.value === '') {
+              const prior = existingCfg.headers?.find((eh) => eh.key === h.key);
+              if (prior) mergedHeaders.push(prior);
+              // else: dropped — user added an empty header without value
+            } else {
+              mergedHeaders.push({ key: h.key, value_encrypted: encrypt(h.value) });
+            }
+          }
+
+          req.body.config = {
+            server_url: validated.server_url,
+            name: validated.name,
+            transport: validated.transport,
+            selected_tools: validated.selected_tools,
+            headers: mergedHeaders,
+            // Preserve secret — rotation is explicit via /regenerate-webhook-secret
+            webhookSecret_encrypted: existingCfg.webhookSecret_encrypted,
+          };
+        }
+      }
+
       const tool = await agentService.updateTool(
         req.org!.id,
-        String(req.params['id']),
+        agentId,
         toolId,
         req.body
       );
@@ -349,6 +453,56 @@ router.put(
       }
 
       res.json({ tool });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/agents/:id/tools/:toolId/regenerate-webhook-secret
+// Rotates the secret used both as outbound X-Webhook-Secret header AND inbound
+// HMAC key. Returns plain text ONCE — the dropshipper must update their MCP
+// server with the new value or webhooks will fail HMAC verification.
+router.post(
+  '/:id/tools/:toolId/regenerate-webhook-secret',
+  validateUUID('id', 'toolId'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const toolId = String(req.params['toolId']);
+
+      // Verify the agent belongs to the org and the tool is MCP
+      const existing = await query<{ type: string; config: Record<string, unknown>; agent_org: string }>(
+        `SELECT t.type, t.config, a.organization_id AS agent_org
+         FROM agent_tools t
+         JOIN agents a ON a.id = t.agent_id
+         WHERE t.id = $1 AND t.agent_id = $2`,
+        [toolId, agentId]
+      );
+      if (existing.rows.length === 0 || existing.rows[0].agent_org !== req.org!.id) {
+        res.status(404).json({ error: { message: 'Tool not found', code: 'NOT_FOUND' } });
+        return;
+      }
+      if (existing.rows[0].type !== 'mcp') {
+        res.status(400).json({ error: { message: 'Not an MCP tool', code: 'INVALID_TOOL_TYPE' } });
+        return;
+      }
+
+      const newSecret = generateWebhookSecret();
+      const newConfig = {
+        ...existing.rows[0].config,
+        webhookSecret_encrypted: encrypt(newSecret),
+      };
+
+      await query(
+        'UPDATE agent_tools SET config = $1, updated_at = NOW() WHERE id = $2',
+        [JSON.stringify(newConfig), toolId]
+      );
+
+      // Invalidate MCP tool cache so the worker picks up the new secret on next call
+      await redis.del(`mcp:tools:${toolId}`).catch(() => {});
+
+      res.json({ webhookSecret: newSecret });
     } catch (err) {
       next(err);
     }
@@ -855,7 +1009,17 @@ router.post(
       const agentResult = await agentService.getAgentById(req.org!.id, agentId);
 
       const previewKey = `preview:${agentId}:${req.user!.userId}`;
+      const previewSessionKey = `preview-session:${agentId}:${req.user!.userId}`;
       const TTL = 30 * 60; // 30 minutes
+
+      // Stable per-(agent,user) session UUID for MCP X-Session-ID. Mirrors the
+      // worker's behaviour where one conversation = one session = persistent
+      // cart on the MCP side. Reset alongside preview history.
+      let previewSessionId = await redis.get(previewSessionKey);
+      if (!previewSessionId) {
+        previewSessionId = randomUUID();
+        await redis.set(previewSessionKey, previewSessionId, 'EX', TTL);
+      }
 
       // Load stored history
       const rawHistory = await redis.get(previewKey);
@@ -969,6 +1133,86 @@ router.post(
               },
             }
           );
+        }
+      }
+
+      // MCP tools — same loading pattern as message.worker.ts (with cache),
+      // but using previewSessionId for X-Session-ID so the preview chat shares
+      // a cart/session with the MCP across turns until /preview/reset.
+      const mcpToolMap: Record<string, {
+        serverUrl: string;
+        originalToolName: string;
+        transport: 'sse' | 'streamable-http';
+        extraHeaders: Record<string, string>;
+      }> = {};
+      const MCP_TOOLS_CACHE_TTL = 3600;
+
+      for (const tool of toolsResult.rows) {
+        if (tool.type !== 'mcp' || !tool.is_enabled) continue;
+
+        const cfg = tool.config as {
+          server_url?: string;
+          serverUrl?: string;
+          name?: string;
+          serverName?: string;
+          transport?: string;
+          selected_tools?: string[];
+          headers?: EncryptedHeader[];
+          webhookSecret_encrypted?: string;
+        };
+
+        const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
+        const serverName = cfg.name ?? cfg.serverName ?? 'mcp';
+        const selectedTools = cfg.selected_tools ?? [];
+        const mcpTransport = (cfg.transport === 'streamable-http' ? 'streamable-http' : 'sse') as 'sse' | 'streamable-http';
+
+        if (!serverUrl || selectedTools.length === 0) continue;
+
+        const userHeaders = decryptHeaders(cfg.headers);
+        const autoHeaders: Record<string, string> = {
+          'X-Agent-ID': agentId,
+          'X-Session-ID': previewSessionId,
+        };
+        if (cfg.webhookSecret_encrypted) {
+          try {
+            autoHeaders['X-Webhook-Secret'] = decrypt(cfg.webhookSecret_encrypted);
+          } catch (err) {
+            console.error(`[preview] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
+          }
+        }
+        const allHeaders = { ...userHeaders, ...autoHeaders };
+
+        try {
+          const cacheKey = `mcp:tools:${tool.id}`;
+          let toolDefs: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }> | null = null;
+
+          const cached = await redis.get(cacheKey).catch(() => null);
+          if (cached) {
+            try { toolDefs = JSON.parse(cached) as typeof toolDefs; } catch { toolDefs = null; }
+          }
+          if (!toolDefs) {
+            toolDefs = await connectAndListTools(serverUrl, mcpTransport, allHeaders);
+            await redis.setex(cacheKey, MCP_TOOLS_CACHE_TTL, JSON.stringify(toolDefs)).catch(() => {});
+          }
+
+          const sanitizedServerName = sanitizeName(serverName);
+          for (const toolDef of toolDefs) {
+            if (!selectedTools.includes(toolDef.name)) continue;
+            const prefixedName = `mcp_${sanitizedServerName}_${sanitizeName(toolDef.name)}`;
+            llmTools.push({
+              name: prefixedName,
+              description: `[MCP:${serverName}] ${toolDef.description}`,
+              parameters: toolDef.inputSchema as Record<string, unknown>,
+            });
+            mcpToolMap[prefixedName] = {
+              serverUrl,
+              originalToolName: toolDef.name,
+              transport: mcpTransport,
+              extraHeaders: allHeaders,
+            };
+          }
+        } catch (err) {
+          console.error(`[preview] Failed to load MCP tools for tool ${tool.id}:`, (err as Error).message);
         }
       }
 
@@ -1155,6 +1399,20 @@ router.post(
             });
 
             previewToolResults.push({ toolCallId: tc.id, content: previewResult });
+          } else if (tc.name.startsWith('mcp_') && mcpToolMap[tc.name]) {
+            // MCP tool — executes against the real server (e.g. create_order
+            // creates a real Mastershop order). Acceptable in preview because
+            // the user is testing E2E. Reset clears the session/cart.
+            const { serverUrl, originalToolName, transport, extraHeaders } = mcpToolMap[tc.name];
+            try {
+              const result = await executeMCPTool(serverUrl, originalToolName, tc.arguments, transport, extraHeaders);
+              previewToolResults.push({ toolCallId: tc.id, content: result.content });
+            } catch (err) {
+              previewToolResults.push({
+                toolCallId: tc.id,
+                content: `MCP tool execution failed: ${(err as Error).message}`,
+              });
+            }
           } else {
             // Check if this is an email_notification tool
             const emailNotifTool = toolsResult.rows.find(
@@ -1266,7 +1524,13 @@ router.post(
       const agentId = String(req.params['id']);
       const { redis } = await import('../config/redis');
       const previewKey = `preview:${agentId}:${req.user!.userId}`;
-      await redis.del(previewKey);
+      const previewSessionKey = `preview-session:${agentId}:${req.user!.userId}`;
+      // Clear both: history AND the MCP session UUID (so the next message
+      // starts a fresh session/cart on any connected MCP).
+      await Promise.all([
+        redis.del(previewKey).catch(() => {}),
+        redis.del(previewSessionKey).catch(() => {}),
+      ]);
       res.json({ message: 'Preview history cleared' });
     } catch (err) {
       next(err);

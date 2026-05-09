@@ -610,7 +610,25 @@
         "retestNeeded": "La URL cambió. Por favor prueba la conexión nuevamente.",
         "urlRequired": "La URL del servidor es requerida",
         "nameRequired": "El nombre del servidor es requerido",
-        "httpsRequired": "La URL del servidor debe usar HTTPS"
+        "httpsRequired": "La URL del servidor debe usar HTTPS",
+        "customHeaders": "Headers personalizados",
+        "addHeader": "Agregar header",
+        "headerKeyPlaceholder": "Nombre (ej. X-API-Key)",
+        "headerValuePlaceholder": "Valor (cifrado)",
+        "noHeadersYet": "Aún no hay headers personalizados.",
+        "headersHint": "Los valores se cifran en reposo. GenSmart inyecta automáticamente X-Agent-ID, X-Session-ID y X-Webhook-Secret — no los agregues aquí.",
+        "headerShow": "Mostrar",
+        "headerHide": "Ocultar",
+        "headerCopy": "Copiar",
+        "headerRemove": "Eliminar",
+        "copied": "Copiado",
+        "webhookSecret": "Webhook Secret",
+        "webhookSecretHint": "Copia este secreto y configúralo en tu MCP server. Se usa para firmar los webhooks entrantes. Solo se muestra una vez — guárdalo en un lugar seguro.",
+        "webhookSecretRotateHint": "El secreto está oculto. Usa Regenerar para crear uno nuevo (deberás actualizar tu MCP server con el nuevo valor).",
+        "webhookSecretCreated": "Webhook secret generado. Cópialo ahora — no se mostrará de nuevo.",
+        "webhookSecretRegenerated": "Webhook secret regenerado. Copia el nuevo valor y actualiza tu MCP server.",
+        "regenerate": "Regenerar",
+        "regenerateConfirm": "Esto invalidará el secreto actual. Debes actualizar tu MCP server con el nuevo valor o los webhooks fallarán. ¿Continuar?"
       }
     },
     "knowledge": {

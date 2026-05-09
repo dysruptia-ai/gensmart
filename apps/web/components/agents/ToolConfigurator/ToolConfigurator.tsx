@@ -5,7 +5,7 @@ import {
   Plus, Calendar, Database, Code2, Wrench, Trash2, Settings, Upload, X,
   Check, RefreshCw, ChevronDown, ChevronUp, Play, Info, Mail,
 } from 'lucide-react';
-import MCPConfigurator, { MCPConfig } from '../MCPConfigurator';
+import MCPConfigurator, { MCPConfig, MCPHeader } from '../MCPConfigurator';
 import { useTranslation } from '@/hooks/useTranslation';
 import Button from '@/components/ui/Button';
 import Toggle from '@/components/ui/Toggle';
@@ -103,6 +103,8 @@ interface ToolForm {
   mcpApiKey: string;
   mcpTransport: 'sse' | 'streamable-http';
   mcpSelectedTools: string[];
+  mcpHeaders: MCPHeader[];
+  mcpWebhookSecret: string;
   // web_scraping
   allowedDomains: string;
   // email_notification
@@ -151,6 +153,8 @@ const DEFAULT_FORM: ToolForm = {
   mcpApiKey: '',
   mcpTransport: 'sse',
   mcpSelectedTools: [],
+  mcpHeaders: [],
+  mcpWebhookSecret: '',
   allowedDomains: '',
   emailRecipient: '',
   emailCc: '',
@@ -250,6 +254,10 @@ function buildConfig(form: ToolForm): Record<string, unknown> {
         name: form.mcpServerName,
         transport: form.mcpTransport,
         selected_tools: form.mcpSelectedTools,
+        // Plain {key,value} pairs — backend encrypts. Empty values mean
+        // "keep existing encrypted value" on PUT (edit mode).
+        headers: form.mcpHeaders.filter((h) => h.key.trim().length > 0),
+        // webhookSecret_encrypted is server-managed; never sent from frontend
       };
     case 'email_notification':
       return {
@@ -472,6 +480,15 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       mcpApiKey: (cfg['apiKey'] as string) ?? '',
       mcpTransport: ((cfg['transport'] as string) ?? 'sse') as 'sse' | 'streamable-http',
       mcpSelectedTools: (cfg['selected_tools'] as string[]) ?? [],
+      // Encrypted header values are never returned to the browser. Show keys
+      // with empty values; the user must re-type to change. Empty values are
+      // preserved server-side on save.
+      mcpHeaders: Array.isArray(cfg['headers'])
+        ? (cfg['headers'] as Array<{ key?: string }>)
+            .filter((h) => typeof h?.key === 'string' && h.key.length > 0)
+            .map((h) => ({ key: h.key as string, value: '' }))
+        : [],
+      mcpWebhookSecret: '',
       emailRecipient: (cfg['recipientEmail'] as string) ?? '',
       emailCc: Array.isArray(cfg['ccEmails'])
         ? (cfg['ccEmails'] as string[]).join(', ')
@@ -502,13 +519,22 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
         );
         setTools((prev) => prev.map((t) => (t.id === editTool.id ? updated.tool : t)));
       } else {
-        const created = await api.post<{ tool: AgentTool }>(
+        const created = await api.post<{ tool: AgentTool; webhookSecret?: string }>(
           `/api/agents/${agentId}/tools`,
           { type: form.type, name: form.name, description: form.description, config: buildConfig(form) }
         );
         setTools((prev) => [...prev, created.tool]);
         // Switch to edit mode so polling works if modal stays open
         if (form.type === 'rag') setEditTool(created.tool);
+        // For MCP: stay open with the freshly-generated webhook secret visible.
+        // The secret is shown ONCE — we keep the modal open so the user can copy it.
+        if (form.type === 'mcp' && created.webhookSecret) {
+          setEditTool(created.tool);
+          setField('mcpWebhookSecret', created.webhookSecret);
+          success(t('agents.tools.mcp.webhookSecretCreated'));
+          setSaving(false);
+          return;
+        }
       }
 
       success(editTool ? 'Tool updated' : 'Tool added');
@@ -1575,19 +1601,28 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       name: form.mcpServerName,
       transport: form.mcpTransport,
       selected_tools: form.mcpSelectedTools,
+      headers: form.mcpHeaders,
+      webhookSecret: form.mcpWebhookSecret || undefined,
     };
 
     return (
       <MCPConfigurator
         agentId={agentId}
+        toolId={editTool?.id}
         config={mcpConfig}
         onChange={(patch) => {
           if (patch.server_url !== undefined) setField('mcpServerUrl', patch.server_url);
           if (patch.name !== undefined) setField('mcpServerName', patch.name);
           if (patch.transport !== undefined) setField('mcpTransport', patch.transport);
           if (patch.selected_tools !== undefined) setField('mcpSelectedTools', patch.selected_tools);
+          if (patch.headers !== undefined) setField('mcpHeaders', patch.headers);
+          if (patch.webhookSecret !== undefined) setField('mcpWebhookSecret', patch.webhookSecret);
         }}
         onConnectionError={toastError}
+        onSecretRegenerated={(newSecret) => {
+          setField('mcpWebhookSecret', newSecret);
+          success(t('agents.tools.mcp.webhookSecretRegenerated'));
+        }}
       />
     );
   }
