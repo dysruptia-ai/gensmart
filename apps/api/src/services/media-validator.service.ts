@@ -36,7 +36,7 @@ export const MEDIA_VALIDATION_HEAD_TIMEOUT_MS = 8000;
 // SSRF blocklist — private IP ranges, metadata endpoints, localhost
 // TODO: For stronger SSRF protection, also resolve hostname via dns.promises.lookup()
 // and check the resulting IP against these patterns (prevents DNS-rebinding attacks).
-const BLOCKED_HOST_PATTERNS: RegExp[] = [
+export const BLOCKED_HOST_PATTERNS: RegExp[] = [
   /^localhost$/i,
   /^127\./,
   /^10\./,
@@ -60,8 +60,33 @@ export interface MediaValidationResult {
 
 export type MediaType = 'image' | 'video' | 'document' | 'audio';
 
-function isHostBlocked(hostname: string): boolean {
+export function isHostBlocked(hostname: string): boolean {
   return BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(hostname));
+}
+
+// MIME types that some object stores (e.g. S3) return when the upload had no
+// explicit Content-Type set. We can't trust these — fall back to magic bytes.
+const UNTRUSTED_MIME_TYPES = new Set<string>([
+  'application/octet-stream',
+  'binary/octet-stream',
+  'application/binary',
+  '',
+]);
+
+/**
+ * Inspect the leading bytes of a buffer and return the detected image MIME type.
+ * Only PNG and JPEG are recognized — the two formats WhatsApp accepts for images.
+ */
+export function detectImageMimeFromBytes(bytes: Buffer): string | null {
+  if (bytes.length >= 8 &&
+      bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4E && bytes[3] === 0x47 &&
+      bytes[4] === 0x0D && bytes[5] === 0x0A && bytes[6] === 0x1A && bytes[7] === 0x0A) {
+    return 'image/png';
+  }
+  if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
+    return 'image/jpeg';
+  }
+  return null;
 }
 
 export async function validateMediaUrl(
@@ -146,19 +171,64 @@ export async function validateMediaUrl(
   }
 
   // 6. Validate Content-Type
-  if (!contentType) {
-    return { valid: false, error: 'URL did not return a Content-Type header', errorCode: 'WRONG_TYPE' };
-  }
-
   // Compare base mime type, ignoring parameters (e.g. "image/jpeg; charset=binary" → "image/jpeg")
-  const baseMimeType = contentType.split(';')[0]!.trim().toLowerCase();
+  const baseMimeType = (contentType ?? '').split(';')[0]!.trim().toLowerCase();
   const allowedTypes = (limits.allowedMimeTypes as readonly string[]);
-  if (!allowedTypes.includes(baseMimeType)) {
-    return {
-      valid: false,
-      error: `Content-Type "${baseMimeType}" is not allowed for ${type}. Allowed: ${allowedTypes.join(', ')}`,
-      errorCode: 'WRONG_TYPE',
-    };
+
+  // For images, if the server returned an untrusted/generic Content-Type (common with
+  // S3 / CloudFront uploads where the content-type wasn't set explicitly), fall back
+  // to inspecting the first bytes of the file to detect the real MIME type.
+  let effectiveMimeType: string = baseMimeType;
+  if (type === 'image' && UNTRUSTED_MIME_TYPES.has(baseMimeType)) {
+    const rangeController = new AbortController();
+    const rangeTimeout = setTimeout(() => rangeController.abort(), MEDIA_VALIDATION_HEAD_TIMEOUT_MS);
+    let detected: string | null = null;
+    try {
+      const rangeRes = await fetch(url, {
+        method: 'GET',
+        headers: { Range: 'bytes=0-11' },
+        signal: rangeController.signal,
+        redirect: 'follow',
+      });
+      clearTimeout(rangeTimeout);
+      if (!rangeRes.ok && rangeRes.status !== 206) {
+        return {
+          valid: false,
+          error: `Could not fetch media bytes (HTTP ${rangeRes.status})`,
+          errorCode: 'HEAD_FAILED',
+        };
+      }
+      const buf = Buffer.from(await rangeRes.arrayBuffer());
+      detected = detectImageMimeFromBytes(buf);
+    } catch (err) {
+      clearTimeout(rangeTimeout);
+      const isTimeout = (err as Error).name === 'AbortError';
+      return {
+        valid: false,
+        error: isTimeout ? 'Media byte check timed out' : `Could not fetch media bytes: ${(err as Error).message}`,
+        errorCode: isTimeout ? 'TIMEOUT' : 'HEAD_FAILED',
+      };
+    }
+
+    if (!detected || !allowedTypes.includes(detected)) {
+      return {
+        valid: false,
+        error: `URL does not point to a valid image (Content-Type "${baseMimeType || 'missing'}", magic bytes did not match PNG or JPEG)`,
+        errorCode: 'WRONG_TYPE',
+      };
+    }
+    effectiveMimeType = detected;
+  } else {
+    if (!contentType) {
+      return { valid: false, error: 'URL did not return a Content-Type header', errorCode: 'WRONG_TYPE' };
+    }
+    if (!allowedTypes.includes(baseMimeType)) {
+      return {
+        valid: false,
+        error: `Content-Type "${baseMimeType}" is not allowed for ${type}. Allowed: ${allowedTypes.join(', ')}`,
+        errorCode: 'WRONG_TYPE',
+      };
+    }
   }
 
   // 7. Validate Content-Length (only if server provided it)
@@ -177,7 +247,7 @@ export async function validateMediaUrl(
   // 8. All checks passed — cache and return
   const result: MediaValidationResult = {
     valid: true,
-    mimeType: baseMimeType,
+    mimeType: effectiveMimeType,
     sizeBytes: contentLength ?? undefined,
   };
 

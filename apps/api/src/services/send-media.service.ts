@@ -7,6 +7,7 @@ import {
 } from './whatsapp.service';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
+import { env } from '../config/env';
 
 // Rate limiting constants
 export const MEDIA_RATE_LIMIT = {
@@ -143,7 +144,10 @@ export async function handleSendMedia(
       }
 
       if (type === 'image') {
-        await sendImageMessage(context.phoneNumberId, context.accessToken, context.contactPhone, url, caption);
+        // Route through our proxy so Meta sees image/jpeg or image/png even
+        // when the upstream CDN serves the file as application/octet-stream.
+        const proxiedUrl = `${env.API_URL}/api/media/proxy?url=${encodeURIComponent(url)}`;
+        await sendImageMessage(context.phoneNumberId, context.accessToken, context.contactPhone, proxiedUrl, caption);
       } else if (type === 'document') {
         await sendDocumentMessage(context.phoneNumberId, context.accessToken, context.contactPhone, url, undefined, caption);
       } else if (type === 'video') {
