@@ -5,7 +5,7 @@ import {
   Plus, Calendar, Database, Code2, Wrench, Trash2, Settings, Upload, X,
   Check, RefreshCw, ChevronDown, ChevronUp, Play, Info, Mail,
 } from 'lucide-react';
-import MCPConfigurator, { MCPConfig, MCPHeader } from '../MCPConfigurator';
+import MCPConfigurator, { MCPConfig, MCPHeader, MCP_HEADER_PRESERVE_PLACEHOLDER } from '../MCPConfigurator';
 import { useTranslation } from '@/hooks/useTranslation';
 import Button from '@/components/ui/Button';
 import Toggle from '@/components/ui/Toggle';
@@ -483,13 +483,14 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       mcpApiKey: (cfg['apiKey'] as string) ?? '',
       mcpTransport: ((cfg['transport'] as string) ?? 'sse') as 'sse' | 'streamable-http',
       mcpSelectedTools: (cfg['selected_tools'] as string[]) ?? [],
-      // Encrypted header values are never returned to the browser. Show keys
-      // with empty values; the user must re-type to change. Empty values are
-      // preserved server-side on save.
+      // Encrypted header values are never returned to the browser. Load each
+      // existing key with the PRESERVE_PLACEHOLDER sentinel so the API can
+      // tell "user did not retype" (sentinel → preserve ciphertext) apart
+      // from "user cleared the field" (empty → delete). See B1 hotfix.
       mcpHeaders: Array.isArray(cfg['headers'])
         ? (cfg['headers'] as Array<{ key?: string }>)
             .filter((h) => typeof h?.key === 'string' && h.key.length > 0)
-            .map((h) => ({ key: h.key as string, value: '' }))
+            .map((h) => ({ key: h.key as string, value: MCP_HEADER_PRESERVE_PLACEHOLDER }))
         : [],
       mcpWebhookSecret: '',
       mcpProviderId: (cfg['providerId'] as string) ?? '',

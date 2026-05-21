@@ -54,6 +54,16 @@ export interface AutoInjectedHeader {
 export type MatchStrategy = 'domain_contains' | 'domain_exact' | 'url_prefix' | 'regex';
 export type MCPTransport = 'sse' | 'streamable-http';
 
+/**
+ * Optional health-check tool call used by the Test Connection endpoint to
+ * validate that the customer's credentials are actually accepted by the
+ * provider (handshake alone does not). NULL → handshake-only validation.
+ */
+export interface HealthCheckTool {
+  name: string;
+  params: Record<string, unknown>;
+}
+
 export interface MCPProviderProfile {
   id: string;
   name: string;
@@ -66,6 +76,8 @@ export interface MCPProviderProfile {
   auto_injected_headers: AutoInjectedHeader[];
   user_configurable_headers: UserConfigurableHeader[];
   supported_events: string[];
+  /** Optional E2E auth health-check. See migration 039. */
+  health_check_tool: HealthCheckTool | null;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -87,9 +99,30 @@ interface ProfileRow {
   auto_injected_headers: AutoInjectedHeader[] | string;
   user_configurable_headers: UserConfigurableHeader[] | string;
   supported_events: string[] | string;
+  health_check_tool: HealthCheckTool | string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+function parseHealthCheckTool(field: HealthCheckTool | string | null | undefined): HealthCheckTool | null {
+  if (field == null) return null;
+  if (typeof field === 'object') {
+    const obj = field as Partial<HealthCheckTool>;
+    if (typeof obj.name === 'string' && obj.name.length > 0) {
+      return { name: obj.name, params: (obj.params as Record<string, unknown>) ?? {} };
+    }
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(field) as Partial<HealthCheckTool>;
+    if (parsed && typeof parsed.name === 'string' && parsed.name.length > 0) {
+      return { name: parsed.name, params: (parsed.params as Record<string, unknown>) ?? {} };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 function parseJsonField<T>(field: T[] | string | null | undefined, fallback: T[]): T[] {
@@ -116,6 +149,7 @@ function rowToProfile(row: ProfileRow): MCPProviderProfile {
     auto_injected_headers: parseJsonField<AutoInjectedHeader>(row.auto_injected_headers, []),
     user_configurable_headers: parseJsonField<UserConfigurableHeader>(row.user_configurable_headers, []),
     supported_events: parseJsonField<string>(row.supported_events, []),
+    health_check_tool: parseHealthCheckTool(row.health_check_tool),
     is_active: row.is_active,
     created_at: row.created_at,
     updated_at: row.updated_at,

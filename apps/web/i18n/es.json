@@ -629,6 +629,15 @@
         "webhookSecretRegenerated": "Webhook secret regenerado. Copia el nuevo valor y actualiza tu MCP server.",
         "regenerate": "Regenerar",
         "regenerateConfirm": "Esto invalidará el secreto actual. Debes actualizar tu MCP server con el nuevo valor o los webhooks fallarán. ¿Continuar?",
+        "advancedSecurity": "Avanzado: seguridad del webhook",
+        "advancedSecurityHint": "GenSmart inyecta este secreto automáticamente en cada solicitud. No necesitas configurarlo manualmente.",
+        "autoManagedNote": "Gestionado automáticamente por GenSmart. No necesitas configurarlo en tu panel de {providerName}.",
+        "testResult": {
+          "fullAuth": "Conexión verificada de extremo a extremo ({tools} herramientas).",
+          "handshakeOnly": "Handshake OK ({tools} herramientas), pero las credenciales no fueron verificadas.",
+          "authFailed": "Falló la autenticación. Verifica que tu API key de {providerName} sea válida y no esté revocada.",
+          "handshakeFailed": "No se pudo conectar al MCP server."
+        },
         "provider": {
           "detectedBanner": "Detectado: {name}",
           "emptyStateTitle": "Conectar un MCP",

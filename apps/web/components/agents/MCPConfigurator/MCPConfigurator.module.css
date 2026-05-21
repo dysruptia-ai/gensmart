@@ -551,3 +551,77 @@
   color: var(--color-text-primary);
   text-decoration: underline;
 }
+
+/* ── Advanced disclosure (Webhook security for known providers) ───────────── */
+
+.advancedDisclosure {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-sidebar);
+  padding: 0;
+  overflow: hidden;
+}
+
+.advancedDisclosure[open] {
+  background: var(--color-bg-card);
+}
+
+.advancedSummary {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.advancedSummary::-webkit-details-marker {
+  display: none;
+}
+
+.advancedSummary::before {
+  content: "▸";
+  display: inline-block;
+  font-size: 10px;
+  color: var(--color-text-secondary);
+  transition: transform 0.15s ease;
+}
+
+.advancedDisclosure[open] .advancedSummary::before {
+  transform: rotate(90deg);
+}
+
+.advancedSummary:hover {
+  color: var(--color-text-primary);
+}
+
+.advancedContent {
+  padding: 4px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--color-border);
+}
+
+.advancedNote {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+/* ── Test connection result variants ──────────────────────────────────────── */
+
+.statusError {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--color-danger);
+  line-height: 1.4;
+}

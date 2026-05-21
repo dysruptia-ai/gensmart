@@ -18,9 +18,23 @@ export interface MCPToolInfo {
   inputSchema: Record<string, unknown>;
 }
 
+/**
+ * Sentinel value used in the UI for header values whose plaintext the server
+ * never exposes back (encrypted at rest). When the user does not retype the
+ * value, we echo this sentinel to the API on PUT; the API treats it as
+ * "preserve existing ciphertext". An empty string ('') on PUT means
+ * "delete this header". Must match `MCP_HEADER_PRESERVE_PLACEHOLDER`
+ * in `apps/api/src/services/mcp-headers.service.ts`.
+ */
+export const MCP_HEADER_PRESERVE_PLACEHOLDER = '••••••••';
+
 export interface MCPHeader {
   key: string;
-  /** In edit mode: '' means "keep the existing encrypted value untouched". */
+  /**
+   * In edit mode, an existing header's value is loaded as
+   * `MCP_HEADER_PRESERVE_PLACEHOLDER`. The user can clear it (→ delete) or
+   * retype it (→ encrypt new value). A literal '' means "delete".
+   */
   value: string;
 }
 
@@ -85,6 +99,8 @@ export default function MCPConfigurator({
   const [liveTested, setLiveTested] = useState(false);
   const [availableTools, setAvailableTools] = useState<MCPToolInfo[]>([]);
   const [showTools, setShowTools] = useState(true);
+  /** Result mode of the last successful test-connection call. */
+  const [testMode, setTestMode] = useState<'full_auth' | 'handshake_only' | null>(null);
 
   const [lastTestedUrl, setLastTestedUrl] = useState('');
   const urlChanged = liveTested && config.server_url !== lastTestedUrl;
@@ -253,16 +269,23 @@ export default function MCPConfigurator({
 
     setTesting(true);
     try {
-      // Send only headers that have both a key and a non-empty value. Empty
-      // values in edit mode mean "keep existing encrypted value", which the
-      // server can't see — so skip them for the connection test.
+      // Send only headers that have both a key and a non-empty plaintext value.
+      // Skip the PRESERVE_PLACEHOLDER (server can't decrypt-and-resend) and
+      // empty values (delete intent / never typed).
       const testHeaders = config.headers.filter(
-        (h) => h.key.trim().length > 0 && h.value.length > 0
+        (h) =>
+          h.key.trim().length > 0 &&
+          h.value.length > 0 &&
+          h.value !== MCP_HEADER_PRESERVE_PLACEHOLDER
       );
       const data = await api.post<{
         success: boolean;
         tools?: MCPToolInfo[];
+        mode?: 'full_auth' | 'handshake_only';
+        toolUsed?: string;
+        providerName?: string;
         error?: string;
+        errorCode?: 'HANDSHAKE_FAILED' | 'AUTH_FAILED';
       }>(`/api/agents/${agentId}/tools/mcp/test-connection`, {
         server_url: config.server_url.trim(),
         transport: config.transport,
@@ -273,6 +296,7 @@ export default function MCPConfigurator({
       if (data.success && data.tools) {
         setAvailableTools(data.tools);
         setLiveTested(true);
+        setTestMode(data.mode ?? 'handshake_only');
         setLastTestedUrl(config.server_url.trim());
         setShowTools(true);
         // Auto-select all tools only when none were previously selected
@@ -280,15 +304,25 @@ export default function MCPConfigurator({
           onChange({ selected_tools: data.tools.map((tool) => tool.name) });
         }
       } else {
-        const errMsg = data.error ?? 'Connection failed';
+        // Build a friendlier error for the AUTH_FAILED case so the user knows
+        // it's a credentials issue, not a connectivity issue.
+        const providerName = data.providerName ?? detectedProvider?.name ?? 'the provider';
+        let errMsg = data.error ?? 'Connection failed';
+        if (data.errorCode === 'AUTH_FAILED') {
+          errMsg = t('agents.tools.mcp.testResult.authFailed', { providerName });
+        } else if (data.errorCode === 'HANDSHAKE_FAILED') {
+          errMsg = `${t('agents.tools.mcp.testResult.handshakeFailed')} ${data.error ?? ''}`.trim();
+        }
         onConnectionError?.(errMsg);
         setLiveTested(false);
+        setTestMode(null);
         setAvailableTools([]);
       }
     } catch (err) {
       const errMsg = err instanceof ApiError ? err.message : 'Connection failed';
       onConnectionError?.(errMsg);
       setLiveTested(false);
+      setTestMode(null);
       setAvailableTools([]);
     } finally {
       setTesting(false);
@@ -511,6 +545,13 @@ export default function MCPConfigurator({
                     type={revealedGuided[h.key] ? 'text' : 'password'}
                     value={value}
                     onChange={(e) => setGuidedHeaderValue(h.key, e.target.value)}
+                    onFocus={(e) => {
+                      // When the field holds the preserve-placeholder, select
+                      // all so the user's first keystroke replaces it cleanly.
+                      if (value === MCP_HEADER_PRESERVE_PLACEHOLDER) {
+                        e.currentTarget.select();
+                      }
+                    }}
                     placeholder={h.required ? '••••••••' : ''}
                     autoComplete="off"
                   />
@@ -549,44 +590,77 @@ export default function MCPConfigurator({
           })}
         </div>
 
-        {/* Webhook secret + tools section reused from advanced UI */}
+        {/* Webhook secret — collapsed by default for guided/known providers
+            since GenSmart auto-injects it as X-Webhook-Secret. We still show
+            it for transparency + manual rotation, just out of the way. */}
         {(config.webhookSecret || toolId) && (
-          <>
-            {config.webhookSecret ? (
-              <div className={styles.fieldGroup}>
-                <label className={styles.label}>{t('agents.tools.mcp.webhookSecret')}</label>
-                <div className={styles.secretRow}>
-                  <input
-                    className={styles.secretInput}
-                    type="text"
-                    value={config.webhookSecret}
-                    readOnly
-                  />
-                  <button
-                    type="button"
-                    className={styles.copyBtn}
-                    onClick={handleCopySecret}
-                    title={t('agents.tools.mcp.headerCopy')}
-                  >
-                    <Copy size={14} />
-                    <span>{secretCopied ? t('agents.tools.mcp.copied') : t('agents.tools.mcp.headerCopy')}</span>
-                  </button>
-                  {toolId && (
+          <details className={styles.advancedDisclosure}>
+            <summary className={styles.advancedSummary}>
+              {t('agents.tools.mcp.advancedSecurity')}
+            </summary>
+            <div className={styles.advancedContent}>
+              <p className={styles.advancedNote}>
+                {t('agents.tools.mcp.autoManagedNote', { providerName: profile.name })}
+              </p>
+              {config.webhookSecret ? (
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>{t('agents.tools.mcp.webhookSecret')}</label>
+                  <div className={styles.secretRow}>
+                    <input
+                      className={styles.secretInput}
+                      type="text"
+                      value={config.webhookSecret}
+                      readOnly
+                    />
+                    <button
+                      type="button"
+                      className={styles.copyBtn}
+                      onClick={handleCopySecret}
+                      title={t('agents.tools.mcp.headerCopy')}
+                    >
+                      <Copy size={14} />
+                      <span>{secretCopied ? t('agents.tools.mcp.copied') : t('agents.tools.mcp.headerCopy')}</span>
+                    </button>
+                    {toolId && (
+                      <button
+                        type="button"
+                        className={styles.regenBtn}
+                        onClick={handleRegenerateSecret}
+                        disabled={regenerating}
+                      >
+                        {regenerating ? <Spinner size="sm" /> : <RefreshCw size={14} />}
+                        <span>{t('agents.tools.mcp.regenerate')}</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className={styles.fieldHint}>{t('agents.tools.mcp.webhookSecretHint')}</p>
+                </div>
+              ) : toolId ? (
+                <div className={styles.fieldGroup}>
+                  <label className={styles.label}>{t('agents.tools.mcp.webhookSecret')}</label>
+                  <div className={styles.secretRow}>
+                    <input
+                      className={styles.secretInput}
+                      type="text"
+                      value="••••••••••••••••••••••••••••••••"
+                      readOnly
+                    />
                     <button
                       type="button"
                       className={styles.regenBtn}
                       onClick={handleRegenerateSecret}
                       disabled={regenerating}
+                      title={t('agents.tools.mcp.regenerate')}
                     >
                       {regenerating ? <Spinner size="sm" /> : <RefreshCw size={14} />}
                       <span>{t('agents.tools.mcp.regenerate')}</span>
                     </button>
-                  )}
+                  </div>
+                  <p className={styles.fieldHint}>{t('agents.tools.mcp.webhookSecretRotateHint')}</p>
                 </div>
-                <p className={styles.fieldHint}>{t('agents.tools.mcp.webhookSecretHint')}</p>
-              </div>
-            ) : null}
-          </>
+              ) : null}
+            </div>
+          </details>
         )}
 
         {/* Test connection + tools list */}
@@ -606,7 +680,23 @@ export default function MCPConfigurator({
               t('agents.tools.mcp.testConnection')
             )}
           </Button>
-          {liveTested && !urlChanged && (
+          {liveTested && !urlChanged && testMode === 'full_auth' && (
+            <div className={styles.statusOk}>
+              <Check size={14} />
+              <span>
+                {t('agents.tools.mcp.testResult.fullAuth', { tools: String(availableTools.length) })}
+              </span>
+            </div>
+          )}
+          {liveTested && !urlChanged && testMode === 'handshake_only' && (
+            <div className={styles.statusWarn}>
+              <Info size={14} />
+              <span>
+                {t('agents.tools.mcp.testResult.handshakeOnly', { tools: String(availableTools.length) })}
+              </span>
+            </div>
+          )}
+          {liveTested && !urlChanged && testMode === null && (
             <div className={styles.statusOk}>
               <Check size={14} />
               <span>
@@ -720,7 +810,27 @@ export default function MCPConfigurator({
         </div>
 
         {/* Connection status — live test */}
-        {liveTested && !urlChanged && (
+        {liveTested && !urlChanged && testMode === 'full_auth' && (
+          <div className={styles.statusOk}>
+            <Check size={14} />
+            <span>
+              {t('agents.tools.mcp.testResult.fullAuth', {
+                tools: String(availableTools.length),
+              })}
+            </span>
+          </div>
+        )}
+        {liveTested && !urlChanged && testMode === 'handshake_only' && (
+          <div className={styles.statusWarn}>
+            <Info size={14} />
+            <span>
+              {t('agents.tools.mcp.testResult.handshakeOnly', {
+                tools: String(availableTools.length),
+              })}
+            </span>
+          </div>
+        )}
+        {liveTested && !urlChanged && testMode === null && (
           <div className={styles.statusOk}>
             <Check size={14} />
             <span>
@@ -880,6 +990,11 @@ export default function MCPConfigurator({
               placeholder={t('agents.tools.mcp.headerValuePlaceholder')}
               value={header.value}
               onChange={(e) => updateHeader(idx, { value: e.target.value })}
+              onFocus={(e) => {
+                if (header.value === MCP_HEADER_PRESERVE_PLACEHOLDER) {
+                  e.currentTarget.select();
+                }
+              }}
             />
             <button
               type="button"

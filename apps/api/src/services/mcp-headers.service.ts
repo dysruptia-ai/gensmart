@@ -26,6 +26,16 @@ export interface PlainHeader {
 }
 
 /**
+ * Sentinel returned by the API to the frontend in place of decrypted header
+ * values (which are never sent out). On UPDATE, the frontend echoes this
+ * string back for headers the user did not retype; the route treats it as
+ * "preserve existing ciphertext". A literal empty string ('') on UPDATE is
+ * an explicit "delete this header". Must match
+ * `MCP_HEADER_PRESERVE_PLACEHOLDER` in `apps/web/components/agents/MCPConfigurator`.
+ */
+export const MCP_HEADER_PRESERVE_PLACEHOLDER = '••••••••';
+
+/**
  * Encrypt an array of plain headers for storage.
  * Skips entries with empty keys.
  */

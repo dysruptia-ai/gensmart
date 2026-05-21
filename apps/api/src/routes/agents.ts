@@ -14,10 +14,12 @@ import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS } from '@gensmart/sha
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
+import type { MCPToolInfo } from '../services/mcp-client.service';
 import {
   encryptHeaders,
   decryptHeaders,
   generateWebhookSecret,
+  MCP_HEADER_PRESERVE_PLACEHOLDER,
   type EncryptedHeader,
 } from '../services/mcp-headers.service';
 import * as mcpProviders from '../services/mcp-providers.service';
@@ -434,11 +436,14 @@ router.post(
       // Resolve provider auto-injected headers BEFORE handing off to the
       // agnostic MCP client. Same merge order as worker/preview: profile
       // platform headers first, user headers may override.
+      let profile: mcpProviders.MCPProviderProfile | null = null;
       let profileAutoHeaders: Record<string, string> = {};
       if (providerId) {
-        const profile = await mcpProviders.findProfileById(providerId);
+        profile = await mcpProviders.findProfileById(providerId);
         if (profile && profile.is_active) {
           profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+        } else {
+          profile = null;
         }
       }
 
@@ -458,12 +463,95 @@ router.post(
         ...systemAutoHeaders,
       };
 
-      const tools = await connectAndListTools(server_url, mcpTransport, extraHeaders);
-      res.json({ success: true, tools });
+      // Step 1: MCP handshake (tools/list). A failure here means we couldn't
+      // even reach the MCP — return a handshake-specific error.
+      let tools: MCPToolInfo[];
+      try {
+        tools = await connectAndListTools(server_url, mcpTransport, extraHeaders);
+      } catch (err) {
+        const message = (err as Error).message;
+        console.error('[agents] MCP test-connection handshake failed:', message);
+        res.json({ success: false, error: message, errorCode: 'HANDSHAKE_FAILED' });
+        return;
+      }
+
+      // Step 2: If the profile defines a health-check tool, run it to validate
+      // credentials end-to-end. Handshake alone passes even for revoked keys.
+      if (profile && profile.health_check_tool) {
+        const hc = profile.health_check_tool;
+        // The selected/available tool name on the server may be prefixed
+        // (mcp_<server>_<tool>) when invoked via the worker; the raw MCP tool
+        // name comes back unprefixed from tools/list. Use the unprefixed name.
+        const matchingTool = tools.find((t) => t.name === hc.name);
+        if (!matchingTool) {
+          // The provider profile claims a health-check tool that the server
+          // doesn't expose — log + fall through to handshake_only rather than
+          // alarm the user (server may have evolved).
+          console.warn(
+            `[agents] Profile ${profile.id} health_check_tool "${hc.name}" not in server tool list`
+          );
+          res.json({
+            success: true,
+            tools,
+            mode: 'handshake_only',
+            providerName: profile.name,
+          });
+          return;
+        }
+
+        try {
+          const result = await executeMCPTool(
+            server_url,
+            hc.name,
+            hc.params,
+            mcpTransport,
+            extraHeaders
+          );
+          if (result.isError) {
+            console.error(
+              `[agents] MCP test-connection health-check tool "${hc.name}" returned error:`,
+              result.content
+            );
+            res.json({
+              success: false,
+              errorCode: 'AUTH_FAILED',
+              error: result.content,
+              providerName: profile.name,
+            });
+            return;
+          }
+          res.json({
+            success: true,
+            tools,
+            mode: 'full_auth',
+            toolUsed: hc.name,
+            providerName: profile.name,
+          });
+          return;
+        } catch (err) {
+          const message = (err as Error).message;
+          console.error('[agents] MCP test-connection health-check threw:', message);
+          res.json({
+            success: false,
+            errorCode: 'AUTH_FAILED',
+            error: message,
+            providerName: profile.name,
+          });
+          return;
+        }
+      }
+
+      // Step 3: No profile or profile without health-check → handshake-only.
+      res.json({
+        success: true,
+        tools,
+        mode: 'handshake_only',
+        ...(profile ? { providerName: profile.name } : {}),
+      });
     } catch (err) {
       const message = (err as Error).message;
       console.error('[agents] MCP test-connection failed:', message);
-      res.json({ success: false, error: message });
+      res.json({ success: false, error: message, errorCode: 'HANDSHAKE_FAILED' });
     }
   }
 );
@@ -548,14 +636,23 @@ router.put(
             }
           }
 
-          // Merge headers: keep existing ciphertext when user submits an empty
-          // value (UI cannot show decrypted secrets back).
+          // Merge headers — three cases:
+          //   1. value === PRESERVE_PLACEHOLDER → keep existing ciphertext
+          //      (UI echoes this when the user did not retype an encrypted value).
+          //   2. value === ''                   → DELETE this header
+          //      (user explicitly cleared the field; B1 hotfix).
+          //   3. any other value                → encrypt as new value.
+          // Empty-key entries are dropped unconditionally.
           const mergedHeaders: EncryptedHeader[] = [];
           for (const h of validated.headers) {
-            if (h.value === '') {
+            if (!h.key || h.key.trim().length === 0) continue;
+            if (h.value === MCP_HEADER_PRESERVE_PLACEHOLDER) {
               const prior = existingCfg.headers?.find((eh) => eh.key === h.key);
               if (prior) mergedHeaders.push(prior);
-              // else: dropped — user added an empty header without value
+              // else: nothing to preserve — drop.
+            } else if (h.value === '') {
+              // Explicit delete — do not push.
+              continue;
             } else {
               mergedHeaders.push({ key: h.key, value_encrypted: encrypt(h.value) });
             }
