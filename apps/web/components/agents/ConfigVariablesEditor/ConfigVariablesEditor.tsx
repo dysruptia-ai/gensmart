@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import Spinner from '@/components/ui/Spinner';
 import { api, ApiError } from '@/lib/api';
@@ -38,6 +38,11 @@ export default function ConfigVariablesEditor({
   const [savingOverrides, setSavingOverrides] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  // Tracks the last server-confirmed values so onBlur can decide whether a
+  // PATCH is necessary. We cannot compare against `values` because
+  // handleChange updates it on every keystroke — the guard would always read
+  // its own write and skip the PATCH.
+  const lastSavedRef = useRef<ConfigVariableValues>({});
 
   const reportMissing = useCallback(
     (s: ConfigVariableSchema[], v: ConfigVariableValues) => {
@@ -75,6 +80,7 @@ export default function ConfigVariablesEditor({
       setTemplateKeys(data.schema.filter((s) => !overrideKeys.has(s.key)).map((s) => s.key));
       setSchema(data.schema);
       setValues(data.values);
+      lastSavedRef.current = data.values;
       reportMissing(data.schema, data.values);
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : 'Failed to load configuration');
@@ -103,11 +109,14 @@ export default function ConfigVariablesEditor({
   };
 
   const handleCommit = async (key: string, value: ConfigVariableValue) => {
-    // Avoid round-trip when value unchanged (compare loose for null/undefined)
-    const prev = values[key];
-    const noChange =
-      prev === value || (prev === null && value === '') || (prev === undefined && value === '');
-    if (noChange) return;
+    // Compare against the last *server-confirmed* value, not against `values`.
+    // `values` is mutated by handleChange on every keystroke, so reading from
+    // it here would always see our own write and skip the PATCH.
+    const lastSaved = lastSavedRef.current[key];
+    const lastSavedNormalized =
+      lastSaved === null || lastSaved === undefined ? '' : lastSaved;
+    const valueNormalized = value === null || value === undefined ? '' : value;
+    if (lastSavedNormalized === valueNormalized) return;
     setSavingKeys((s) => new Set(s).add(key));
     try {
       const resp = await api.patch<{ values: ConfigVariableValues }>(
@@ -115,6 +124,7 @@ export default function ConfigVariablesEditor({
         { values: { [key]: value } },
       );
       setValues(resp.values);
+      lastSavedRef.current = resp.values;
       reportMissing(schema, resp.values);
       setErrors((prev) => {
         const next = { ...prev };
