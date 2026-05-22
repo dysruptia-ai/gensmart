@@ -1,6 +1,14 @@
 import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import {
+  PLAN_LIMITS,
+  findMissingRequiredConfigVariables,
+  initialConfigVariableValues,
+  mergeConfigVariablesSchema,
+  validateConfigVariableSchema,
+  type ConfigVariableSchema,
+  type ConfigVariableValues,
+} from '@gensmart/shared';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -23,6 +31,9 @@ interface AgentRow {
   variables: unknown[];
   web_config: Record<string, unknown>;
   whatsapp_config: Record<string, unknown>;
+  template_id: string | null;
+  config_variables_values: unknown;
+  config_variables_schema_overrides: unknown;
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -80,6 +91,10 @@ interface TemplateRow {
   variables: unknown[];
   tools: unknown[];
   language: string;
+  config_variables_schema?: unknown;
+  vertical?: string | null;
+  capabilities?: string[];
+  integrations?: string[];
 }
 
 function makeInitials(name: string): string {
@@ -110,6 +125,14 @@ function formatAgent(row: AgentRow) {
     variables: row.variables ?? [],
     webConfig: row.web_config,
     whatsappConfig: row.whatsapp_config,
+    templateId: row.template_id,
+    configVariablesValues:
+      row.config_variables_values && typeof row.config_variables_values === 'object'
+        ? (row.config_variables_values as Record<string, unknown>)
+        : {},
+    configVariablesSchemaOverrides: Array.isArray(row.config_variables_schema_overrides)
+      ? (row.config_variables_schema_overrides as unknown[])
+      : [],
     publishedAt: row.published_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -328,6 +351,19 @@ export async function publishAgent(orgId: string, agentId: string, userId: strin
   const agent = agentResult.rows[0];
   if (!agent) throw new AppError(404, 'Agent not found', 'AGENT_NOT_FOUND');
 
+  // Day 21: block publish when required config variables are empty. The
+  // frontend turns this into a modal pointing the user to the Configuration
+  // tab. The check happens BEFORE creating the version snapshot.
+  const missingKeys = await getMissingRequiredConfig(orgId, agentId);
+  if (missingKeys.length > 0) {
+    throw new AppError(
+      400,
+      'Required configuration variables are missing',
+      'config_variables_required_missing',
+      { missing_keys: missingKeys }
+    );
+  }
+
   const versionResult = await query<{ max_version: number | null }>(
     'SELECT MAX(version) as max_version FROM agent_versions WHERE agent_id = $1',
     [agentId]
@@ -442,7 +478,10 @@ export async function createFromTemplate(orgId: string, plan: string, templateId
   const template = templateResult.rows[0];
   if (!template) throw new AppError(404, 'Template not found', 'TEMPLATE_NOT_FOUND');
 
-  return createAgent(orgId, plan, {
+  // Build the agent via createAgent first, then back-fill template_id and
+  // initial config values from the template's schema defaults so the editor
+  // shows defaults pre-populated.
+  const agent = await createAgent(orgId, plan, {
     name: template.name,
     description: template.description ?? undefined,
     systemPrompt: template.system_prompt,
@@ -450,6 +489,194 @@ export async function createFromTemplate(orgId: string, plan: string, templateId
     llmModel: 'gpt-4o-mini',
     variables: template.variables as unknown[],
   });
+
+  const templateSchema: ConfigVariableSchema[] = Array.isArray(template.config_variables_schema)
+    ? (template.config_variables_schema as ConfigVariableSchema[])
+    : [];
+  const initialValues = initialConfigVariableValues(templateSchema);
+
+  const updated = await query<AgentRow>(
+    `UPDATE agents
+     SET template_id = $1,
+         config_variables_values = $2::jsonb,
+         updated_at = NOW()
+     WHERE id = $3 AND organization_id = $4
+     RETURNING *`,
+    [template.id, JSON.stringify(initialValues), agent.id, orgId]
+  );
+  return updated.rows[0] ? formatAgent(updated.rows[0]) : agent;
+}
+
+// ── Config Variables ─────────────────────────────────────────────────────────
+
+interface AgentConfigDbRow {
+  template_id: string | null;
+  config_variables_values: unknown;
+  config_variables_schema_overrides: unknown;
+}
+
+async function loadAgentConfigForAgent(orgId: string, agentId: string): Promise<{
+  agent: AgentConfigDbRow;
+  templateSchema: ConfigVariableSchema[];
+  overrides: ConfigVariableSchema[];
+  effectiveSchema: ConfigVariableSchema[];
+  values: ConfigVariableValues;
+}> {
+  const agentRes = await query<AgentConfigDbRow>(
+    `SELECT template_id, config_variables_values, config_variables_schema_overrides
+     FROM agents WHERE id = $1 AND organization_id = $2`,
+    [agentId, orgId]
+  );
+  const agent = agentRes.rows[0];
+  if (!agent) throw new AppError(404, 'Agent not found', 'AGENT_NOT_FOUND');
+
+  let templateSchema: ConfigVariableSchema[] = [];
+  if (agent.template_id) {
+    const tplRes = await query<{ config_variables_schema: unknown }>(
+      'SELECT config_variables_schema FROM agent_templates WHERE id = $1',
+      [agent.template_id]
+    );
+    const raw = tplRes.rows[0]?.config_variables_schema;
+    if (Array.isArray(raw)) templateSchema = raw as ConfigVariableSchema[];
+  }
+  const overrides: ConfigVariableSchema[] = Array.isArray(agent.config_variables_schema_overrides)
+    ? (agent.config_variables_schema_overrides as ConfigVariableSchema[])
+    : [];
+  const effectiveSchema = mergeConfigVariablesSchema(templateSchema, overrides);
+  const values: ConfigVariableValues =
+    agent.config_variables_values && typeof agent.config_variables_values === 'object'
+      ? (agent.config_variables_values as ConfigVariableValues)
+      : {};
+
+  return { agent, templateSchema, overrides, effectiveSchema, values };
+}
+
+export async function getConfigSchema(orgId: string, agentId: string) {
+  const { effectiveSchema, values, agent } = await loadAgentConfigForAgent(orgId, agentId);
+  return {
+    schema: effectiveSchema,
+    values,
+    templateId: agent.template_id,
+  };
+}
+
+/**
+ * Partial update: merges the new values into the existing JSONB column so
+ * unmodified keys are preserved. Validates each provided key against the
+ * effective schema; rejects unknown keys.
+ */
+export async function patchConfigValues(
+  orgId: string,
+  agentId: string,
+  newValues: Record<string, unknown>
+): Promise<{ values: ConfigVariableValues }> {
+  if (!newValues || typeof newValues !== 'object') {
+    throw new AppError(400, 'values must be an object', 'INVALID_INPUT');
+  }
+  const { effectiveSchema } = await loadAgentConfigForAgent(orgId, agentId);
+  const schemaByKey = new Map(effectiveSchema.map((s) => [s.key, s]));
+
+  const errors: Record<string, string> = {};
+  const sanitized: ConfigVariableValues = {};
+
+  for (const [key, raw] of Object.entries(newValues)) {
+    const schema = schemaByKey.get(key);
+    if (!schema) {
+      errors[key] = 'errors.configVariables.unknownVariable';
+      continue;
+    }
+    // Coerce common cases: number strings → number; empty → null.
+    let value: string | number | boolean | null = raw as string | number | boolean | null;
+    if (value === undefined) value = null;
+    if (schema.type === 'number' && typeof value === 'string' && value !== '') {
+      const n = Number(value);
+      if (!Number.isNaN(n)) value = n;
+    }
+    if (schema.type === 'boolean' && typeof value === 'string') {
+      if (value === 'true') value = true;
+      else if (value === 'false') value = false;
+    }
+
+    // Use shared validator
+    const { validateConfigVariableValue } = await import('@gensmart/shared');
+    const err = validateConfigVariableValue(schema, value);
+    if (err) {
+      errors[key] = err;
+      continue;
+    }
+    sanitized[key] = value;
+  }
+
+  if (Object.keys(errors).length > 0) {
+    throw new AppError(400, 'Validation failed', 'CONFIG_VARIABLES_INVALID', { errors });
+  }
+
+  const result = await query<{ config_variables_values: unknown }>(
+    `UPDATE agents
+     SET config_variables_values = config_variables_values || $1::jsonb,
+         updated_at = NOW()
+     WHERE id = $2 AND organization_id = $3
+     RETURNING config_variables_values`,
+    [JSON.stringify(sanitized), agentId, orgId]
+  );
+  const merged: ConfigVariableValues =
+    result.rows[0]?.config_variables_values && typeof result.rows[0].config_variables_values === 'object'
+      ? (result.rows[0].config_variables_values as ConfigVariableValues)
+      : {};
+  return { values: merged };
+}
+
+export async function replaceConfigOverrides(
+  orgId: string,
+  agentId: string,
+  overrides: unknown
+): Promise<{ overrides: ConfigVariableSchema[]; schema: ConfigVariableSchema[] }> {
+  if (!Array.isArray(overrides)) {
+    throw new AppError(400, 'overrides must be an array', 'INVALID_INPUT');
+  }
+
+  // Validate schema entries + de-dup keys within the overrides array
+  const seen = new Set<string>();
+  const errors: Record<string, string> = {};
+  const validated: ConfigVariableSchema[] = [];
+  for (const entry of overrides) {
+    const err = validateConfigVariableSchema(entry);
+    if (err) {
+      const key = (entry as { key?: string })?.key ?? `__index_${validated.length}`;
+      errors[key] = err;
+      continue;
+    }
+    const e = entry as ConfigVariableSchema;
+    if (seen.has(e.key)) {
+      errors[e.key] = 'errors.configVariables.duplicateKey';
+      continue;
+    }
+    seen.add(e.key);
+    validated.push(e);
+  }
+  if (Object.keys(errors).length > 0) {
+    throw new AppError(400, 'Override schema invalid', 'CONFIG_OVERRIDES_INVALID', { errors });
+  }
+
+  await query(
+    `UPDATE agents
+     SET config_variables_schema_overrides = $1::jsonb,
+         updated_at = NOW()
+     WHERE id = $2 AND organization_id = $3`,
+    [JSON.stringify(validated), agentId, orgId]
+  );
+
+  // Return the new effective schema so the UI can refresh in one round-trip.
+  const { effectiveSchema } = await loadAgentConfigForAgent(orgId, agentId);
+  return { overrides: validated, schema: effectiveSchema };
+}
+
+export async function getMissingRequiredConfig(
+  orgId: string,
+  agentId: string
+): Promise<string[]> {
+  const { effectiveSchema, values } = await loadAgentConfigForAgent(orgId, agentId);
+  return findMissingRequiredConfigVariables(effectiveSchema, values);
 }
 
 // ── Agent Tools ──────────────────────────────────────────────────────────────

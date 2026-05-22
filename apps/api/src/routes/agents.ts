@@ -1147,6 +1147,68 @@ router.delete(
   }
 );
 
+// GET /api/agents/:id/config-schema
+// Returns the effective config variables schema (template ⨁ overrides),
+// merged and ordered, plus the agent's current values.
+router.get(
+  '/:id/config-schema',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await agentService.getConfigSchema(req.org!.id, String(req.params['id']));
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PATCH /api/agents/:id/config-values
+// Body: { values: { [key: string]: any } }
+// Partial update — validates against the effective schema, then JSONB-merges.
+router.patch(
+  '/:id/config-values',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { values?: Record<string, unknown> };
+      if (!body || typeof body !== 'object' || !body.values || typeof body.values !== 'object') {
+        res.status(400).json({ error: { message: '`values` object is required', code: 'INVALID_INPUT' } });
+        return;
+      }
+      const result = await agentService.patchConfigValues(
+        req.org!.id,
+        String(req.params['id']),
+        body.values
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PUT /api/agents/:id/config-overrides
+// Body: { overrides: ConfigVariableSchema[] }
+// Replaces the agent's schema overrides entirely.
+router.put(
+  '/:id/config-overrides',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = req.body as { overrides?: unknown };
+      const result = await agentService.replaceConfigOverrides(
+        req.org!.id,
+        String(req.params['id']),
+        body?.overrides ?? []
+      );
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // GET /api/agents/:id
 router.get(
   '/:id',
@@ -1302,11 +1364,19 @@ router.post(
         rawHistory ? (JSON.parse(rawHistory) as { role: 'user' | 'assistant'; content: string }[]) : [];
 
       // Build system prompt
+      // Day 21: inject {{config.X}} placeholders BEFORE appending variable
+      // capture instructions / RAG / scheduling. Worker and preview must
+      // agree on substitution semantics — both go through
+      // agent-config.service.renderSystemPromptWithConfig.
+      const { renderSystemPromptWithConfig: injectConfig } = await import(
+        '../services/agent-config.service'
+      );
       const variables = Array.isArray(agentResult.variables) ? agentResult.variables : [];
       const variableInstructions = buildVariableCaptureInstructions(
         variables as Parameters<typeof buildVariableCaptureInstructions>[0]
       );
-      let fullSystemPrompt = systemPrompt ?? agentResult.systemPrompt ?? '';
+      const rawPrompt = systemPrompt ?? agentResult.systemPrompt ?? '';
+      let fullSystemPrompt = await injectConfig(agentId, rawPrompt);
       if (variableInstructions) fullSystemPrompt += '\n\n' + variableInstructions;
 
       // RAG context

@@ -28,6 +28,7 @@ import {
   type EmailNotificationToolConfig,
 } from '../services/send-email-notification.service';
 import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
+import { renderSystemPromptWithConfig } from '../services/agent-config.service';
 import { createAppointment } from '../services/appointment.service';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
 
@@ -258,9 +259,13 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   const maxTokens = Math.min(agent.max_tokens, planLimits.maxTokensPerResponse);
 
   // 7a. Build system prompt with variable instructions
+  // Step 1: inject {{config.X}} from the agent's effective schema+values BEFORE
+  // any other transformation. Captured variables and RAG context are then
+  // appended to the substituted prompt — never to the raw one — so the LLM
+  // never sees unresolved placeholders. See agent-config.service.ts.
   const variables = Array.isArray(agent.variables) ? agent.variables : [];
   const variableInstructions = buildVariableCaptureInstructions(variables);
-  let fullSystemPrompt = agent.system_prompt;
+  let fullSystemPrompt = await renderSystemPromptWithConfig(agentId, agent.system_prompt);
   if (variableInstructions) {
     fullSystemPrompt += '\n\n' + variableInstructions;
   }
