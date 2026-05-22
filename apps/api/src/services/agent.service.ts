@@ -630,7 +630,11 @@ export async function replaceConfigOverrides(
   orgId: string,
   agentId: string,
   overrides: unknown
-): Promise<{ overrides: ConfigVariableSchema[]; schema: ConfigVariableSchema[] }> {
+): Promise<{
+  overrides: ConfigVariableSchema[];
+  schema: ConfigVariableSchema[];
+  values: ConfigVariableValues;
+}> {
   if (!Array.isArray(overrides)) {
     throw new AppError(400, 'overrides must be an array', 'INVALID_INPUT');
   }
@@ -658,17 +662,40 @@ export async function replaceConfigOverrides(
     throw new AppError(400, 'Override schema invalid', 'CONFIG_OVERRIDES_INVALID', { errors });
   }
 
-  await query(
+  // Compute the new effective schema BEFORE writing so we can filter out
+  // values whose keys no longer exist. Without this step, deleting an override
+  // leaves its value behind in config_variables_values as a ghost — invisible
+  // in UI, persisted in DB, unreachable.
+  const beforeCtx = await loadAgentConfigForAgent(orgId, agentId);
+  const newEffective = mergeConfigVariablesSchema(beforeCtx.templateSchema, validated);
+  const validKeys = new Set(newEffective.map((s) => s.key));
+
+  const cleanedValues: ConfigVariableValues = {};
+  for (const [k, v] of Object.entries(beforeCtx.values)) {
+    if (validKeys.has(k)) cleanedValues[k] = v as string | number | boolean | null;
+  }
+
+  // Single atomic UPDATE keeps schema and values consistent — no window where
+  // a concurrent worker could read the new schema with stale orphan values.
+  const result = await query<{
+    config_variables_values: unknown;
+  }>(
     `UPDATE agents
      SET config_variables_schema_overrides = $1::jsonb,
+         config_variables_values = $2::jsonb,
          updated_at = NOW()
-     WHERE id = $2 AND organization_id = $3`,
-    [JSON.stringify(validated), agentId, orgId]
+     WHERE id = $3 AND organization_id = $4
+     RETURNING config_variables_values`,
+    [JSON.stringify(validated), JSON.stringify(cleanedValues), agentId, orgId]
   );
 
-  // Return the new effective schema so the UI can refresh in one round-trip.
-  const { effectiveSchema } = await loadAgentConfigForAgent(orgId, agentId);
-  return { overrides: validated, schema: effectiveSchema };
+  const finalValues: ConfigVariableValues =
+    result.rows[0]?.config_variables_values &&
+    typeof result.rows[0].config_variables_values === 'object'
+      ? (result.rows[0].config_variables_values as ConfigVariableValues)
+      : {};
+
+  return { overrides: validated, schema: newEffective, values: finalValues };
 }
 
 export async function getMissingRequiredConfig(

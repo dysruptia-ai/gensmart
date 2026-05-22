@@ -153,12 +153,18 @@ export default function ConfigVariablesEditor({
       const resp = await api.put<{
         overrides: ConfigVariableSchema[];
         schema: ConfigVariableSchema[];
+        values: ConfigVariableValues;
       }>(`/api/agents/${agentId}/config-overrides`, { overrides: next });
       setOverrides(resp.overrides);
       setSchema(resp.schema);
+      // Backend cleans orphan values when an override key is removed; sync the
+      // local state + last-saved ref so the next onBlur compares against fresh
+      // server truth instead of stale ghost values.
+      setValues(resp.values);
+      lastSavedRef.current = resp.values;
       const overrideKeys = new Set(resp.overrides.map((o) => o.key));
       setTemplateKeys(resp.schema.filter((s) => !overrideKeys.has(s.key)).map((s) => s.key));
-      reportMissing(resp.schema, values);
+      reportMissing(resp.schema, resp.values);
     } catch (err) {
       toastError(err instanceof ApiError ? err.message : 'Failed to save overrides');
     } finally {
