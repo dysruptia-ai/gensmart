@@ -130,6 +130,12 @@ const mcpConfigInputSchema = z.object({
  * Validate that all required user_configurable_headers from a profile are
  * present (and meet min_length) in the supplied headers array. Throws an
  * Error with message "<headerKey>: <reason>" suitable for HTTP 400.
+ *
+ * Two values bypass the min_length check:
+ *   - ''                            → empty signals "delete this header" (B1)
+ *   - MCP_HEADER_PRESERVE_PLACEHOLDER → "do not touch existing ciphertext"
+ * Either way the user is not submitting a new plaintext value, so length
+ * rules don't apply.
  */
 function validateProviderHeaders(
   profile: mcpProviders.MCPProviderProfile,
@@ -145,8 +151,12 @@ function validateProviderHeaders(
     if (value === undefined) {
       throw new Error(`Missing required header for ${profile.name}: ${required.key}`);
     }
-    // value === '' is allowed on PUT (signals "keep existing ciphertext")
-    if (value !== '' && required.min_length && value.length < required.min_length) {
+    if (
+      value !== '' &&
+      value !== MCP_HEADER_PRESERVE_PLACEHOLDER &&
+      required.min_length &&
+      value.length < required.min_length
+    ) {
       throw new Error(`Header ${required.key} must be at least ${required.min_length} characters`);
     }
   }
@@ -390,11 +400,12 @@ router.post(
   validateUUID('id'),
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { server_url, transport, headers: rawHeaders, providerId } = req.body as {
+      const { server_url, transport, headers: rawHeaders, providerId, toolId } = req.body as {
         server_url?: string;
         transport?: string;
         headers?: Array<{ key: string; value: string }>;
         providerId?: string;
+        toolId?: string;
       };
 
       if (!server_url || typeof server_url !== 'string') {
@@ -420,16 +431,49 @@ router.post(
         return;
       }
 
-      // Test-time headers come from the form in plain text (not yet persisted).
-      // Skip empty entries and trim names.
+      // When editing an existing tool, pre-load its persisted (encrypted)
+      // headers so we can resolve any sentinel-valued entries back to their
+      // real plaintext. Ownership-scoped by (toolId, agentId).
+      let savedDecryptedHeaders: Record<string, string> = {};
+      if (toolId && /^[0-9a-f-]{36}$/i.test(toolId)) {
+        try {
+          const existing = await query<{ config: { headers?: EncryptedHeader[] } }>(
+            'SELECT config FROM agent_tools WHERE id = $1 AND agent_id = $2',
+            [toolId, String(req.params['id'])]
+          );
+          const cfg = existing.rows[0]?.config;
+          if (cfg?.headers) {
+            savedDecryptedHeaders = decryptHeaders(cfg.headers);
+          }
+        } catch (err) {
+          console.warn(
+            '[agents] test-connection: failed to load saved headers for sentinel resolution:',
+            (err as Error).message
+          );
+        }
+      }
+
+      // Test-time headers come from the form. For each entry:
+      //   - empty value          → user intends to delete; skip
+      //   - sentinel placeholder → resolve from saved ciphertext if available;
+      //                            otherwise skip (treat as "nothing to test")
+      //   - plain value          → use as-is
       const userExtraHeaders: Record<string, string> = {};
       if (Array.isArray(rawHeaders)) {
         for (const h of rawHeaders) {
           const k = h?.key?.trim();
           const v = h?.value;
-          if (k && typeof v === 'string' && v.length > 0) {
-            userExtraHeaders[k] = v;
+          if (!k || typeof v !== 'string') continue;
+          if (v.length === 0) continue;
+          if (v === MCP_HEADER_PRESERVE_PLACEHOLDER) {
+            const saved = savedDecryptedHeaders[k];
+            if (saved && saved.length > 0) {
+              userExtraHeaders[k] = saved;
+            }
+            // else: cannot resolve — skip rather than send the sentinel literal.
+            continue;
           }
+          userExtraHeaders[k] = v;
         }
       }
 

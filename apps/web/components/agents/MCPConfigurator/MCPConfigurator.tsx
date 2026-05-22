@@ -269,14 +269,11 @@ export default function MCPConfigurator({
 
     setTesting(true);
     try {
-      // Send only headers that have both a key and a non-empty plaintext value.
-      // Skip the PRESERVE_PLACEHOLDER (server can't decrypt-and-resend) and
-      // empty values (delete intent / never typed).
+      // Send all headers with a non-empty key. The PRESERVE_PLACEHOLDER is
+      // forwarded as-is — the server resolves it from saved ciphertext (via
+      // toolId). Empty values are still skipped (user-intended delete).
       const testHeaders = config.headers.filter(
-        (h) =>
-          h.key.trim().length > 0 &&
-          h.value.length > 0 &&
-          h.value !== MCP_HEADER_PRESERVE_PLACEHOLDER
+        (h) => h.key.trim().length > 0 && h.value.length > 0
       );
       const data = await api.post<{
         success: boolean;
@@ -291,6 +288,7 @@ export default function MCPConfigurator({
         transport: config.transport,
         headers: testHeaders,
         ...(config.providerId ? { providerId: config.providerId } : {}),
+        ...(toolId ? { toolId } : {}),
       });
 
       if (data.success && data.tools) {
@@ -531,8 +529,15 @@ export default function MCPConfigurator({
             const value = getGuidedHeaderValue(h.key);
             const label = language === 'es' ? h.label_es : h.label_en;
             const helpText = language === 'es' ? h.help_text_es : h.help_text_en;
+            // The preserve-sentinel and the empty string both bypass length
+            // validation — neither represents a new plaintext value the user
+            // is committing (see B1 + Day 20 hotfix).
             const showError =
-              h.required && value !== '' && h.min_length && value.length < h.min_length;
+              h.required &&
+              value !== '' &&
+              value !== MCP_HEADER_PRESERVE_PLACEHOLDER &&
+              h.min_length &&
+              value.length < h.min_length;
             return (
               <div className={styles.guidedHeaderRow} key={h.key}>
                 <label className={styles.label}>
