@@ -410,7 +410,9 @@
     "editor": {
       "tabs": {
         "prompt": "Prompt",
+        "configuration": "Configuration",
         "variables": "Variables",
+        "capturedVariables": "Captured Variables",
         "tools": "Tools",
         "settings": "Settings",
         "channels": "Channels",
@@ -485,6 +487,58 @@
         "inputPlaceholder": "Type a message...",
         "send": "Send",
         "reset": "Reset"
+      }
+    },
+    "configVariables": {
+      "title": "Configuration",
+      "description": "These are the settings your agent uses to respond. Fill in the values specific to your business.",
+      "missingCount": "{n} pending",
+      "emptyState": "This agent has no configuration variables. Add custom variables in Advanced Configuration.",
+      "poweredByTemplate": "Powered by template: {name}",
+      "advancedSection": "Advanced Configuration",
+      "advancedDescription": "Add custom variables not in the template.",
+      "addCustomVariable": "Add custom variable",
+      "editCustomVariable": "Edit custom variable",
+      "saveOverrides": "Save",
+      "discardChanges": "Discard changes",
+      "warnReplacesTemplate": "A template variable with this key already exists — this override will replace it.",
+      "publishBlocked": {
+        "title": "Configuration incomplete",
+        "message": "Complete these fields in Configuration to publish: {keys}",
+        "goToTab": "Go to Configuration"
+      },
+      "fields": {
+        "key": "Key",
+        "type": "Type",
+        "labelEn": "Label (English)",
+        "labelEs": "Label (Spanish)",
+        "descriptionEn": "Description (English)",
+        "descriptionEs": "Description (Spanish)",
+        "required": "Required",
+        "defaultValue": "Default value",
+        "options": "Options (for enum)",
+        "addOption": "Add option"
+      },
+      "errors": {
+        "required": "This field is required",
+        "invalidType": "Invalid value type",
+        "tooShort": "Value is too short",
+        "tooLong": "Value is too long",
+        "invalidNumber": "Must be a valid number",
+        "belowMin": "Below minimum value",
+        "aboveMax": "Above maximum value",
+        "invalidUrl": "Must be a valid URL (https:// or http://)",
+        "noOptions": "Enum has no options defined",
+        "invalidEnum": "Must be one of the allowed options",
+        "invalidOption": "Option is missing value or labels",
+        "unknownType": "Unknown variable type",
+        "invalidKey": "Key must be snake_case (lowercase letters, numbers, underscores)",
+        "keyTooLong": "Key must be 64 characters or less",
+        "duplicateKey": "A variable with this key already exists",
+        "unknownVariable": "Unknown configuration variable",
+        "invalidLabel": "Both English and Spanish labels are required",
+        "invalidRequired": "Required must be a boolean",
+        "invalidSchema": "Invalid variable schema"
       }
     },
     "variables": {

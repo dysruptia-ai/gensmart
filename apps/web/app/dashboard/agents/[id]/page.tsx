@@ -21,6 +21,7 @@ import ToolConfigurator from '@/components/agents/ToolConfigurator';
 import { PromptGenerator } from '@/components/agents/PromptGenerator';
 import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomizer';
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
+import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatDate } from '@/lib/formatters';
 import EditorTour from '@/components/onboarding/EditorTour';
@@ -134,6 +135,10 @@ export default function AgentEditorPage() {
   const [activeTab, setActiveTab] = useState('prompt');
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  // Day 21: config variables — pending counter for the tab badge + missing-keys
+  // modal shown when publish is blocked.
+  const [missingConfigCount, setMissingConfigCount] = useState(0);
+  const [publishBlockedKeys, setPublishBlockedKeys] = useState<string[] | null>(null);
 
   // Plan state
   const [orgPlan, setOrgPlan] = useState<PlanKey>('free');
@@ -325,7 +330,22 @@ export default function AgentEditorPage() {
       success(t('agents.editor.published', { version: String(result.version) }), t('agents.editor.publishedLive'));
       loadVersions();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : t('agents.editor.publishFailed'));
+      // Day 21: publish blocked when required config variables are empty —
+      // intercept and route the user to the Configuration tab instead of
+      // a generic error toast.
+      if (
+        err instanceof ApiError &&
+        err.code === 'config_variables_required_missing' &&
+        err.details &&
+        Array.isArray((err.details as { missing_keys?: unknown }).missing_keys)
+      ) {
+        setShowPublishModal(false);
+        setPublishBlockedKeys(
+          ((err.details as { missing_keys: string[] }).missing_keys) ?? [],
+        );
+      } else {
+        toastError(err instanceof ApiError ? err.message : t('agents.editor.publishFailed'));
+      }
     } finally {
       setPublishing(false);
     }
@@ -483,9 +503,14 @@ export default function AgentEditorPage() {
       ? t('agents.editor.settings.noModels')
       : null;
 
+  const configTabLabel =
+    missingConfigCount > 0
+      ? `${t('agents.editor.tabs.configuration')} (${missingConfigCount})`
+      : t('agents.editor.tabs.configuration');
   const EDITOR_TABS = [
     { id: 'prompt', label: t('agents.editor.tabs.prompt') },
-    { id: 'variables', label: t('agents.editor.tabs.variables') },
+    { id: 'configuration', label: configTabLabel },
+    { id: 'variables', label: t('agents.editor.tabs.capturedVariables') },
     { id: 'tools', label: t('agents.editor.tabs.tools') },
     { id: 'settings', label: t('agents.editor.tabs.settings') },
     { id: 'channels', label: t('agents.editor.tabs.channels') },
@@ -594,6 +619,15 @@ export default function AgentEditorPage() {
                 {t('agents.editor.prompt.characters', { count: String(systemPrompt.length) })}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'configuration' && (
+          <div className={styles.tabContent}>
+            <ConfigVariablesEditor
+              agentId={agentId}
+              onMissingCountChange={setMissingConfigCount}
+            />
           </div>
         )}
 
@@ -872,6 +906,33 @@ export default function AgentEditorPage() {
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
           <Button variant="secondary" onClick={() => setShowPublishModal(false)}>{t('common.cancel')}</Button>
           <Button icon={Check} loading={publishing} onClick={handlePublish}>{t('agents.editor.publish')}</Button>
+        </div>
+      </Modal>
+
+      {/* Publish blocked — required config variables missing (Day 21) */}
+      <Modal
+        isOpen={!!publishBlockedKeys}
+        onClose={() => setPublishBlockedKeys(null)}
+        title={t('agents.configVariables.publishBlocked.title')}
+        size="sm"
+      >
+        <p style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)', marginBottom: '0.75rem' }}>
+          {t('agents.configVariables.publishBlocked.message', {
+            keys: (publishBlockedKeys ?? []).join(', '),
+          })}
+        </p>
+        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+          <Button variant="secondary" onClick={() => setPublishBlockedKeys(null)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            onClick={() => {
+              setPublishBlockedKeys(null);
+              setActiveTab('configuration');
+            }}
+          >
+            {t('agents.configVariables.publishBlocked.goToTab')}
+          </Button>
         </div>
       </Modal>
 

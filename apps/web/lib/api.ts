@@ -12,7 +12,8 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
-    public readonly code?: string
+    public readonly code?: string,
+    public readonly details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'ApiError';
@@ -23,6 +24,7 @@ interface ApiErrorBody {
   error?: {
     message?: string;
     code?: string;
+    details?: Record<string, unknown>;
   };
   message?: string;
 }
@@ -36,7 +38,7 @@ async function parseError(res: Response): Promise<ApiError> {
   }
   const message = body.error?.message ?? body.message ?? res.statusText ?? 'Unknown error';
   const code = body.error?.code;
-  return new ApiError(res.status, message, code);
+  return new ApiError(res.status, message, code, body.error?.details);
 }
 
 let isRefreshing = false;

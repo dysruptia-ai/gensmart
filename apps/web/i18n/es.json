@@ -410,9 +410,11 @@
     "editor": {
       "tabs": {
         "prompt": "Prompt",
+        "configuration": "Configuración",
         "variables": "Variables",
+        "capturedVariables": "Variables capturadas",
         "tools": "Herramientas",
-        "settings": "Configuración",
+        "settings": "Ajustes",
         "channels": "Canales",
         "versions": "Versiones"
       },
@@ -485,6 +487,58 @@
         "inputPlaceholder": "Escribe un mensaje...",
         "send": "Enviar",
         "reset": "Reiniciar"
+      }
+    },
+    "configVariables": {
+      "title": "Configuración",
+      "description": "Estos son los ajustes que tu agente usa para responder. Completa los valores específicos de tu negocio.",
+      "missingCount": "{n} pendiente(s)",
+      "emptyState": "Este agente no tiene variables de configuración. Agrega variables personalizadas en Configuración avanzada.",
+      "poweredByTemplate": "Basado en la plantilla: {name}",
+      "advancedSection": "Configuración avanzada",
+      "advancedDescription": "Agrega variables personalizadas que no estén en la plantilla.",
+      "addCustomVariable": "Agregar variable personalizada",
+      "editCustomVariable": "Editar variable personalizada",
+      "saveOverrides": "Guardar",
+      "discardChanges": "Descartar cambios",
+      "warnReplacesTemplate": "Ya existe una variable con esta clave en la plantilla — este override la reemplazará.",
+      "publishBlocked": {
+        "title": "Configuración incompleta",
+        "message": "Completa estos campos en Configuración para publicar: {keys}",
+        "goToTab": "Ir a Configuración"
+      },
+      "fields": {
+        "key": "Clave",
+        "type": "Tipo",
+        "labelEn": "Etiqueta (Inglés)",
+        "labelEs": "Etiqueta (Español)",
+        "descriptionEn": "Descripción (Inglés)",
+        "descriptionEs": "Descripción (Español)",
+        "required": "Requerido",
+        "defaultValue": "Valor por defecto",
+        "options": "Opciones (para enum)",
+        "addOption": "Agregar opción"
+      },
+      "errors": {
+        "required": "Este campo es obligatorio",
+        "invalidType": "Tipo de valor inválido",
+        "tooShort": "El valor es demasiado corto",
+        "tooLong": "El valor es demasiado largo",
+        "invalidNumber": "Debe ser un número válido",
+        "belowMin": "Por debajo del valor mínimo",
+        "aboveMax": "Por encima del valor máximo",
+        "invalidUrl": "Debe ser una URL válida (https:// o http://)",
+        "noOptions": "El enum no tiene opciones definidas",
+        "invalidEnum": "Debe ser una de las opciones permitidas",
+        "invalidOption": "La opción no tiene valor o etiquetas",
+        "unknownType": "Tipo de variable desconocido",
+        "invalidKey": "La clave debe ser snake_case (letras minúsculas, números, guiones bajos)",
+        "keyTooLong": "La clave debe tener 64 caracteres o menos",
+        "duplicateKey": "Ya existe una variable con esta clave",
+        "unknownVariable": "Variable de configuración desconocida",
+        "invalidLabel": "Las etiquetas en inglés y español son obligatorias",
+        "invalidRequired": "Requerido debe ser booleano",
+        "invalidSchema": "Esquema de variable inválido"
       }
     },
     "variables": {
