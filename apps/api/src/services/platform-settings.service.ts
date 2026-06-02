@@ -114,7 +114,7 @@ export async function getAllSettings(): Promise<Array<{
   }));
 }
 
-export type SettingCategory = 'whatsapp' | 'mastershop' | 'dropi' | 'zendrop' | 'other';
+export type SettingCategory = 'whatsapp' | 'mastershop' | 'dropi' | 'zendrop' | 'synchroteam' | 'other';
 
 export interface PlatformSettingMeta {
   key: string;
@@ -136,6 +136,7 @@ export function inferCategory(key: string): SettingCategory {
   if (key.startsWith('mastershop_')) return 'mastershop';
   if (key.startsWith('dropi_')) return 'dropi';
   if (key.startsWith('zendrop_')) return 'zendrop';
+  if (key.startsWith('synchroteam_')) return 'synchroteam';
   return 'other';
 }
 

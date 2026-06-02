@@ -9,7 +9,7 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import styles from '../admin.module.css';
 
-type SettingCategory = 'whatsapp' | 'mastershop' | 'dropi' | 'zendrop' | 'other';
+type SettingCategory = 'whatsapp' | 'mastershop' | 'dropi' | 'zendrop' | 'synchroteam' | 'other';
 
 interface SettingMeta {
   key: string;
@@ -28,7 +28,7 @@ interface TokenTestResult {
   error?: string;
 }
 
-const CATEGORY_ORDER: SettingCategory[] = ['whatsapp', 'mastershop', 'dropi', 'zendrop', 'other'];
+const CATEGORY_ORDER: SettingCategory[] = ['whatsapp', 'mastershop', 'dropi', 'zendrop', 'synchroteam', 'other'];
 
 const READ_ONLY_KEYS = new Set<string>(['whatsapp_webhook_url']);
 
@@ -87,6 +87,7 @@ export default function AdminSettingsPage() {
       mastershop: [],
       dropi: [],
       zendrop: [],
+      synchroteam: [],
       other: [],
     };
     for (const s of settings) {
