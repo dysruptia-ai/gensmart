@@ -1615,9 +1615,11 @@ router.post(
 
       let currentMessages = [...messages];
       const maxIter = 5;
+      const planLimits = PLAN_LIMITS[req.org!.plan as PlanKey];
+      const effectiveMaxTokens = Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512);
 
+      try {
       for (let i = 0; i < maxIter; i++) {
-        const planLimits = PLAN_LIMITS[req.org!.plan as PlanKey];
         const response = await chat({
           provider: agentResult.llmProvider as 'openai' | 'anthropic',
           model: agentResult.llmModel,
@@ -1625,7 +1627,7 @@ router.post(
           messages: currentMessages,
           tools: llmTools.length > 0 ? llmTools : undefined,
           temperature: agentResult.temperature,
-          maxTokens: Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512),
+          maxTokens: effectiveMaxTokens,
         });
 
         totalTokens += response.usage.totalTokens;
@@ -1841,9 +1843,56 @@ router.post(
           finalResponse = cleaned;
         }
       }
+      } catch (err) {
+        // Retry once without tools — replica worker pattern (hotfix #57-60)
+        console.error('[agents.preview] LLM failed in loop, retrying:', (err as Error).message);
+        try {
+          const retryResponse = await chat({
+            provider: agentResult.llmProvider as 'openai' | 'anthropic',
+            model: agentResult.llmModel,
+            system: fullSystemPrompt,
+            messages,
+            temperature: agentResult.temperature,
+            maxTokens: effectiveMaxTokens,
+          });
+          finalResponse = stripAndExtractToolCallArtifacts(retryResponse.content).cleaned;
+          totalTokens = retryResponse.usage.totalTokens;
+        } catch (retryErr) {
+          console.error('[agents.preview] LLM failed after retry:', (retryErr as Error).message);
+          throw retryErr;
+        }
+      }
 
-      if (!finalResponse.trim() || finalResponse.replace(/[\s.…]+/g, '').length < 3) {
-        finalResponse = 'Sorry, I could not generate a response. Could you please try again?';
+      // Guard against minimal/empty responses — replica worker pattern (hotfix #94)
+      const isMinimalResponse = (text: string): boolean => {
+        const stripped = text.replace(/[\s\p{P}]/gu, '');
+        return stripped.length < 5;
+      };
+
+      if (isMinimalResponse(finalResponse)) {
+        console.warn(`[agents.preview] Minimal LLM response detected: "${finalResponse}" — retrying`);
+        try {
+          const retryResponse = await chat({
+            provider: agentResult.llmProvider as 'openai' | 'anthropic',
+            model: agentResult.llmModel,
+            system: fullSystemPrompt,
+            messages,
+            temperature: agentResult.temperature,
+            maxTokens: effectiveMaxTokens,
+          });
+          if (!isMinimalResponse(retryResponse.content)) {
+            finalResponse = stripAndExtractToolCallArtifacts(retryResponse.content).cleaned;
+            totalTokens += retryResponse.usage.totalTokens;
+          } else {
+            console.warn(`[agents.preview] Retry also returned minimal response: "${retryResponse.content}"`);
+            finalResponse = agentResult.llmProvider === 'anthropic'
+              ? 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?'
+              : 'Sorry, I could not process your message. Could you please repeat it?';
+          }
+        } catch (retryErr) {
+          console.error('[agents.preview] Retry for minimal response failed:', (retryErr as Error).message);
+          finalResponse = 'Sorry, I could not process your message. Could you please repeat it?';
+        }
       }
 
       // Persist updated history
