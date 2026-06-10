@@ -5,8 +5,12 @@
  * underlying action (e.g., capture_variable) actually runs.
  *
  * Covered formats:
- *   1. XML blocks:         <tool_calls>...</tool_calls>, <function_calls>...</function_calls>,
- *                          <invoke name="...">...</invoke>
+ *   1. XML blocks (closed pairs):  <tool_calls>...</tool_calls>,
+ *                                  <function_calls>...</function_calls>,
+ *                                  <invoke name="...">...</invoke>
+ *   1b. XML blocks (unclosed/truncated openers): strips from <tool_calls>,
+ *       <function_calls>, or <invoke name="..."> to end-of-string. Handles
+ *       cases where maxTokens cut the model's output mid-tool-call.
  *   2. Fenced JSON blocks with capture_variable shape:
  *        ```json
  *        { "variable_name": "nombre", "variable_value": "Kai" }
@@ -44,9 +48,20 @@ export function stripAndExtractToolCallArtifacts(text: string): StripResult {
   let cleaned = text;
 
   // --- 1. XML-style tool call blocks ---
+  // 1a. Closed pairs (precise match — strips only the tool call block).
   cleaned = cleaned.replace(/<tool_calls>[\s\S]*?<\/tool_calls>/gi, '');
   cleaned = cleaned.replace(/<function_calls>[\s\S]*?<\/function_calls>/gi, '');
   cleaned = cleaned.replace(/<invoke\s+name="[^"]*">[\s\S]*?<\/invoke>/gi, '');
+
+  // 1b. Unclosed/truncated openers (defensive — happens when LLM output gets cut
+  // mid-stream by maxTokens limit under heavy context). Strip from opener to end
+  // of string since anything past an unclosed tool call opener is guaranteed
+  // garbage (the LLM intended to emit a structured call, not user-facing text).
+  // The downstream isMinimalResponse guard in message.worker.ts will then
+  // trigger a retry without tools, producing a proper text response.
+  cleaned = cleaned.replace(/<tool_calls>[\s\S]*$/i, '');
+  cleaned = cleaned.replace(/<function_calls>[\s\S]*$/i, '');
+  cleaned = cleaned.replace(/<invoke\s+name="[^"]*">[\s\S]*$/i, '');
 
   // --- 2 & 3. Fenced JSON blocks ---
   // Match ```json ... ``` OR ``` ... ``` where body contains a JSON-looking object.
