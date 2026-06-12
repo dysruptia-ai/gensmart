@@ -10,7 +10,7 @@ import { validate } from '../middleware/validate';
 import { validateUUID } from '../middleware/validateUUID';
 import { checkAgentLimit, checkKnowledgeLimit } from '../middleware/planLimits';
 import * as agentService from '../services/agent.service';
-import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS } from '@gensmart/shared';
+import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
@@ -1368,7 +1368,7 @@ router.post(
       // capture instructions / RAG / scheduling. Worker and preview must
       // agree on substitution semantics — both go through
       // agent-config.service.renderSystemPromptWithConfig.
-      const { renderSystemPromptWithConfig: injectConfig } = await import(
+      const { renderSystemPromptWithConfig: injectConfig, loadAgentConfigForDeepInject } = await import(
         '../services/agent-config.service'
       );
       const variables = Array.isArray(agentResult.variables) ? agentResult.variables : [];
@@ -1812,8 +1812,11 @@ router.post(
                 (t) => t.name.replace(/\s+/g, '_').toLowerCase() === tc.name
               );
               if (toolDef) {
+                const { schema, values } = await loadAgentConfigForDeepInject(agentId);
+                const resolvedConfig = injectConfigVariablesDeep(toolDef.config, schema, values);
+                console.log(`[agents.preview] Custom function "${tc.name}" — config resolved`);
                 const result = await executeCustomFunction(
-                  toolDef.config as unknown as Parameters<typeof executeCustomFunction>[0],
+                  resolvedConfig as unknown as Parameters<typeof executeCustomFunction>[0],
                   tc.arguments
                 );
                 previewToolResults.push({ toolCallId: tc.id, content: result });

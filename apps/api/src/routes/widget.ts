@@ -7,7 +7,8 @@ import { AppError } from '../middleware/errorHandler';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { transcribeAudio } from '../services/whatsapp.service';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { PLAN_LIMITS, injectConfigVariables } from '@gensmart/shared';
+import { loadAgentConfigForDeepInject } from '../services/agent-config.service';
 
 const router = Router();
 
@@ -95,13 +96,17 @@ router.get(
       }
 
       const webCfg = agent.web_config ?? {};
+      const rawWelcomeMessage = (webCfg['welcome_message'] as string) ?? 'Hello! How can I help you?';
+      const { schema, values } = await loadAgentConfigForDeepInject(agentId as string);
+      const resolvedWelcomeMessage = injectConfigVariables(rawWelcomeMessage, schema, values);
+
       const config = {
         agentId: agent.id,
         name: agent.name,
         avatar_url: agent.avatar_url,
         avatar_initials: agent.avatar_initials ?? (agent.name.charAt(0).toUpperCase()),
         primary_color: (webCfg['primary_color'] as string) ?? '#25D366',
-        welcome_message: (webCfg['welcome_message'] as string) ?? 'Hello! How can I help you?',
+        welcome_message: resolvedWelcomeMessage,
         bubble_text: (webCfg['bubble_text'] as string) ?? 'Chat with us',
         position: (webCfg['position'] as string) ?? 'bottom-right',
         show_branding: agent.plan === 'free',

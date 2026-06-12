@@ -1,7 +1,7 @@
 import { Worker, Job } from 'bullmq';
 import { createBullConnection } from '../config/queues';
 import { query } from '../config/database';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
 import { chat, ChatMessage, ToolDefinition, ToolCall, type ContentPart, supportsVision } from '../services/llm.service';
 import { flushBuffer } from '../services/message-buffer.service';
 import { checkLimit, incrementMessages } from '../services/usage.service';
@@ -28,7 +28,10 @@ import {
   type EmailNotificationToolConfig,
 } from '../services/send-email-notification.service';
 import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
-import { renderSystemPromptWithConfig } from '../services/agent-config.service';
+import {
+  renderSystemPromptWithConfig,
+  loadAgentConfigForDeepInject,
+} from '../services/agent-config.service';
 import { createAppointment } from '../services/appointment.service';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
 
@@ -1189,11 +1192,15 @@ async function executeTool(
 
   if (toolDef) {
     try {
+      const { schema, values } = await loadAgentConfigForDeepInject(agentId);
+      const resolvedConfig = injectConfigVariablesDeep(toolDef.config, schema, values);
+      console.log(`[msg-worker] Custom function "${name}" — config resolved (placeholders substituted)`);
       return await executeCustomFunction(
-        toolDef.config as unknown as Parameters<typeof executeCustomFunction>[0],
+        resolvedConfig as unknown as Parameters<typeof executeCustomFunction>[0],
         args
       );
     } catch (err) {
+      console.error(`[msg-worker] Custom function "${name}" failed:`, (err as Error).message);
       return `Error executing ${name}: ${(err as Error).message}`;
     }
   }

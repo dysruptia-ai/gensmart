@@ -74,3 +74,16 @@ export async function renderSystemPromptWithConfig(
   const ctx = await loadAgentConfigContext(agentId);
   return injectConfigVariables(rawSystemPrompt, ctx.schema, ctx.values);
 }
+
+/**
+ * Return the effective schema + values for an agent, ready to pass into
+ * injectConfigVariablesDeep. Mirrors renderSystemPromptWithConfig but exposes
+ * the raw context so callers can substitute into arbitrary config objects
+ * (e.g. Custom Function tool configs with {{config.*}} placeholders).
+ */
+export async function loadAgentConfigForDeepInject(
+  agentId: string
+): Promise<{ schema: ConfigVariableSchema[]; values: ConfigVariableValues }> {
+  const ctx = await loadAgentConfigContext(agentId);
+  return { schema: ctx.schema, values: ctx.values };
+}

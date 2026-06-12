@@ -219,6 +219,35 @@ export function findMissingRequiredConfigVariables(
 }
 
 /**
+ * Deep-traverse any object/array/string and replace {{config.<key>}} placeholders.
+ * Used for Custom Function tool configs (URL, headers, bodyTemplate) and any
+ * other place customers store secrets or shared values via config variables
+ * outside the system prompt. Mirrors injectConfigVariables semantics:
+ * leaves placeholder verbatim if key not in schema.
+ */
+export function injectConfigVariablesDeep<T>(
+  obj: T,
+  schema: ConfigVariableSchema[],
+  values: ConfigVariableValues
+): T {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof obj === 'string') {
+    return injectConfigVariables(obj, schema, values) as unknown as T;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => injectConfigVariablesDeep(item, schema, values)) as unknown as T;
+  }
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+      result[k] = injectConfigVariablesDeep(v, schema, values);
+    }
+    return result as unknown as T;
+  }
+  return obj;
+}
+
+/**
  * Initialize a values object from a schema, applying `default` where set.
  * Useful when creating an agent from a template so the UI shows pre-filled
  * defaults the customer can keep or change.

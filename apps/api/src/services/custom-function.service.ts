@@ -125,6 +125,8 @@ export async function executeCustomFunction(
     return 'Error: Tool has no endpoint URL configured.';
   }
 
+  console.log(`[custom-function] → ${httpMethod.toUpperCase()} ${endpointUrl}`);
+
   // Build headers
   const finalHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -173,6 +175,11 @@ export async function executeCustomFunction(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    console.log(`[custom-function]   final URL: ${finalUrl}`);
+    console.log(`[custom-function]   headers: ${Object.keys(finalHeaders).join(', ')}`);
+    if (!['GET', 'HEAD'].includes(httpMethod.toUpperCase())) {
+      console.log(`[custom-function]   body: ${JSON.stringify(body).slice(0, 500)}`);
+    }
     const response = await fetch(finalUrl, {
       method: httpMethod.toUpperCase(),
       headers: finalHeaders,
@@ -184,8 +191,12 @@ export async function executeCustomFunction(
 
     clearTimeout(timeoutId);
 
+    console.log(`[custom-function] ← ${response.status} ${response.statusText} from ${endpointUrl}`);
+
     if (!response.ok) {
-      return `Error: HTTP ${response.status} ${response.statusText} from ${endpointUrl}`;
+      const errBody = await response.text().catch(() => '');
+      console.error(`[custom-function] ✗ HTTP ${response.status} body: ${errBody.slice(0, 500)}`);
+      return `Error: HTTP ${response.status} ${response.statusText} from ${endpointUrl}. Body: ${errBody.slice(0, 300)}`;
     }
 
     const responseData: unknown = await response.json();
@@ -214,8 +225,10 @@ export async function executeCustomFunction(
   } catch (err: unknown) {
     clearTimeout(timeoutId);
     if ((err as { name?: string }).name === 'AbortError') {
+      console.error(`[custom-function] ✗ Timeout after ${timeoutMs}ms on ${endpointUrl}`);
       return `Error: Request timed out after ${timeoutMs}ms`;
     }
+    console.error(`[custom-function] ✗ Exception on ${endpointUrl}:`, (err as Error).message);
     return `Error: ${(err as Error).message ?? 'Unknown error calling custom function'}`;
   }
 }
