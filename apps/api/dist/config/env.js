@@ -1,0 +1,62 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.env = void 0;
+exports.requireEnv = requireEnv;
+const dotenv_1 = __importDefault(require("dotenv"));
+const path_1 = __importDefault(require("path"));
+dotenv_1.default.config({ path: path_1.default.resolve(process.cwd(), '../../.env') });
+function requireEnv(name) {
+    const value = process.env[name];
+    if (!value) {
+        throw new Error(`Missing required environment variable: ${name}`);
+    }
+    return value;
+}
+function optionalEnv(name, defaultValue) {
+    return process.env[name] ?? defaultValue;
+}
+exports.env = {
+    NODE_ENV: optionalEnv('NODE_ENV', 'development'),
+    PORT: parseInt(optionalEnv('PORT', '4000'), 10),
+    DATABASE_URL: optionalEnv('DATABASE_URL', 'postgresql://gensmart:gensmart@localhost:5432/gensmart'),
+    REDIS_URL: optionalEnv('REDIS_URL', 'redis://localhost:6379'),
+    JWT_ACCESS_SECRET: optionalEnv('JWT_ACCESS_SECRET', 'dev-access-secret-change-in-production'),
+    JWT_REFRESH_SECRET: optionalEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-in-production'),
+    ENCRYPTION_KEY: optionalEnv('ENCRYPTION_KEY', '0'.repeat(64)),
+    FRONTEND_URL: optionalEnv('FRONTEND_URL', 'http://localhost:3000'),
+    API_URL: optionalEnv('API_URL', 'http://localhost:4000'),
+    OPENAI_API_KEY: process.env['OPENAI_API_KEY'] ?? '',
+    ANTHROPIC_API_KEY: process.env['ANTHROPIC_API_KEY'] ?? '',
+    STRIPE_SECRET_KEY: process.env['STRIPE_SECRET_KEY'] ?? '',
+    STRIPE_PUBLISHABLE_KEY: process.env['STRIPE_PUBLISHABLE_KEY'] ?? '',
+    STRIPE_WEBHOOK_SECRET: process.env['STRIPE_WEBHOOK_SECRET'] ?? '',
+    STRIPE_PRICE_STARTER_MONTHLY: process.env['STRIPE_PRICE_STARTER_MONTHLY'] ?? '',
+    STRIPE_PRICE_STARTER_QUARTERLY: process.env['STRIPE_PRICE_STARTER_QUARTERLY'] ?? '',
+    STRIPE_PRICE_STARTER_YEARLY: process.env['STRIPE_PRICE_STARTER_YEARLY'] ?? '',
+    STRIPE_PRICE_PRO_MONTHLY: process.env['STRIPE_PRICE_PRO_MONTHLY'] ?? '',
+    STRIPE_PRICE_PRO_QUARTERLY: process.env['STRIPE_PRICE_PRO_QUARTERLY'] ?? '',
+    STRIPE_PRICE_PRO_YEARLY: process.env['STRIPE_PRICE_PRO_YEARLY'] ?? '',
+    STRIPE_PRICE_ENTERPRISE_MONTHLY: process.env['STRIPE_PRICE_ENTERPRISE_MONTHLY'] ?? '',
+    STRIPE_PRICE_ENTERPRISE_QUARTERLY: process.env['STRIPE_PRICE_ENTERPRISE_QUARTERLY'] ?? '',
+    STRIPE_PRICE_ENTERPRISE_YEARLY: process.env['STRIPE_PRICE_ENTERPRISE_YEARLY'] ?? '',
+    STRIPE_PRICE_ADDON_500: process.env['STRIPE_PRICE_ADDON_500'] ?? '',
+    STRIPE_PRICE_ADDON_2000: process.env['STRIPE_PRICE_ADDON_2000'] ?? '',
+    STRIPE_PRICE_ADDON_5000: process.env['STRIPE_PRICE_ADDON_5000'] ?? '',
+    META_APP_SECRET: process.env['META_APP_SECRET'] ?? '',
+    META_VERIFY_TOKEN: process.env['META_VERIFY_TOKEN'] ?? '',
+    // WhatsApp (alias of META_* for clarity — falls back to META_* if not set)
+    WHATSAPP_APP_SECRET: process.env['WHATSAPP_APP_SECRET'] ?? process.env['META_APP_SECRET'] ?? '',
+    WHATSAPP_VERIFY_TOKEN: process.env['WHATSAPP_VERIFY_TOKEN'] ?? process.env['META_VERIFY_TOKEN'] ?? '',
+    // Facebook Embedded Signup
+    FACEBOOK_APP_ID: process.env['FACEBOOK_APP_ID'] ?? '',
+    FACEBOOK_APP_SECRET: process.env['FACEBOOK_APP_SECRET'] ?? '',
+    SMTP_HOST: process.env['SMTP_HOST'] ?? '',
+    SMTP_PORT: parseInt(optionalEnv('SMTP_PORT', '587'), 10),
+    SMTP_USER: process.env['SMTP_USER'] ?? '',
+    SMTP_PASS: process.env['SMTP_PASS'] ?? '',
+    SMTP_FROM: optionalEnv('SMTP_FROM', 'noreply@gensmart.co'),
+};
+//# sourceMappingURL=env.js.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"scraping.worker.d.ts","sourceRoot":"","sources":["../../src/workers/scraping.worker.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAO,MAAM,QAAQ,CAAC;AAKrC,UAAU,eAAe;IACvB,MAAM,EAAE,MAAM,CAAC;IACf,OAAO,EAAE,MAAM,CAAC;IAChB,cAAc,EAAE,MAAM,CAAC;IACvB,GAAG,EAAE,MAAM,CAAC;CACb;AAiGD,wBAAgB,mBAAmB,IAAI,MAAM,CAAC,eAAe,CAAC,CAe7D"}

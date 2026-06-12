@@ -1,0 +1,1 @@
+{"version":3,"file":"scoring.worker.d.ts","sourceRoot":"","sources":["../../src/workers/scoring.worker.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAO,MAAM,QAAQ,CAAC;AAOrC,UAAU,cAAc;IACtB,cAAc,EAAE,MAAM,CAAC;IACvB,cAAc,EAAE,MAAM,CAAC;IACvB,OAAO,EAAE,oBAAoB,GAAG,mBAAmB,GAAG,QAAQ,CAAC;CAChE;AA8DD,wBAAgB,kBAAkB,IAAI,MAAM,CAAC,cAAc,CAAC,CAe3D"}

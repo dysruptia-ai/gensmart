@@ -1,0 +1,597 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../middleware/auth");
+const orgContext_1 = require("../middleware/orgContext");
+const validateUUID_1 = require("../middleware/validateUUID");
+const database_1 = require("../config/database");
+const errorHandler_1 = require("../middleware/errorHandler");
+const shared_1 = require("@gensmart/shared");
+const queues_1 = require("../config/queues");
+const llm_service_1 = require("../services/llm.service");
+const websocket_1 = require("../config/websocket");
+const router = (0, express_1.Router)();
+// All conversation routes require auth + orgContext
+router.use(auth_1.requireAuth, orgContext_1.orgContext);
+// ── GET /api/conversations ───────────────────────────────────────────────────
+// List conversations with filters: agentId, status, channel, search, page, limit
+router.get('/', async (req, res, next) => {
+    try {
+        const { agentId, status, channel, search, page = '1', limit = '20', } = req.query;
+        const pageNum = Math.max(1, parseInt(page, 10));
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+        const offset = (pageNum - 1) * limitNum;
+        const conditions = ['c.organization_id = $1'];
+        const params = [req.org.id];
+        let paramIndex = 2;
+        if (agentId) {
+            conditions.push(`c.agent_id = $${paramIndex++}`);
+            params.push(agentId);
+        }
+        if (status) {
+            conditions.push(`c.status = $${paramIndex++}`);
+            params.push(status);
+        }
+        if (channel) {
+            conditions.push(`c.channel = $${paramIndex++}`);
+            params.push(channel);
+        }
+        if (search) {
+            conditions.push(`(co.name ILIKE $${paramIndex} OR co.phone ILIKE $${paramIndex} OR co.email ILIKE $${paramIndex})`);
+            params.push(`%${search}%`);
+            paramIndex++;
+        }
+        const where = conditions.join(' AND ');
+        // Count total
+        const countResult = await (0, database_1.query)(`SELECT COUNT(*) as count
+         FROM conversations c
+         LEFT JOIN contacts co ON c.contact_id = co.id
+         WHERE ${where}`, params);
+        const total = parseInt(countResult.rows[0]?.count ?? '0', 10);
+        // Fetch conversations with contact and last message
+        const rows = await (0, database_1.query)(`SELECT
+           c.id, c.agent_id, a.name as agent_name,
+           c.contact_id,
+           co.name as contact_name, co.phone as contact_phone, co.email as contact_email, co.avatar_url as contact_avatar,
+           c.channel, c.status, c.taken_over_by,
+           u.name as takeover_user_name,
+           c.ai_score, c.captured_variables, c.last_message_at, c.message_count, c.created_at,
+           lm.content as last_message_content, lm.role as last_message_role
+         FROM conversations c
+         LEFT JOIN agents a ON c.agent_id = a.id
+         LEFT JOIN contacts co ON c.contact_id = co.id
+         LEFT JOIN users u ON c.taken_over_by = u.id
+         LEFT JOIN LATERAL (
+           SELECT content, role FROM messages
+           WHERE conversation_id = c.id
+           ORDER BY created_at DESC LIMIT 1
+         ) lm ON true
+         WHERE ${where}
+         ORDER BY c.last_message_at DESC NULLS LAST
+         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`, [...params, limitNum, offset]);
+        res.json({
+            conversations: rows.rows.map((row) => ({
+                id: row.id,
+                agentId: row.agent_id,
+                agentName: row.agent_name,
+                contact: row.contact_id
+                    ? {
+                        id: row.contact_id,
+                        name: row.contact_name,
+                        phone: row.contact_phone,
+                        email: row.contact_email,
+                        avatarUrl: row.contact_avatar,
+                    }
+                    : null,
+                channel: row.channel,
+                status: row.status,
+                takenOverBy: row.taken_over_by,
+                takeoverUserName: row.takeover_user_name,
+                aiScore: row.ai_score,
+                capturedVariables: row.captured_variables ?? {},
+                lastMessageAt: row.last_message_at,
+                messageCount: row.message_count,
+                createdAt: row.created_at,
+                lastMessage: row.last_message_content
+                    ? {
+                        content: row.last_message_content.slice(0, 100),
+                        role: row.last_message_role,
+                    }
+                    : null,
+            })),
+            pagination: {
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum),
+            },
+        });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── GET /api/conversations/:id ───────────────────────────────────────────────
+router.get('/:id', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const conversationId = String(req.params['id']);
+        const convResult = await (0, database_1.query)(`SELECT
+           c.id, c.agent_id, a.name as agent_name, c.organization_id,
+           c.contact_id,
+           co.name as contact_name, co.phone as contact_phone, co.email as contact_email,
+           co.avatar_url as contact_avatar, co.ai_score as contact_ai_score,
+           co.funnel_stage as contact_funnel_stage, co.custom_variables as contact_custom_variables,
+           c.channel, c.status, c.taken_over_by,
+           u.name as takeover_user_name,
+           c.taken_over_at, c.ai_score, c.ai_summary, c.captured_variables,
+           c.channel_metadata, c.last_message_at, c.message_count, c.created_at, c.updated_at
+         FROM conversations c
+         LEFT JOIN agents a ON c.agent_id = a.id
+         LEFT JOIN contacts co ON c.contact_id = co.id
+         LEFT JOIN users u ON c.taken_over_by = u.id
+         WHERE c.id = $1 AND c.organization_id = $2`, [conversationId, req.org.id]);
+        const conv = convResult.rows[0];
+        if (!conv) {
+            throw new errorHandler_1.AppError(404, 'Conversation not found', 'NOT_FOUND');
+        }
+        // Fetch messages with cursor-based pagination
+        const msgBefore = req.query['msgBefore'];
+        const msgLimit = Math.min(parseInt(req.query['msgLimit'] ?? '50', 10), 100);
+        const msgConditions = ['conversation_id = $1'];
+        const msgParams = [conversationId];
+        let msgParamIdx = 2;
+        if (msgBefore) {
+            msgConditions.push(`created_at < $${msgParamIdx++}`);
+            msgParams.push(msgBefore);
+        }
+        // Fetch newest first for cursor pagination, then reverse for chronological order
+        const messagesResult = await (0, database_1.query)(`SELECT id, role, content, metadata, created_at
+         FROM messages
+         WHERE ${msgConditions.join(' AND ')}
+         ORDER BY created_at DESC
+         LIMIT $${msgParamIdx}`, [...msgParams, msgLimit + 1]);
+        const hasMore = messagesResult.rows.length > msgLimit;
+        const messageRows = messagesResult.rows.slice(0, msgLimit).reverse();
+        const msgCountResult = await (0, database_1.query)('SELECT COUNT(*) as count FROM messages WHERE conversation_id = $1', [conversationId]);
+        const totalMessages = parseInt(msgCountResult.rows[0]?.count ?? '0', 10);
+        res.json({
+            conversation: {
+                id: conv.id,
+                agentId: conv.agent_id,
+                agentName: conv.agent_name,
+                organizationId: conv.organization_id,
+                contact: conv.contact_id
+                    ? {
+                        id: conv.contact_id,
+                        name: conv.contact_name,
+                        phone: conv.contact_phone,
+                        email: conv.contact_email,
+                        avatarUrl: conv.contact_avatar,
+                        aiScore: conv.contact_ai_score,
+                        funnelStage: conv.contact_funnel_stage,
+                        customVariables: conv.contact_custom_variables ?? {},
+                    }
+                    : null,
+                channel: conv.channel,
+                status: conv.status,
+                takenOverBy: conv.taken_over_by,
+                takeoverUserName: conv.takeover_user_name,
+                takenOverAt: conv.taken_over_at,
+                aiScore: conv.ai_score,
+                aiSummary: conv.ai_summary,
+                capturedVariables: conv.captured_variables ?? {},
+                channelMetadata: conv.channel_metadata ?? {},
+                lastMessageAt: conv.last_message_at,
+                messageCount: conv.message_count,
+                createdAt: conv.created_at,
+                updatedAt: conv.updated_at,
+            },
+            messages: messageRows.map((m) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                metadata: m.metadata ?? {},
+                createdAt: m.created_at,
+            })),
+            pagination: {
+                total: totalMessages,
+                hasMore,
+                oldestTimestamp: messageRows[0]?.created_at ?? null,
+            },
+        });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── POST /api/conversations/:id/message ─────────────────────────────────────
+// Send a message as a human agent (only during takeover)
+router.post('/:id/message', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const conversationId = String(req.params['id']);
+        const { content, image, audio } = req.body;
+        const convResult = await (0, database_1.query)('SELECT id, organization_id, status, taken_over_by, channel, agent_id FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org.id]);
+        const conv = convResult.rows[0];
+        if (!conv)
+            throw new errorHandler_1.AppError(404, 'Conversation not found', 'NOT_FOUND');
+        if (conv.status !== 'human_takeover') {
+            throw new errorHandler_1.AppError(400, 'Conversation is not in takeover mode', 'NOT_IN_TAKEOVER');
+        }
+        if (conv.taken_over_by !== req.user.userId) {
+            throw new errorHandler_1.AppError(403, 'You are not the active agent for this conversation', 'FORBIDDEN');
+        }
+        // Plan gating for multimedia
+        const orgPlan = req.org.plan;
+        const orgPlanLimits = shared_1.PLAN_LIMITS[orgPlan];
+        if (audio?.data && !orgPlanLimits.voiceMessages) {
+            throw new errorHandler_1.AppError(403, 'Voice messages require Starter plan or higher', 'PLAN_LIMIT');
+        }
+        if (image?.data && !orgPlanLimits.imageVision) {
+            throw new errorHandler_1.AppError(403, 'Image sending requires Pro plan or higher', 'PLAN_LIMIT');
+        }
+        let messageContent = content?.trim() || '';
+        const msgMetadata = {};
+        // Handle audio: transcribe with Whisper
+        if (audio?.data) {
+            try {
+                const { transcribeAudio } = await Promise.resolve().then(() => __importStar(require('../services/whatsapp.service')));
+                const audioBuffer = Buffer.from(audio.data, 'base64');
+                const transcription = await transcribeAudio(audioBuffer, audio.mimeType);
+                messageContent = transcription;
+                msgMetadata['isVoiceMessage'] = true;
+            }
+            catch (err) {
+                console.error('[conversations] Audio transcription failed:', err);
+                throw new errorHandler_1.AppError(400, 'Failed to transcribe audio', 'TRANSCRIPTION_FAILED');
+            }
+        }
+        // Handle image: store in metadata
+        if (image?.data) {
+            msgMetadata['hasImages'] = true;
+            msgMetadata['imageCount'] = 1;
+            msgMetadata['images'] = [{
+                    mimeType: image.mimeType,
+                    data: image.data,
+                    hasCaption: !!messageContent,
+                }];
+        }
+        if (!messageContent && !image?.data) {
+            throw new errorHandler_1.AppError(400, 'Message content is required', 'MISSING_CONTENT');
+        }
+        if (!messageContent) {
+            messageContent = '[Image]';
+        }
+        // Save message
+        const msgResult = await (0, database_1.query)(`INSERT INTO messages (conversation_id, role, content, metadata, created_at)
+         VALUES ($1, 'human', $2, $3, NOW())
+         RETURNING id, created_at`, [conversationId, messageContent, JSON.stringify(msgMetadata)]);
+        const message = {
+            id: msgResult.rows[0].id,
+            role: 'human',
+            content: messageContent,
+            metadata: msgMetadata,
+            createdAt: msgResult.rows[0].created_at,
+        };
+        // Update conversation
+        await (0, database_1.query)(`UPDATE conversations SET last_message_at = NOW(), message_count = message_count + 1, updated_at = NOW() WHERE id = $1`, [conversationId]);
+        // Send via WhatsApp if channel is whatsapp (text only — image sending from takeover is post-MVP)
+        if (conv.channel === 'whatsapp') {
+            try {
+                const agentResult = await (0, database_1.query)('SELECT whatsapp_config FROM agents WHERE id = $1', [conv.agent_id]);
+                const waConfig = agentResult.rows[0]?.whatsapp_config;
+                if (waConfig?.['connected'] && waConfig?.['phone_number_id'] && waConfig?.['access_token_encrypted']) {
+                    const contactResult = await (0, database_1.query)('SELECT phone FROM contacts WHERE id = (SELECT contact_id FROM conversations WHERE id = $1)', [conversationId]);
+                    const phone = contactResult.rows[0]?.phone;
+                    if (phone) {
+                        const { sendTextMessage, decryptAccessToken } = await Promise.resolve().then(() => __importStar(require('../services/whatsapp.service')));
+                        const accessToken = decryptAccessToken(String(waConfig['access_token_encrypted']));
+                        await sendTextMessage(String(waConfig['phone_number_id']), accessToken, phone, messageContent);
+                    }
+                }
+            }
+            catch (err) {
+                console.error(`[conversations] WhatsApp send error:`, err.message);
+                // Non-fatal — message is saved, just couldn't send via WhatsApp
+            }
+        }
+        // Emit WebSocket events
+        try {
+            const io = (0, websocket_1.getIO)();
+            io.to(`org:${conv.organization_id}`).emit('message:new', {
+                conversationId,
+                messages: [message],
+            });
+            io.to(`conv:${conversationId}`).emit('message:new', {
+                conversationId,
+                messages: [message],
+            });
+            io.to(`org:${conv.organization_id}`).emit('conversation:update', {
+                conversationId,
+                lastMessage: messageContent.slice(0, 100),
+                updatedAt: new Date().toISOString(),
+            });
+        }
+        catch {
+            // WebSocket not initialized in test
+        }
+        res.status(201).json({ message });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── POST /api/conversations/:id/takeover ────────────────────────────────────
+router.post('/:id/takeover', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const conversationId = String(req.params['id']);
+        const plan = req.org.plan;
+        const planLimits = shared_1.PLAN_LIMITS[plan];
+        // Check plan supports human takeover
+        if (!planLimits.humanTakeover) {
+            throw new errorHandler_1.AppError(403, 'Human takeover is not available on your plan. Upgrade to enable this feature.', 'PLAN_LIMIT');
+        }
+        const convResult = await (0, database_1.query)('SELECT id, organization_id, status, taken_over_by FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org.id]);
+        const conv = convResult.rows[0];
+        if (!conv)
+            throw new errorHandler_1.AppError(404, 'Conversation not found', 'NOT_FOUND');
+        if (conv.status === 'human_takeover') {
+            throw new errorHandler_1.AppError(400, 'Conversation is already in takeover mode', 'ALREADY_TAKEN_OVER');
+        }
+        await (0, database_1.query)(`UPDATE conversations
+         SET status = 'human_takeover', taken_over_by = $1, taken_over_at = NOW(), updated_at = NOW()
+         WHERE id = $2`, [req.user.userId, conversationId]);
+        try {
+            (0, websocket_1.getIO)().to(`org:${conv.organization_id}`).emit('takeover:status', {
+                conversationId,
+                status: 'human_takeover',
+                userId: req.user.userId,
+                userName: req.user.email,
+            });
+        }
+        catch {
+            // WebSocket not initialized
+        }
+        res.json({ message: 'Takeover successful', status: 'human_takeover' });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── POST /api/conversations/:id/release ─────────────────────────────────────
+router.post('/:id/release', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const conversationId = String(req.params['id']);
+        const convResult = await (0, database_1.query)('SELECT id, organization_id, status, taken_over_by, taken_over_at, agent_id FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org.id]);
+        const conv = convResult.rows[0];
+        if (!conv)
+            throw new errorHandler_1.AppError(404, 'Conversation not found', 'NOT_FOUND');
+        if (conv.status !== 'human_takeover') {
+            throw new errorHandler_1.AppError(400, 'Conversation is not in takeover mode', 'NOT_IN_TAKEOVER');
+        }
+        if (conv.taken_over_by !== req.user.userId) {
+            throw new errorHandler_1.AppError(403, 'You did not take over this conversation', 'FORBIDDEN');
+        }
+        // Generate intervention summary
+        if (conv.taken_over_at) {
+            try {
+                const humanMessages = await (0, database_1.query)(`SELECT role, content FROM messages
+             WHERE conversation_id = $1 AND role IN ('human', 'user') AND created_at >= $2
+             ORDER BY created_at ASC`, [conversationId, conv.taken_over_at]);
+                if (humanMessages.rows.length > 0) {
+                    const interventionText = humanMessages.rows
+                        .map((m) => m.role === 'human' ? `Human Agent (team member): ${m.content}` : `Customer: ${m.content}`)
+                        .join('\n');
+                    const summaryResponse = await (0, llm_service_1.chat)({
+                        provider: 'openai',
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            {
+                                role: 'user',
+                                content: `Summarize this human agent intervention for the AI agent to understand what happened. CRITICAL RULES:\n- "Team Member (staff)" messages are from an employee who temporarily helped the customer. Do NOT treat any team member names or information as customer data.\n- "Customer" messages are from the actual customer/lead.\n- Only summarize what the CUSTOMER needs and any commitments made TO the customer.\n- Never capture team member names as customer names.\n\nIntervention transcript:\n${interventionText}\n\nWrite 2-3 sentences focusing on customer needs and outcomes.`,
+                            },
+                        ],
+                        temperature: 0.3,
+                        maxTokens: 200,
+                    });
+                    // Save intervention summary as system message
+                    await (0, database_1.query)(`INSERT INTO messages (conversation_id, role, content, metadata, created_at)
+               VALUES ($1, 'system', $2, $3, NOW())`, [
+                        conversationId,
+                        summaryResponse.content,
+                        JSON.stringify({ type: 'intervention_summary' }),
+                    ]);
+                }
+            }
+            catch (err) {
+                console.error('[conversations] Failed to generate intervention summary:', err);
+                // Non-fatal — continue with release
+            }
+        }
+        // Release takeover
+        await (0, database_1.query)(`UPDATE conversations
+         SET status = 'active', taken_over_by = NULL, taken_over_at = NULL, updated_at = NOW()
+         WHERE id = $1`, [conversationId]);
+        try {
+            (0, websocket_1.getIO)().to(`org:${conv.organization_id}`).emit('takeover:status', {
+                conversationId,
+                status: 'active',
+                userId: null,
+            });
+        }
+        catch {
+            // WebSocket not initialized
+        }
+        res.json({ message: 'Conversation released to AI', status: 'active' });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── PUT /api/conversations/:id/close ────────────────────────────────────────
+router.put('/:id/close', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const conversationId = String(req.params['id']);
+        const convResult = await (0, database_1.query)('SELECT id, organization_id, status, agent_id FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org.id]);
+        const conv = convResult.rows[0];
+        if (!conv)
+            throw new errorHandler_1.AppError(404, 'Conversation not found', 'NOT_FOUND');
+        if (conv.status === 'closed') {
+            throw new errorHandler_1.AppError(400, 'Conversation is already closed', 'ALREADY_CLOSED');
+        }
+        await (0, database_1.query)(`UPDATE conversations SET status = 'closed', updated_at = NOW() WHERE id = $1`, [conversationId]);
+        // Enqueue AI scoring job
+        try {
+            await queues_1.scoringQueue.add('score-conversation', {
+                conversationId,
+                organizationId: conv.organization_id,
+                trigger: 'conversation_close',
+            });
+        }
+        catch (err) {
+            console.error('[conversations] Failed to enqueue scoring job:', err);
+            // Non-fatal
+        }
+        try {
+            (0, websocket_1.getIO)().to(`org:${conv.organization_id}`).emit('conversation:update', {
+                conversationId,
+                status: 'closed',
+                updatedAt: new Date().toISOString(),
+            });
+        }
+        catch {
+            // WebSocket not initialized
+        }
+        res.json({ message: 'Conversation closed' });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── DELETE /api/conversations/bulk ──────────────────────────────────────────
+// Must be registered before /:id to avoid Express matching "bulk" as a UUID
+router.delete('/bulk', async (req, res, next) => {
+    try {
+        const { conversationIds } = req.body;
+        if (!Array.isArray(conversationIds) || conversationIds.length === 0) {
+            throw new errorHandler_1.AppError(400, 'conversationIds array is required', 'VALIDATION_ERROR');
+        }
+        if (conversationIds.length > 50) {
+            throw new errorHandler_1.AppError(400, 'Maximum 50 conversations at a time', 'VALIDATION_ERROR');
+        }
+        // Fetch all valid conversations
+        const placeholders = conversationIds.map((_, i) => `$${i + 2}`).join(', ');
+        const convs = await (0, database_1.query)(`SELECT id, contact_id FROM conversations WHERE id IN (${placeholders}) AND organization_id = $1`, [req.org.id, ...conversationIds]);
+        const validIds = convs.rows.map((r) => r.id);
+        const contactIds = [...new Set(convs.rows.map((r) => r.contact_id).filter(Boolean))];
+        if (validIds.length === 0) {
+            res.json({ deleted: 0, contactsDeleted: 0 });
+            return;
+        }
+        // Delete messages and conversations
+        const idPlaceholders = validIds.map((_, i) => `$${i + 1}`).join(', ');
+        await (0, database_1.query)(`DELETE FROM messages WHERE conversation_id IN (${idPlaceholders})`, validIds);
+        await (0, database_1.query)(`DELETE FROM conversations WHERE id IN (${idPlaceholders})`, validIds);
+        // Delete orphan contacts
+        let contactsDeleted = 0;
+        for (const contactId of contactIds) {
+            const remaining = await (0, database_1.query)('SELECT COUNT(*) as count FROM conversations WHERE contact_id = $1', [contactId]);
+            if (parseInt(remaining.rows[0]?.count ?? '0', 10) === 0) {
+                await (0, database_1.query)('DELETE FROM contacts WHERE id = $1', [contactId]);
+                contactsDeleted++;
+            }
+        }
+        res.json({ deleted: validIds.length, contactsDeleted });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── DELETE /api/conversations/:id ────────────────────────────────────────────
+router.delete('/:id', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const conversationId = String(req.params['id']);
+        const convResult = await (0, database_1.query)('SELECT id, organization_id, contact_id FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org.id]);
+        const conv = convResult.rows[0];
+        if (!conv)
+            throw new errorHandler_1.AppError(404, 'Conversation not found', 'NOT_FOUND');
+        // Delete messages first (in case CASCADE isn't set)
+        await (0, database_1.query)('DELETE FROM messages WHERE conversation_id = $1', [conversationId]);
+        // Delete the conversation
+        await (0, database_1.query)('DELETE FROM conversations WHERE id = $1', [conversationId]);
+        // Check if the contact has other conversations; if not, delete the orphan contact
+        if (conv.contact_id) {
+            const otherConvs = await (0, database_1.query)('SELECT COUNT(*) as count FROM conversations WHERE contact_id = $1', [conv.contact_id]);
+            if (parseInt(otherConvs.rows[0]?.count ?? '0', 10) === 0) {
+                await (0, database_1.query)('DELETE FROM contacts WHERE id = $1', [conv.contact_id]);
+            }
+        }
+        res.status(204).send();
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// ── POST /api/conversations (create from widget/API) ────────────────────────
+router.post('/', async (req, res, next) => {
+    try {
+        const { agentId, channel = 'web', channelMetadata = {} } = req.body;
+        if (!agentId) {
+            throw new errorHandler_1.AppError(400, 'agentId is required', 'MISSING_AGENT_ID');
+        }
+        // Verify agent belongs to org and is published
+        const agentResult = await (0, database_1.query)(`SELECT id, status FROM agents WHERE id = $1 AND organization_id = $2`, [agentId, req.org.id]);
+        if (!agentResult.rows[0]) {
+            throw new errorHandler_1.AppError(404, 'Agent not found', 'AGENT_NOT_FOUND');
+        }
+        const result = await (0, database_1.query)(`INSERT INTO conversations (agent_id, organization_id, channel, status, channel_metadata, created_at, updated_at)
+         VALUES ($1, $2, $3, 'active', $4, NOW(), NOW())
+         RETURNING id, created_at`, [agentId, req.org.id, channel, JSON.stringify(channelMetadata)]);
+        res.status(201).json({
+            conversation: {
+                id: result.rows[0].id,
+                agentId,
+                channel,
+                status: 'active',
+                createdAt: result.rows[0].created_at,
+            },
+        });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+exports.default = router;
+//# sourceMappingURL=conversations.js.map
