@@ -478,7 +478,7 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
 
     // Sub-accounts
     await client.query(
-      `DELETE FROM sub_accounts WHERE parent_org_id = $1 OR child_org_id = $1`,
+      `DELETE FROM sub_accounts WHERE parent_organization_id = $1 OR child_organization_id = $1`,
       [orgId]
     );
 

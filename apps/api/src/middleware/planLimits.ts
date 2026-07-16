@@ -223,7 +223,7 @@ export function checkSubAccountLimit() {
       }
 
       const result = await query<{ count: string }>(
-        'SELECT COUNT(*) as count FROM sub_accounts WHERE parent_org_id = $1',
+        'SELECT COUNT(*) as count FROM sub_accounts WHERE parent_organization_id = $1',
         [req.user!.orgId]
       );
       const current = parseInt(result.rows[0]?.count ?? '0', 10);
