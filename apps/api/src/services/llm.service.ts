@@ -7,8 +7,10 @@ export const LLM_MODELS = {
     'gpt-4o-mini': { name: 'GPT-4o Mini', plans: ['free', 'starter', 'pro', 'enterprise'] },
   },
   anthropic: {
-    'claude-sonnet-4-20250514': { name: 'Claude Sonnet', plans: ['pro', 'enterprise'] },
-    'claude-haiku-4-5-20251001': { name: 'Claude Haiku', plans: ['starter', 'pro', 'enterprise'] },
+    'claude-sonnet-5': { name: 'Claude Sonnet 5', plans: ['pro', 'enterprise'] },
+    'claude-haiku-4-5-20251001': { name: 'Claude Haiku 4.5', plans: ['starter', 'pro', 'enterprise'] },
+    // Legacy — mantener para retrocompatibilidad con agentes existentes que aún no migraron
+    'claude-sonnet-4-20250514': { name: 'Claude Sonnet 4 (deprecated)', plans: ['pro', 'enterprise'] },
   },
 } as const;
 
@@ -30,8 +32,22 @@ export type ContentPart = TextPart | ImagePart;
 /** Models that support image/vision input */
 const VISION_MODELS = new Set([
   'gpt-4o',
-  'claude-sonnet-4-20250514',
+  'claude-sonnet-5',
+  'claude-sonnet-4-20250514', // legacy
 ]);
+
+/**
+ * Anthropic models that no longer accept the `temperature` parameter.
+ * Verified empirically: Sonnet 5 returns 400 invalid_request_error when temperature is present.
+ * TODO: verify Opus 4.7/4.8 and Fable 5 when we start using them.
+ */
+const ANTHROPIC_MODELS_WITHOUT_TEMPERATURE = new Set<string>([
+  'claude-sonnet-5',
+]);
+
+function anthropicModelSupportsTemperature(model: string): boolean {
+  return !ANTHROPIC_MODELS_WITHOUT_TEMPERATURE.has(model);
+}
 
 export function supportsVision(provider: string, model: string): boolean {
   void provider;
@@ -312,14 +328,21 @@ async function chatAnthropic(params: ChatParams): Promise<ChatResponse> {
   }));
 
   return withRetry(async () => {
-    const response = await client.messages.create({
+    const requestParams: Anthropic.MessageCreateParamsNonStreaming = {
       model: params.model,
       system: params.system,
       messages,
       tools: tools && tools.length > 0 ? tools : undefined,
-      temperature: params.temperature ?? 0.7,
       max_tokens: params.maxTokens ?? 1024,
-    });
+    };
+
+    // Only include `temperature` if the model accepts it.
+    // Sonnet 5+ removed this parameter — sending it produces a 400 invalid_request_error.
+    if (anthropicModelSupportsTemperature(params.model)) {
+      requestParams.temperature = params.temperature ?? 0.7;
+    }
+
+    const response = await client.messages.create(requestParams);
 
     let content = '';
     const toolCalls: ToolCall[] = [];
