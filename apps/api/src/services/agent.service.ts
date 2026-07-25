@@ -95,6 +95,8 @@ interface TemplateRow {
   vertical?: string | null;
   capabilities?: string[];
   integrations?: string[];
+  default_llm_provider: string;
+  default_llm_model: string;
 }
 
 function makeInitials(name: string): string {
@@ -485,8 +487,8 @@ export async function createFromTemplate(orgId: string, plan: string, templateId
     name: template.name,
     description: template.description ?? undefined,
     systemPrompt: template.system_prompt,
-    llmProvider: 'openai',
-    llmModel: 'gpt-4o-mini',
+    llmProvider: template.default_llm_provider ?? 'openai',
+    llmModel: template.default_llm_model ?? 'gpt-4o-mini',
     variables: template.variables as unknown[],
   });
 

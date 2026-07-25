@@ -26,6 +26,11 @@ interface AgentTemplate {
   // Day 21 config variables — {{config.<key>}} placeholders in system_prompt.
   // Optional: templates created before Day 21 don't set this.
   configVariablesSchema?: ConfigVariableSchema[];
+  // LLM used when an agent is created from this template. Optional, falls
+  // back to 'openai' / 'gpt-4o-mini' — the historical default for every
+  // template before this field existed.
+  defaultLlmProvider?: string;
+  defaultLlmModel?: string;
 }
 
 const templates: AgentTemplate[] = [
@@ -35,6 +40,8 @@ const templates: AgentTemplate[] = [
     description: 'General customer support agent that handles FAQs, troubleshooting, and escalation.',
     category: 'customer-service',
     language: 'en',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Customer full name' },
       { name: 'email', type: 'string', required: true, description: 'Customer email address' },
@@ -77,6 +84,8 @@ Always end the conversation by asking: "Is there anything else I can help you wi
     description: 'Agente de soporte al cliente que maneja preguntas frecuentes, resolución de problemas y escalación.',
     category: 'customer-service',
     language: 'es',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Nombre completo del cliente' },
       { name: 'email', type: 'string', required: true, description: 'Correo electrónico del cliente' },
@@ -121,6 +130,8 @@ Siempre termina la conversación preguntando: "¿Hay algo más en lo que pueda a
     description: 'Sales-focused agent that qualifies leads and captures contact information.',
     category: 'sales',
     language: 'en',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Prospect full name' },
       { name: 'email', type: 'string', required: true, description: 'Prospect email address' },
@@ -171,6 +182,8 @@ Always end by confirming next steps: a follow-up call, a demo, or resources to r
     description: 'Agente de ventas que califica leads y captura información de contacto.',
     category: 'sales',
     language: 'es',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Nombre completo del prospecto' },
       { name: 'email', type: 'string', required: true, description: 'Correo electrónico del prospecto' },
@@ -223,6 +236,8 @@ Siempre termina confirmando los próximos pasos: una llamada de seguimiento, una
     description: 'Agent that helps customers book appointments and manage scheduling.',
     category: 'scheduling',
     language: 'en',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Client full name' },
       { name: 'email', type: 'string', required: true, description: 'Client email for confirmation' },
@@ -272,6 +287,8 @@ End every interaction by confirming next steps and wishing them a great day.`,
     description: 'Agente que ayuda a los clientes a agendar citas y gestionar horarios.',
     category: 'scheduling',
     language: 'es',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Nombre completo del cliente' },
       { name: 'email', type: 'string', required: true, description: 'Correo electrónico para confirmación' },
@@ -323,6 +340,8 @@ Termina cada interacción confirmando los próximos pasos y deseándole un excel
     description: 'Property inquiry agent that captures buyer/renter preferences and schedules viewings.',
     category: 'real-estate',
     language: 'en',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Client full name' },
       { name: 'phone', type: 'string', required: true, description: 'Client phone number' },
@@ -372,6 +391,8 @@ End by confirming their preferences and the agreed next steps.`,
     description: 'Agente inmobiliario que captura preferencias de compradores/arrendatarios y agenda visitas.',
     category: 'real-estate',
     language: 'es',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Nombre completo del cliente' },
       { name: 'phone', type: 'string', required: true, description: 'Teléfono del cliente' },
@@ -423,6 +444,8 @@ Termina confirmando sus preferencias y los próximos pasos acordados.`,
     description: 'Medical office assistant that handles appointment scheduling and basic patient inquiries.',
     category: 'healthcare',
     language: 'en',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'patient_name', type: 'string', required: true, description: 'Patient full name' },
       { name: 'phone', type: 'string', required: true, description: 'Patient phone number' },
@@ -470,6 +493,8 @@ End the conversation by confirming the appointment details and wishing them well
     description: 'Asistente de consultorio médico que agenda citas y responde consultas básicas de pacientes.',
     category: 'healthcare',
     language: 'es',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'patient_name', type: 'string', required: true, description: 'Nombre completo del paciente' },
       { name: 'phone', type: 'string', required: true, description: 'Teléfono del paciente' },
@@ -519,6 +544,8 @@ Termina la conversación confirmando los detalles de la cita y deseándole lo me
     description: 'Restaurant booking agent that handles reservations and menu inquiries.',
     category: 'hospitality',
     language: 'en',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Guest name for the reservation' },
       { name: 'phone', type: 'string', required: true, description: 'Contact phone number' },
@@ -572,6 +599,8 @@ End by thanking them for choosing the restaurant and expressing that you look fo
     description: 'Agente de reservaciones de restaurante que gestiona reservas y consultas del menú.',
     category: 'hospitality',
     language: 'es',
+    defaultLlmProvider: 'openai',
+    defaultLlmModel: 'gpt-4o-mini',
     variables: [
       { name: 'name', type: 'string', required: true, description: 'Nombre del invitado para la reservación' },
       { name: 'phone', type: 'string', required: true, description: 'Teléfono de contacto' },
@@ -627,6 +656,8 @@ Termina agradeciendo por elegir el restaurante y expresando que esperan darles l
     description: 'Asesora de ventas por WhatsApp para tiendas de dropshipping conectadas a Mastershop — catálogo, carrito, objeciones y creación de pedidos.',
     category: 'dropshipping',
     language: 'es',
+    defaultLlmProvider: 'anthropic',
+    defaultLlmModel: 'claude-sonnet-5',
     // Capturable variables — extraídas por el LLM durante la conversación vía
     // capture_variable, iguales a las que ya usa Sofía (agente d86af497...).
     variables: [
@@ -1031,8 +1062,8 @@ export async function seedAgentTemplates(pool: Pool): Promise<{ inserted: number
 
     for (const template of templates) {
       const result = await client.query(
-        `INSERT INTO agent_templates (name, description, category, system_prompt, variables, tools, language, config_variables_schema, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE)
+        `INSERT INTO agent_templates (name, description, category, system_prompt, variables, tools, language, config_variables_schema, default_llm_provider, default_llm_model, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, TRUE)
          ON CONFLICT (name, language) DO UPDATE SET
            description = EXCLUDED.description,
            category = EXCLUDED.category,
@@ -1040,6 +1071,8 @@ export async function seedAgentTemplates(pool: Pool): Promise<{ inserted: number
            variables = EXCLUDED.variables,
            tools = EXCLUDED.tools,
            config_variables_schema = EXCLUDED.config_variables_schema,
+           default_llm_provider = EXCLUDED.default_llm_provider,
+           default_llm_model = EXCLUDED.default_llm_model,
            is_active = TRUE
          RETURNING (xmax = 0) AS is_insert`,
         [
@@ -1051,6 +1084,8 @@ export async function seedAgentTemplates(pool: Pool): Promise<{ inserted: number
           JSON.stringify(template.tools),
           template.language,
           JSON.stringify(template.configVariablesSchema ?? []),
+          template.defaultLlmProvider ?? 'openai',
+          template.defaultLlmModel ?? 'gpt-4o-mini',
         ]
       );
 
