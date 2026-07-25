@@ -96,7 +96,7 @@ const ALL_MODELS: { provider: string; value: string; label: string }[] = [
   { provider: 'openai', value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
   { provider: 'openai', value: 'gpt-4o', label: 'GPT-4o' },
   { provider: 'anthropic', value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku' },
-  { provider: 'anthropic', value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet' },
+  { provider: 'anthropic', value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
 ];
 
 const LLM_PROVIDERS = [

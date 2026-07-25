@@ -47,7 +47,7 @@ export declare const PLAN_LIMITS: {
         readonly humanTakeover: true;
         readonly voiceMessages: true;
         readonly imageVision: true;
-        readonly allowedModels: readonly ["gpt-4o-mini", "gpt-4o", "claude-haiku-4-5-20251001", "claude-sonnet-4-20250514"];
+        readonly allowedModels: readonly ["gpt-4o-mini", "gpt-4o", "claude-haiku-4-5-20251001", "claude-sonnet-5"];
         readonly contextWindowMessages: 25;
         readonly maxTokensPerResponse: 2048;
         readonly byoApiKey: false;
@@ -65,7 +65,7 @@ export declare const PLAN_LIMITS: {
         readonly humanTakeover: true;
         readonly voiceMessages: true;
         readonly imageVision: true;
-        readonly allowedModels: readonly ["gpt-4o-mini", "gpt-4o", "claude-haiku-4-5-20251001", "claude-sonnet-4-20250514"];
+        readonly allowedModels: readonly ["gpt-4o-mini", "gpt-4o", "claude-haiku-4-5-20251001", "claude-sonnet-5"];
         readonly contextWindowMessages: 50;
         readonly maxTokensPerResponse: 4096;
         readonly byoApiKey: true;
