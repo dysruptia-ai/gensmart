@@ -31,6 +31,8 @@ import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../servic
 import {
   renderSystemPromptWithConfig,
   loadAgentConfigForDeepInject,
+  buildAdReferralContext,
+  type CTWAReferral,
 } from '../services/agent-config.service';
 import { createAppointment } from '../services/appointment.service';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
@@ -80,6 +82,7 @@ interface ConversationRow {
   status: string;
   captured_variables: Record<string, unknown>;
   message_count: number;
+  channel_metadata: Record<string, unknown> | null;
 }
 
 interface MessageRow {
@@ -135,7 +138,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // Step 2: Fetch conversation
   const convResult = await query<ConversationRow>(
-    'SELECT id, agent_id, organization_id, contact_id, channel, status, captured_variables, message_count FROM conversations WHERE id = $1',
+    'SELECT id, agent_id, organization_id, contact_id, channel, status, captured_variables, message_count, channel_metadata FROM conversations WHERE id = $1',
     [conversationId]
   );
   const conv = convResult.rows[0];
@@ -280,6 +283,18 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     if (ragContext) {
       fullSystemPrompt += '\n\n' + ragContext;
     }
+  }
+
+  // 7b-2. Click-to-WhatsApp Ad referral context (Day 25, completed here).
+  // routes/whatsapp.ts already saves { referral, referredProduct } into
+  // conversations.channel_metadata on first contact — see buildAdReferralContext
+  // in agent-config.service.ts for the shared block (worker + preview parity).
+  const channelMetadata = conv.channel_metadata ?? {};
+  const referral = channelMetadata['referral'] as CTWAReferral | undefined;
+  const referredProduct = channelMetadata['referredProduct'];
+  const referralContext = buildAdReferralContext(referral, referredProduct);
+  if (referralContext) {
+    fullSystemPrompt += '\n\n' + referralContext;
   }
 
   // 7c. Conversation history

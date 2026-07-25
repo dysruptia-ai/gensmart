@@ -1368,9 +1368,11 @@ router.post(
       // capture instructions / RAG / scheduling. Worker and preview must
       // agree on substitution semantics — both go through
       // agent-config.service.renderSystemPromptWithConfig.
-      const { renderSystemPromptWithConfig: injectConfig, loadAgentConfigForDeepInject } = await import(
-        '../services/agent-config.service'
-      );
+      const {
+        renderSystemPromptWithConfig: injectConfig,
+        loadAgentConfigForDeepInject,
+        buildAdReferralContext,
+      } = await import('../services/agent-config.service');
       const variables = Array.isArray(agentResult.variables) ? agentResult.variables : [];
       const variableInstructions = buildVariableCaptureInstructions(
         variables as Parameters<typeof buildVariableCaptureInstructions>[0]
@@ -1385,6 +1387,13 @@ router.post(
         const ragContext = await queryKnowledgeBase(agentId, message.trim());
         if (ragContext) fullSystemPrompt += '\n\n' + ragContext;
       }
+
+      // Click-to-WhatsApp Ad referral context — preview has no real conversation
+      // row (it's a sandbox keyed by agentId+userId), so there's no
+      // channel_metadata to read. Kept for parity with message.worker.ts: this
+      // always resolves to null in preview, which is the correct behavior.
+      const previewReferralContext = buildAdReferralContext(undefined, undefined);
+      if (previewReferralContext) fullSystemPrompt += '\n\n' + previewReferralContext;
 
       // Fetch tools
       const toolsResult = await query<{
