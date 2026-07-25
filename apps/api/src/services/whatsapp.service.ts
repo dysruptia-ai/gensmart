@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { encrypt, decrypt } from '../config/encryption';
 
-const META_API_VERSION = 'v21.0';
+const META_API_VERSION = 'v22.0';
 const META_BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`;
 
 export async function sendTextMessage(
@@ -37,7 +37,8 @@ export async function sendTextMessage(
 export async function markAsRead(
   phoneNumberId: string,
   accessToken: string,
-  messageId: string
+  messageId: string,
+  showTypingIndicator = true
 ): Promise<void> {
   const url = `${META_BASE_URL}/${phoneNumberId}/messages`;
   await fetch(url, {
@@ -50,6 +51,11 @@ export async function markAsRead(
       messaging_product: 'whatsapp',
       status: 'read',
       message_id: messageId,
+      // Meta auto-clears the typing indicator after 25s or once we send a reply,
+      // whichever comes first. The typical sales flow (buffer + LLM + tools) rarely
+      // exceeds 25s, so no mid-flight refresh is implemented — if create_order/
+      // Inteliflete calls start regularly running longer, revisit this.
+      ...(showTypingIndicator ? { typing_indicator: { type: 'text' } } : {}),
     }),
   }).catch(() => {
     // Non-critical — mark as read failures don't affect message delivery
