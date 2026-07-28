@@ -414,6 +414,7 @@
         "variables": "Variables",
         "capturedVariables": "Variables capturadas",
         "tools": "Herramientas",
+        "pricing": "Precios",
         "settings": "Ajustes",
         "channels": "Canales",
         "versions": "Versiones"
@@ -487,6 +488,24 @@
         "inputPlaceholder": "Escribe un mensaje...",
         "send": "Enviar",
         "reset": "Reiniciar"
+      }
+    },
+    "pricing": {
+      "title": "Precios de venta",
+      "save": "Guardar cambios",
+      "override": "Personalizado",
+      "noMastershop": "Este agente no tiene Mastershop conectado",
+      "noMastershopHint": "Conecta una herramienta MCP de Mastershop en la pestaña Tools para gestionar precios de venta.",
+      "columns": {
+        "product": "Producto",
+        "basePrice": "Precio proveedor",
+        "salePrice": "Precio de venta",
+        "margin": "Margen"
+      },
+      "margin": {
+        "green": "Margen saludable",
+        "yellow": "Margen bajo",
+        "red": "Margen negativo"
       }
     },
     "configVariables": {

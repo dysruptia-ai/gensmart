@@ -10,13 +10,17 @@ export declare const LLM_MODELS: {
         };
     };
     readonly anthropic: {
-        readonly 'claude-sonnet-4-20250514': {
-            readonly name: "Claude Sonnet";
+        readonly 'claude-sonnet-5': {
+            readonly name: "Claude Sonnet 5";
             readonly plans: readonly ["pro", "enterprise"];
         };
         readonly 'claude-haiku-4-5-20251001': {
-            readonly name: "Claude Haiku";
+            readonly name: "Claude Haiku 4.5";
             readonly plans: readonly ["starter", "pro", "enterprise"];
+        };
+        readonly 'claude-sonnet-4-20250514': {
+            readonly name: "Claude Sonnet 4 (deprecated)";
+            readonly plans: readonly ["pro", "enterprise"];
         };
     };
 };

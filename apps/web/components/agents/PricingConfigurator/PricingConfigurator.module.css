@@ -1,0 +1,129 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loadingWrap {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.errorBanner {
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-danger) 10%, transparent);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toolbarTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.tableWrap {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow-x: auto;
+  background: var(--color-bg-card);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.th {
+  text-align: left;
+  padding: 10px 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.row:not(:last-child) .td {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.td {
+  padding: 10px 14px;
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.variantTag {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.priceInput {
+  width: 100px;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-bg-main);
+  outline: none;
+}
+
+.priceInput:focus {
+  border-color: var(--color-primary);
+}
+
+.marginBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.marginBadge.green {
+  color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 12%, transparent);
+}
+
+.marginBadge.yellow {
+  color: var(--color-warning);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+}
+
+.marginBadge.red {
+  color: var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, transparent);
+}
+
+.marginBadge.neutral {
+  color: var(--color-text-secondary);
+  background: var(--color-bg-sidebar);
+}
+
+.overrideTag {
+  font-size: 11px;
+  color: var(--color-primary-dark);
+  background: var(--color-primary-light);
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}

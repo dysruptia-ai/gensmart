@@ -341,7 +341,7 @@ async function performAccountDeletion(orgId) {
         await client.query('DELETE FROM data_export_requests WHERE organization_id = $1', [orgId]);
         await client.query('DELETE FROM account_deletion_requests WHERE organization_id = $1', [orgId]);
         // Sub-accounts
-        await client.query(`DELETE FROM sub_accounts WHERE parent_org_id = $1 OR child_org_id = $1`, [orgId]);
+        await client.query(`DELETE FROM sub_accounts WHERE parent_organization_id = $1 OR child_organization_id = $1`, [orgId]);
         await client.query('DELETE FROM users WHERE organization_id = $1', [orgId]);
         await client.query('DELETE FROM organizations WHERE id = $1', [orgId]);
         await client.query('COMMIT');

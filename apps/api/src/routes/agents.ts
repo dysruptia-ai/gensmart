@@ -807,6 +807,43 @@ router.delete(
   }
 );
 
+// GET /api/agents/:id/pricing — Mastershop catalog + sale-price overrides
+router.get(
+  '/:id/pricing',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { listCatalogWithPrices } = await import('../services/mastershop-pricing.service');
+      const prices = await listCatalogWithPrices(req.org!.id, String(req.params['id']));
+      res.json({ prices });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// PUT /api/agents/:id/pricing — batch-update sale-price overrides
+router.put(
+  '/:id/pricing',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { prices } = req.body as {
+        prices: { idProduct: string; idVariant: string | null; salePrice: number }[];
+      };
+      if (!Array.isArray(prices) || prices.length === 0) {
+        res.status(400).json({ error: { message: 'prices must be a non-empty array', code: 'INVALID_INPUT' } });
+        return;
+      }
+      const { updatePrices } = await import('../services/mastershop-pricing.service');
+      await updatePrices(req.org!.id, String(req.params['id']), prices);
+      res.json({ message: 'Prices updated successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // POST /api/agents/:id/tools/:toolId/test
 router.post(
   '/:id/tools/:toolId/test',

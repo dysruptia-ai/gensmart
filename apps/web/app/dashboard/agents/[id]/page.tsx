@@ -22,6 +22,7 @@ import { PromptGenerator } from '@/components/agents/PromptGenerator';
 import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomizer';
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
 import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
+import PricingConfigurator from '@/components/agents/PricingConfigurator';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatDate } from '@/lib/formatters';
 import EditorTour from '@/components/onboarding/EditorTour';
@@ -215,6 +216,20 @@ export default function AgentEditorPage() {
     }
   }, [agentId]);
 
+  const [hasMastershopTool, setHasMastershopTool] = useState(false);
+  const loadTools = useCallback(async () => {
+    try {
+      const data = await api.get<{ tools: { type: string; name: string; isEnabled: boolean }[] }>(
+        `/api/agents/${agentId}/tools`
+      );
+      setHasMastershopTool(
+        data.tools.some((t) => t.type === 'mcp' && t.isEnabled && t.name.toLowerCase().includes('mastershop'))
+      );
+    } catch {
+      // non-critical — pricing tab just stays hidden
+    }
+  }, [agentId]);
+
   const loadOrgPlan = useCallback(async () => {
     try {
       const data = await api.get<{ plan: string }>('/api/organization');
@@ -238,7 +253,7 @@ export default function AgentEditorPage() {
     setIsDirty(true);
   }, []);
 
-  useEffect(() => { loadAgent(); loadVersions(); loadOrgPlan(); }, [loadAgent, loadVersions, loadOrgPlan]);
+  useEffect(() => { loadAgent(); loadVersions(); loadOrgPlan(); loadTools(); }, [loadAgent, loadVersions, loadOrgPlan, loadTools]);
 
   // Scroll preview to bottom when new messages arrive
   useEffect(() => {
@@ -512,6 +527,7 @@ export default function AgentEditorPage() {
     { id: 'configuration', label: configTabLabel },
     { id: 'variables', label: t('agents.editor.tabs.capturedVariables') },
     { id: 'tools', label: t('agents.editor.tabs.tools') },
+    ...(hasMastershopTool ? [{ id: 'pricing', label: t('agents.editor.tabs.pricing') }] : []),
     { id: 'settings', label: t('agents.editor.tabs.settings') },
     { id: 'channels', label: t('agents.editor.tabs.channels') },
     { id: 'versions', label: t('agents.editor.tabs.versions') },
@@ -649,6 +665,12 @@ export default function AgentEditorPage() {
             ) : (
               <ToolConfigurator agentId={agentId} orgPlan={orgPlan} orgPlanLoaded={orgPlanLoaded} />
             )}
+          </div>
+        )}
+
+        {activeTab === 'pricing' && hasMastershopTool && (
+          <div className={styles.tabContent}>
+            <PricingConfigurator agentId={agentId} />
           </div>
         )}
 

@@ -190,7 +190,7 @@ function checkSubAccountLimit() {
                 next();
                 return;
             }
-            const result = await (0, database_1.query)('SELECT COUNT(*) as count FROM sub_accounts WHERE parent_org_id = $1', [req.user.orgId]);
+            const result = await (0, database_1.query)('SELECT COUNT(*) as count FROM sub_accounts WHERE parent_organization_id = $1', [req.user.orgId]);
             const current = parseInt(result.rows[0]?.count ?? '0', 10);
             if (current >= limit) {
                 res.status(403).json({

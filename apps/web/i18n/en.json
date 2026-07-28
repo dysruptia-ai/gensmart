@@ -414,6 +414,7 @@
         "variables": "Variables",
         "capturedVariables": "Captured Variables",
         "tools": "Tools",
+        "pricing": "Pricing",
         "settings": "Settings",
         "channels": "Channels",
         "versions": "Versions"
@@ -487,6 +488,24 @@
         "inputPlaceholder": "Type a message...",
         "send": "Send",
         "reset": "Reset"
+      }
+    },
+    "pricing": {
+      "title": "Sale prices",
+      "save": "Save changes",
+      "override": "Custom",
+      "noMastershop": "This agent doesn't have Mastershop connected",
+      "noMastershopHint": "Connect a Mastershop MCP tool in the Tools tab to manage sale prices.",
+      "columns": {
+        "product": "Product",
+        "basePrice": "Provider price",
+        "salePrice": "Sale price",
+        "margin": "Margin"
+      },
+      "margin": {
+        "green": "Healthy margin",
+        "yellow": "Low margin",
+        "red": "Negative margin"
       }
     },
     "configVariables": {
