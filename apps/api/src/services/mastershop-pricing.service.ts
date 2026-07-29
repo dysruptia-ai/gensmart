@@ -84,9 +84,16 @@ async function getMastershopTool(agentId: string): Promise<MastershopToolRow> {
   return tool;
 }
 
-/** Tenant's own Mastershop API key, decrypted from the tool's stored headers. */
-export async function getTenantMastershopKey(agentId: string): Promise<string | null> {
-  const tool = await getMastershopTool(agentId);
+/**
+ * Tenant's own Mastershop API key, decrypted from the tool's stored headers.
+ * Pass `preResolvedTool` when the caller already fetched the tool row (e.g.
+ * listCatalogWithPrices) to avoid a redundant query + header decryption.
+ */
+export async function getTenantMastershopKey(
+  agentId: string,
+  preResolvedTool?: MastershopToolRow
+): Promise<string | null> {
+  const tool = preResolvedTool ?? (await getMastershopTool(agentId));
   const decrypted = decryptHeaders(tool.config.headers);
   return decrypted[TENANT_KEY_HEADER] ?? null;
 }
@@ -112,10 +119,13 @@ async function getAdminBaseUrl(): Promise<string> {
   return serverUrl.replace(/\/mcp\/?$/, '');
 }
 
-async function buildAdminHeaders(agentId: string): Promise<Record<string, string>> {
+async function buildAdminHeaders(
+  agentId: string,
+  preResolvedTool?: MastershopToolRow
+): Promise<Record<string, string>> {
   const [platformKey, tenantKey] = await Promise.all([
     getPlatformMcpKey(),
-    getTenantMastershopKey(agentId),
+    getTenantMastershopKey(agentId, preResolvedTool),
   ]);
   if (!tenantKey) {
     throw new AppError(400, 'Este agente no tiene Mastershop conectado', 'MASTERSHOP_NOT_CONNECTED');
@@ -152,10 +162,12 @@ function normalizeVariantId(v: number | string): string | null {
  */
 export async function listCatalogWithPrices(orgId: string, agentId: string): Promise<CatalogPriceRow[]> {
   await verifyAgentOwnership(orgId, agentId);
-  // Confirms the agent has a Mastershop tool configured before hitting the MCP.
-  await getMastershopTool(agentId);
+  // Resolved once — also confirms the agent has a Mastershop tool configured
+  // before hitting the MCP, and is reused by buildAdminHeaders below instead
+  // of triggering a second lookup + header decryption.
+  const tool = await getMastershopTool(agentId);
 
-  const [baseUrl, headers] = await Promise.all([getAdminBaseUrl(), buildAdminHeaders(agentId)]);
+  const [baseUrl, headers] = await Promise.all([getAdminBaseUrl(), buildAdminHeaders(agentId, tool)]);
   const res = await fetch(`${baseUrl}/admin/products`, { headers });
   if (!res.ok) {
     throw new AppError(res.status, `Mastershop admin API error: ${res.status}`, 'MASTERSHOP_ADMIN_ERROR');

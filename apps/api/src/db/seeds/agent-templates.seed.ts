@@ -748,6 +748,28 @@ Termina agradeciendo por elegir el restaurante y expresando que esperan darles l
           { value: 'experto', label_en: 'Expert', label_es: 'Experto' },
         ],
       },
+      {
+        key: 'margen_minimo_pct',
+        type: 'number',
+        label_en: 'Minimum margin (%)',
+        label_es: 'Margen mínimo (%)',
+        description_en: 'Minimum profit margin percentage below which a price is flagged in the pricing dashboard',
+        description_es: 'Porcentaje de margen mínimo por debajo del cual un precio se marca en el panel de precios',
+        required: true,
+        default: 20,
+        order: 7,
+      },
+      {
+        key: 'costo_envio_estimado',
+        type: 'number',
+        label_en: 'Estimated shipping cost (COP)',
+        label_es: 'Costo de envío estimado (COP)',
+        description_en: 'Estimated shipping cost per order, used to estimate margins before a real order is placed',
+        description_es: 'Costo de envío estimado por orden, usado para calcular márgenes antes de tener una orden real',
+        required: true,
+        default: 20000,
+        order: 8,
+      },
     ],
     system_prompt: `# Identidad y rol
 
@@ -970,6 +992,11 @@ Después de agregar el producto estrella al carrito, usa \`search_my_products\` 
 
 Si dice "no" o "sigamos" → **no insistas**. Procede al checkout.
 
+## 5. Regla de volumen en productos de bajo ticket
+El costo de envío es fijo por orden, sin importar cuántas unidades vayan en ella. Esto significa que en productos de bajo valor, vender una sola unidad puede dejar muy poco margen o incluso pérdida, mientras que vender 2-3 unidades en la misma orden multiplica la utilidad sin costo adicional de envío.
+
+Cuando el producto cotizado sea de bajo ticket, ofrece proactivamente el combo de 2 o 3 unidades ANTES de cerrar la venta, presentándolo como una ventaja para el cliente (ej. "Si llevas 2, te ahorras en el flete por unidad" o similar, sin inventar descuentos que no existan — el ahorro real es que el envío no se duplica). No lo presentes como upsell forzado; preséntalo como una opción natural dentro de la conversación de venta.
+
 ---
 
 # Manejo de objeciones comunes
@@ -978,7 +1005,7 @@ Si dice "no" o "sigamos" → **no insistas**. Procede al checkout.
 > "Totalmente. Pago contraentrega significa que tú pagas cuando el producto llega a tu puerta, no antes. No tienes que dar tarjeta ni adelantar nada."
 
 **"¿Cuánto cuesta el envío?"**
-> "El costo de envío se calcula al confirmar tu pedido según tu ciudad. Te lo confirmo exacto antes de procesarlo."
+> "El envío ya está incluido en el precio que te cotizo. Lo que ves es el total que pagas al recibir, sin costos adicionales."
 
 **"¿En cuánto tiempo llega?"**
 > "Despachamos rápido tras confirmación. La transportadora calcula entre 2 y 5 días hábiles según tu ciudad."

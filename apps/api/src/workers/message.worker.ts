@@ -725,7 +725,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     } catch (retryErr) {
       console.error('[msg-worker] LLM failed after retry:', retryErr);
       // Save error message
-      const errorMessage = 'I encountered an error processing your message. Please try again.';
+      const errorMessage = 'Estoy teniendo un problema técnico en este momento. Dame un momento e intento de nuevo.';
       const errorMeta = { error: true, errorMessage: (retryErr as Error).message };
       const errorSaved = await saveMessages(conversationId, userMessageText, errorMessage, errorMeta);
       await updateConversation(conversationId, 2);
@@ -757,13 +757,11 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         totalTokensUsed += retryResponse.usage.totalTokens;
       } else {
         console.warn(`[msg-worker] Retry also returned minimal response: "${retryResponse.content}"`);
-        finalResponse = agent.llm_provider === 'anthropic'
-          ? 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?'
-          : 'Sorry, I could not process your message. Could you please repeat it?';
+        finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
       }
     } catch (retryErr) {
       console.error('[msg-worker] Retry for minimal response failed:', retryErr);
-      finalResponse = 'Sorry, I could not process your message. Could you please repeat it?';
+      finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
     }
   }
 
