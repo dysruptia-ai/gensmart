@@ -3,9 +3,9 @@
  *
  * Admin UI backend for the sale-price override system already deployed on
  * the Mastershop MCP (SQLite `product_prices` table, `GET/PUT/DELETE
- * /admin/prices`). Prices themselves are NOT stored in GenSmart's Postgres —
- * this service is only a client of the MCP's admin endpoints plus the
- * existing `search_my_products` tool for the read-only base catalog.
+ * /admin/prices`, plus `GET /admin/products` for the combined read view).
+ * Prices themselves are NOT stored in GenSmart's Postgres — this service is
+ * only a client of the MCP's admin endpoints.
  *
  * Auth to the MCP admin endpoints requires two headers:
  *   - X-MCP-API-Key       — platform-level master key. Reuses the SAME
@@ -23,7 +23,6 @@ import { query } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { decryptHeaders, type EncryptedHeader } from './mcp-headers.service';
 import * as mcpProviders from './mcp-providers.service';
-import { executeMCPTool } from './mcp-client.service';
 
 const MASTERSHOP_PROVIDER_ID = 'mastershop';
 const TENANT_KEY_HEADER = 'X-Mastershop-Api-Key';
@@ -128,102 +127,51 @@ async function buildAdminHeaders(agentId: string): Promise<Record<string, string
   };
 }
 
-interface AdminPriceOverride {
-  idProduct: string;
-  idVariant: string | null;
-  salePrice: number;
-}
-
-async function fetchPriceOverrides(agentId: string): Promise<AdminPriceOverride[]> {
-  const [baseUrl, headers] = await Promise.all([getAdminBaseUrl(), buildAdminHeaders(agentId)]);
-  const res = await fetch(`${baseUrl}/admin/prices`, { headers });
-  if (!res.ok) {
-    throw new AppError(res.status, `Mastershop admin API error: ${res.status}`, 'MASTERSHOP_ADMIN_ERROR');
-  }
-  const data = (await res.json()) as { prices?: AdminPriceOverride[] } | AdminPriceOverride[];
-  return Array.isArray(data) ? data : (data.prices ?? []);
-}
-
-/**
- * Best-effort normalization of a single catalog entry returned by
- * `search_my_products`. Field names below (price/basePrice/suggestedPrice)
- * are the MCP's documented product shape as of this writing — verify against
- * a live tool call if Mastershop's schema has since changed.
- */
-function normalizeCatalogEntry(raw: Record<string, unknown>): {
-  idProduct: string;
-  idVariant: string | null;
+/** Raw shape of a single entry in GET /admin/products. idVariant is -1 (not null) when the product has no variants. */
+interface AdminProductRow {
+  idProduct: number | string;
+  idVariant: number | string;
   nombre: string;
   basePrice: number | null;
   suggestedPrice: number | null;
-} {
-  const num = (v: unknown): number | null => (typeof v === 'number' ? v : typeof v === 'string' && v !== '' ? Number(v) : null);
-  return {
-    idProduct: String(raw['idProduct'] ?? raw['id'] ?? ''),
-    idVariant: raw['idVariant'] != null ? String(raw['idVariant']) : null,
-    nombre: String(raw['name'] ?? raw['nombre'] ?? ''),
-    basePrice: num(raw['basePrice'] ?? raw['price'] ?? raw['cost']),
-    suggestedPrice: num(raw['suggestedPrice'] ?? raw['retailPrice'] ?? raw['price']),
-  };
+  salePrice: number | null;
+  tieneOverride: boolean;
 }
 
-function catalogKey(idProduct: string, idVariant: string | null): string {
-  return `${idProduct}::${idVariant ?? ''}`;
+function normalizeVariantId(v: number | string): string | null {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) && n > 0 ? String(n) : null;
 }
 
 /**
- * Combines the read-only base catalog (via the existing `search_my_products`
- * MCP tool — same mechanism the worker uses at conversation time) with saved
- * sale-price overrides (via the MCP's /admin/prices endpoint).
+ * Fetches the combined catalog + resolved sale price straight from the MCP's
+ * `GET /admin/products` — it already merges base/suggested price with any
+ * saved override, so no separate call to /admin/prices or to the
+ * conversational `search_my_products` tool is needed here (that tool
+ * requires session headers this admin context doesn't have).
  */
 export async function listCatalogWithPrices(orgId: string, agentId: string): Promise<CatalogPriceRow[]> {
   await verifyAgentOwnership(orgId, agentId);
-  const tool = await getMastershopTool(agentId);
-  const cfg = tool.config;
-  const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
-  const transport = cfg.transport === 'streamable-http' ? 'streamable-http' : 'sse';
+  // Confirms the agent has a Mastershop tool configured before hitting the MCP.
+  await getMastershopTool(agentId);
 
-  const [platformKey, tenantKey] = await Promise.all([
-    getPlatformMcpKey(),
-    getTenantMastershopKey(agentId),
-  ]);
-  if (!tenantKey) {
-    throw new AppError(400, 'Este agente no tiene Mastershop conectado', 'MASTERSHOP_NOT_CONNECTED');
+  const [baseUrl, headers] = await Promise.all([getAdminBaseUrl(), buildAdminHeaders(agentId)]);
+  const res = await fetch(`${baseUrl}/admin/products`, { headers });
+  if (!res.ok) {
+    throw new AppError(res.status, `Mastershop admin API error: ${res.status}`, 'MASTERSHOP_ADMIN_ERROR');
   }
-  const toolHeaders = { 'X-MCP-API-Key': platformKey, [TENANT_KEY_HEADER]: tenantKey };
+  const data = (await res.json()) as { products?: AdminProductRow[] };
+  const products = Array.isArray(data.products) ? data.products : [];
 
-  const [catalogResult, overrides] = await Promise.all([
-    executeMCPTool(serverUrl, 'search_my_products', { search: '', limit: 100 }, transport, toolHeaders),
-    fetchPriceOverrides(agentId),
-  ]);
-
-  let catalogRaw: Record<string, unknown>[] = [];
-  try {
-    const parsed = JSON.parse(catalogResult.content) as unknown;
-    const list = Array.isArray(parsed) ? parsed : (parsed as { products?: unknown[] })?.products;
-    catalogRaw = Array.isArray(list) ? (list as Record<string, unknown>[]) : [];
-  } catch (err) {
-    console.error(`[mastershop-pricing] Failed to parse catalog response for agent ${agentId}:`, (err as Error).message);
-  }
-
-  const overrideMap = new Map<string, AdminPriceOverride>();
-  for (const o of overrides) {
-    overrideMap.set(catalogKey(o.idProduct, o.idVariant), o);
-  }
-
-  return catalogRaw.map((raw) => {
-    const entry = normalizeCatalogEntry(raw);
-    const override = overrideMap.get(catalogKey(entry.idProduct, entry.idVariant));
-    return {
-      idProduct: entry.idProduct,
-      idVariant: entry.idVariant,
-      nombre: entry.nombre,
-      basePrice: entry.basePrice,
-      suggestedPrice: entry.suggestedPrice,
-      salePrice: override?.salePrice ?? entry.suggestedPrice,
-      tieneOverride: !!override,
-    };
-  });
+  return products.map((p) => ({
+    idProduct: String(p.idProduct),
+    idVariant: normalizeVariantId(p.idVariant),
+    nombre: p.nombre,
+    basePrice: p.basePrice,
+    suggestedPrice: p.suggestedPrice,
+    salePrice: p.salePrice,
+    tieneOverride: p.tieneOverride,
+  }));
 }
 
 export interface PriceUpdateInput {
