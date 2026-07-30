@@ -770,6 +770,17 @@ Termina agradeciendo por elegir el restaurante y expresando que esperan darles l
         default: 20000,
         order: 8,
       },
+      {
+        key: 'ganancia_minima_cop',
+        type: 'number',
+        label_en: 'Minimum profit per sale (COP)',
+        label_es: 'Ganancia mínima por venta (COP)',
+        description_en: 'Minimum net profit (sale price - provider price - shipping cost) below which a price is flagged in the pricing dashboard',
+        description_es: 'Ganancia neta mínima (precio de venta - precio proveedor - costo de envío) por debajo de la cual un precio se marca en el panel de precios',
+        required: true,
+        default: 20000,
+        order: 9,
+      },
     ],
     system_prompt: `# Identidad y rol
 

@@ -23,6 +23,10 @@ import { query } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { decryptHeaders, type EncryptedHeader } from './mcp-headers.service';
 import * as mcpProviders from './mcp-providers.service';
+import { loadAgentConfigForDeepInject } from './agent-config.service';
+
+const DEFAULT_SHIPPING_COST = 20000;
+const DEFAULT_MIN_PROFIT_COP = 20000;
 
 const MASTERSHOP_PROVIDER_ID = 'mastershop';
 const TENANT_KEY_HEADER = 'X-Mastershop-Api-Key';
@@ -49,6 +53,11 @@ export interface CatalogPriceRow {
   suggestedPrice: number | null;
   salePrice: number | null;
   tieneOverride: boolean;
+  costoEnvioEstimado: number;
+  gananciaNeta: number | null;
+  gananciaMinima: number;
+  precioVentaMinimoRecomendado: number | null;
+  cumpleMinimo: boolean | null;
 }
 
 /**
@@ -167,7 +176,11 @@ export async function listCatalogWithPrices(orgId: string, agentId: string): Pro
   // of triggering a second lookup + header decryption.
   const tool = await getMastershopTool(agentId);
 
-  const [baseUrl, headers] = await Promise.all([getAdminBaseUrl(), buildAdminHeaders(agentId, tool)]);
+  const [baseUrl, headers, config] = await Promise.all([
+    getAdminBaseUrl(),
+    buildAdminHeaders(agentId, tool),
+    loadAgentConfigForDeepInject(agentId),
+  ]);
   const res = await fetch(`${baseUrl}/admin/products`, { headers });
   if (!res.ok) {
     throw new AppError(res.status, `Mastershop admin API error: ${res.status}`, 'MASTERSHOP_ADMIN_ERROR');
@@ -175,15 +188,37 @@ export async function listCatalogWithPrices(orgId: string, agentId: string): Pro
   const data = (await res.json()) as { products?: AdminProductRow[] };
   const products = Array.isArray(data.products) ? data.products : [];
 
-  return products.map((p) => ({
-    idProduct: String(p.idProduct),
-    idVariant: normalizeVariantId(p.idVariant),
-    nombre: p.nombre,
-    basePrice: p.basePrice,
-    suggestedPrice: p.suggestedPrice,
-    salePrice: p.salePrice,
-    tieneOverride: p.tieneOverride,
-  }));
+  const costoEnvioEstimado = toPositiveNumber(config.values['costo_envio_estimado'], DEFAULT_SHIPPING_COST);
+  const gananciaMinima = toPositiveNumber(config.values['ganancia_minima_cop'], DEFAULT_MIN_PROFIT_COP);
+
+  return products.map((p) => {
+    const basePrice = p.basePrice;
+    const salePrice = p.salePrice;
+    const gananciaNeta =
+      basePrice !== null && salePrice !== null ? salePrice - basePrice - costoEnvioEstimado : null;
+    const precioVentaMinimoRecomendado = basePrice !== null ? basePrice + costoEnvioEstimado + gananciaMinima : null;
+
+    return {
+      idProduct: String(p.idProduct),
+      idVariant: normalizeVariantId(p.idVariant),
+      nombre: p.nombre,
+      basePrice,
+      suggestedPrice: p.suggestedPrice,
+      salePrice,
+      tieneOverride: p.tieneOverride,
+      costoEnvioEstimado,
+      gananciaNeta,
+      gananciaMinima,
+      precioVentaMinimoRecomendado,
+      cumpleMinimo: gananciaNeta !== null ? gananciaNeta >= gananciaMinima : null,
+    };
+  });
+}
+
+/** Reads a numeric config value, falling back to `fallback` when missing, non-finite, or negative. */
+function toPositiveNumber(value: unknown, fallback: number): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
 export interface PriceUpdateInput {

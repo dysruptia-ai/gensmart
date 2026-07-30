@@ -17,30 +17,31 @@ interface CatalogPriceRow {
   suggestedPrice: number | null;
   salePrice: number | null;
   tieneOverride: boolean;
+  costoEnvioEstimado: number;
+  gananciaNeta: number | null;
+  gananciaMinima: number;
+  precioVentaMinimoRecomendado: number | null;
+  cumpleMinimo: boolean | null;
 }
-
-const DEFAULT_MIN_MARGIN_PCT = 20;
 
 function rowKey(row: { idProduct: string; idVariant: string | null }): string {
   return `${row.idProduct}::${row.idVariant ?? ''}`;
 }
 
-function marginPct(basePrice: number | null, salePrice: number | null): number | null {
-  if (basePrice === null || salePrice === null || basePrice <= 0) return null;
-  return ((salePrice - basePrice) / basePrice) * 100;
+function gananciaNetaFor(basePrice: number | null, salePrice: number | null, costoEnvio: number): number | null {
+  if (basePrice === null || salePrice === null) return null;
+  return salePrice - basePrice - costoEnvio;
+}
+
+function formatCOP(value: number): string {
+  return `$${Math.round(value).toLocaleString()}`;
 }
 
 interface PricingConfiguratorProps {
   agentId: string;
-  /** Minimum margin % for the green/yellow threshold. Falls back to 20 until
-   *  the `margen_minimo_pct` config variable ships (Prompt 3). */
-  minMarginPct?: number;
 }
 
-export default function PricingConfigurator({
-  agentId,
-  minMarginPct = DEFAULT_MIN_MARGIN_PCT,
-}: PricingConfiguratorProps) {
+export default function PricingConfigurator({ agentId }: PricingConfiguratorProps) {
   const { t } = useTranslation();
   const [rows, setRows] = useState<CatalogPriceRow[]>([]);
   const [edited, setEdited] = useState<Record<string, number>>({});
@@ -136,7 +137,8 @@ export default function PricingConfigurator({
               <th className={styles.th}>{t('agents.pricing.columns.product')}</th>
               <th className={styles.th}>{t('agents.pricing.columns.basePrice')}</th>
               <th className={styles.th}>{t('agents.pricing.columns.salePrice')}</th>
-              <th className={styles.th}>{t('agents.pricing.columns.margin')}</th>
+              <th className={styles.th}>{t('agents.pricing.columns.netProfit')}</th>
+              <th className={styles.th}>{t('agents.pricing.columns.minSuggestedPrice')}</th>
               <th className={styles.th}></th>
             </tr>
           </thead>
@@ -144,13 +146,13 @@ export default function PricingConfigurator({
             {rows.map((row) => {
               const key = rowKey(row);
               const currentSalePrice = edited[key] ?? row.salePrice ?? 0;
-              const margin = marginPct(row.basePrice, currentSalePrice);
+              const gananciaNeta = gananciaNetaFor(row.basePrice, currentSalePrice, row.costoEnvioEstimado);
               const semaphore =
-                margin === null
+                gananciaNeta === null
                   ? 'neutral'
-                  : margin < 0
+                  : gananciaNeta < 0
                     ? 'red'
-                    : margin < minMarginPct
+                    : gananciaNeta < row.gananciaMinima
                       ? 'yellow'
                       : 'green';
 
@@ -173,14 +175,17 @@ export default function PricingConfigurator({
                     />
                   </td>
                   <td className={styles.td}>
-                    {margin !== null ? (
+                    {gananciaNeta !== null ? (
                       <span className={`${styles.marginBadge} ${styles[semaphore]}`}>
                         <CircleDot size={10} />
-                        {margin.toFixed(1)}%
+                        {formatCOP(gananciaNeta)}
                       </span>
                     ) : (
                       '—'
                     )}
+                  </td>
+                  <td className={styles.td}>
+                    {row.precioVentaMinimoRecomendado !== null ? formatCOP(row.precioVentaMinimoRecomendado) : '—'}
                   </td>
                   <td className={styles.td}>
                     {row.tieneOverride && (

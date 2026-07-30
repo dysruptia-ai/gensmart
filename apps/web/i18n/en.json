@@ -500,7 +500,8 @@
         "product": "Product",
         "basePrice": "Provider price",
         "salePrice": "Sale price",
-        "margin": "Margin"
+        "netProfit": "Net profit",
+        "minSuggestedPrice": "Min. suggested price"
       },
       "margin": {
         "green": "Healthy margin",
