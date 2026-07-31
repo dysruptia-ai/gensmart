@@ -231,10 +231,13 @@ export async function updatePrices(orgId: string, agentId: string, prices: Price
   await verifyAgentOwnership(orgId, agentId);
   const [baseUrl, headers] = await Promise.all([getAdminBaseUrl(), buildAdminHeaders(agentId)]);
 
-  // The MCP rejects any non-null idVariant it doesn't recognize — normalize
-  // falsy values (undefined, '', 0-as-placeholder) to null explicitly.
+  // The MCP's Zod schema requires idProduct as a number — CatalogPriceRow
+  // carries it as a string (see String(p.idProduct) above), so it must be
+  // converted back here before the PUT.
+  // The MCP also rejects any non-null idVariant it doesn't recognize —
+  // normalize falsy values (undefined, '', 0-as-placeholder) to null explicitly.
   const normalized = prices.map((p) => ({
-    idProduct: p.idProduct,
+    idProduct: Number(p.idProduct),
     idVariant: p.idVariant || null,
     salePrice: p.salePrice,
   }));
