@@ -28,23 +28,34 @@ function resolvePath(obj: unknown, path: string): unknown {
   return current;
 }
 
+/**
+ * Substitutes `{{param}}` placeholders with values from `params`. A missing
+ * or null value becomes an empty string (with a warning log) instead of
+ * leaving the literal `{{param}}` text in the outgoing request — the LLM
+ * regularly omits optional parameters it hasn't captured yet.
+ */
 function replacePlaceholders(
   template: unknown,
-  params: Record<string, unknown>
+  params: Record<string, unknown>,
+  context: string
 ): unknown {
   if (typeof template === 'string') {
     return template.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => {
       const val = params[key];
-      return val !== undefined ? String(val) : `{{${key}}}`;
+      if (val === undefined || val === null) {
+        console.warn(`[custom-function] parámetro "{{${key}}}" no recibido en ${context}, usando valor vacío`);
+        return '';
+      }
+      return String(val);
     });
   }
   if (Array.isArray(template)) {
-    return template.map((item) => replacePlaceholders(item, params));
+    return template.map((item) => replacePlaceholders(item, params, context));
   }
   if (template !== null && typeof template === 'object') {
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(template as Record<string, unknown>)) {
-      result[k] = replacePlaceholders(v, params);
+      result[k] = replacePlaceholders(v, params, context);
     }
     return result;
   }
@@ -143,8 +154,9 @@ export async function executeCustomFunction(
     }
   }
 
-  // Build URL (add query param auth if needed)
-  let finalUrl = endpointUrl;
+  // Build URL — substitute {{param}} path params (e.g. .../contacts/{{contact_id}})
+  // before appending auth/query params below.
+  let finalUrl = replacePlaceholders(endpointUrl, toolArguments, 'endpoint_url') as string;
   if (auth?.type === 'api_key' && auth.queryParam && auth.apiKey) {
     const separator = finalUrl.includes('?') ? '&' : '?';
     finalUrl = `${finalUrl}${separator}${encodeURIComponent(auth.queryParam)}=${encodeURIComponent(auth.apiKey)}`;
@@ -167,7 +179,7 @@ export async function executeCustomFunction(
 
   // Build body
   const body = bodyTemplate
-    ? replacePlaceholders(bodyTemplate, toolArguments)
+    ? replacePlaceholders(bodyTemplate, toolArguments, 'body_template')
     : toolArguments;
 
   // Execute with timeout

@@ -995,8 +995,17 @@ export async function testTool(
     requestHeaders[auth.headerName] = auth.apiKey;
   }
 
-  // Build URL (add query params for API key query type)
-  let url = endpointUrl;
+  // Build URL — substitute {{param}} path params first (mirrors
+  // custom-function.service.ts so the Test button reflects production
+  // behavior), then add query params for API key query type.
+  let url = endpointUrl.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => {
+    const val = params[key];
+    if (val === undefined || val === null) {
+      console.warn(`[custom-function] parámetro "{{${key}}}" no recibido en endpoint_url, usando valor vacío`);
+      return '';
+    }
+    return String(val);
+  });
   if (auth?.type === 'api_key_query' && auth.queryParam && auth.apiKey) {
     const u = new URL(url);
     u.searchParams.set(auth.queryParam, auth.apiKey);
