@@ -136,6 +136,13 @@ export async function handleSendMedia(
     };
   }
 
+  // 4b. Resolve the URL we'll actually serve/persist. WebP sources need the
+  // proxy to transcode them to JPEG — same route already used for CDNs that
+  // serve images as application/octet-stream. Applied consistently for
+  // whatsapp and web so both channels render the same converted image.
+  const proxiedUrl = `${env.API_URL}/api/media/proxy?url=${encodeURIComponent(url)}`;
+  const effectiveUrl = validation.needsConversion ? proxiedUrl : url;
+
   // 5. Send via channel
   try {
     if (context.channel === 'whatsapp') {
@@ -145,8 +152,8 @@ export async function handleSendMedia(
 
       if (type === 'image') {
         // Route through our proxy so Meta sees image/jpeg or image/png even
-        // when the upstream CDN serves the file as application/octet-stream.
-        const proxiedUrl = `${env.API_URL}/api/media/proxy?url=${encodeURIComponent(url)}`;
+        // when the upstream CDN serves the file as application/octet-stream
+        // (or when the source is WebP and needs transcoding to JPEG).
         await sendImageMessage(context.phoneNumberId, context.accessToken, context.contactPhone, proxiedUrl, caption);
       } else if (type === 'document') {
         await sendDocumentMessage(context.phoneNumberId, context.accessToken, context.contactPhone, url, undefined, caption);
@@ -168,7 +175,7 @@ export async function handleSendMedia(
         context.conversationId,
         caption ?? '',
         JSON.stringify({
-          media: { type, url, caption: caption ?? null },
+          media: { type, url: effectiveUrl, caption: caption ?? null },
           mimeType: validation.mimeType,
           sizeBytes: validation.sizeBytes,
         }),
@@ -195,7 +202,7 @@ export async function handleSendMedia(
           role: 'assistant',
           content: caption ?? '',
           metadata: {
-            media: { type, url, caption: caption ?? null },
+            media: { type, url: effectiveUrl, caption: caption ?? null },
             mimeType: validation.mimeType,
           },
           createdAt: msgRow?.created_at,

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import sharp from 'sharp';
 import {
   detectImageMimeFromBytes,
   isHostBlocked,
@@ -78,8 +79,25 @@ router.get('/proxy', async (req: Request, res: Response) => {
 
     const detected = detectImageMimeFromBytes(buf);
     if (!detected) {
-      res.status(415).json({ error: 'Content is not a valid PNG or JPEG image' });
+      res.status(415).json({ error: 'Content is not a valid PNG, JPEG or WebP image' });
       return;
+    }
+
+    // WebP isn't accepted by WhatsApp/the widget — transcode to JPEG on the fly.
+    // Animated WebP (or anything sharp can't decode) falls through to the same
+    // 415 as any other unsupported format.
+    if (detected === 'image/webp') {
+      try {
+        const jpegBuffer = await sharp(buf).jpeg({ quality: 90 }).toBuffer();
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.setHeader('Content-Length', jpegBuffer.length.toString());
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.status(200).end(jpegBuffer);
+        return;
+      } catch {
+        res.status(415).json({ error: 'Content is not a valid PNG, JPEG or WebP image' });
+        return;
+      }
     }
 
     res.setHeader('Content-Type', detected);
