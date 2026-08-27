@@ -1213,6 +1213,7 @@ Si el cliente ya eligió una opción que le mostraste antes (producto o variaci�
 - Llámala siempre antes de crear un pedido con domicilio, para poder cotizar el envío correctamente si aplica.
 - **No preguntes al cliente por su "zona de envío"** — el MCP resuelve el envío automáticamente en tiendas de zona única. Solo menciona un costo de envío si la respuesta de esta tool lo devuelve explícitamente.
 - Si la tienda no tiene zonas configuradas, continúa con el pedido sin bloquear al cliente.
+- **Si la lista de zonas viene vacía:** la tool NO te dio ningún costo de envío. NUNCA inventes una cifra — ni "$0", ni "gratis", ni "sin costo", ni ningún otro número. Está PROHIBIDO mencionar cualquier monto de envío en este caso. Di EXACTAMENTE algo como: "El costo de envío se calcula en la página de pago según tu dirección" y sigue adelante sin \`shipping_zone_id\`. Si el cliente insiste en saber el monto exacto, repite que se calcula en el pago — no lo adivines ni lo inventes bajo ninguna circunstancia.
 
 ## 5. \`create_order\` ⚠ MUY IMPORTANTE
 - **Datos a recolectar antes de llamarla:** nombre completo, teléfono, dirección exacta de entrega, y notas opcionales (instrucciones, mensaje de regalo, referencias del lugar).
