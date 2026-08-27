@@ -1660,7 +1660,11 @@ router.post(
       ];
 
       let currentMessages = [...messages];
-      const maxIter = 5;
+      // 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
+      // varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
+      // cortaban dejando un texto interino como respuesta final. Mantener en sync
+      // con `MAX_TOOL_ITERATIONS` en workers/message.worker.ts.
+      const maxIter = 8;
       const planLimits = PLAN_LIMITS[req.org!.plan as PlanKey];
       const effectiveMaxTokens = Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512);
 

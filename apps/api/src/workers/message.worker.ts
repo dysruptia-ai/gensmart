@@ -99,7 +99,11 @@ interface OrgRow {
   byo_anthropic_key_encrypted: string | null;
 }
 
-const MAX_TOOL_ITERATIONS = 5;
+// 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
+// varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
+// cortaban dejando un texto interino como respuesta final. Mantener en sync
+// con `maxIter` en routes/agents.ts (ruta de preview).
+const MAX_TOOL_ITERATIONS = 8;
 
 interface MCPToolMapping {
   serverUrl: string;
