@@ -1819,6 +1819,9 @@ router.post(
             try {
               const result = await executeMCPTool(serverUrl, originalToolName, tc.arguments, transport, extraHeaders);
               previewToolResults.push({ toolCallId: tc.id, content: result.content });
+              if (tc.name.includes('check_shipping_zones')) {
+                console.log(`[shipping-guard-debug] raw result.content for ${tc.name}:`, JSON.stringify(result.content));
+              }
               if (isEmptyShippingZonesResult(tc.name, result.content)) {
                 sawEmptyShippingZones = true;
               }
