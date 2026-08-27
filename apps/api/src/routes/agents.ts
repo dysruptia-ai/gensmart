@@ -30,6 +30,7 @@ import {
 } from '../services/send-email-notification.service';
 import { redis } from '../config/redis';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
+import { mentionsShippingCost, correctShippingHallucination, isEmptyShippingZonesResult } from '../services/shipping-guard.service';
 import { randomUUID } from 'crypto';
 
 const router = Router();
@@ -1660,6 +1661,7 @@ router.post(
       ];
 
       let currentMessages = [...messages];
+      let sawEmptyShippingZones = false;
       // 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
       // varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
       // cortaban dejando un texto interino como respuesta final. Mantener en sync
@@ -1817,6 +1819,9 @@ router.post(
             try {
               const result = await executeMCPTool(serverUrl, originalToolName, tc.arguments, transport, extraHeaders);
               previewToolResults.push({ toolCallId: tc.id, content: result.content });
+              if (isEmptyShippingZonesResult(tc.name, result.content)) {
+                sawEmptyShippingZones = true;
+              }
             } catch (err) {
               previewToolResults.push({
                 toolCallId: tc.id,
@@ -1913,6 +1918,23 @@ router.post(
         } catch (retryErr) {
           console.error('[agents.preview] LLM failed after retry:', (retryErr as Error).message);
           throw retryErr;
+        }
+      }
+
+      // Guard against invented shipping costs when check_shipping_zones returned
+      // zones: [] — same code-level backstop as the worker (prompt rules alone
+      // weren't reliable enough in production testing).
+      if (sawEmptyShippingZones && mentionsShippingCost(finalResponse)) {
+        console.warn(`[shipping-guard] Corrected invented shipping cost in preview for agent ${agentId}`);
+        try {
+          finalResponse = await correctShippingHallucination(
+            agentResult.llmProvider as 'openai' | 'anthropic',
+            agentResult.llmModel,
+            currentMessages,
+            finalResponse
+          );
+        } catch (err) {
+          console.error('[shipping-guard] Correction call failed in preview, keeping original response:', err);
         }
       }
 

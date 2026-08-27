@@ -36,6 +36,7 @@ import {
 } from '../services/agent-config.service';
 import { createAppointment } from '../services/appointment.service';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
+import { mentionsShippingCost, correctShippingHallucination, isEmptyShippingZonesResult } from '../services/shipping-guard.service';
 
 // MCP cache TTL: 1 hour
 const MCP_TOOLS_CACHE_TTL = 3600;
@@ -597,9 +598,10 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   let totalTokensUsed = 0;
   const toolsCalledLog: string[] = [];
   let iterationCount = 0;
+  let sawEmptyShippingZones = false;
+  let currentMessages = [...messages];
 
   try {
-    let currentMessages = [...messages];
 
     while (iterationCount < MAX_TOOL_ITERATIONS) {
       iterationCount++;
@@ -665,6 +667,9 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         );
         toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
         toolResults.push({ toolCallId: toolCall.id, content: result });
+        if (isEmptyShippingZonesResult(toolCall.name, result)) {
+          sawEmptyShippingZones = true;
+        }
       }
 
       // Append the assistant's tool call message with structured tool call data
@@ -735,6 +740,23 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       await updateConversation(conversationId, 2);
       notifyClients(organizationId, conversationId, userMessageText, errorMessage, errorSaved, errorMeta);
       return;
+    }
+  }
+
+  // Guard against invented shipping costs when check_shipping_zones returned
+  // zones: [] (no fixed rate to quote — e.g. a dynamic carrier-calculated
+  // rate). Prompt rules alone weren't reliable enough in production testing.
+  if (sawEmptyShippingZones && mentionsShippingCost(finalResponse)) {
+    console.warn(`[shipping-guard] Corrected invented shipping cost in conversation ${conversationId}`);
+    try {
+      finalResponse = await correctShippingHallucination(
+        agent.llm_provider as 'openai' | 'anthropic',
+        agent.llm_model,
+        currentMessages,
+        finalResponse
+      );
+    } catch (err) {
+      console.error('[shipping-guard] Correction call failed, keeping original response:', err);
     }
   }
 
