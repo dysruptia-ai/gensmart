@@ -667,9 +667,6 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         );
         toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
         toolResults.push({ toolCallId: toolCall.id, content: result });
-        if (toolCall.name.includes('check_shipping_zones')) {
-          console.log(`[shipping-guard-debug] raw result.content for ${toolCall.name}:`, JSON.stringify(result));
-        }
         if (isEmptyShippingZonesResult(toolCall.name, result)) {
           sawEmptyShippingZones = true;
         }
