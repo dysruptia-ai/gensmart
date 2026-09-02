@@ -72,7 +72,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         appId: fbAppId,
         cookie: true,
         xfbml: false,
-        version: 'v21.0',
+        version: 'v26.0',
       });
     };
     document.head.appendChild(script);
