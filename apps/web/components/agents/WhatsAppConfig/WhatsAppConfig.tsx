@@ -52,7 +52,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const [signupStep, setSignupStep] = useState<string | null>(null);
   const [selectionType, setSelectionType] = useState<'waba' | 'phone' | null>(null);
   const [selectionOptions, setSelectionOptions] = useState<Array<{ id: string; name: string; verifiedName?: string }>>([]);
-  const [pendingFbToken, setPendingFbToken] = useState<string | null>(null);
+  const [pendingFbCode, setPendingFbCode] = useState<string | null>(null);
   const [pendingWabaId, setPendingWabaId] = useState<string | null>(null);
 
   // Load Facebook SDK when component mounts (needed for Embedded Signup)
@@ -156,7 +156,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     const FB = (window as Window & { FB?: {
       init: (opts: Record<string, unknown>) => void;
-      login: (cb: (response: { authResponse?: { accessToken?: string } }) => void, opts: Record<string, unknown>) => void;
+      login: (cb: (response: { authResponse?: { code?: string } }) => void, opts: Record<string, unknown>) => void;
     } }).FB;
 
     if (!FB) {
@@ -166,18 +166,18 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     const configId = process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID'] ?? '';
 
-    fbLoginEmbeddedSignup(FB, configId, function(fbToken) {
-      if (!fbToken) {
+    fbLoginEmbeddedSignup(FB, configId, function(code) {
+      if (!code) {
         toastError('Connection cancelled. Click "Connect with Facebook" to try again. Make sure to complete all steps in the Facebook popup.');
         return;
       }
 
-      // Call the new automated endpoint
+      // Call the automated endpoint — backend exchanges the code for a token
       setConnecting(true);
       setSignupStep('Discovering your WhatsApp account...');
       api.post<Record<string, unknown>>('/api/whatsapp/embedded-signup-complete', {
         agentId,
-        fbAccessToken: fbToken,
+        fbCode: code,
       })
         .then(function(data) {
           if (data.requiresSelection) {
@@ -186,7 +186,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
             setConnecting(false);
             setSelectionType(data.requiresSelection as 'waba' | 'phone');
             setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
-            setPendingFbToken(data.fbAccessToken as string);
+            setPendingFbCode(data.fbAccessToken as string);
             if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
             return;
           }
@@ -220,7 +220,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   }
 
   function handleSelectionContinue(selectedId: string) {
-    if (!pendingFbToken) return;
+    if (!pendingFbCode) return;
 
     setConnecting(true);
     setSelectionType(null);
@@ -229,7 +229,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     const body: Record<string, string> = {
       agentId,
-      fbAccessToken: pendingFbToken,
+      fbAccessToken: pendingFbCode,
     };
     if (selectionType === 'waba') {
       body.selectedWabaId = selectedId;
@@ -251,7 +251,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         setSignupStep(null);
         success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
         setShowManual(false);
-        setPendingFbToken(null);
+        setPendingFbCode(null);
         setPendingWabaId(null);
         return loadStatus();
       })
@@ -438,7 +438,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                   </div>
                   <button
                     className={styles.toggleManual}
-                    onClick={() => { setSelectionType(null); setSelectionOptions([]); setPendingFbToken(null); setShowManual(true); }}
+                    onClick={() => { setSelectionType(null); setSelectionOptions([]); setPendingFbCode(null); setShowManual(true); }}
                     type="button"
                   >
                     Cancel — use Manual Setup instead

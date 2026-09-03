@@ -648,15 +648,13 @@ router.post(
         throw new AppError(403, 'WhatsApp requires Starter plan or higher', 'PLAN_LIMIT');
       }
 
-      const { agentId, fbAccessToken, selectedWabaId, selectedPhoneId } = req.body as {
+      const { agentId, fbCode, fbAccessToken: fbAccessTokenFromBody, selectedWabaId, selectedPhoneId } = req.body as {
         agentId: string;
-        fbAccessToken: string;
+        fbCode?: string;
+        fbAccessToken?: string;
         selectedWabaId?: string;
         selectedPhoneId?: string;
       };
-      if (!agentId || !fbAccessToken) {
-        throw new AppError(400, 'Missing agentId or fbAccessToken', 'VALIDATION_ERROR');
-      }
 
       // 2. Verify agent belongs to org
       const agentCheck = await query<{ id: string }>(
@@ -667,7 +665,42 @@ router.post(
         throw new AppError(404, 'Agent not found', 'NOT_FOUND');
       }
 
-      // 3. Get the Platform System User token (needed for debug_token, webhook, registration)
+      // 3. Resolve the user's Facebook access token — either a re-selection
+      //    round trip (token already exchanged in a prior call) or the
+      //    first call, which must exchange the authorization code.
+      let fbAccessToken: string;
+      if (fbAccessTokenFromBody) {
+        fbAccessToken = fbAccessTokenFromBody;
+      } else if (fbCode) {
+        const fbAppId = env.FACEBOOK_APP_ID;
+        const fbAppSecret = env.FACEBOOK_APP_SECRET;
+        if (!fbAppId || !fbAppSecret) {
+          throw new AppError(503, 'Facebook App credentials not configured on this server', 'NOT_CONFIGURED');
+        }
+
+        // Server-to-server only — never expose this call to the client.
+        // The code has a 30-second TTL, so this must happen immediately.
+        console.log(`[embedded-signup] Exchanging code for access token for agent ${agentId}...`);
+        const tokenExchangeRes = await fetch(
+          `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${encodeURIComponent(fbAppId)}&client_secret=${encodeURIComponent(fbAppSecret)}&code=${encodeURIComponent(fbCode)}`
+        );
+        if (!tokenExchangeRes.ok) {
+          const exchangeErr = await tokenExchangeRes.json().catch(() => ({}));
+          console.error('[embedded-signup] Code exchange failed:', JSON.stringify(exchangeErr));
+          throw new AppError(401, 'Failed to exchange authorization code. The code may have expired (30s TTL) — please try connecting again.', 'CODE_EXCHANGE_FAILED');
+        }
+        const tokenExchangeData = await tokenExchangeRes.json() as { access_token?: string };
+        if (!tokenExchangeData.access_token) {
+          console.error('[embedded-signup] No access_token in exchange response:', JSON.stringify(tokenExchangeData));
+          throw new AppError(401, 'Failed to obtain access token from Facebook', 'CODE_EXCHANGE_FAILED');
+        }
+        fbAccessToken = tokenExchangeData.access_token;
+        console.log(`[embedded-signup] Code exchanged successfully for agent ${agentId}`);
+      } else {
+        throw new AppError(400, 'Missing agentId and fbCode or fbAccessToken', 'VALIDATION_ERROR');
+      }
+
+      // 4. Get the Platform System User token (needed for debug_token, webhook, registration)
       const { getWhatsAppToken } = await import('../services/platform-settings.service');
       const platformToken = await getWhatsAppToken();
       if (!platformToken) {
