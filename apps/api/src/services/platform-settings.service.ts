@@ -198,6 +198,23 @@ export async function getWhatsAppToken(): Promise<string> {
 }
 
 /**
+ * Convenience: get the WhatsApp System User Admin token (decrypted).
+ * Used only to auto-assign new WABAs to the operational system user — never for messaging.
+ */
+export async function getWhatsAppAdminToken(): Promise<string | null> {
+  const value = await getSettingValue('whatsapp_admin_token');
+  return value || null;
+}
+
+/**
+ * Convenience: get the operational WhatsApp System User ID (plain text, not encrypted).
+ */
+export async function getOperationalSystemUserId(): Promise<string | null> {
+  const value = await getSettingValue('whatsapp_operational_system_user_id');
+  return value || null;
+}
+
+/**
  * Test if a WhatsApp token is valid by calling Meta's debug_token API.
  */
 export async function testWhatsAppToken(token: string): Promise<{

@@ -885,6 +885,37 @@ router.post(
       const wabaId = selectedWabaId || sharedWabaIds[0]!;
       console.log(`[embedded-signup] Using WABA: ${wabaId}`);
 
+      // 4.5. Auto-assign this WABA to the operational system user, so it has
+      //      access before we try to subscribe the webhook or register the
+      //      number. Uses a separate Admin-only token — never the operational
+      //      token — since only Admin system users can grant asset access.
+      //      Non-fatal: if this fails, log and continue (the assignment may
+      //      already exist from a prior attempt, or the operator token may
+      //      already have access some other way).
+      try {
+        const { getWhatsAppAdminToken, getOperationalSystemUserId } = await import('../services/platform-settings.service');
+        const adminToken = await getWhatsAppAdminToken();
+        const operationalUserId = await getOperationalSystemUserId();
+
+        if (adminToken && operationalUserId) {
+          console.log(`[embedded-signup] Auto-assigning WABA ${wabaId} to operational system user ${operationalUserId}...`);
+          const assignRes = await fetch(
+            `https://graph.facebook.com/v21.0/${wabaId}/assigned_users?user=${encodeURIComponent(operationalUserId)}&tasks=${encodeURIComponent("['MANAGE']")}&access_token=${encodeURIComponent(adminToken)}`,
+            { method: 'POST' }
+          );
+          if (assignRes.ok) {
+            console.log(`[embedded-signup] WABA ${wabaId} successfully assigned to operational system user`);
+          } else {
+            const assignErr = await assignRes.json().catch(() => ({}));
+            console.warn('[embedded-signup] Auto-assign failed (continuing anyway):', JSON.stringify(assignErr));
+          }
+        } else {
+          console.warn('[embedded-signup] Admin token or operational user ID not configured — skipping auto-assign. Manual assignment may be required.');
+        }
+      } catch (assignAutoErr) {
+        console.warn('[embedded-signup] Auto-assign step threw an error (continuing anyway):', (assignAutoErr as Error).message);
+      }
+
       // 5. Get phone numbers from this WABA — try platform token first, fallback to user's FB token
       let phoneNumberId = '';
       let displayPhone = '';
