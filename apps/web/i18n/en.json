@@ -325,6 +325,8 @@
       "loading": "Signing you in…",
       "invalidTitle": "This link is no longer valid",
       "invalidSubtitle": "It may have already been used or expired. Contact support and we'll help you get access.",
+      "resendButton": "Resend access",
+      "resendSuccess": "If this link corresponds to a valid account, we resent access to it. Check your inbox.",
       "contactSupport": "Contact support",
       "backToLogin": "Back to login"
     },

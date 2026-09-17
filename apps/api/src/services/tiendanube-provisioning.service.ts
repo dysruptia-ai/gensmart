@@ -10,19 +10,25 @@
  * Store Assistant" template + MCP connection to the tiendanube provider.
  *
  * Idempotent by storeId: a re-install (same store_id) skips steps 1-4 and
- * only refreshes the encrypted X-Store-ID header on the existing MCP tool.
+ * only refreshes the encrypted X-Store-ID header on the existing MCP tool
+ * (self-healing tool discovery too, if a prior attempt never completed it).
  */
+import { randomUUID } from 'crypto';
 import { query } from '../config/database';
-import { encrypt } from '../config/encryption';
+import { encrypt, decrypt } from '../config/encryption';
 import { AppError } from '../middleware/errorHandler';
 import * as authService from '../services/auth.service';
 import * as agentService from '../services/agent.service';
 import { encryptHeaders, generateWebhookSecret } from './mcp-headers.service';
 import * as platformSettings from './platform-settings.service';
+import * as mcpProviders from './mcp-providers.service';
+import { connectAndListTools } from './mcp-client.service';
 
 const WOOCOMMERCE_TEMPLATE_NAME = 'WooCommerce Store Assistant';
 const TIENDANUBE_PROVIDER_ID = 'tiendanube';
-const TIENDANUBE_SERVER_URL = 'https://tiendanube-mcp.gensmart.co/mcp';
+// Overridable for local/staging verification (e.g. a local tiendanube-mcp
+// instance) without touching production behavior — defaults unchanged.
+const TIENDANUBE_SERVER_URL = process.env['TIENDANUBE_MCP_URL'] ?? 'https://tiendanube-mcp.gensmart.co/mcp';
 
 export interface ProvisionTiendanubeStoreInput {
   storeId: string;
@@ -64,7 +70,17 @@ async function findExistingProvisioning(storeId: string): Promise<{
   return { organizationId: org.id, agentId: agentResult.rows[0]?.id ?? null };
 }
 
-async function refreshStoreIdHeader(agentId: string, storeId: string): Promise<void> {
+/**
+ * Reinstall path: refresh the encrypted X-Store-ID header, and self-heal the
+ * tools/list discovery if a previous attempt created the tool row but never
+ * got to (or failed) the discovery step — same "selected_tools.length === 0"
+ * check message.worker.ts/preview use to decide the agent has nothing to call.
+ */
+async function refreshStoreIdAndEnsureDiscovery(
+  organizationId: string,
+  agentId: string,
+  storeId: string
+): Promise<void> {
   const toolResult = await query<{ id: string; config: Record<string, unknown> }>(
     `SELECT id, config FROM agent_tools WHERE agent_id = $1 AND type = 'mcp' AND config->>'providerId' = $2`,
     [agentId, TIENDANUBE_PROVIDER_ID]
@@ -76,7 +92,7 @@ async function refreshStoreIdHeader(agentId: string, storeId: string): Promise<v
   const filtered = headers.filter(
     (h) => (h as { key?: string }).key !== 'X-Store-ID'
   );
-  const newConfig = {
+  const newConfig: Record<string, unknown> = {
     ...tool.config,
     headers: [...filtered, { key: 'X-Store-ID', value_encrypted: encrypt(storeId) }],
   };
@@ -85,6 +101,69 @@ async function refreshStoreIdHeader(agentId: string, storeId: string): Promise<v
     JSON.stringify(newConfig),
     tool.id,
   ]);
+
+  const selectedTools = Array.isArray(newConfig['selected_tools']) ? (newConfig['selected_tools'] as unknown[]) : [];
+  if (selectedTools.length > 0) return;
+
+  const profile = await mcpProviders.findProfileById(TIENDANUBE_PROVIDER_ID);
+  if (!profile || !profile.is_active) {
+    throw new AppError(
+      500,
+      'Tiendanube MCP provider profile not found — apply migration 047_tiendanube-mcp.sql first',
+      'MCP_PROVIDER_NOT_FOUND'
+    );
+  }
+  const profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+  const webhookSecretEncrypted = newConfig['webhookSecret_encrypted'] as string | undefined;
+  const plainHeaders: Record<string, string> = {
+    ...profileAutoHeaders,
+    'X-Store-ID': storeId,
+    'X-Agent-ID': agentId,
+    'X-Session-ID': randomUUID(),
+    ...(webhookSecretEncrypted ? { 'X-Webhook-Secret': decrypt(webhookSecretEncrypted) } : {}),
+  };
+
+  await discoverAndSaveTools(
+    organizationId,
+    agentId,
+    tool.id,
+    newConfig,
+    (newConfig['server_url'] as string) ?? TIENDANUBE_SERVER_URL,
+    (newConfig['transport'] as 'sse' | 'streamable-http') ?? 'streamable-http',
+    plainHeaders
+  );
+}
+
+/**
+ * Runs the same MCP handshake the "Test Connection" button in the editor
+ * triggers (tools/list) and persists the discovered tool names into
+ * `agent_tools.config.selected_tools` — the field message.worker.ts and the
+ * preview endpoint actually gate on (`if (!serverUrl || selectedTools.length
+ * === 0) continue;`). Without this, the tool row exists and the MCP is
+ * reachable, but the agent never invokes any real function — it only
+ * responds generically, because nothing tells it which tools are enabled.
+ *
+ * Blocking by design: an agent with zero selected_tools is not a degraded
+ * feature, it's a non-functional product for the merchant. If the MCP is
+ * momentarily unreachable, the whole provisioning call fails visibly
+ * (surfaces as a 500 to whoever called /api/internal/tiendanube/provision)
+ * instead of silently leaving a broken agent — same reasoning as the
+ * blocking POST from tiendanube-mcp's OAuth callback, not the fire-and-forget
+ * welcome email (a missing email doesn't make the agent itself non-functional).
+ */
+async function discoverAndSaveTools(
+  organizationId: string,
+  agentId: string,
+  toolId: string,
+  config: Record<string, unknown>,
+  serverUrl: string,
+  transport: 'sse' | 'streamable-http',
+  plainHeaders: Record<string, string>
+): Promise<void> {
+  const discovered = await connectAndListTools(serverUrl, transport, plainHeaders);
+  await agentService.updateTool(organizationId, agentId, toolId, {
+    config: { ...config, selected_tools: discovered.map((t) => t.name) },
+  });
 }
 
 async function connectTiendanubeMcp(
@@ -92,11 +171,8 @@ async function connectTiendanubeMcp(
   agentId: string,
   storeId: string
 ): Promise<void> {
-  const profileResult = await query<{ id: string }>(
-    `SELECT id FROM mcp_provider_profiles WHERE id = $1 AND is_active = true`,
-    [TIENDANUBE_PROVIDER_ID]
-  );
-  if (!profileResult.rows[0]) {
+  const profile = await mcpProviders.findProfileById(TIENDANUBE_PROVIDER_ID);
+  if (!profile || !profile.is_active) {
     throw new AppError(
       500,
       'Tiendanube MCP provider profile not found — apply migration 047_tiendanube-mcp.sql first',
@@ -109,18 +185,41 @@ async function connectTiendanubeMcp(
     server_url: TIENDANUBE_SERVER_URL,
     name: 'Tiendanube Store',
     transport: 'streamable-http',
-    selected_tools: [],
+    selected_tools: [] as string[],
     headers: encryptHeaders([{ key: 'X-Store-ID', value: storeId }]),
     webhookSecret_encrypted: encrypt(plainWebhookSecret),
     providerId: TIENDANUBE_PROVIDER_ID,
   };
 
-  await agentService.createTool(organizationId, agentId, {
+  const tool = await agentService.createTool(organizationId, agentId, {
     type: 'mcp',
     name: 'Tiendanube Store',
     description: 'Conexión automática al MCP de Tiendanube — búsqueda de productos y creación de pedidos.',
     config,
   });
+
+  // Same 3-layer header merge used by test-connection/preview/worker: profile
+  // auto-injected headers (master API key) → user headers (X-Store-ID) →
+  // system headers (agent/session identity + webhook secret, plaintext here
+  // since we just generated them, no need to decrypt anything).
+  const profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+  const plainHeaders: Record<string, string> = {
+    ...profileAutoHeaders,
+    'X-Store-ID': storeId,
+    'X-Agent-ID': agentId,
+    'X-Session-ID': randomUUID(),
+    'X-Webhook-Secret': plainWebhookSecret,
+  };
+
+  await discoverAndSaveTools(
+    organizationId,
+    agentId,
+    tool.id,
+    config,
+    TIENDANUBE_SERVER_URL,
+    'streamable-http',
+    plainHeaders
+  );
 }
 
 async function findOwnerUserId(organizationId: string): Promise<string> {
@@ -188,10 +287,11 @@ export async function provisionTiendanubeStore(
 ): Promise<ProvisionTiendanubeStoreResult> {
   const existing = await findExistingProvisioning(input.storeId);
   if (existing) {
-    // Reinstall of a fully-provisioned store: just refresh the store_id
-    // header (Tiendanube may have re-issued a fresh access_token on its side).
+    // Reinstall of a fully-provisioned store: refresh the store_id header
+    // (Tiendanube may have re-issued a fresh access_token on its side), and
+    // self-heal tool discovery if a prior attempt never completed it.
     if (existing.agentId) {
-      await refreshStoreIdHeader(existing.agentId, input.storeId);
+      await refreshStoreIdAndEnsureDiscovery(existing.organizationId, existing.agentId, input.storeId);
       return {
         organizationId: existing.organizationId,
         agentId: existing.agentId,

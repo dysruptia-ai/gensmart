@@ -29,6 +29,16 @@ const orgAccessConsumeSchema = z.object({
   token: z.string().min(1),
 });
 
+const orgAccessResendParamsSchema = z.object({
+  token: z.string().min(1),
+});
+
+// Per-org throttle lives in authService.resendOrgAccessEmail (Redis SET NX,
+// keyed by organization_id — several stale tokens for the same org share the
+// same 5-min window). This IP limiter is coarse defense-in-depth on top of
+// that, not the actual anti-abuse mechanism the task asked for.
+const orgAccessResendLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 5, keyPrefix: 'org-access-resend' });
+
 const enable2FASchema = z.object({
   secret: z.string().min(1),
   code: z.string().length(6),
@@ -173,6 +183,25 @@ router.post(
     } catch (err) {
       next(err);
     }
+  }
+);
+
+// Deliberately always returns the same generic success message and always
+// 200, whether the token id matched a row, the org rate limit was already
+// hit, or the user is no longer a member — see authService.resendOrgAccessEmail
+// for why (this endpoint must never leak whether a given token/org exists).
+router.post(
+  '/org-access/:token/resend',
+  orgAccessResendLimiter,
+  validate(orgAccessResendParamsSchema, 'params'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await authService.resendOrgAccessEmail(req.params['token'] as string);
+    } catch (err) {
+      next(err);
+      return;
+    }
+    res.json({ message: 'If this link corresponds to a valid account, we resent access to it.' });
   }
 );
 

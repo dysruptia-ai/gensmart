@@ -49,12 +49,14 @@ exports.provisionOrganization = provisionOrganization;
 exports.generateOrgAccessToken = generateOrgAccessToken;
 exports.sendOrgAccessLinkEmail = sendOrgAccessLinkEmail;
 exports.consumeOrgAccessToken = consumeOrgAccessToken;
+exports.resendOrgAccessEmail = resendOrgAccessEmail;
 exports.disable2FA = disable2FA;
 const crypto_1 = __importDefault(require("crypto"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const speakeasy_1 = __importDefault(require("speakeasy"));
 const qrcode_1 = __importDefault(require("qrcode"));
 const database_1 = require("../config/database");
+const redis_1 = require("../config/redis");
 const encryption_1 = require("../config/encryption");
 const jwt_1 = require("../config/jwt");
 const email_1 = require("../config/email");
@@ -505,6 +507,44 @@ async function consumeOrgAccessToken(token) {
         role: membership.role,
     };
     return buildAuthTokens(targetUser, org);
+}
+/**
+ * Resends org access via a stale org_access_tokens row (used or expired) —
+ * the row itself is never deleted on consume, only marked `used`, so its id
+ * still tells us which organization the merchant was trying to reach. This
+ * is the only path back in for a passwordless account: there's no password
+ * to reset, and a generic "forgot password" would land on the user's
+ * primary org anyway (same class of bug fixed in refreshToken()), not the
+ * Tiendanube org the stale link pointed at.
+ *
+ * Deliberately silent on every "nothing to do" branch (unknown token id,
+ * rate-limited, user no longer a member) — the caller always returns the
+ * same generic success message regardless, so this endpoint can't be used
+ * to probe whether a given token/org exists.
+ */
+async function resendOrgAccessEmail(originalToken) {
+    const tokenHash = hashToken(originalToken);
+    const tokenResult = await (0, database_1.query)(`SELECT id, user_id, organization_id FROM org_access_tokens WHERE token_hash = $1`, [tokenHash]);
+    const tokenRow = tokenResult.rows[0];
+    if (!tokenRow)
+        return;
+    // Max 1 resend per 5 min per organization (not per token id) — several
+    // stale links for the same org all funnel into the same throttle, which is
+    // the actual abuse surface (someone spamming the "Resend access" button).
+    const rateLimitKey = `org-access-resend:${tokenRow.organization_id}`;
+    const acquired = await redis_1.redis.set(rateLimitKey, '1', 'EX', 300, 'NX');
+    if (!acquired)
+        return;
+    const membershipResult = await (0, database_1.query)('SELECT 1 as id FROM user_organizations WHERE user_id = $1 AND organization_id = $2', [tokenRow.user_id, tokenRow.organization_id]);
+    if (!membershipResult.rows[0])
+        return;
+    const orgResult = await (0, database_1.query)('SELECT name FROM organizations WHERE id = $1', [tokenRow.organization_id]);
+    const org = orgResult.rows[0];
+    if (!org)
+        return;
+    // Generates a fresh token + sends the email — same mechanism as the
+    // original magic link (fire-and-forget on SMTP failure).
+    await sendOrgAccessLinkEmail(tokenRow.user_id, tokenRow.organization_id, org.name);
 }
 async function disable2FA(userId, password) {
     const result = await (0, database_1.query)('SELECT password_hash FROM users WHERE id = $1', [userId]);

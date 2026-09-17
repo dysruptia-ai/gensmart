@@ -89,5 +89,20 @@ export declare function sendOrgAccessLinkEmail(userId: string, organizationId: s
  * the effective role from `user_organizations` for that specific org.
  */
 export declare function consumeOrgAccessToken(token: string): Promise<AuthTokens>;
+/**
+ * Resends org access via a stale org_access_tokens row (used or expired) —
+ * the row itself is never deleted on consume, only marked `used`, so its id
+ * still tells us which organization the merchant was trying to reach. This
+ * is the only path back in for a passwordless account: there's no password
+ * to reset, and a generic "forgot password" would land on the user's
+ * primary org anyway (same class of bug fixed in refreshToken()), not the
+ * Tiendanube org the stale link pointed at.
+ *
+ * Deliberately silent on every "nothing to do" branch (unknown token id,
+ * rate-limited, user no longer a member) — the caller always returns the
+ * same generic success message regardless, so this endpoint can't be used
+ * to probe whether a given token/org exists.
+ */
+export declare function resendOrgAccessEmail(originalToken: string): Promise<void>;
 export declare function disable2FA(userId: string, password: string): Promise<void>;
 //# sourceMappingURL=auth.service.d.ts.map

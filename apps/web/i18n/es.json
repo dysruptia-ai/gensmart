@@ -325,6 +325,8 @@
       "loading": "Iniciando sesión…",
       "invalidTitle": "Este link ya no es válido",
       "invalidSubtitle": "Puede que ya se haya usado o que haya expirado. Contactá a soporte y te ayudamos a recuperar el acceso.",
+      "resendButton": "Reenviar acceso",
+      "resendSuccess": "Si este link corresponde a una cuenta válida, te reenviamos el acceso. Revisá tu correo.",
       "contactSupport": "Contactar a soporte",
       "backToLogin": "Volver al login"
     },
