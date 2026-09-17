@@ -81,6 +81,9 @@ async function inviteMember(orgId, inviterId, data) {
     const userResult = await (0, database_1.query)(`INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
      VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, false, NOW(), NOW())
      RETURNING id`, [orgId, data.email.toLowerCase(), data.email.split('@')[0], tempPasswordHash, data.role]);
+    await (0, database_1.query)(`INSERT INTO user_organizations (user_id, organization_id, role, created_at)
+     VALUES ($1, $2, $3, NOW())
+     ON CONFLICT (user_id, organization_id) DO NOTHING`, [userResult.rows[0].id, orgId, data.role]);
     await (0, database_1.query)(`INSERT INTO password_resets (id, user_id, token_hash, expires_at, created_at)
      VALUES (gen_random_uuid(), $1, $2, $3, NOW())`, [userResult.rows[0].id, tokenHash, expiresAt.toISOString()]);
     (0, email_1.sendInvitationEmail)(inviter?.name ?? 'A teammate', data.email, org?.name ?? 'GenSmart', token).catch((err) => console.error('[Email] Failed to send invitation:', err));
@@ -98,6 +101,9 @@ async function updateMemberRole(orgId, requesterId, targetUserId, newRole) {
         throw new errorHandler_1.AppError(400, 'Cannot change the owner\'s role', 'CANNOT_CHANGE_OWNER');
     }
     await (0, database_1.query)('UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2', [newRole, targetUserId]);
+    // Keep the per-org role in sync — refreshToken() reads this, not users.role,
+    // for any org that isn't the user's primary (multi-org, migration 048).
+    await (0, database_1.query)('UPDATE user_organizations SET role = $1 WHERE user_id = $2 AND organization_id = $3', [newRole, targetUserId, orgId]);
 }
 async function removeMember(orgId, requesterId, targetUserId) {
     const requester = await (0, database_1.query)('SELECT role FROM users WHERE id = $1 AND organization_id = $2', [requesterId, orgId]);
@@ -114,6 +120,14 @@ async function removeMember(orgId, requesterId, targetUserId) {
     if (requesterId === targetUserId) {
         throw new errorHandler_1.AppError(400, 'Cannot remove yourself', 'CANNOT_REMOVE_SELF');
     }
-    await (0, database_1.query)('DELETE FROM users WHERE id = $1', [targetUserId]);
+    // Only drop the membership in THIS org — deleting the users row outright
+    // would also destroy the user's membership in any other organization they
+    // belong to (multi-org, migration 048). Only delete the user entirely if
+    // this was their last remaining org membership.
+    await (0, database_1.query)('DELETE FROM user_organizations WHERE user_id = $1 AND organization_id = $2', [targetUserId, orgId]);
+    const remaining = await (0, database_1.query)('SELECT id FROM user_organizations WHERE user_id = $1 LIMIT 1', [targetUserId]);
+    if (remaining.rows.length === 0) {
+        await (0, database_1.query)('DELETE FROM users WHERE id = $1', [targetUserId]);
+    }
 }
 //# sourceMappingURL=organization.service.js.map

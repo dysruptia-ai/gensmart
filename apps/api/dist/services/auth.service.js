@@ -134,6 +134,9 @@ async function register(input) {
        VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), NOW())
        RETURNING id, email, name, role, organization_id, password_hash, totp_enabled, totp_secret_encrypted, last_login_at, language, is_super_admin`, [org.id, input.email.toLowerCase(), input.name, passwordHash]);
         const user = userResult.rows[0];
+        await client.query(`INSERT INTO user_organizations (user_id, organization_id, role, created_at)
+       VALUES ($1, $2, 'owner', NOW())
+       ON CONFLICT (user_id, organization_id) DO NOTHING`, [user.id, org.id]);
         const tokenId = crypto_1.default.randomUUID();
         const accessToken = (0, jwt_1.generateAccessToken)({
             userId: user.id,
@@ -278,6 +281,22 @@ async function refreshToken(currentRefreshToken) {
     if (new Date(storedToken.expires_at) < new Date()) {
         throw new errorHandler_1.AppError(401, 'Refresh token expired', 'TOKEN_EXPIRED');
     }
+    // The org this session belongs to lives in the refresh token's own JWT
+    // claim, NOT users.organization_id — a user can belong to multiple orgs
+    // (user_organizations, migration 048), and re-deriving the org from their
+    // primary column here would silently switch a multi-org user back to
+    // their primary org on every refresh, regardless of which org they
+    // actually logged into (this was the CAØS Studio / Dysruptia bug).
+    let payload;
+    try {
+        payload = (0, jwt_1.verifyRefreshToken)(currentRefreshToken);
+    }
+    catch {
+        throw new errorHandler_1.AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+    }
+    if (payload.userId !== storedToken.user_id) {
+        throw new errorHandler_1.AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+    }
     // Mark current token as used
     await (0, database_1.query)('UPDATE refresh_tokens SET used = true WHERE id = $1', [storedToken.id]);
     const userResult = await (0, database_1.query)(`SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
@@ -288,9 +307,18 @@ async function refreshToken(currentRefreshToken) {
     if (!user) {
         throw new errorHandler_1.AppError(401, 'User not found', 'USER_NOT_FOUND');
     }
-    const orgResult = await (0, database_1.query)('SELECT id, name FROM organizations WHERE id = $1', [user.organization_id]);
+    const membershipResult = await (0, database_1.query)('SELECT role FROM user_organizations WHERE user_id = $1 AND organization_id = $2', [payload.userId, payload.orgId]);
+    const membership = membershipResult.rows[0];
+    if (!membership) {
+        throw new errorHandler_1.AppError(403, 'User is no longer a member of this organization', 'NOT_A_MEMBER');
+    }
+    const orgResult = await (0, database_1.query)('SELECT id, name FROM organizations WHERE id = $1', [payload.orgId]);
     const org = orgResult.rows[0];
-    return buildAuthTokens(user, org);
+    if (!org) {
+        throw new errorHandler_1.AppError(404, 'Organization not found', 'ORG_NOT_FOUND');
+    }
+    const targetUser = { ...user, organization_id: payload.orgId, role: membership.role };
+    return buildAuthTokens(targetUser, org);
 }
 async function logout(currentRefreshToken) {
     const tokenHash = hashToken(currentRefreshToken);
