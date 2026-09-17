@@ -321,6 +321,13 @@
       "success": "Password reset successfully. You can now sign in.",
       "invalidToken": "This reset link is invalid or has expired."
     },
+    "orgAccess": {
+      "loading": "Signing you in…",
+      "invalidTitle": "This link is no longer valid",
+      "invalidSubtitle": "It may have already been used or expired. Contact support and we'll help you get access.",
+      "contactSupport": "Contact support",
+      "backToLogin": "Back to login"
+    },
     "twoFactor": {
       "title": "Two-Factor Authentication",
       "subtitle": "Enter the 6-digit code from your authenticator app",

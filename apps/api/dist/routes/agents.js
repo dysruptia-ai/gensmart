@@ -57,6 +57,7 @@ const encryption_1 = require("../config/encryption");
 const send_email_notification_service_1 = require("../services/send-email-notification.service");
 const redis_1 = require("../config/redis");
 const text_1 = require("../utils/text");
+const shipping_guard_service_1 = require("../services/shipping-guard.service");
 const crypto_1 = require("crypto");
 const router = (0, express_1.Router)();
 router.use(auth_1.requireAuth, orgContext_1.orgContext);
@@ -695,6 +696,33 @@ router.delete('/:id/tools/:toolId', (0, validateUUID_1.validateUUID)('id', 'tool
         next(err);
     }
 });
+// GET /api/agents/:id/pricing — Mastershop catalog + sale-price overrides
+router.get('/:id/pricing', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const { listCatalogWithPrices } = await Promise.resolve().then(() => __importStar(require('../services/mastershop-pricing.service')));
+        const prices = await listCatalogWithPrices(req.org.id, String(req.params['id']));
+        res.json({ prices });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+// PUT /api/agents/:id/pricing — batch-update sale-price overrides
+router.put('/:id/pricing', (0, validateUUID_1.validateUUID)('id'), async (req, res, next) => {
+    try {
+        const { prices } = req.body;
+        if (!Array.isArray(prices) || prices.length === 0) {
+            res.status(400).json({ error: { message: 'prices must be a non-empty array', code: 'INVALID_INPUT' } });
+            return;
+        }
+        const { updatePrices } = await Promise.resolve().then(() => __importStar(require('../services/mastershop-pricing.service')));
+        await updatePrices(req.org.id, String(req.params['id']), prices);
+        res.json({ message: 'Prices updated successfully' });
+    }
+    catch (err) {
+        next(err);
+    }
+});
 // POST /api/agents/:id/tools/:toolId/test
 router.post('/:id/tools/:toolId/test', (0, validateUUID_1.validateUUID)('id', 'toolId'), async (req, res, next) => {
     try {
@@ -1092,7 +1120,7 @@ router.post('/:id/preview', (0, validateUUID_1.validateUUID)('id'), async (req, 
         // capture instructions / RAG / scheduling. Worker and preview must
         // agree on substitution semantics — both go through
         // agent-config.service.renderSystemPromptWithConfig.
-        const { renderSystemPromptWithConfig: injectConfig, loadAgentConfigForDeepInject } = await Promise.resolve().then(() => __importStar(require('../services/agent-config.service')));
+        const { renderSystemPromptWithConfig: injectConfig, loadAgentConfigForDeepInject, buildAdReferralContext, } = await Promise.resolve().then(() => __importStar(require('../services/agent-config.service')));
         const variables = Array.isArray(agentResult.variables) ? agentResult.variables : [];
         const variableInstructions = buildVariableCaptureInstructions(variables);
         const rawPrompt = systemPrompt ?? agentResult.systemPrompt ?? '';
@@ -1106,6 +1134,13 @@ router.post('/:id/preview', (0, validateUUID_1.validateUUID)('id'), async (req, 
             if (ragContext)
                 fullSystemPrompt += '\n\n' + ragContext;
         }
+        // Click-to-WhatsApp Ad referral context — preview has no real conversation
+        // row (it's a sandbox keyed by agentId+userId), so there's no
+        // channel_metadata to read. Kept for parity with message.worker.ts: this
+        // always resolves to null in preview, which is the correct behavior.
+        const previewReferralContext = buildAdReferralContext(undefined, undefined);
+        if (previewReferralContext)
+            fullSystemPrompt += '\n\n' + previewReferralContext;
         // Fetch tools
         const toolsResult = await (0, database_1.query)('SELECT id, type, name, description, config, is_enabled FROM agent_tools WHERE agent_id = $1 AND is_enabled = true', [agentId]);
         const llmTools = [];
@@ -1296,7 +1331,12 @@ router.post('/:id/preview', (0, validateUUID_1.validateUUID)('id'), async (req, 
             { role: 'user', content: message.trim() },
         ];
         let currentMessages = [...messages];
-        const maxIter = 5;
+        let sawEmptyShippingZones = false;
+        // 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
+        // varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
+        // cortaban dejando un texto interino como respuesta final. Mantener en sync
+        // con `MAX_TOOL_ITERATIONS` en workers/message.worker.ts.
+        const maxIter = 8;
         const planLimits = shared_1.PLAN_LIMITS[req.org.plan];
         const effectiveMaxTokens = Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512);
         try {
@@ -1437,6 +1477,9 @@ router.post('/:id/preview', (0, validateUUID_1.validateUUID)('id'), async (req, 
                         try {
                             const result = await (0, mcp_client_service_1.executeMCPTool)(serverUrl, originalToolName, tc.arguments, transport, extraHeaders);
                             previewToolResults.push({ toolCallId: tc.id, content: result.content });
+                            if ((0, shipping_guard_service_1.isEmptyShippingZonesResult)(tc.name, result.content)) {
+                                sawEmptyShippingZones = true;
+                            }
                         }
                         catch (err) {
                             previewToolResults.push({
@@ -1525,6 +1568,18 @@ router.post('/:id/preview', (0, validateUUID_1.validateUUID)('id'), async (req, 
             catch (retryErr) {
                 console.error('[agents.preview] LLM failed after retry:', retryErr.message);
                 throw retryErr;
+            }
+        }
+        // Guard against invented shipping costs when check_shipping_zones returned
+        // zones: [] — same code-level backstop as the worker (prompt rules alone
+        // weren't reliable enough in production testing).
+        if (sawEmptyShippingZones && (0, shipping_guard_service_1.mentionsShippingCost)(finalResponse)) {
+            console.warn(`[shipping-guard] Corrected invented shipping cost in preview for agent ${agentId}`);
+            try {
+                finalResponse = await (0, shipping_guard_service_1.correctShippingHallucination)(agentResult.llmProvider, agentResult.llmModel, currentMessages, finalResponse);
+            }
+            catch (err) {
+                console.error('[shipping-guard] Correction call failed in preview, keeping original response:', err);
             }
         }
         // Guard against minimal/empty responses — replica worker pattern (hotfix #94)

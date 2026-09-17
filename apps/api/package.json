@@ -7,7 +7,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "migrate": "dotenv -e ../../.env -- node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations up",
-    "migrate:down": "dotenv -e --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations down",
+    "migrate:down": "dotenv -e ../../.env -- node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations down",
     "seed": "tsx src/db/seeds/index.ts",
     "seed:test-users": "tsx src/db/seeds/test-users.seed.ts",
     "stripe:seed": "tsx src/db/seeds/stripe-products.ts"

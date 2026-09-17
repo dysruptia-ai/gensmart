@@ -24,6 +24,7 @@ const promo_1 = __importDefault(require("./promo"));
 const admin_1 = __importDefault(require("./admin"));
 const contact_1 = __importDefault(require("./contact"));
 const media_1 = __importDefault(require("./media"));
+const internal_tiendanube_1 = __importDefault(require("./internal-tiendanube"));
 const router = (0, express_1.Router)();
 router.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 router.use('/auth', auth_1.default);
@@ -47,5 +48,6 @@ router.use('/promo', promo_1.default);
 router.use('/admin', admin_1.default);
 router.use('/contact-sales', contact_1.default);
 router.use('/media', media_1.default);
+router.use('/internal/tiendanube', internal_tiendanube_1.default);
 exports.default = router;
 //# sourceMappingURL=index.js.map

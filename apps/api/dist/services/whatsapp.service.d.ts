@@ -1,5 +1,5 @@
 export declare function sendTextMessage(phoneNumberId: string, accessToken: string, to: string, text: string): Promise<void>;
-export declare function markAsRead(phoneNumberId: string, accessToken: string, messageId: string): Promise<void>;
+export declare function markAsRead(phoneNumberId: string, accessToken: string, messageId: string, showTypingIndicator?: boolean): Promise<void>;
 export declare function verifyWebhookSignature(payload: string, signature: string, appSecret: string): boolean;
 export declare function getPhoneNumberInfo(phoneNumberId: string, accessToken: string): Promise<{
     display_phone_number: string;

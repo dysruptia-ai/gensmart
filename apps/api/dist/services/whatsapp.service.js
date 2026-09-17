@@ -52,7 +52,7 @@ exports.encryptAccessToken = encryptAccessToken;
 exports.decryptAccessToken = decryptAccessToken;
 const crypto_1 = __importDefault(require("crypto"));
 const encryption_1 = require("../config/encryption");
-const META_API_VERSION = 'v21.0';
+const META_API_VERSION = 'v22.0';
 const META_BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`;
 async function sendTextMessage(phoneNumberId, accessToken, to, text) {
     // Meta Cloud API requires phone numbers in format: +1234567890
@@ -76,7 +76,7 @@ async function sendTextMessage(phoneNumberId, accessToken, to, text) {
         throw new Error(`WhatsApp API error: ${JSON.stringify(errorData)}`);
     }
 }
-async function markAsRead(phoneNumberId, accessToken, messageId) {
+async function markAsRead(phoneNumberId, accessToken, messageId, showTypingIndicator = true) {
     const url = `${META_BASE_URL}/${phoneNumberId}/messages`;
     await fetch(url, {
         method: 'POST',
@@ -88,6 +88,11 @@ async function markAsRead(phoneNumberId, accessToken, messageId) {
             messaging_product: 'whatsapp',
             status: 'read',
             message_id: messageId,
+            // Meta auto-clears the typing indicator after 25s or once we send a reply,
+            // whichever comes first. The typical sales flow (buffer + LLM + tools) rarely
+            // exceeds 25s, so no mid-flight refresh is implemented — if create_order/
+            // Inteliflete calls start regularly running longer, revisit this.
+            ...(showTypingIndicator ? { typing_indicator: { type: 'text' } } : {}),
         }),
     }).catch(() => {
         // Non-critical — mark as read failures don't affect message delivery

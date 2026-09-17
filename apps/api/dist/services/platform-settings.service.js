@@ -7,6 +7,8 @@ exports.inferCategory = inferCategory;
 exports.getAllSettingsWithMeta = getAllSettingsWithMeta;
 exports.getSetting = getSetting;
 exports.getWhatsAppToken = getWhatsAppToken;
+exports.getWhatsAppAdminToken = getWhatsAppAdminToken;
+exports.getOperationalSystemUserId = getOperationalSystemUserId;
 exports.testWhatsAppToken = testWhatsAppToken;
 exports.invalidateAllCache = invalidateAllCache;
 const database_1 = require("../config/database");
@@ -134,6 +136,21 @@ async function getSetting(key) {
  */
 async function getWhatsAppToken() {
     return getSettingValue('whatsapp_system_user_token');
+}
+/**
+ * Convenience: get the WhatsApp System User Admin token (decrypted).
+ * Used only to auto-assign new WABAs to the operational system user — never for messaging.
+ */
+async function getWhatsAppAdminToken() {
+    const value = await getSettingValue('whatsapp_admin_token');
+    return value || null;
+}
+/**
+ * Convenience: get the operational WhatsApp System User ID (plain text, not encrypted).
+ */
+async function getOperationalSystemUserId() {
+    const value = await getSettingValue('whatsapp_operational_system_user_id');
+    return value || null;
 }
 /**
  * Test if a WhatsApp token is valid by calling Meta's debug_token API.

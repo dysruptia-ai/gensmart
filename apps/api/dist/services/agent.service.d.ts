@@ -28,6 +28,8 @@ interface TemplateRow {
     vertical?: string | null;
     capabilities?: string[];
     integrations?: string[];
+    default_llm_provider: string;
+    default_llm_model: string;
 }
 export declare function getAgents(orgId: string, filters?: {
     search?: string;

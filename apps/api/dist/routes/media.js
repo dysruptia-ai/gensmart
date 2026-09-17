@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
+const sharp_1 = __importDefault(require("sharp"));
 const media_validator_service_1 = require("../services/media-validator.service");
 const router = (0, express_1.Router)();
 const PROXY_FETCH_TIMEOUT_MS = 8000;
@@ -65,8 +69,25 @@ router.get('/proxy', async (req, res) => {
         }
         const detected = (0, media_validator_service_1.detectImageMimeFromBytes)(buf);
         if (!detected) {
-            res.status(415).json({ error: 'Content is not a valid PNG or JPEG image' });
+            res.status(415).json({ error: 'Content is not a valid PNG, JPEG or WebP image' });
             return;
+        }
+        // WebP isn't accepted by WhatsApp/the widget — transcode to JPEG on the fly.
+        // Animated WebP (or anything sharp can't decode) falls through to the same
+        // 415 as any other unsupported format.
+        if (detected === 'image/webp') {
+            try {
+                const jpegBuffer = await (0, sharp_1.default)(buf).jpeg({ quality: 90 }).toBuffer();
+                res.setHeader('Content-Type', 'image/jpeg');
+                res.setHeader('Content-Length', jpegBuffer.length.toString());
+                res.setHeader('Cache-Control', 'public, max-age=86400');
+                res.status(200).end(jpegBuffer);
+                return;
+            }
+            catch {
+                res.status(415).json({ error: 'Content is not a valid PNG, JPEG or WebP image' });
+                return;
+            }
         }
         res.setHeader('Content-Type', detected);
         res.setHeader('Content-Length', buf.length.toString());

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.loadAgentConfigContext = loadAgentConfigContext;
 exports.renderSystemPromptWithConfig = renderSystemPromptWithConfig;
 exports.loadAgentConfigForDeepInject = loadAgentConfigForDeepInject;
+exports.buildAdReferralContext = buildAdReferralContext;
 const database_1 = require("../config/database");
 const shared_1 = require("@gensmart/shared");
 function toSchemaArray(value) {
@@ -48,5 +49,33 @@ async function renderSystemPromptWithConfig(agentId, rawSystemPrompt) {
 async function loadAgentConfigForDeepInject(agentId) {
     const ctx = await loadAgentConfigContext(agentId);
     return { schema: ctx.schema, values: ctx.values };
+}
+/**
+ * Builds the "ad context" system prompt block for a Click-to-WhatsApp Ad
+ * referral, or returns null when there's nothing worth injecting (no
+ * referral, or a referral with neither headline nor body — Meta sometimes
+ * sends a bare source_id with no human-readable content). Worker and
+ * preview route both call this so they cannot drift.
+ */
+function buildAdReferralContext(referral, referredProduct) {
+    if (!referral || (!referral.headline && !referral.body))
+        return null;
+    let block = `Contexto del anuncio (Click-to-WhatsApp Ad)\n\n` +
+        `Este cliente llegó a través de un anuncio de Meta. Datos disponibles del anuncio:\n\n` +
+        `Título: ${referral.headline ?? 'no disponible'}\n` +
+        `Descripción: ${referral.body ?? 'no disponible'}\n` +
+        `URL de origen: ${referral.source_url ?? 'no disponible'}\n`;
+    if (referredProduct !== undefined && referredProduct !== null) {
+        block += `Producto declarado por el anuncio (datos crudos): ${JSON.stringify(referredProduct)}\n`;
+    }
+    block +=
+        `\nEste contexto tiene PRIORIDAD sobre tu lógica genérica de saludo: en tu primer ` +
+            `mensaje de esta conversación, saluda y conecta directamente con el producto o tema ` +
+            `de este anuncio — incluso si es distinto al producto estrella configurado para esta ` +
+            `tienda. Si el anuncio no identifica un producto exacto por ID, usa tu herramienta de ` +
+            `búsqueda de productos con las palabras clave del título o la descripción para ` +
+            `encontrarlo antes de presentarlo. No asumas que el producto del anuncio es el mismo ` +
+            `que tu producto estrella configurado sin confirmarlo.`;
+    return block;
 }
 //# sourceMappingURL=agent-config.service.js.map

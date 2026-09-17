@@ -53,6 +53,15 @@ export declare function getSetting(key: string): Promise<{
  */
 export declare function getWhatsAppToken(): Promise<string>;
 /**
+ * Convenience: get the WhatsApp System User Admin token (decrypted).
+ * Used only to auto-assign new WABAs to the operational system user — never for messaging.
+ */
+export declare function getWhatsAppAdminToken(): Promise<string | null>;
+/**
+ * Convenience: get the operational WhatsApp System User ID (plain text, not encrypted).
+ */
+export declare function getOperationalSystemUserId(): Promise<string | null>;
+/**
  * Test if a WhatsApp token is valid by calling Meta's debug_token API.
  */
 export declare function testWhatsAppToken(token: string): Promise<{

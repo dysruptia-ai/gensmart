@@ -321,6 +321,13 @@
       "success": "Contraseña restablecida correctamente. Ya puedes iniciar sesión.",
       "invalidToken": "Este enlace de restablecimiento es inválido o ha expirado."
     },
+    "orgAccess": {
+      "loading": "Iniciando sesión…",
+      "invalidTitle": "Este link ya no es válido",
+      "invalidSubtitle": "Puede que ya se haya usado o que haya expirado. Contactá a soporte y te ayudamos a recuperar el acceso.",
+      "contactSupport": "Contactar a soporte",
+      "backToLogin": "Volver al login"
+    },
     "twoFactor": {
       "title": "Autenticación de dos factores",
       "subtitle": "Ingresa el código de 6 dígitos de tu aplicación autenticadora",

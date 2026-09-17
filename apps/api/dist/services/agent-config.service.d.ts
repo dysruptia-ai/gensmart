@@ -25,4 +25,23 @@ export declare function loadAgentConfigForDeepInject(agentId: string): Promise<{
     schema: ConfigVariableSchema[];
     values: ConfigVariableValues;
 }>;
+export interface CTWAReferral {
+    source_url?: string;
+    source_type?: string;
+    source_id?: string;
+    headline?: string;
+    body?: string;
+    media_type?: string;
+    image_url?: string;
+    video_url?: string;
+    thumbnail_url?: string;
+}
+/**
+ * Builds the "ad context" system prompt block for a Click-to-WhatsApp Ad
+ * referral, or returns null when there's nothing worth injecting (no
+ * referral, or a referral with neither headline nor body — Meta sometimes
+ * sends a bare source_id with no human-readable content). Worker and
+ * preview route both call this so they cannot drift.
+ */
+export declare function buildAdReferralContext(referral: CTWAReferral | undefined, referredProduct: unknown): string | null;
 //# sourceMappingURL=agent-config.service.d.ts.map

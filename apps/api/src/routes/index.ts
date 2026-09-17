@@ -19,6 +19,7 @@ import promoRouter from './promo';
 import adminRouter from './admin';
 import contactSalesRouter from './contact';
 import mediaRouter from './media';
+import internalTiendanubeRouter from './internal-tiendanube';
 
 const router = Router();
 
@@ -45,5 +46,6 @@ router.use('/promo', promoRouter);
 router.use('/admin', adminRouter);
 router.use('/contact-sales', contactSalesRouter);
 router.use('/media', mediaRouter);
+router.use('/internal/tiendanube', internalTiendanubeRouter);
 
 export default router;

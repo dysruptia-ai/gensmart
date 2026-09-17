@@ -132,6 +132,12 @@ async function handleSendMedia(args, context) {
             message: `Could not send media: ${validation.error ?? 'URL validation failed'}. Please continue the conversation without the media.`,
         };
     }
+    // 4b. Resolve the URL we'll actually serve/persist. WebP sources need the
+    // proxy to transcode them to JPEG — same route already used for CDNs that
+    // serve images as application/octet-stream. Applied consistently for
+    // whatsapp and web so both channels render the same converted image.
+    const proxiedUrl = `${env_1.env.API_URL}/api/media/proxy?url=${encodeURIComponent(url)}`;
+    const effectiveUrl = validation.needsConversion ? proxiedUrl : url;
     // 5. Send via channel
     try {
         if (context.channel === 'whatsapp') {
@@ -140,8 +146,8 @@ async function handleSendMedia(args, context) {
             }
             if (type === 'image') {
                 // Route through our proxy so Meta sees image/jpeg or image/png even
-                // when the upstream CDN serves the file as application/octet-stream.
-                const proxiedUrl = `${env_1.env.API_URL}/api/media/proxy?url=${encodeURIComponent(url)}`;
+                // when the upstream CDN serves the file as application/octet-stream
+                // (or when the source is WebP and needs transcoding to JPEG).
                 await (0, whatsapp_service_1.sendImageMessage)(context.phoneNumberId, context.accessToken, context.contactPhone, proxiedUrl, caption);
             }
             else if (type === 'document') {
@@ -163,7 +169,7 @@ async function handleSendMedia(args, context) {
             context.conversationId,
             caption ?? '',
             JSON.stringify({
-                media: { type, url, caption: caption ?? null },
+                media: { type, url: effectiveUrl, caption: caption ?? null },
                 mimeType: validation.mimeType,
                 sizeBytes: validation.sizeBytes,
             }),
@@ -184,7 +190,7 @@ async function handleSendMedia(args, context) {
                         role: 'assistant',
                         content: caption ?? '',
                         metadata: {
-                            media: { type, url, caption: caption ?? null },
+                            media: { type, url: effectiveUrl, caption: caption ?? null },
                             mimeType: validation.mimeType,
                         },
                         createdAt: msgRow?.created_at,

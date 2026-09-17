@@ -17,6 +17,7 @@ export declare function sendEmail({ to, subject, html, cc, from, replyTo, }: {
 export declare function sendWelcomeEmail(user: UserInfo): Promise<void>;
 export declare function sendPasswordResetEmail(user: UserInfo, token: string): Promise<void>;
 export declare function sendInvitationEmail(inviterName: string, inviteeEmail: string, orgName: string, setupToken: string): Promise<void>;
+export declare function sendOrgAccessEmail(user: UserInfo, storeName: string, token: string): Promise<void>;
 export declare function sendHighScoreLeadEmail(user: UserInfo, leadInfo: {
     contactName: string;
     score: number;

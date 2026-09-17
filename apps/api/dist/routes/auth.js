@@ -54,6 +54,9 @@ const resetPasswordSchema = zod_1.z.object({
     token: zod_1.z.string().min(1),
     password: zod_1.z.string().min(8),
 });
+const orgAccessConsumeSchema = zod_1.z.object({
+    token: zod_1.z.string().min(1),
+});
 const enable2FASchema = zod_1.z.object({
     secret: zod_1.z.string().min(1),
     code: zod_1.z.string().length(6),
@@ -148,6 +151,16 @@ router.post('/reset-password', authLimiter, (0, validate_1.validate)(resetPasswo
     try {
         await authService.resetPassword(req.body);
         res.json({ message: 'Password reset successfully' });
+    }
+    catch (err) {
+        next(err);
+    }
+});
+router.post('/org-access/consume', authLimiter, (0, validate_1.validate)(orgAccessConsumeSchema), async (req, res, next) => {
+    try {
+        const tokens = await authService.consumeOrgAccessToken(req.body.token);
+        setRefreshCookie(res, tokens.refreshToken);
+        res.json({ accessToken: tokens.accessToken, user: tokens.user });
     }
     catch (err) {
         next(err);

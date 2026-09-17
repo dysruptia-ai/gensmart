@@ -9,6 +9,7 @@ exports.sendEmail = sendEmail;
 exports.sendWelcomeEmail = sendWelcomeEmail;
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
 exports.sendInvitationEmail = sendInvitationEmail;
+exports.sendOrgAccessEmail = sendOrgAccessEmail;
 exports.sendHighScoreLeadEmail = sendHighScoreLeadEmail;
 exports.sendPlanLimitEmail = sendPlanLimitEmail;
 const nodemailer_1 = __importDefault(require("nodemailer"));
@@ -107,6 +108,26 @@ async function sendInvitationEmail(inviterName, inviteeEmail, orgName, setupToke
         <a href="${setupUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Accept Invitation</a>
       </p>
       <p style="color: #6B7280; font-size: 14px; margin-top: 24px;">This link expires in 24 hours.</p>
+    `),
+    });
+}
+async function sendOrgAccessEmail(user, storeName, token) {
+    const accessUrl = `${FRONTEND_URL}/org-access/${token}`;
+    await sendEmail({
+        to: user.email,
+        subject: `Tu agente de ventas para ${storeName} ya está listo`,
+        html: emailTemplate(`
+      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Tu agente de ventas para ${storeName} ya está listo</h1>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hola,</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Tu agente de ventas con IA para <strong>${storeName}</strong> ya está activo y conectado a tu catálogo.</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">A partir de ahora, cuando un cliente le escriba, el agente va a poder buscar tus productos, resolver dudas y ayudarlo a completar la compra con el link de pago de tu propia tienda.</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6; margin-top: 24px;">Para entrar a tu panel y ver conversaciones, ajustar el agente o revisar estadísticas:</p>
+      <p style="margin-top: 16px;">
+        <a href="${accessUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Entrar a mi panel de GenSmart</a>
+      </p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6; margin-top: 24px;">Cualquier duda, respondé este correo.</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">— El equipo de GenSmart</p>
+      <p style="color: #9CA3AF; font-size: 13px; margin-top: 24px;">Este link es personal, expira en 24 horas y solo se puede usar una vez.</p>
     `),
     });
 }

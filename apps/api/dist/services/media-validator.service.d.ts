@@ -25,12 +25,15 @@ export interface MediaValidationResult {
     sizeBytes?: number;
     error?: string;
     errorCode?: 'INVALID_URL' | 'SSRF_BLOCKED' | 'NOT_HTTPS' | 'HEAD_FAILED' | 'WRONG_TYPE' | 'TOO_LARGE' | 'TIMEOUT';
+    needsConversion?: boolean;
+    effectiveMimeType?: string;
 }
 export type MediaType = 'image' | 'video' | 'document' | 'audio';
 export declare function isHostBlocked(hostname: string): boolean;
 /**
  * Inspect the leading bytes of a buffer and return the detected image MIME type.
- * Only PNG and JPEG are recognized — the two formats WhatsApp accepts for images.
+ * PNG, JPEG (WhatsApp-native) and WebP (transcoded via the media proxy, see
+ * `needsConversion` in MediaValidationResult) are recognized.
  */
 export declare function detectImageMimeFromBytes(bytes: Buffer): string | null;
 export declare function validateMediaUrl(url: string, type: MediaType): Promise<MediaValidationResult>;

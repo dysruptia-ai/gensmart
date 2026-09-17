@@ -519,16 +519,46 @@ router.post('/embedded-signup-complete', auth_1.requireAuth, orgContext_1.orgCon
         if (orgResult.rows[0]?.plan === 'free') {
             throw new errorHandler_1.AppError(403, 'WhatsApp requires Starter plan or higher', 'PLAN_LIMIT');
         }
-        const { agentId, fbAccessToken, selectedWabaId, selectedPhoneId } = req.body;
-        if (!agentId || !fbAccessToken) {
-            throw new errorHandler_1.AppError(400, 'Missing agentId or fbAccessToken', 'VALIDATION_ERROR');
-        }
+        const { agentId, fbCode, fbAccessToken: fbAccessTokenFromBody, selectedWabaId, selectedPhoneId } = req.body;
         // 2. Verify agent belongs to org
         const agentCheck = await (0, database_1.query)('SELECT id FROM agents WHERE id = $1 AND organization_id = $2', [agentId, req.org.id]);
         if (!agentCheck.rows[0]) {
             throw new errorHandler_1.AppError(404, 'Agent not found', 'NOT_FOUND');
         }
-        // 3. Get the Platform System User token (needed for debug_token, webhook, registration)
+        // 3. Resolve the user's Facebook access token — either a re-selection
+        //    round trip (token already exchanged in a prior call) or the
+        //    first call, which must exchange the authorization code.
+        let fbAccessToken;
+        if (fbAccessTokenFromBody) {
+            fbAccessToken = fbAccessTokenFromBody;
+        }
+        else if (fbCode) {
+            const fbAppId = env_1.env.FACEBOOK_APP_ID;
+            const fbAppSecret = env_1.env.FACEBOOK_APP_SECRET;
+            if (!fbAppId || !fbAppSecret) {
+                throw new errorHandler_1.AppError(503, 'Facebook App credentials not configured on this server', 'NOT_CONFIGURED');
+            }
+            // Server-to-server only — never expose this call to the client.
+            // The code has a 30-second TTL, so this must happen immediately.
+            console.log(`[embedded-signup] Exchanging code for access token for agent ${agentId}...`);
+            const tokenExchangeRes = await fetch(`https://graph.facebook.com/v21.0/oauth/access_token?client_id=${encodeURIComponent(fbAppId)}&client_secret=${encodeURIComponent(fbAppSecret)}&code=${encodeURIComponent(fbCode)}`);
+            if (!tokenExchangeRes.ok) {
+                const exchangeErr = await tokenExchangeRes.json().catch(() => ({}));
+                console.error('[embedded-signup] Code exchange failed:', JSON.stringify(exchangeErr));
+                throw new errorHandler_1.AppError(401, 'Failed to exchange authorization code. The code may have expired (30s TTL) — please try connecting again.', 'CODE_EXCHANGE_FAILED');
+            }
+            const tokenExchangeData = await tokenExchangeRes.json();
+            if (!tokenExchangeData.access_token) {
+                console.error('[embedded-signup] No access_token in exchange response:', JSON.stringify(tokenExchangeData));
+                throw new errorHandler_1.AppError(401, 'Failed to obtain access token from Facebook', 'CODE_EXCHANGE_FAILED');
+            }
+            fbAccessToken = tokenExchangeData.access_token;
+            console.log(`[embedded-signup] Code exchanged successfully for agent ${agentId}`);
+        }
+        else {
+            throw new errorHandler_1.AppError(400, 'Missing agentId and fbCode or fbAccessToken', 'VALIDATION_ERROR');
+        }
+        // 4. Get the Platform System User token (needed for debug_token, webhook, registration)
         const { getWhatsAppToken } = await Promise.resolve().then(() => __importStar(require('../services/platform-settings.service')));
         const platformToken = await getWhatsAppToken();
         if (!platformToken) {
@@ -663,6 +693,35 @@ router.post('/embedded-signup-complete', auth_1.requireAuth, orgContext_1.orgCon
         }
         const wabaId = selectedWabaId || sharedWabaIds[0];
         console.log(`[embedded-signup] Using WABA: ${wabaId}`);
+        // 4.5. Auto-assign this WABA to the operational system user, so it has
+        //      access before we try to subscribe the webhook or register the
+        //      number. Uses a separate Admin-only token — never the operational
+        //      token — since only Admin system users can grant asset access.
+        //      Non-fatal: if this fails, log and continue (the assignment may
+        //      already exist from a prior attempt, or the operator token may
+        //      already have access some other way).
+        try {
+            const { getWhatsAppAdminToken, getOperationalSystemUserId } = await Promise.resolve().then(() => __importStar(require('../services/platform-settings.service')));
+            const adminToken = await getWhatsAppAdminToken();
+            const operationalUserId = await getOperationalSystemUserId();
+            if (adminToken && operationalUserId) {
+                console.log(`[embedded-signup] Auto-assigning WABA ${wabaId} to operational system user ${operationalUserId}...`);
+                const assignRes = await fetch(`https://graph.facebook.com/v21.0/${wabaId}/assigned_users?user=${encodeURIComponent(operationalUserId)}&tasks=${encodeURIComponent("['MANAGE']")}&access_token=${encodeURIComponent(adminToken)}`, { method: 'POST' });
+                if (assignRes.ok) {
+                    console.log(`[embedded-signup] WABA ${wabaId} successfully assigned to operational system user`);
+                }
+                else {
+                    const assignErr = await assignRes.json().catch(() => ({}));
+                    console.warn('[embedded-signup] Auto-assign failed (continuing anyway):', JSON.stringify(assignErr));
+                }
+            }
+            else {
+                console.warn('[embedded-signup] Admin token or operational user ID not configured — skipping auto-assign. Manual assignment may be required.');
+            }
+        }
+        catch (assignAutoErr) {
+            console.warn('[embedded-signup] Auto-assign step threw an error (continuing anyway):', assignAutoErr.message);
+        }
         // 5. Get phone numbers from this WABA — try platform token first, fallback to user's FB token
         let phoneNumberId = '';
         let displayPhone = '';

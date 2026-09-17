@@ -25,6 +25,10 @@ const resetPasswordSchema = z.object({
   password: z.string().min(8),
 });
 
+const orgAccessConsumeSchema = z.object({
+  token: z.string().min(1),
+});
+
 const enable2FASchema = z.object({
   secret: z.string().min(1),
   code: z.string().length(6),
@@ -151,6 +155,21 @@ router.post(
     try {
       await authService.resetPassword(req.body);
       res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/org-access/consume',
+  authLimiter,
+  validate(orgAccessConsumeSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tokens = await authService.consumeOrgAccessToken(req.body.token);
+      setRefreshCookie(res, tokens.refreshToken);
+      res.json({ accessToken: tokens.accessToken, user: tokens.user });
     } catch (err) {
       next(err);
     }

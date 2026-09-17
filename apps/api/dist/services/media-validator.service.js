@@ -68,7 +68,8 @@ const UNTRUSTED_MIME_TYPES = new Set([
 ]);
 /**
  * Inspect the leading bytes of a buffer and return the detected image MIME type.
- * Only PNG and JPEG are recognized — the two formats WhatsApp accepts for images.
+ * PNG, JPEG (WhatsApp-native) and WebP (transcoded via the media proxy, see
+ * `needsConversion` in MediaValidationResult) are recognized.
  */
 function detectImageMimeFromBytes(bytes) {
     if (bytes.length >= 8 &&
@@ -78,6 +79,11 @@ function detectImageMimeFromBytes(bytes) {
     }
     if (bytes.length >= 3 && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF) {
         return 'image/jpeg';
+    }
+    if (bytes.length >= 12 &&
+        bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+        bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+        return 'image/webp';
     }
     return null;
 }
@@ -189,10 +195,10 @@ async function validateMediaUrl(url, type) {
                 errorCode: isTimeout ? 'TIMEOUT' : 'HEAD_FAILED',
             };
         }
-        if (!detected || !allowedTypes.includes(detected)) {
+        if (!detected || (!allowedTypes.includes(detected) && detected !== 'image/webp')) {
             return {
                 valid: false,
-                error: `URL does not point to a valid image (Content-Type "${baseMimeType || 'missing'}", magic bytes did not match PNG or JPEG)`,
+                error: `URL does not point to a valid image (Content-Type "${baseMimeType || 'missing'}", magic bytes did not match PNG, JPEG or WebP)`,
                 errorCode: 'WRONG_TYPE',
             };
         }
@@ -202,13 +208,20 @@ async function validateMediaUrl(url, type) {
         if (!contentType) {
             return { valid: false, error: 'URL did not return a Content-Type header', errorCode: 'WRONG_TYPE' };
         }
-        if (!allowedTypes.includes(baseMimeType)) {
+        if (!allowedTypes.includes(baseMimeType) && !(type === 'image' && baseMimeType === 'image/webp')) {
             return {
                 valid: false,
                 error: `Content-Type "${baseMimeType}" is not allowed for ${type}. Allowed: ${allowedTypes.join(', ')}`,
                 errorCode: 'WRONG_TYPE',
             };
         }
+        effectiveMimeType = baseMimeType;
+    }
+    // WebP images are valid but must be transcoded to JPEG (via the media proxy)
+    // before being sent to WhatsApp or the widget — neither accepts WebP directly.
+    const needsConversion = type === 'image' && effectiveMimeType === 'image/webp';
+    if (needsConversion) {
+        effectiveMimeType = 'image/jpeg';
     }
     // 7. Validate Content-Length (only if server provided it)
     if (contentLength !== null && !isNaN(contentLength)) {
@@ -227,6 +240,7 @@ async function validateMediaUrl(url, type) {
         valid: true,
         mimeType: effectiveMimeType,
         sizeBytes: contentLength ?? undefined,
+        ...(needsConversion ? { needsConversion: true, effectiveMimeType } : {}),
     };
     try {
         await redis_1.redis.set(cacheKey, JSON.stringify(result), 'EX', exports.MEDIA_VALIDATION_CACHE_TTL);

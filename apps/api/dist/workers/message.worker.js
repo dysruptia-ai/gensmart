@@ -57,9 +57,14 @@ const calendar_service_1 = require("../services/calendar.service");
 const agent_config_service_1 = require("../services/agent-config.service");
 const appointment_service_1 = require("../services/appointment.service");
 const text_1 = require("../utils/text");
+const shipping_guard_service_1 = require("../services/shipping-guard.service");
 // MCP cache TTL: 1 hour
 const MCP_TOOLS_CACHE_TTL = 3600;
-const MAX_TOOL_ITERATIONS = 5;
+// 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
+// varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
+// cortaban dejando un texto interino como respuesta final. Mantener en sync
+// con `maxIter` en routes/agents.ts (ruta de preview).
+const MAX_TOOL_ITERATIONS = 8;
 async function processMessage(job) {
     const { conversationId, agentId, organizationId } = job.data;
     // Step 1: Flush buffer atomically
@@ -84,7 +89,7 @@ async function processMessage(job) {
     }
     const userMessageText = textParts.join('\n') || '[Image]';
     // Step 2: Fetch conversation
-    const convResult = await (0, database_1.query)('SELECT id, agent_id, organization_id, contact_id, channel, status, captured_variables, message_count FROM conversations WHERE id = $1', [conversationId]);
+    const convResult = await (0, database_1.query)('SELECT id, agent_id, organization_id, contact_id, channel, status, captured_variables, message_count, channel_metadata FROM conversations WHERE id = $1', [conversationId]);
     const conv = convResult.rows[0];
     if (!conv) {
         console.error(`[msg-worker] Conversation not found: ${conversationId}`);
@@ -196,6 +201,17 @@ async function processMessage(job) {
         if (ragContext) {
             fullSystemPrompt += '\n\n' + ragContext;
         }
+    }
+    // 7b-2. Click-to-WhatsApp Ad referral context (Day 25, completed here).
+    // routes/whatsapp.ts already saves { referral, referredProduct } into
+    // conversations.channel_metadata on first contact — see buildAdReferralContext
+    // in agent-config.service.ts for the shared block (worker + preview parity).
+    const channelMetadata = conv.channel_metadata ?? {};
+    const referral = channelMetadata['referral'];
+    const referredProduct = channelMetadata['referredProduct'];
+    const referralContext = (0, agent_config_service_1.buildAdReferralContext)(referral, referredProduct);
+    if (referralContext) {
+        fullSystemPrompt += '\n\n' + referralContext;
     }
     // 7c. Conversation history
     const historyResult = await (0, database_1.query)(`SELECT id, role, content, metadata, created_at
@@ -462,8 +478,9 @@ async function processMessage(job) {
     let totalTokensUsed = 0;
     const toolsCalledLog = [];
     let iterationCount = 0;
+    let sawEmptyShippingZones = false;
+    let currentMessages = [...messages];
     try {
-        let currentMessages = [...messages];
         while (iterationCount < MAX_TOOL_ITERATIONS) {
             iterationCount++;
             const response = await (0, llm_service_1.chat)({
@@ -501,6 +518,9 @@ async function processMessage(job) {
                 const result = await executeTool(toolCall, agentTools, variables, conversationId, organizationId, agentId, mcpToolMap);
                 toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
                 toolResults.push({ toolCallId: toolCall.id, content: result });
+                if ((0, shipping_guard_service_1.isEmptyShippingZonesResult)(toolCall.name, result)) {
+                    sawEmptyShippingZones = true;
+                }
             }
             // Append the assistant's tool call message with structured tool call data
             currentMessages.push({
@@ -552,12 +572,24 @@ async function processMessage(job) {
         catch (retryErr) {
             console.error('[msg-worker] LLM failed after retry:', retryErr);
             // Save error message
-            const errorMessage = 'I encountered an error processing your message. Please try again.';
+            const errorMessage = 'Estoy teniendo un problema técnico en este momento. Dame un momento e intento de nuevo.';
             const errorMeta = { error: true, errorMessage: retryErr.message };
             const errorSaved = await saveMessages(conversationId, userMessageText, errorMessage, errorMeta);
             await updateConversation(conversationId, 2);
             notifyClients(organizationId, conversationId, userMessageText, errorMessage, errorSaved, errorMeta);
             return;
+        }
+    }
+    // Guard against invented shipping costs when check_shipping_zones returned
+    // zones: [] (no fixed rate to quote — e.g. a dynamic carrier-calculated
+    // rate). Prompt rules alone weren't reliable enough in production testing.
+    if (sawEmptyShippingZones && (0, shipping_guard_service_1.mentionsShippingCost)(finalResponse)) {
+        console.warn(`[shipping-guard] Corrected invented shipping cost in conversation ${conversationId}`);
+        try {
+            finalResponse = await (0, shipping_guard_service_1.correctShippingHallucination)(agent.llm_provider, agent.llm_model, currentMessages, finalResponse);
+        }
+        catch (err) {
+            console.error('[shipping-guard] Correction call failed, keeping original response:', err);
         }
     }
     // Guard against minimal/empty responses (e.g. "...", ".", empty)
@@ -583,14 +615,12 @@ async function processMessage(job) {
             }
             else {
                 console.warn(`[msg-worker] Retry also returned minimal response: "${retryResponse.content}"`);
-                finalResponse = agent.llm_provider === 'anthropic'
-                    ? 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?'
-                    : 'Sorry, I could not process your message. Could you please repeat it?';
+                finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
             }
         }
         catch (retryErr) {
             console.error('[msg-worker] Retry for minimal response failed:', retryErr);
-            finalResponse = 'Sorry, I could not process your message. Could you please repeat it?';
+            finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
         }
     }
     // Step 10: Save messages

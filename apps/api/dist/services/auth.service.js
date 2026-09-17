@@ -45,6 +45,10 @@ exports.forgotPassword = forgotPassword;
 exports.resetPassword = resetPassword;
 exports.setup2FA = setup2FA;
 exports.enable2FA = enable2FA;
+exports.provisionOrganization = provisionOrganization;
+exports.generateOrgAccessToken = generateOrgAccessToken;
+exports.sendOrgAccessLinkEmail = sendOrgAccessLinkEmail;
+exports.consumeOrgAccessToken = consumeOrgAccessToken;
 exports.disable2FA = disable2FA;
 const crypto_1 = __importDefault(require("crypto"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
@@ -351,6 +355,128 @@ async function enable2FA(userId, secret, code) {
     }
     await (0, database_1.query)(`INSERT INTO backup_codes (id, user_id, code_hash, used, created_at) VALUES ${insertValues.join(', ')}`, insertParams);
     return { backupCodes: rawCodes };
+}
+/**
+ * Create a brand-new Organization and either a new User (owner) or a bridge
+ * membership to an existing User (identified by email), without issuing any
+ * session/JWT. Callable from a non-HTTP context (e.g. an internal
+ * provisioning webhook) — no req/res dependency.
+ *
+ * Does NOT touch the existing user's `users.organization_id`/`role` when
+ * linking to an already-registered email: that column keeps acting as their
+ * primary org for normal password login, exactly as before. The new
+ * membership is recorded only in `user_organizations`, and access to this
+ * specific org is granted via the org-access token flow below (which reads
+ * the org id from the token, not from `users.organization_id`).
+ */
+async function provisionOrganization(input) {
+    const email = input.email.toLowerCase();
+    const client = await (0, database_1.getClient)();
+    try {
+        await client.query('BEGIN');
+        const orgSlug = slugify(`${input.organizationName}-${crypto_1.default.randomBytes(3).toString('hex')}`);
+        const orgResult = await client.query(`INSERT INTO organizations
+         (id, name, slug, plan, subscription_status, billing_source, external_subscription_id, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, 'active', $4, $5, NOW(), NOW())
+       RETURNING id`, [input.organizationName, orgSlug, input.plan, input.billingSource, input.externalSubscriptionId]);
+        const organizationId = orgResult.rows[0].id;
+        const existingUser = await client.query('SELECT id FROM users WHERE email = $1', [email]);
+        let userId;
+        const isNewUser = existingUser.rows.length === 0;
+        if (isNewUser) {
+            const tempPasswordHash = await bcryptjs_1.default.hash(crypto_1.default.randomBytes(16).toString('hex'), 10);
+            const userResult = await client.query(`INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), NOW())
+         RETURNING id`, [organizationId, email, input.name, tempPasswordHash]);
+            userId = userResult.rows[0].id;
+        }
+        else {
+            userId = existingUser.rows[0].id;
+        }
+        // Owner of this specific org either way — it's their store, regardless of
+        // whether they already own a different GenSmart organization elsewhere.
+        await client.query(`INSERT INTO user_organizations (user_id, organization_id, role, created_at)
+       VALUES ($1, $2, 'owner', NOW())
+       ON CONFLICT (user_id, organization_id) DO NOTHING`, [userId, organizationId]);
+        await client.query('COMMIT');
+        return { userId, organizationId, isNewUser };
+    }
+    catch (err) {
+        await client.query('ROLLBACK');
+        if (err && typeof err === 'object' && 'code' in err && err.code === '23505') {
+            throw new errorHandler_1.AppError(409, 'Organization slug collision, please retry', 'ORG_SLUG_TAKEN');
+        }
+        throw err;
+    }
+    finally {
+        client.release();
+    }
+}
+/**
+ * Generate a one-time passwordless access token scoped to one specific
+ * (user, organization) pair and email it. Unlike `forgotPassword`, the
+ * consuming endpoint never asks for a password — it logs the user straight
+ * into that organization.
+ */
+async function generateOrgAccessToken(userId, organizationId) {
+    const token = crypto_1.default.randomBytes(32).toString('hex');
+    const tokenHash = hashToken(token);
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await (0, database_1.query)(`INSERT INTO org_access_tokens (id, user_id, organization_id, token_hash, expires_at, created_at)
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())`, [userId, organizationId, tokenHash, expiresAt.toISOString()]);
+    return token;
+}
+async function sendOrgAccessLinkEmail(userId, organizationId, storeName) {
+    const userResult = await (0, database_1.query)('SELECT email, name FROM users WHERE id = $1', [userId]);
+    const user = userResult.rows[0];
+    if (!user)
+        throw new errorHandler_1.AppError(404, 'User not found', 'USER_NOT_FOUND');
+    const token = await generateOrgAccessToken(userId, organizationId);
+    // Fire-and-forget, matching sendWelcomeEmail/forgotPassword: a transient
+    // SMTP failure must not roll back provisioning (org/agent/MCP already
+    // exist by the time this runs) or block the caller's response.
+    (0, email_1.sendOrgAccessEmail)({ name: user.name, email: user.email }, storeName, token).catch((err) => console.error('[Email] Failed to send org access email:', err));
+}
+/**
+ * Consume a passwordless org-access token and return full session tokens
+ * scoped to the organization the link was generated for — which may differ
+ * from the user's `users.organization_id` (their other, primary org). Reads
+ * the effective role from `user_organizations` for that specific org.
+ */
+async function consumeOrgAccessToken(token) {
+    const tokenHash = hashToken(token);
+    const tokenResult = await (0, database_1.query)(`SELECT id, user_id, organization_id, used, expires_at
+     FROM org_access_tokens WHERE token_hash = $1`, [tokenHash]);
+    const tokenRow = tokenResult.rows[0];
+    if (!tokenRow || tokenRow.used || new Date(tokenRow.expires_at) < new Date()) {
+        throw new errorHandler_1.AppError(400, 'Invalid or expired access token', 'INVALID_ACCESS_TOKEN');
+    }
+    const membershipResult = await (0, database_1.query)('SELECT role FROM user_organizations WHERE user_id = $1 AND organization_id = $2', [tokenRow.user_id, tokenRow.organization_id]);
+    const membership = membershipResult.rows[0];
+    if (!membership) {
+        throw new errorHandler_1.AppError(403, 'User is not a member of this organization', 'NOT_A_MEMBER');
+    }
+    const userResult = await (0, database_1.query)(`SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
+            u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
+            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed, u.is_super_admin
+     FROM users u WHERE u.id = $1`, [tokenRow.user_id]);
+    const user = userResult.rows[0];
+    if (!user)
+        throw new errorHandler_1.AppError(404, 'User not found', 'USER_NOT_FOUND');
+    const orgResult = await (0, database_1.query)('SELECT id, name FROM organizations WHERE id = $1', [tokenRow.organization_id]);
+    const org = orgResult.rows[0];
+    if (!org)
+        throw new errorHandler_1.AppError(404, 'Organization not found', 'ORG_NOT_FOUND');
+    await (0, database_1.query)('UPDATE org_access_tokens SET used = true WHERE id = $1', [tokenRow.id]);
+    await (0, database_1.query)('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
+    // Override organization_id/role with the token's target org — not the
+    // user's `users.organization_id`, which may point at a different org.
+    const targetUser = {
+        ...user,
+        organization_id: tokenRow.organization_id,
+        role: membership.role,
+    };
+    return buildAuthTokens(targetUser, org);
 }
 async function disable2FA(userId, password) {
     const result = await (0, database_1.query)('SELECT password_hash FROM users WHERE id = $1', [userId]);
