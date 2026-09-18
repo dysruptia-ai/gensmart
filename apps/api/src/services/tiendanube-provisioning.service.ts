@@ -327,6 +327,56 @@ export async function provisionTiendanubeStore(
   return { organizationId, agentId, isNewUser, reinstall: false };
 }
 
+export interface ToggleTiendanubeToolResult {
+  organizationId: string;
+  agentId: string;
+  toolId: string;
+  isEnabled: boolean;
+}
+
+/**
+ * Reflects Tiendanube's app/suspended|resumed|uninstalled webhooks (Dia 6,
+ * built in parallel) into GenSmart without touching the Organization itself
+ * — the merchant's dashboard, conversations, and other agents (if any) stay
+ * intact. Only the tiendanube MCP tool row is toggled.
+ *
+ * is_enabled=false is a real runtime block, not a cosmetic editor-only
+ * hide: message.worker.ts loads tools via
+ * `SELECT ... FROM agent_tools WHERE agent_id = $1 AND is_enabled = true`,
+ * so a disabled tool's row never even reaches the agent's tool list — same
+ * query shape in the preview endpoint.
+ */
+export async function toggleTiendanubeTool(
+  storeId: string,
+  enabled: boolean
+): Promise<ToggleTiendanubeToolResult> {
+  const orgResult = await query<{ id: string }>(
+    `SELECT id FROM organizations WHERE billing_source = 'tiendanube' AND external_subscription_id = $1`,
+    [storeId]
+  );
+  const org = orgResult.rows[0];
+  if (!org) {
+    throw new AppError(404, `No organization found for Tiendanube store ${storeId}`, 'ORG_NOT_FOUND');
+  }
+
+  const toolResult = await query<{ id: string; agent_id: string }>(
+    `SELECT t.id, t.agent_id
+     FROM agent_tools t
+     JOIN agents a ON a.id = t.agent_id
+     WHERE a.organization_id = $1 AND t.type = 'mcp' AND t.config->>'providerId' = $2
+     ORDER BY t.created_at ASC LIMIT 1`,
+    [org.id, TIENDANUBE_PROVIDER_ID]
+  );
+  const tool = toolResult.rows[0];
+  if (!tool) {
+    throw new AppError(404, `No Tiendanube MCP tool found for store ${storeId}`, 'TOOL_NOT_FOUND');
+  }
+
+  await agentService.updateTool(org.id, tool.agent_id, tool.id, { isEnabled: enabled });
+
+  return { organizationId: org.id, agentId: tool.agent_id, toolId: tool.id, isEnabled: enabled };
+}
+
 export async function verifyInternalProvisioningSecret(providedKey: string | undefined): Promise<boolean> {
   if (!providedKey) return false;
   try {
