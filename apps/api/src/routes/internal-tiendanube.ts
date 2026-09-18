@@ -23,6 +23,7 @@ import { rateLimiter } from '../middleware/rateLimiter';
 import {
   provisionTiendanubeStore,
   toggleTiendanubeTool,
+  markTiendanubeCustomer,
   verifyInternalProvisioningSecret,
 } from '../services/tiendanube-provisioning.service';
 
@@ -30,6 +31,7 @@ const router = Router();
 
 const provisionLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'tiendanube-provision' });
 const toggleToolLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'tiendanube-toggle-tool' });
+const markCustomerLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'tiendanube-mark-customer' });
 
 const provisionSchema = z.object({
   storeId: z.string().min(1),
@@ -42,6 +44,16 @@ const toggleToolSchema = z.object({
   storeId: z.string().min(1),
   enabled: z.boolean(),
 });
+
+const markCustomerSchema = z
+  .object({
+    storeId: z.string().min(1),
+    email: z.string().email().optional(),
+    phone: z.string().min(1).optional(),
+  })
+  .refine((data) => data.email || data.phone, {
+    message: 'At least one of email or phone is required',
+  });
 
 router.post(
   '/provision',
@@ -81,6 +93,30 @@ router.post(
       }
 
       const result = await toggleTiendanubeTool(req.body.storeId, req.body.enabled);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Called by tiendanube-mcp on order/paid webhooks — moves the matching
+// Contact to funnel_stage='customer'. GenSmart does not store the order
+// itself; Tiendanube stays the system of record for the sale.
+router.post(
+  '/mark-customer',
+  markCustomerLimiter,
+  validate(markCustomerSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const providedKey = req.headers['x-mcp-api-key'] as string | undefined;
+      const isValid = await verifyInternalProvisioningSecret(providedKey);
+      if (!isValid) {
+        res.status(401).json({ error: { message: 'Invalid or missing X-MCP-API-Key', code: 'UNAUTHORIZED' } });
+        return;
+      }
+
+      const result = await markTiendanubeCustomer(req.body.storeId, req.body.email, req.body.phone);
       res.status(200).json(result);
     } catch (err) {
       next(err);

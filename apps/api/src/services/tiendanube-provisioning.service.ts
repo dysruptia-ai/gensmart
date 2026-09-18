@@ -19,6 +19,7 @@ import { encrypt, decrypt } from '../config/encryption';
 import { AppError } from '../middleware/errorHandler';
 import * as authService from '../services/auth.service';
 import * as agentService from '../services/agent.service';
+import { updateContactStage } from '../services/contact.service';
 import { encryptHeaders, generateWebhookSecret } from './mcp-headers.service';
 import * as platformSettings from './platform-settings.service';
 import * as mcpProviders from './mcp-providers.service';
@@ -375,6 +376,70 @@ export async function toggleTiendanubeTool(
   await agentService.updateTool(org.id, tool.agent_id, tool.id, { isEnabled: enabled });
 
   return { organizationId: org.id, agentId: tool.agent_id, toolId: tool.id, isEnabled: enabled };
+}
+
+export interface MarkTiendanubeCustomerResult {
+  organizationId: string;
+  contactId: string | null;
+  updated: boolean;
+}
+
+/**
+ * Reflects a Tiendanube order/paid webhook onto the funnel: moves the
+ * matching Contact to funnel_stage='customer'. GenSmart does not store the
+ * order itself — Tiendanube remains the system of record for the sale, same
+ * as Mastershop/WooCommerce. Reuses updateContactStage() as-is (the same
+ * function PUT /contacts/:id/stage and PUT /funnel/move already call).
+ *
+ * No match (or ambiguous match, resolved by picking the most recent contact)
+ * is a silent no-op, not an error — we don't create a Contact just for this.
+ */
+export async function markTiendanubeCustomer(
+  storeId: string,
+  email: string | undefined,
+  phone: string | undefined
+): Promise<MarkTiendanubeCustomerResult> {
+  const orgResult = await query<{ id: string }>(
+    `SELECT id FROM organizations WHERE billing_source = 'tiendanube' AND external_subscription_id = $1`,
+    [storeId]
+  );
+  const org = orgResult.rows[0];
+  if (!org) {
+    throw new AppError(404, `No organization found for Tiendanube store ${storeId}`, 'ORG_NOT_FOUND');
+  }
+
+  if (!email && !phone) {
+    return { organizationId: org.id, contactId: null, updated: false };
+  }
+
+  const conditions: string[] = [];
+  const params: unknown[] = [org.id];
+  if (email) {
+    params.push(email);
+    conditions.push(`email = $${params.length}`);
+  }
+  if (phone) {
+    params.push(phone);
+    conditions.push(`phone = $${params.length}`);
+  }
+
+  const contactResult = await query<{ id: string; funnel_stage: string }>(
+    `SELECT id, funnel_stage FROM contacts
+     WHERE organization_id = $1 AND (${conditions.join(' OR ')})
+     ORDER BY created_at DESC LIMIT 1`,
+    params
+  );
+  const contact = contactResult.rows[0];
+  if (!contact) {
+    return { organizationId: org.id, contactId: null, updated: false };
+  }
+
+  if (contact.funnel_stage === 'customer') {
+    return { organizationId: org.id, contactId: contact.id, updated: false };
+  }
+
+  await updateContactStage(org.id, contact.id, 'customer');
+  return { organizationId: org.id, contactId: contact.id, updated: true };
 }
 
 export async function verifyInternalProvisioningSecret(providedKey: string | undefined): Promise<boolean> {
