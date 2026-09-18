@@ -43,10 +43,19 @@ if (env.FRONTEND_URL.includes('://www.')) {
   corsOrigins.push(env.FRONTEND_URL.replace('://', '://www.'));
 }
 
-app.use(cors({
+const restrictedCors = cors({
   origin: corsOrigins,
   credentials: true,
-}));
+});
+// /api/widget is public and embeddable from any origin; widget.ts applies its
+// own cors(origin: '*'). The restricted cors must not answer its preflights.
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/widget/')) {
+    next();
+    return;
+  }
+  restrictedCors(req, res, next);
+});
 
 // Parsing middleware
 app.use(compression());
