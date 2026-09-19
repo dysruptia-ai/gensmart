@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import sharp from 'sharp';
 import {
   detectImageMimeFromBytes,
@@ -23,6 +23,13 @@ const MAX_IMAGE_BYTES = MEDIA_LIMITS.image.maxSizeBytes;
  * No auth — Meta must be able to fetch it. SSRF-protected via the shared
  * blocklist; only HTTPS upstreams allowed.
  */
+// Helmet's global Cross-Origin-Resource-Policy: same-origin would block <img>
+// loads from the embedded storefront widget; relax it for this route only.
+router.use('/proxy', (_req: Request, res: Response, next: NextFunction): void => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+});
+
 router.get('/proxy', async (req: Request, res: Response) => {
   const raw = req.query['url'];
   if (typeof raw !== 'string' || !raw) {
