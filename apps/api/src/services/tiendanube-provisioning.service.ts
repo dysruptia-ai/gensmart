@@ -98,7 +98,8 @@ async function refreshStoreIdAndEnsureDiscovery(
     headers: [...filtered, { key: 'X-Store-ID', value_encrypted: encrypt(storeId) }],
   };
 
-  await query(`UPDATE agent_tools SET config = $1::jsonb, updated_at = NOW() WHERE id = $2`, [
+  // is_enabled=true: a prior app/uninstalled|suspended webhook may have left the tool disabled.
+  await query(`UPDATE agent_tools SET config = $1::jsonb, is_enabled = true, updated_at = NOW() WHERE id = $2`, [
     JSON.stringify(newConfig),
     tool.id,
   ]);
