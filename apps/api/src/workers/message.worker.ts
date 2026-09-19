@@ -23,6 +23,11 @@ import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import {
+  addToCartWidgetToolDef,
+  handleAddToCartWidget,
+  ADD_TO_CART_TOOL_NAME,
+} from '../services/add-to-cart-widget.service';
+import {
   buildEmailNotificationToolDef,
   handleSendEmailNotification,
   type EmailNotificationToolConfig,
@@ -313,6 +318,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   );
   const history: ChatMessage[] = historyResult.rows
     .reverse()
+    // cart_action: orden interna al widget (add_to_cart_widget), no es parte de lo que dijo el agente.
+    .filter((m) => !(m.metadata as Record<string, unknown> | null)?.['cart_action'])
     .filter((m) => m.role === 'user' || m.role === 'assistant' || m.role === 'human' ||
       (m.role === 'system' && (m.metadata as Record<string, unknown>)?.['type'] === 'intervention_summary'))
     .slice(-contextWindowMessages)
@@ -336,6 +343,16 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // send_media native tool — available on WhatsApp and Web
   if (conv.channel === 'whatsapp' || conv.channel === 'web') {
     llmTools.push(sendMediaToolDef);
+  }
+
+  // add_to_cart_widget: SOLO lo puede ejecutar el widget storefront de Tiendanube (nube.send("cart:add")
+  // corre en el Web Worker de NubeSDK). El canal 'web' es genérico (lo reusa cualquier widget de GenSmart:
+  // WooCommerce, Mastershop, etc.), así que además exigimos que ESTE agente tenga la tool MCP de Tiendanube activa.
+  if (
+    conv.channel === 'web' &&
+    agentTools.some((t) => t.type === 'mcp' && t.is_enabled && t.config?.['providerId'] === 'tiendanube')
+  ) {
+    llmTools.push(addToCartWidgetToolDef);
   }
 
   // Custom functions
@@ -926,6 +943,12 @@ async function executeTool(
       const result = await handleCaptureVariable(conversationId, varName, varValue, variables);
       return result.message;
     }
+  }
+
+  // Internal tool: add_to_cart_widget (espera el resultado real desde el widget, hasta ~15s)
+  if (name === ADD_TO_CART_TOOL_NAME) {
+    const result = await handleAddToCartWidget(args, { conversationId, agentId, organizationId });
+    return result.message;
   }
 
   // Internal tool: send_media

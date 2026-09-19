@@ -9,6 +9,7 @@ import type { BufferItem } from '../services/message-buffer.service';
 import { transcribeAudio } from '../services/whatsapp.service';
 import { PLAN_LIMITS, injectConfigVariables } from '@gensmart/shared';
 import { loadAgentConfigForDeepInject } from '../services/agent-config.service';
+import { recordCartResult } from '../services/add-to-cart-widget.service';
 
 const router = Router();
 
@@ -465,6 +466,42 @@ router.get(
 
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
       }
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/widget/:agentId/cart-result ─────────────────────────────────────
+// El widget (NubeSDK) reporta si pudo ejecutar cart:add para una cart_action emitida por la tool
+// add_to_cart_widget. Body: { sessionId, request_id, success, reason?: 'fail'|'timeout', item?: {name, quantity, variant_values} }
+router.post(
+  '/:agentId/cart-result',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = req.params['agentId'] as string;
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const sessionId = body['sessionId'];
+      const requestId = body['request_id'];
+      const success = body['success'];
+
+      if (typeof sessionId !== 'string' || typeof requestId !== 'string' || typeof success !== 'boolean') {
+        throw new AppError(400, 'sessionId, request_id and success are required', 'VALIDATION_ERROR');
+      }
+
+      const outcome = await recordCartResult({
+        agentId,
+        sessionId,
+        requestId,
+        success,
+        reason: body['reason'],
+        item: body['item'],
+      });
+      if (outcome === 'unknown_request') {
+        throw new AppError(404, 'Unknown or expired cart request', 'NOT_FOUND');
+      }
+
+      res.json({ ok: true });
     } catch (err) {
       next(err);
     }
