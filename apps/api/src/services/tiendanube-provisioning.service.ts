@@ -71,6 +71,20 @@ async function findExistingProvisioning(storeId: string): Promise<{
   return { organizationId: org.id, agentId: agentResult.rows[0]?.id ?? null };
 }
 
+// createFromTemplate() leaves channels=[]; without 'web' the storefront widget
+// endpoints answer 403 CHANNEL_DISABLED. Idempotent (DISTINCT).
+async function ensureWebChannel(agentId: string): Promise<void> {
+  await query(
+    `UPDATE agents
+     SET channels = (
+       SELECT jsonb_agg(DISTINCT elem ORDER BY elem)
+       FROM jsonb_array_elements_text(COALESCE(channels, '[]'::jsonb) || '["web"]'::jsonb) elem
+     )
+     WHERE id = $1`,
+    [agentId]
+  );
+}
+
 /**
  * Reinstall path: refresh the encrypted X-Store-ID header, and self-heal the
  * tools/list discovery if a previous attempt created the tool row but never
@@ -82,6 +96,8 @@ async function refreshStoreIdAndEnsureDiscovery(
   agentId: string,
   storeId: string
 ): Promise<void> {
+  await ensureWebChannel(agentId);
+
   const toolResult = await query<{ id: string; config: Record<string, unknown> }>(
     `SELECT id, config FROM agent_tools WHERE agent_id = $1 AND type = 'mcp' AND config->>'providerId' = $2`,
     [agentId, TIENDANUBE_PROVIDER_ID]
@@ -256,6 +272,7 @@ async function createAgentAndMcpConnection(
   }
 
   const agent = await agentService.createFromTemplate(organizationId, 'pro', template.id);
+  await ensureWebChannel(agent.id);
 
   // The template's own name/description reference WooCommerce (it's a
   // generic e-commerce clone until a dedicated "Tiendanube Store Assistant"
