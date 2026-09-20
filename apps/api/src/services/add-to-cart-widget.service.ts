@@ -17,6 +17,9 @@ import { redis } from '../config/redis';
  *      guarda el resultado en Redis (`cart:result:{request_id}`).
  *   4. Este handler espera ese resultado (poll de Redis cada 400ms, máx. CART_WAIT_TIMEOUT_MS)
  *      y se lo devuelve al LLM en el mismo turno.
+ * La misma infraestructura sirve a `remove_from_cart_widget` (remove-from-cart-widget.service.ts):
+ * `runCartWidgetAction(kind, ...)` es compartida y el tipo de acción viaja en `metadata.cart_action.action`
+ * ('add' | 'remove'; ausente = 'add', por compatibilidad con mensajes anteriores).
  * Se eligió espera bloqueante (no fire-and-forget) porque el widget ya está en long-poll
  * durante el turno y así el agente confirma con certeza real, sin estado "pendiente".
  */
@@ -27,7 +30,7 @@ export const ADD_TO_CART_TOOL_NAME = 'add_to_cart_widget';
 export const CART_WAIT_TIMEOUT_MS = 15_000;
 const CART_POLL_INTERVAL_MS = 400;
 const CART_KEY_TTL_SECONDS = 120;
-const MAX_QUANTITY = 99;
+export const MAX_QUANTITY = 99;
 
 // Anti-loop del LLM: máx. 10 llamadas por conversación cada 10 minutos.
 const CART_RATE_LIMIT = { maxCalls: 10, windowSeconds: 600 } as const;
@@ -61,6 +64,8 @@ export const addToCartWidgetToolDef: ToolDefinition = {
   },
 };
 
+export type CartActionKind = 'add' | 'remove';
+
 export interface AddToCartContext {
   conversationId: string;
   agentId: string;
@@ -81,11 +86,11 @@ export interface CartResultItem {
 
 interface StoredCartResult {
   success: boolean;
-  reason?: 'fail' | 'timeout';
+  reason?: 'fail' | 'timeout' | 'not_in_cart';
   item?: CartResultItem;
 }
 
-function toPositiveInt(value: unknown): number | null {
+export function toPositiveInt(value: unknown): number | null {
   const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
   return typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : null;
 }
@@ -144,15 +149,33 @@ export async function handleAddToCartWidget(
       ? (args['properties'] as Record<string, unknown>)
       : undefined;
 
+  return runCartWidgetAction('add', { productId, variantId, quantity, properties }, context);
+}
+
+/**
+ * Núcleo compartido de add/remove: rate limit → pending en Redis → mensaje invisible con
+ * `metadata.cart_action` → aviso WebSocket → espera bloqueante del resultado del widget.
+ */
+export async function runCartWidgetAction(
+  kind: CartActionKind,
+  input: { productId: number; variantId: number; quantity: number; properties?: Record<string, unknown> },
+  context: AddToCartContext
+): Promise<AddToCartResult> {
+  const { productId, variantId, quantity, properties } = input;
+
   if (!(await checkCartRateLimit(context.conversationId))) {
     return {
       success: false,
-      message: 'Se alcanzó el límite de intentos de agregar al carrito en esta conversación. Ofrece crear el pedido con create_draft_order y compartir el checkout_url.',
+      message:
+        kind === 'add'
+          ? 'Se alcanzó el límite de intentos de agregar al carrito en esta conversación. Ofrece crear el pedido con create_draft_order y compartir el checkout_url.'
+          : 'Se alcanzó el límite de acciones sobre el carrito en esta conversación. Pídele al comprador que quite el producto manualmente desde su carrito.',
     };
   }
 
   const requestId = randomUUID();
   const cartAction: Record<string, unknown> = {
+    action: kind,
     request_id: requestId,
     product_id: productId,
     variant_id: variantId,
@@ -163,7 +186,7 @@ export async function handleAddToCartWidget(
   // 1. Registro pendiente: solo un request_id conocido puede recibir resultado (ver recordCartResult).
   await redis.set(
     pendingKey(requestId),
-    JSON.stringify({ conversationId: context.conversationId, agentId: context.agentId }),
+    JSON.stringify({ conversationId: context.conversationId, agentId: context.agentId, action: kind }),
     'EX',
     CART_KEY_TTL_SECONDS
   );
@@ -204,27 +227,43 @@ export async function handleAddToCartWidget(
   await redis.del(pendingKey(requestId), resultKey(requestId)).catch(() => undefined);
 
   if (!result) {
-    console.warn(`[add-to-cart-widget] Timeout sin resultado del widget. request=${requestId} conv=${context.conversationId}`);
+    console.warn(`[cart-widget] Timeout sin resultado del widget. action=${kind} request=${requestId} conv=${context.conversationId}`);
     return {
       success: false,
       message:
-        'No se pudo confirmar si el producto quedó en el carrito (el widget no respondió a tiempo; puede que el comprador no esté en la tienda). No afirmes que se agregó. Pídele que revise su carrito, y ofrece crear el pedido con create_draft_order y compartir el checkout_url.',
+        kind === 'add'
+          ? 'No se pudo confirmar si el producto quedó en el carrito (el widget no respondió a tiempo; puede que el comprador no esté en la tienda). No afirmes que se agregó. Pídele que revise su carrito, y ofrece crear el pedido con create_draft_order y compartir el checkout_url.'
+          : 'No se pudo confirmar si el producto se sacó del carrito (el widget no respondió a tiempo; puede que el comprador no esté en la tienda). No afirmes que se sacó. Pídele que revise su carrito.',
     };
   }
 
+  const name = result.item?.name ? ` "${result.item.name}"` : '';
+  const variant = result.item?.variant_values ? ` (${result.item.variant_values})` : '';
+
   if (result.success) {
-    const name = result.item?.name ? ` "${result.item.name}"` : '';
-    const variant = result.item?.variant_values ? ` (${result.item.variant_values})` : '';
     return {
       success: true,
-      message: `Confirmado: el producto${name}${variant} x${result.item?.quantity ?? quantity} quedó agregado al carrito real de la tienda. Confírmaselo al comprador de forma natural.`,
+      message:
+        kind === 'add'
+          ? `Confirmado: el producto${name}${variant} x${result.item?.quantity ?? quantity} quedó agregado al carrito real de la tienda. Confírmaselo al comprador de forma natural.`
+          : `Confirmado: se sacó del carrito real de la tienda el producto${name}${variant} x${result.item?.quantity ?? quantity}. Confírmaselo al comprador de forma natural.`,
+    };
+  }
+
+  if (kind === 'remove' && result.reason === 'not_in_cart') {
+    return {
+      success: false,
+      message:
+        'Ese producto/variante no está en el carrito real del comprador (no hay nada que sacar). No reintentes: díselo y pregúntale qué quiere hacer.',
     };
   }
 
   return {
     success: false,
     message:
-      'La tienda rechazó agregar el producto al carrito (no informa el motivo; puede ser stock, variante inválida u otro). No reintentes en bucle: explícalo brevemente y ofrece crear el pedido con create_draft_order y compartir el checkout_url.',
+      kind === 'add'
+        ? 'La tienda rechazó agregar el producto al carrito (no informa el motivo; puede ser stock, variante inválida u otro). No reintentes en bucle: explícalo brevemente y ofrece crear el pedido con create_draft_order y compartir el checkout_url.'
+        : 'La tienda rechazó sacar el producto del carrito (no informa el motivo; puede que la cantidad sea mayor a la que hay en el carrito u otro). No reintentes en bucle: explícalo brevemente y pídele que lo quite manualmente desde su carrito.',
   };
 }
 
@@ -257,7 +296,9 @@ export async function recordCartResult(params: {
   }
 
   const stored: StoredCartResult = { success: params.success };
-  if (params.reason === 'fail' || params.reason === 'timeout') stored.reason = params.reason;
+  if (params.reason === 'fail' || params.reason === 'timeout' || params.reason === 'not_in_cart') {
+    stored.reason = params.reason;
+  }
   if (params.item && typeof params.item === 'object') {
     const i = params.item as Record<string, unknown>;
     stored.item = {

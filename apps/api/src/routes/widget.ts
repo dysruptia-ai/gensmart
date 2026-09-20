@@ -506,7 +506,8 @@ router.get(
 
 // ── POST /api/widget/:agentId/cart-result ─────────────────────────────────────
 // El widget (NubeSDK) reporta si pudo ejecutar cart:add para una cart_action emitida por la tool
-// add_to_cart_widget. Body: { sessionId, request_id, success, reason?: 'fail'|'timeout', item?: {name, quantity, variant_values} }
+// add_to_cart_widget o remove_from_cart_widget (la acción la conoce el backend por el request_id pendiente).
+// Body: { sessionId, request_id, success, reason?: 'fail'|'timeout'|'not_in_cart', item?: {name, quantity, variant_values} }
 router.post(
   '/:agentId/cart-result',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {

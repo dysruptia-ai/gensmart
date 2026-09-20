@@ -28,6 +28,11 @@ import {
   ADD_TO_CART_TOOL_NAME,
 } from '../services/add-to-cart-widget.service';
 import {
+  removeFromCartWidgetToolDef,
+  handleRemoveFromCartWidget,
+  REMOVE_FROM_CART_TOOL_NAME,
+} from '../services/remove-from-cart-widget.service';
+import {
   buildEmailNotificationToolDef,
   handleSendEmailNotification,
   type EmailNotificationToolConfig,
@@ -345,7 +350,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     llmTools.push(sendMediaToolDef);
   }
 
-  // add_to_cart_widget: SOLO lo puede ejecutar el widget storefront de Tiendanube (nube.send("cart:add")
+  // add_to_cart_widget / remove_from_cart_widget: SOLO los puede ejecutar el widget storefront de Tiendanube (nube.send("cart:add")
   // corre en el Web Worker de NubeSDK). El canal 'web' es genérico (lo reusa cualquier widget de GenSmart:
   // WooCommerce, Mastershop, etc.), así que además exigimos que ESTE agente tenga la tool MCP de Tiendanube activa.
   if (
@@ -353,6 +358,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     agentTools.some((t) => t.type === 'mcp' && t.is_enabled && t.config?.['providerId'] === 'tiendanube')
   ) {
     llmTools.push(addToCartWidgetToolDef);
+    llmTools.push(removeFromCartWidgetToolDef);
   }
 
   // Custom functions
@@ -943,6 +949,12 @@ async function executeTool(
       const result = await handleCaptureVariable(conversationId, varName, varValue, variables);
       return result.message;
     }
+  }
+
+  // Internal tool: remove_from_cart_widget (mismo mecanismo que add_to_cart_widget)
+  if (name === REMOVE_FROM_CART_TOOL_NAME) {
+    const result = await handleRemoveFromCartWidget(args, { conversationId, agentId, organizationId });
+    return result.message;
   }
 
   // Internal tool: add_to_cart_widget (espera el resultado real desde el widget, hasta ~15s)
