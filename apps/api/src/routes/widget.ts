@@ -398,6 +398,38 @@ router.post(
   }
 );
 
+// ── GET /api/widget/:agentId/session/:sessionId ───────────────────────────────
+// Session liveness check for clients resuming a stored sessionId. Unlike
+// /messages (which returns 200 [] for unknown sessions by design), this returns
+// 404 when the conversation doesn't exist or is closed.
+router.get(
+  '/:agentId/session/:sessionId',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['agentId'] ?? '');
+      const sessionId = String(req.params['sessionId'] ?? '');
+
+      const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRe.test(agentId) || !uuidRe.test(sessionId)) {
+        throw new AppError(404, 'Session not found', 'NOT_FOUND');
+      }
+
+      const result = await query<{ id: string; status: string }>(
+        `SELECT id, status FROM conversations WHERE id = $1 AND agent_id = $2 AND channel = 'web'`,
+        [sessionId, agentId]
+      );
+      const conv = result.rows[0];
+      if (!conv || conv.status === 'closed') {
+        throw new AppError(404, 'Session not found', 'NOT_FOUND');
+      }
+
+      res.json({ valid: true });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // ── GET /api/widget/:agentId/messages ─────────────────────────────────────────
 // Long-poll endpoint: returns messages after a given timestamp
 // Waits up to 30s if no messages available

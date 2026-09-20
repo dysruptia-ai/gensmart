@@ -130,7 +130,7 @@ export default function WidgetPage() {
           let sessionValid = false;
           try {
             const validateRes = await fetch(
-              `${API_BASE}/api/widget/${agentId}/messages?sessionId=${storedSession}&after=${encodeURIComponent(new Date(0).toISOString())}`,
+              `${API_BASE}/api/widget/${agentId}/session/${storedSession}`,
               { signal: AbortSignal.timeout(5000) }
             );
             sessionValid = validateRes.status !== 404;
@@ -220,7 +220,9 @@ export default function WidgetPage() {
         { signal: AbortSignal.timeout(35000) }
       );
 
-      // Session was deleted — reset so next message creates a new one
+      // Unreachable by design: /messages returns 200 [] for unknown sessions
+      // (never 404). Stale sessions are detected once in init() via
+      // GET /session/:sessionId instead of on every poll.
       if (res.status === 404) {
         resetSession();
         return;
