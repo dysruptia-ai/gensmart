@@ -10,6 +10,7 @@ import { transcribeAudio } from '../services/whatsapp.service';
 import { PLAN_LIMITS, injectConfigVariables } from '@gensmart/shared';
 import { loadAgentConfigForDeepInject } from '../services/agent-config.service';
 import { recordCartResult } from '../services/add-to-cart-widget.service';
+import { recordCartState } from '../services/get-cart-widget.service';
 
 const router = Router();
 
@@ -532,6 +533,42 @@ router.post(
       });
       if (outcome === 'unknown_request') {
         throw new AppError(404, 'Unknown or expired cart request', 'NOT_FOUND');
+      }
+
+      res.json({ ok: true });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/widget/:agentId/cart-state ──────────────────────────────────────
+// El widget reporta el contenido real del carrito (nube.getState().cart) para una cart_query emitida por la
+// tool get_cart_widget. Es lectura: no reusa /cart-result porque devuelve la lista completa, no un solo ítem.
+// Body: { sessionId, request_id, items: [{product_id, variant_id, quantity, name?, variant_values?}], subtotal?, total? }
+router.post(
+  '/:agentId/cart-state',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = req.params['agentId'] as string;
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const sessionId = body['sessionId'];
+      const requestId = body['request_id'];
+
+      if (typeof sessionId !== 'string' || typeof requestId !== 'string' || !Array.isArray(body['items'])) {
+        throw new AppError(400, 'sessionId, request_id and items[] are required', 'VALIDATION_ERROR');
+      }
+
+      const outcome = await recordCartState({
+        agentId,
+        sessionId,
+        requestId,
+        items: body['items'],
+        subtotal: body['subtotal'],
+        total: body['total'],
+      });
+      if (outcome === 'unknown_request') {
+        throw new AppError(404, 'Unknown or expired cart query', 'NOT_FOUND');
       }
 
       res.json({ ok: true });

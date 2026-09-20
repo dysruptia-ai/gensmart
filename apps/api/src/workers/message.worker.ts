@@ -33,6 +33,11 @@ import {
   REMOVE_FROM_CART_TOOL_NAME,
 } from '../services/remove-from-cart-widget.service';
 import {
+  getCartWidgetToolDef,
+  handleGetCartWidget,
+  GET_CART_TOOL_NAME,
+} from '../services/get-cart-widget.service';
+import {
   buildEmailNotificationToolDef,
   handleSendEmailNotification,
   type EmailNotificationToolConfig,
@@ -325,6 +330,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     .reverse()
     // cart_action: orden interna al widget (add_to_cart_widget), no es parte de lo que dijo el agente.
     .filter((m) => !(m.metadata as Record<string, unknown> | null)?.['cart_action'])
+    .filter((m) => !(m.metadata as Record<string, unknown> | null)?.['cart_query'])
     .filter((m) => m.role === 'user' || m.role === 'assistant' || m.role === 'human' ||
       (m.role === 'system' && (m.metadata as Record<string, unknown>)?.['type'] === 'intervention_summary'))
     .slice(-contextWindowMessages)
@@ -359,6 +365,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   ) {
     llmTools.push(addToCartWidgetToolDef);
     llmTools.push(removeFromCartWidgetToolDef);
+    llmTools.push(getCartWidgetToolDef);
   }
 
   // Custom functions
@@ -949,6 +956,12 @@ async function executeTool(
       const result = await handleCaptureVariable(conversationId, varName, varValue, variables);
       return result.message;
     }
+  }
+
+  // Internal tool: get_cart_widget (lectura del carrito real; espera el estado desde el widget)
+  if (name === GET_CART_TOOL_NAME) {
+    const result = await handleGetCartWidget({ conversationId, agentId, organizationId });
+    return result.message;
   }
 
   // Internal tool: remove_from_cart_widget (mismo mecanismo que add_to_cart_widget)

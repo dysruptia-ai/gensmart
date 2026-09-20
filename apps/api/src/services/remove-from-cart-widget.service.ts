@@ -28,7 +28,8 @@ export const removeFromCartWidgetToolDef: ToolDefinition = {
     'You MUST pass the real numeric product_id and variant_id (the ones you used when adding it, or from get_product) and the exact quantity to remove.',
     'quantity is required: if the shopper wants to remove the item entirely, use the total units in their cart (the ones you added); if you are not sure how many are in the cart, ask.',
     'The tool waits (up to ~15 seconds) for the storefront to confirm and returns the real outcome: only tell the shopper it was removed if the result says so.',
-    'If it fails or cannot be confirmed, do NOT retry in a loop: explain it and ask the shopper to remove it manually from their cart.',
+    'If it fails or cannot be confirmed, do NOT retry in a loop: call get_cart_widget to verify what is really in the cart, explain it, and ask the shopper to remove it manually if it is still there.',
+    'If an earlier add/remove result was unconfirmed (timeout or failure) or you doubt the cart state, call get_cart_widget BEFORE assuming anything; never trust your own memory of the conversation.',
   ].join(' '),
   parameters: {
     type: 'object',

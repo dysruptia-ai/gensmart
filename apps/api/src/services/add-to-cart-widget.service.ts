@@ -47,7 +47,8 @@ export const addToCartWidgetToolDef: ToolDefinition = {
     'You MUST pass the real numeric product_id AND variant_id. If the product has several variants, first ask the shopper which one they want',
     'and get the variant_id from the Tiendanube product tools (get_product returns each variant with its variant_id). NEVER guess a variant_id.',
     'The tool waits (up to ~15 seconds) for the storefront to confirm and returns the real outcome: only tell the shopper the product was added if the result says so.',
-    'If it fails or cannot be confirmed, do NOT retry in a loop: offer to create the order with create_draft_order and share its checkout_url instead.',
+    'If it fails or cannot be confirmed, do NOT retry in a loop: call get_cart_widget to verify what is really in the cart, then offer to create the order with create_draft_order and share its checkout_url if needed.',
+    'If an earlier add/remove result was unconfirmed (timeout or failure) or you doubt the cart state, call get_cart_widget BEFORE assuming anything; never trust your own memory of the conversation, and if the product is not really in the cart, add it again.',
   ].join(' '),
   parameters: {
     type: 'object',
