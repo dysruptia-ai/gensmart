@@ -20,9 +20,7 @@ export function emailTemplate(content: string): string {
     <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; border-radius: 12px; overflow: hidden;">
       <div style="background: #FFFFFF; padding: 24px 32px; border-bottom: 3px solid #25D366; text-align: center;">
         <a href="${FRONTEND_URL}" style="text-decoration: none;">
-          <span style="font-family: 'Handjet', 'Courier New', monospace; font-size: 32px; font-weight: 700;">
-            <span style="color: #1A1A1A;">Gen</span><span style="color: #25D366;">Smart</span>
-          </span>
+          <img src="${FRONTEND_URL}/email/gensmart-logo.png" alt="GenSmart" style="height: 32px; width: auto; display: block; margin: 0 auto;" />
         </a>
       </div>
       <div style="padding: 32px;">
