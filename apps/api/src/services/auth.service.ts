@@ -624,8 +624,8 @@ export async function provisionOrganization(input: {
     if (isNewUser) {
       const tempPasswordHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
       const userResult = await client.query<{ id: string }>(
-        `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), NOW())
+        `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, onboarding_completed, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, true, NOW(), NOW())
          RETURNING id`,
         [organizationId, email, input.name, tempPasswordHash]
       );
