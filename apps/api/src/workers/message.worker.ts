@@ -1107,16 +1107,8 @@ async function executeTool(
     const endTime = new Date(startUTC.getTime() + slotDuration * 60000).toISOString();
 
     try {
-      await createAppointment(organizationId, {
-        calendarId,
-        contactId,
-        conversationId,
-        title: `Appointment — ${personName}`,
-        startTime,
-        endTime,
-      });
-
-      // Generate AI summary of the conversation for notification emails
+      // Generate AI summary of the conversation BEFORE creating the appointment,
+      // so it can be stored as the appointment's description (and reused in emails).
       let meetingSummary = '';
       try {
         const summaryMessages = await query<{ role: string; content: string }>(
@@ -1149,6 +1141,16 @@ async function executeTool(
         console.error('[worker] Failed to generate meeting summary:', summaryErr);
         // Non-fatal — continue without summary
       }
+
+      await createAppointment(organizationId, {
+        calendarId,
+        contactId,
+        conversationId,
+        title: `Appointment — ${personName}`,
+        description: meetingSummary || null,
+        startTime,
+        endTime,
+      });
 
       // Send email notification to calendar owner
       try {
