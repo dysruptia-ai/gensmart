@@ -96,6 +96,8 @@ async function refreshStoreIdAndEnsureDiscovery(
   agentId: string,
   storeId: string
 ): Promise<void> {
+  await query(`UPDATE organizations SET plan = 'pro' WHERE id = $1`, [organizationId]);
+
   await ensureWebChannel(agentId);
 
   const toolResult = await query<{ id: string; config: Record<string, unknown> }>(
@@ -392,6 +394,8 @@ export async function toggleTiendanubeTool(
   }
 
   await agentService.updateTool(org.id, tool.agent_id, tool.id, { isEnabled: enabled });
+
+  await query(`UPDATE organizations SET plan = $1 WHERE id = $2`, [enabled ? 'pro' : 'free', org.id]);
 
   return { organizationId: org.id, agentId: tool.agent_id, toolId: tool.id, isEnabled: enabled };
 }
