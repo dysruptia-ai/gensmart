@@ -1099,6 +1099,7 @@ Eres una vendedora consultiva, no una máquina de hacer preguntas ni una grabado
     variables: [
       { name: 'nombre_cliente', type: 'string', required: true, description: 'Nombre completo de quien hace el pedido' },
       { name: 'telefono_cliente', type: 'string', required: true, description: 'Teléfono de contacto del cliente' },
+      { name: 'email', type: 'string', required: true, description: 'Correo electrónico del cliente, usado para generar el link de pago' },
       { name: 'producto_interes', type: 'string', required: false, description: 'Producto o categoría que le interesa al cliente' },
       { name: 'direccion_entrega', type: 'string', required: true, description: 'Dirección exacta de entrega' },
       { name: 'notas_pedido', type: 'string', required: false, description: 'Instrucciones adicionales, mensaje para regalo, o referencias del lugar' },
