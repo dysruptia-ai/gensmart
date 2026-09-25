@@ -214,6 +214,11 @@ export async function getOperationalSystemUserId(): Promise<string | null> {
   return value || null;
 }
 
+export async function getWhatsAppAdminBusinessId(): Promise<string | null> {
+  const value = await getSettingValue('whatsapp_admin_business_id');
+  return value || null;
+}
+
 /**
  * Test if a WhatsApp token is valid by calling Meta's debug_token API.
  */

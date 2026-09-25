@@ -889,31 +889,66 @@ router.post(
       //      access before we try to subscribe the webhook or register the
       //      number. Uses a separate Admin-only token — never the operational
       //      token — since only Admin system users can grant asset access.
-      //      Non-fatal: if this fails, log and continue (the assignment may
-      //      already exist from a prior attempt, or the operator token may
-      //      already have access some other way).
+      //      Non-fatal: a failure never breaks the connection flow, but it is
+      //      logged with console.error and full Meta response detail.
+      //
+      //      Cross-business assignment (client WABA lives in the client's own
+      //      Business Manager) requires the `business` param = the Business ID
+      //      that OWNS the system user (Dysruptia), otherwise Meta answers
+      //      "(#100) Param user does not accept global user IDs".
+      //
+      //      Manual smoke test: connect a new number via Embedded Signup whose
+      //      WABA lives in a Business Manager different from Dysruptia's, then
+      //      check the API logs for "[embedded-signup] WABA <id> successfully
+      //      assigned" (POST assigned_users => {"success": true}) on the first
+      //      attempt, with no manual step in Business Settings. A prior line
+      //      "operational user already assigned" means there was nothing to do.
       try {
-        const { getWhatsAppAdminToken, getOperationalSystemUserId } = await import('../services/platform-settings.service');
+        const { getWhatsAppAdminToken, getOperationalSystemUserId, getWhatsAppAdminBusinessId } = await import('../services/platform-settings.service');
         const adminToken = await getWhatsAppAdminToken();
         const operationalUserId = await getOperationalSystemUserId();
+        const businessId = await getWhatsAppAdminBusinessId();
 
         if (adminToken && operationalUserId) {
+          if (!businessId) {
+            console.warn('[embedded-signup] whatsapp_admin_business_id not configured — assigning without `business` param (will fail for cross-business WABAs).');
+          }
+
+          // Pre-check: is the operational user already assigned to this WABA?
+          try {
+            const listRes = await fetch(
+              `https://graph.facebook.com/v21.0/${wabaId}/assigned_users?business=${encodeURIComponent(businessId ?? '')}&access_token=${encodeURIComponent(adminToken)}`
+            );
+            const listBody = await listRes.json().catch(() => ({})) as { data?: Array<{ id: string }> };
+            if (listRes.ok) {
+              const already = (listBody.data ?? []).some((u) => u.id === operationalUserId);
+              console.info(`[embedded-signup] WABA ${wabaId}: operational user ${operationalUserId} ${already ? 'already assigned' : 'not assigned yet'}`);
+            } else {
+              console.info(`[embedded-signup] WABA ${wabaId}: assigned_users pre-check failed: ${JSON.stringify(listBody)}`);
+            }
+          } catch (listErr) {
+            console.info('[embedded-signup] assigned_users pre-check threw:', (listErr as Error).message);
+          }
+
           console.log(`[embedded-signup] Auto-assigning WABA ${wabaId} to operational system user ${operationalUserId}...`);
+          const businessParam = businessId ? `&business=${encodeURIComponent(businessId)}` : '';
           const assignRes = await fetch(
-            `https://graph.facebook.com/v21.0/${wabaId}/assigned_users?user=${encodeURIComponent(operationalUserId)}&tasks=${encodeURIComponent("['MANAGE']")}&access_token=${encodeURIComponent(adminToken)}`,
+            `https://graph.facebook.com/v21.0/${wabaId}/assigned_users?user=${encodeURIComponent(operationalUserId)}&tasks=${encodeURIComponent("['MANAGE']")}${businessParam}&access_token=${encodeURIComponent(adminToken)}`,
             { method: 'POST' }
           );
           if (assignRes.ok) {
             console.log(`[embedded-signup] WABA ${wabaId} successfully assigned to operational system user`);
           } else {
             const assignErr = await assignRes.json().catch(() => ({}));
-            console.warn('[embedded-signup] Auto-assign failed (continuing anyway):', JSON.stringify(assignErr));
+            console.error(
+              `[embedded-signup] Auto-assign FAILED (continuing anyway): status=${assignRes.status} wabaId=${wabaId} operationalUserId=${operationalUserId} businessId=${businessId ?? 'none'} response=${JSON.stringify(assignErr)}`
+            );
           }
         } else {
           console.warn('[embedded-signup] Admin token or operational user ID not configured — skipping auto-assign. Manual assignment may be required.');
         }
       } catch (assignAutoErr) {
-        console.warn('[embedded-signup] Auto-assign step threw an error (continuing anyway):', (assignAutoErr as Error).message);
+        console.error('[embedded-signup] Auto-assign step threw an error (continuing anyway):', (assignAutoErr as Error).message);
       }
 
       // 5. Get phone numbers from this WABA — try platform token first, fallback to user's FB token
