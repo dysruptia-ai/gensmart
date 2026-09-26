@@ -1026,6 +1026,18 @@ router.post(
         throw new AppError(400, 'No phone number found in the shared WhatsApp Business Account. Please complete WhatsApp Business setup first.', 'NO_PHONE_FOUND');
       }
 
+      // Diagnostic only: log WABA health/review status. Non-blocking — never throws.
+      try {
+        const healthRes = await fetch(
+          `https://graph.facebook.com/v21.0/${wabaId}?fields=health_status,account_review_status`,
+          { headers: { Authorization: `Bearer ${fbAccessToken}` } }
+        );
+        const healthData = await healthRes.json().catch(() => ({}));
+        console.log(`[embedded-signup] Health status for WABA ${wabaId}:`, JSON.stringify(healthData));
+      } catch (healthErr) {
+        console.log(`[embedded-signup] Health status for WABA ${wabaId}:`, JSON.stringify({ error: (healthErr as Error).message }));
+      }
+
       // Steps 6-9 use the customer's own business token (fbAccessToken, obtained by
       // exchanging the Embedded Signup code) instead of the central platformToken.
       // Per Meta's "Onboarding business customers as a Solution Partner" guide, that
