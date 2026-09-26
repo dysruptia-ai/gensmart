@@ -1076,8 +1076,17 @@ router.post(
         if (errorMsg.includes('already registered') || errorMsg.includes('already exists')) {
           console.log(`[embedded-signup] Phone ${phoneNumberId} already registered — continuing`);
         } else {
+          // Registration is CRITICAL and blocking, unlike the best-effort auto-assign
+          // step: without a successful register the number cannot send or receive any
+          // WhatsApp messages, so we must not save connected: true nor report success.
           console.error('[embedded-signup] Phone registration failed:', errorMsg);
-          console.warn('[embedded-signup] Continuing despite registration error...');
+          const metaErr = (regErr as { error?: { error_user_msg?: string; message?: string } }).error;
+          const detail = metaErr?.error_user_msg || metaErr?.message;
+          throw new AppError(
+            502,
+            `WhatsApp phone number registration failed${detail ? `: ${detail}` : '.'} Please resolve this in your Meta Business account and try connecting again.`,
+            'PHONE_REGISTER_FAILED'
+          );
         }
       } else {
         console.log(`[embedded-signup] Phone ${phoneNumberId} registered successfully`);
