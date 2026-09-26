@@ -1026,7 +1026,15 @@ router.post(
         throw new AppError(400, 'No phone number found in the shared WhatsApp Business Account. Please complete WhatsApp Business setup first.', 'NO_PHONE_FOUND');
       }
 
-      // 6. Subscribe the webhook to this WABA using platform token
+      // Steps 6-9 use the customer's own business token (fbAccessToken, obtained by
+      // exchanging the Embedded Signup code) instead of the central platformToken.
+      // Per Meta's "Onboarding business customers as a Solution Partner" guide, that
+      // token already has full access to the customer's WABA, so no cross-business
+      // System User assignment is needed. It is also stored (encrypted) in
+      // whatsapp_config so resolveAccessToken() prefers it over the platform token.
+      // Agents connected before this change have no stored token and keep using the
+      // platform token via the resolveAccessToken() fallback.
+      // 6. Subscribe the webhook to this WABA using the customer's business token
       console.log(`[embedded-signup] Subscribing webhook for WABA ${wabaId}...`);
       const subscribeRes = await fetch(
         `https://graph.facebook.com/v21.0/${wabaId}/subscribed_apps`,
@@ -1034,18 +1042,18 @@ router.post(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${platformToken}`,
+            Authorization: `Bearer ${fbAccessToken}`,
           },
         }
       );
       if (!subscribeRes.ok) {
         const subErr = await subscribeRes.json().catch(() => ({}));
         console.error('[embedded-signup] Webhook subscribe failed:', JSON.stringify(subErr));
-        throw new AppError(500, 'Failed to subscribe webhook. Ensure the System User has whatsapp_business_management permission.', 'WEBHOOK_SUBSCRIBE_FAILED');
+        throw new AppError(500, "Failed to subscribe webhook using the customer's business token. This usually means the WABA connection itself failed or was revoked — try reconnecting via Embedded Signup.", 'WEBHOOK_SUBSCRIBE_FAILED');
       }
       console.log(`[embedded-signup] Webhook subscribed for WABA ${wabaId}`);
 
-      // 7. Register the phone number using platform token
+      // 7. Register the phone number using the customer's business token
       console.log(`[embedded-signup] Registering phone ${phoneNumberId}...`);
       const pin = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit random pin
       const registerRes = await fetch(
@@ -1054,7 +1062,7 @@ router.post(
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${platformToken}`,
+            Authorization: `Bearer ${fbAccessToken}`,
           },
           body: JSON.stringify({
             messaging_product: 'whatsapp',
@@ -1075,17 +1083,19 @@ router.post(
         console.log(`[embedded-signup] Phone ${phoneNumberId} registered successfully`);
       }
 
-      // 8. Validate the platform token can access this phone number
+      // 8. Validate the customer's business token can access this phone number
       let verifiedPhoneDisplay = displayPhone;
       try {
-        const info = await getPhoneNumberInfo(phoneNumberId, platformToken);
+        const info = await getPhoneNumberInfo(phoneNumberId, fbAccessToken);
         verifiedPhoneDisplay = info.display_phone_number || displayPhone;
       } catch {
-        console.warn(`[embedded-signup] Platform token cannot access phone ${phoneNumberId} — using display from user token`);
+        console.warn(`[embedded-signup] Customer business token cannot access phone ${phoneNumberId} — using display number from WABA discovery`);
       }
 
-      // 9. Save agent config — NO user token stored, only phone_number_id + waba_id
-      //    The platform token will be used via resolveAccessToken fallback
+      // 9. Save agent config — the customer's business token IS stored (encrypted),
+      //    following Meta's Solution Partner onboarding pattern. resolveAccessToken()
+      //    prioritizes it over the platform token.
+      const encryptedToken = encryptAccessToken(fbAccessToken);
       const agentVerifyToken = crypto.randomUUID();
       await query(
         `UPDATE agents
@@ -1097,6 +1107,7 @@ router.post(
             phone_number_id: phoneNumberId,
             waba_id: wabaId,
             verify_token: agentVerifyToken,
+            access_token_encrypted: encryptedToken,
             connected: true,
           }),
           agentId,
