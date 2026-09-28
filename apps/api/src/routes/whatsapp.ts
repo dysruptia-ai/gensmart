@@ -1021,9 +1021,9 @@ router.post(
         if (errorMsg.includes('already registered') || errorMsg.includes('already exists')) {
           console.log(`[embedded-signup] Phone ${phoneNumberId} already registered — continuing`);
         } else {
-          // Registration is CRITICAL and blocking, unlike the best-effort auto-assign
-          // step: without a successful register the number cannot send or receive any
-          // WhatsApp messages, so we must not save connected: true nor report success.
+          // Registration is CRITICAL and blocking: without a successful register the
+          // number cannot send or receive any WhatsApp messages, so we must not save
+          // connected: true nor report success.
           console.error('[embedded-signup] Phone registration failed:', errorMsg);
           const metaErr = (regErr as { error?: { error_user_msg?: string; message?: string } }).error;
           const detail = metaErr?.error_user_msg || metaErr?.message;
