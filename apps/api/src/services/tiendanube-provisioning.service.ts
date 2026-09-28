@@ -280,9 +280,19 @@ async function createAgentAndMcpConnection(
   // generic e-commerce clone until a dedicated "Tiendanube Store Assistant"
   // template exists — pending content work, see Dia 3 report). Override what
   // the merchant actually sees so nothing WooCommerce-branded leaks through.
+  //
+  // web_config also defaults to the generic widget fallback (English
+  // greeting, WhatsApp-green bubble) — override it to Spanish + Tiendanube
+  // blue, merged on top of whatever createFromTemplate already set so
+  // avatar_url/position/bubble_text aren't clobbered.
   await agentService.updateAgent(organizationId, agent.id, {
     name: `Agente de Ventas — ${storeName}`,
     description: `Asesora de ventas por WhatsApp para ${storeName} — búsqueda de productos, envíos y creación de pedidos con el link de pago de tu tienda Tiendanube.`,
+    webConfig: {
+      ...agent.webConfig,
+      welcome_message: '¡Hola! ¿En qué puedo ayudarte hoy?',
+      primary_color: '#0050c3',
+    },
   });
 
   await agentService.patchConfigValues(organizationId, agent.id, {
