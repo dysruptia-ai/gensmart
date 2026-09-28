@@ -42,6 +42,13 @@ async function checkMessageRateLimit(sessionId: string): Promise<boolean> {
   return count <= 100; // max 100 messages per session per day
 }
 
+async function checkResolveRateLimit(ip: string): Promise<boolean> {
+  const key = `rl:widget:resolve:${ip}`;
+  const count = await redis.incr(key);
+  if (count === 1) await redis.expire(key, 3600); // 1 hour window
+  return count <= 300; // max 300 requests per IP per hour
+}
+
 function getClientIp(req: Request): string {
   return (
     (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
@@ -49,6 +56,52 @@ function getClientIp(req: Request): string {
     'unknown'
   );
 }
+
+// ── GET /api/widget/tiendanube/resolve ────────────────────────────────────────
+router.get(
+  '/tiendanube/resolve',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const ip = getClientIp(req);
+
+      const allowed = await checkResolveRateLimit(ip);
+      if (!allowed) {
+        throw new AppError(429, 'Too many sessions created. Please try again later.', 'RATE_LIMIT');
+      }
+
+      const store = req.query['store'] as string | undefined;
+      if (!store || !/^\d{1,20}$/.test(store)) {
+        throw new AppError(400, 'Invalid store parameter', 'INVALID_STORE');
+      }
+
+      const result = await query<{ id: string }>(
+        `SELECT a.id
+         FROM organizations o
+         JOIN agents a ON a.organization_id = o.id
+         JOIN agent_tools t ON t.agent_id = a.id
+         WHERE o.billing_source = 'tiendanube'
+           AND o.external_subscription_id = $1
+           AND a.status = 'active'
+           AND a.channels ? 'web'
+           AND t.type = 'mcp'
+           AND t.config->>'providerId' = 'tiendanube'
+           AND t.is_enabled = true
+         ORDER BY a.created_at ASC
+         LIMIT 1`,
+        [store]
+      );
+
+      const agent = result.rows[0];
+      if (!agent) {
+        throw new AppError(404, 'No active agent for this store', 'NOT_FOUND');
+      }
+
+      res.json({ agentId: agent.id });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 // ── GET /api/widget/:agentId/config ──────────────────────────────────────────
 router.get(
