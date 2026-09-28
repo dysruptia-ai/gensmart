@@ -857,20 +857,23 @@ router.post(
       if (sharedWabaIds.length > 1 && !selectedWabaId) {
         const wabaOptions: Array<{ id: string; name: string }> = [];
         for (const wId of sharedWabaIds.slice(0, 5)) {
-          try {
-            const wabaInfoRes = await fetch(
-              `https://graph.facebook.com/v21.0/${wId}?fields=id,name`,
-              { headers: { Authorization: `Bearer ${platformToken}` } }
-            );
-            if (wabaInfoRes.ok) {
-              const wabaInfo = await wabaInfoRes.json() as { id: string; name?: string };
-              wabaOptions.push({ id: wabaInfo.id, name: wabaInfo.name ?? wId });
-            } else {
-              wabaOptions.push({ id: wId, name: wId });
+          let wabaName: string | undefined;
+          for (const token of [fbAccessToken, platformToken]) {
+            try {
+              const wabaInfoRes = await fetch(
+                `https://graph.facebook.com/v21.0/${wId}?fields=id,name`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              if (wabaInfoRes.ok) {
+                const wabaInfo = await wabaInfoRes.json() as { id: string; name?: string };
+                wabaName = wabaInfo.name;
+                break;
+              }
+            } catch {
+              // try next token
             }
-          } catch {
-            wabaOptions.push({ id: wId, name: wId });
           }
+          wabaOptions.push({ id: wId, name: wabaName ?? wId });
         }
 
         res.json({
@@ -885,112 +888,40 @@ router.post(
       const wabaId = selectedWabaId || sharedWabaIds[0]!;
       console.log(`[embedded-signup] Using WABA: ${wabaId}`);
 
-      // 4.5. Auto-assign this WABA to the operational system user, so it has
-      //      access before we try to subscribe the webhook or register the
-      //      number. Uses a separate Admin-only token — never the operational
-      //      token — since only Admin system users can grant asset access.
-      //      Non-fatal: a failure never breaks the connection flow, but it is
-      //      logged with console.error and full Meta response detail.
-      //
-      //      Cross-business assignment (client WABA lives in the client's own
-      //      Business Manager) requires the `business` param = the Business ID
-      //      that OWNS the system user (Dysruptia), otherwise Meta answers
-      //      "(#100) Param user does not accept global user IDs".
-      //
-      //      Manual smoke test: connect a new number via Embedded Signup whose
-      //      WABA lives in a Business Manager different from Dysruptia's, then
-      //      check the API logs for "[embedded-signup] WABA <id> successfully
-      //      assigned" (POST assigned_users => {"success": true}) on the first
-      //      attempt, with no manual step in Business Settings. A prior line
-      //      "operational user already assigned" means there was nothing to do.
-      try {
-        const { getWhatsAppAdminToken, getOperationalSystemUserId, getWhatsAppAdminBusinessId } = await import('../services/platform-settings.service');
-        const adminToken = await getWhatsAppAdminToken();
-        const operationalUserId = await getOperationalSystemUserId();
-        const businessId = await getWhatsAppAdminBusinessId();
-
-        if (adminToken && operationalUserId) {
-          if (!businessId) {
-            console.warn('[embedded-signup] whatsapp_admin_business_id not configured — assigning without `business` param (will fail for cross-business WABAs).');
-          }
-
-          // Pre-check: is the operational user already assigned to this WABA?
-          try {
-            const listRes = await fetch(
-              `https://graph.facebook.com/v21.0/${wabaId}/assigned_users?business=${encodeURIComponent(businessId ?? '')}&access_token=${encodeURIComponent(adminToken)}`
-            );
-            const listBody = await listRes.json().catch(() => ({})) as { data?: Array<{ id: string }> };
-            if (listRes.ok) {
-              const already = (listBody.data ?? []).some((u) => u.id === operationalUserId);
-              console.info(`[embedded-signup] WABA ${wabaId}: operational user ${operationalUserId} ${already ? 'already assigned' : 'not assigned yet'}`);
-            } else {
-              console.info(`[embedded-signup] WABA ${wabaId}: assigned_users pre-check failed: ${JSON.stringify(listBody)}`);
-            }
-          } catch (listErr) {
-            console.info('[embedded-signup] assigned_users pre-check threw:', (listErr as Error).message);
-          }
-
-          console.log(`[embedded-signup] Auto-assigning WABA ${wabaId} to operational system user ${operationalUserId}...`);
-          const businessParam = businessId ? `&business=${encodeURIComponent(businessId)}` : '';
-          const assignRes = await fetch(
-            `https://graph.facebook.com/v21.0/${wabaId}/assigned_users?user=${encodeURIComponent(operationalUserId)}&tasks=${encodeURIComponent("['MANAGE']")}${businessParam}&access_token=${encodeURIComponent(adminToken)}`,
-            { method: 'POST' }
-          );
-          if (assignRes.ok) {
-            console.log(`[embedded-signup] WABA ${wabaId} successfully assigned to operational system user`);
-          } else {
-            const assignErr = await assignRes.json().catch(() => ({}));
-            console.error(
-              `[embedded-signup] Auto-assign FAILED (continuing anyway): status=${assignRes.status} wabaId=${wabaId} operationalUserId=${operationalUserId} businessId=${businessId ?? 'none'} response=${JSON.stringify(assignErr)}`
-            );
-          }
-        } else {
-          console.warn('[embedded-signup] Admin token or operational user ID not configured — skipping auto-assign. Manual assignment may be required.');
-        }
-      } catch (assignAutoErr) {
-        console.error('[embedded-signup] Auto-assign step threw an error (continuing anyway):', (assignAutoErr as Error).message);
-      }
-
-      // 5. Get phone numbers from this WABA — try platform token first, fallback to user's FB token
+      // 5. Get phone numbers from this WABA — try the customer's own business
+      //    token first (it has full access to the customer's WABA), falling
+      //    back to the shared platform token.
       let phoneNumberId = '';
       let displayPhone = '';
       type PhoneDataType = { data?: Array<{ id: string; display_phone_number: string; verified_name?: string }> };
       let phoneData: PhoneDataType | null = null;
 
-      const phoneRes = await fetch(
-        `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
-        { headers: { Authorization: `Bearer ${platformToken}` } }
-      );
+      const phoneLookupTokens: Array<[string, string]> = [
+        ['customer token', fbAccessToken],
+        ['platform token', platformToken],
+      ];
 
-      if (phoneRes.ok) {
-        phoneData = await phoneRes.json() as PhoneDataType;
-        const phone = phoneData?.data?.[0];
-        if (phone) {
-          phoneNumberId = phone.id;
-          displayPhone = phone.display_phone_number;
-          console.log(`[embedded-signup] Found phone via platform token: ${phoneNumberId} (${displayPhone})`);
-        }
-      }
-
-      // Fallback: if platform token can't see phones, try user's FB token
-      if (!phoneNumberId) {
-        console.log(`[embedded-signup] Platform token found no phones for WABA ${wabaId}, trying user FB token...`);
+      for (const [label, token] of phoneLookupTokens) {
         try {
-          const userPhoneRes = await fetch(
+          const phoneRes = await fetch(
             `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
-            { headers: { Authorization: `Bearer ${fbAccessToken}` } }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
-          if (userPhoneRes.ok) {
-            phoneData = await userPhoneRes.json() as PhoneDataType;
-            const phone = phoneData?.data?.[0];
-            if (phone) {
-              phoneNumberId = phone.id;
-              displayPhone = phone.display_phone_number;
-              console.log(`[embedded-signup] Found phone via user FB token: ${phoneNumberId} (${displayPhone})`);
-            }
+          if (!phoneRes.ok) {
+            console.warn(`[embedded-signup] Phone lookup via ${label} failed: status=${phoneRes.status}`);
+            continue;
           }
-        } catch (fbErr) {
-          console.warn('[embedded-signup] User FB token phone lookup failed:', (fbErr as Error).message);
+          const data = await phoneRes.json() as PhoneDataType;
+          const phone = data.data?.[0];
+          if (phone) {
+            phoneData = data;
+            phoneNumberId = phone.id;
+            displayPhone = phone.display_phone_number;
+            console.log(`[embedded-signup] Found phone via ${label}: ${phoneNumberId} (${displayPhone})`);
+            break;
+          }
+        } catch (lookupErr) {
+          console.warn(`[embedded-signup] Phone lookup via ${label} threw:`, (lookupErr as Error).message);
         }
       }
 
@@ -1046,6 +977,8 @@ router.post(
       // whatsapp_config so resolveAccessToken() prefers it over the platform token.
       // Agents connected before this change have no stored token and keep using the
       // platform token via the resolveAccessToken() fallback.
+      console.log(`[embedded-signup] Using customer business token for webhook subscribe and phone register (WABA ${wabaId})`);
+
       // 6. Subscribe the webhook to this WABA using the customer's business token
       console.log(`[embedded-signup] Subscribing webhook for WABA ${wabaId}...`);
       const subscribeRes = await fetch(
@@ -1134,6 +1067,7 @@ router.post(
           agentId,
         ]
       );
+      console.log(`[embedded-signup] Stored encrypted customer business token for agent ${agentId}`);
 
       // 10. Ensure 'whatsapp' is in channels array
       await query(
