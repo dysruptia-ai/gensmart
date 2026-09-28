@@ -27,6 +27,10 @@ interface WhatsAppConfigProps {
 
 const FREE_PLAN_PLANS = ['free'];
 
+// Manual Setup only helps when auto-discovery failed. Meta policy errors,
+// plan gates or expired codes would fail the same way there.
+const MANUAL_FALLBACK_CODES = new Set(['NO_WABA_SHARED', 'NO_PHONE_FOUND']);
+
 export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps) {
   const { success, error: toastError } = useToast();
 
@@ -151,6 +155,28 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     }
   }
 
+  function handleSignupError(err: unknown) {
+    setSignupStep(null);
+    let msg = 'Failed to connect WhatsApp.';
+    if (err instanceof ApiError) {
+      switch (err.code) {
+        case 'NO_WABA_SHARED':
+          msg = "We couldn't find your WhatsApp Business Account. Make sure you completed all steps in the Facebook popup, or use Manual Setup below.";
+          break;
+        case 'NO_PHONE_FOUND':
+          msg = 'No phone number found in your WhatsApp Business Account. Complete your WhatsApp Business setup in Meta Business Manager first.';
+          break;
+        case 'PLAN_LIMIT':
+          msg = 'WhatsApp requires a Starter plan or higher.';
+          break;
+        default:
+          msg = err.message; // PHONE_REGISTER_FAILED already carries Meta's error_user_msg
+      }
+      if (err.code && MANUAL_FALLBACK_CODES.has(err.code)) setShowManual(true);
+    }
+    toastError(msg);
+  }
+
   function handleEmbeddedSignup() {
     if (!fbAppId) return;
 
@@ -195,23 +221,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           setShowManual(false);
           return loadStatus();
         })
-        .catch(function(err: unknown) {
-          setSignupStep(null);
-          let msg = 'Failed to connect WhatsApp.';
-          if (err instanceof ApiError) {
-            if (err.message.includes('NO_WABA_SHARED') || err.message.includes('Could not find your WhatsApp Business Account')) {
-              msg = 'We couldn\'t find your WhatsApp Business Account. Make sure you completed all steps in the Facebook popup, or use Manual Setup below.';
-            } else if (err.message.includes('NO_PHONE_FOUND')) {
-              msg = 'No phone number found in your WhatsApp Business Account. Complete your WhatsApp Business setup in Meta Business Manager first.';
-            } else if (err.message.includes('PLAN_LIMIT')) {
-              msg = 'WhatsApp requires a Starter plan or higher.';
-            } else {
-              msg = err.message;
-            }
-          }
-          toastError(msg);
-          setShowManual(true);
-        })
+        .catch(handleSignupError)
         .finally(function() {
           setConnecting(false);
           setSignupStep(null);
@@ -255,11 +265,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         setPendingWabaId(null);
         return loadStatus();
       })
-      .catch(function(err: unknown) {
-        setSignupStep(null);
-        toastError(err instanceof ApiError ? err.message : 'Failed to connect WhatsApp.');
-        setShowManual(true);
-      })
+      .catch(handleSignupError)
       .finally(function() {
         setConnecting(false);
       });
