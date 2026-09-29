@@ -10,7 +10,8 @@
     "migrate:down": "dotenv -e ../../.env -- node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations down",
     "seed": "tsx src/db/seeds/index.ts",
     "seed:test-users": "tsx src/db/seeds/test-users.seed.ts",
-    "stripe:seed": "tsx src/db/seeds/stripe-products.ts"
+    "stripe:seed": "tsx src/db/seeds/stripe-products.ts",
+    "check:wa-tokens": "dotenv -e ../../.env -- tsx src/scripts/check-whatsapp-token-expiry.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
