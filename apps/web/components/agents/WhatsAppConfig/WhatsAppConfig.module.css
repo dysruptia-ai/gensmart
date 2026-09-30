@@ -263,6 +263,11 @@
   color: var(--color-text-secondary);
 }
 
+.selectionOptDetail {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+
 .selectionOptId {
   font-size: var(--font-xs);
   color: var(--color-text-secondary);

@@ -903,11 +903,26 @@ router.post(
         }
       }
 
-      // If multiple WABAs found, return them for user selection
+      // Phone numbers already connected to other agents (any organization). Never
+      // reveal which agent or organization owns them.
+      async function findPhonesInUse(phoneIds: string[], excludeAgentId: string): Promise<Set<string>> {
+        if (phoneIds.length === 0) return new Set<string>();
+        const result = await query<{ pid: string }>(
+          `SELECT whatsapp_config->>'phone_number_id' AS pid
+           FROM agents
+           WHERE whatsapp_config->>'phone_number_id' = ANY($1::text[])
+             AND id <> $2`,
+          [phoneIds, excludeAgentId]
+        );
+        return new Set(result.rows.map((r) => r.pid));
+      }
+
+      // If multiple WABAs found, list them (minus those fully taken) for user selection
       if (sharedWabaIds.length > 1 && !selectedWabaId) {
-        const wabaOptions: Array<{ id: string; name: string }> = [];
-        for (const wId of sharedWabaIds.slice(0, 5)) {
+        type WabaPhone = { id: string; display_phone_number: string };
+        const wabaOptions = await Promise.all(sharedWabaIds.slice(0, 5).map(async (wId) => {
           let wabaName: string | undefined;
+          let phones: WabaPhone[] | null = null;
           for (const token of [fbAccessToken, platformToken]) {
             try {
               const wabaInfoRes = await fetch(
@@ -923,16 +938,56 @@ router.post(
               // try next token
             }
           }
-          wabaOptions.push({ id: wId, name: wabaName ?? wId });
+          for (const token of [fbAccessToken, platformToken]) {
+            try {
+              const phonesRes = await fetch(
+                `https://graph.facebook.com/v21.0/${wId}/phone_numbers?fields=id,display_phone_number`,
+                { headers: { Authorization: `Bearer ${token}` } }
+              );
+              if (phonesRes.ok) {
+                const body = await phonesRes.json() as { data?: WabaPhone[] };
+                phones = body.data ?? [];
+                if (phones.length > 0) break;
+              }
+            } catch {
+              // try next token
+            }
+          }
+
+          let detail: string | undefined;
+          let allInUse = false;
+          if (phones) {
+            if (phones.length === 0) {
+              detail = 'No phone numbers yet';
+            } else {
+              detail = phones.slice(0, 2).map((ph) => ph.display_phone_number || ph.id).join(', ');
+              try {
+                const inUse = await findPhonesInUse(phones.map((ph) => ph.id), agentId);
+                allInUse = phones.every((ph) => inUse.has(ph.id));
+              } catch (inUseErr) {
+                console.warn('[embedded-signup] In-use lookup failed for a WABA:', (inUseErr as Error).message);
+              }
+            }
+          }
+          return { id: wId, name: wabaName ?? wId, detail, allInUse };
+        }));
+
+        const availableWabas = wabaOptions.filter((w) => !w.allInUse);
+        if (availableWabas.length === 0) {
+          throw new AppError(409, 'All WhatsApp accounts shared with this app are already connected to other agents', 'PHONE_ALREADY_CONNECTED');
         }
 
-        res.json({
-          success: false,
-          requiresSelection: 'waba',
-          options: wabaOptions,
-          signupSessionId: signupSessionId ?? await createSignupSession(fbAccessToken, { orgId: req.org!.id, agentId }),
-        });
-        return;
+        if (availableWabas.length === 1) {
+          selectedWabaId = availableWabas[0]!.id;
+        } else {
+          res.json({
+            success: false,
+            requiresSelection: 'waba',
+            options: availableWabas.map(({ id, name, detail }) => ({ id, name, detail })),
+            signupSessionId: signupSessionId || await createSignupSession(fbAccessToken, { orgId: req.org!.id, agentId }),
+          });
+          return;
+        }
       }
 
       if (explicitWabaId && !sharedWabaIds.includes(explicitWabaId)) {
@@ -993,22 +1048,33 @@ router.post(
       }
       console.log(`[embedded-signup] Session event: event=${hintEvent}, waba_hint=${wabaHint}, phone_hint=${phoneHint}`);
 
-      // If multiple phones found, return them for user selection
-      if (phoneData?.data && phoneData.data.length > 1 && !effectivePhoneId) {
-        const phoneOptions = phoneData.data.map((p) => ({
-          id: p.id,
-          name: p.display_phone_number || p.id,
-          verifiedName: p.verified_name,
-        }));
+      // Offer only phones not already connected to other agents
+      if (phoneData?.data && phoneData.data.length > 0 && !effectivePhoneId) {
+        const inUse = await findPhonesInUse(phoneData.data.map((p) => p.id), agentId);
+        const available = phoneData.data.filter((p) => !inUse.has(p.id));
 
-        res.json({
-          success: false,
-          requiresSelection: 'phone',
-          options: phoneOptions,
-          selectedWabaId: wabaId,
-          signupSessionId: signupSessionId ?? await createSignupSession(fbAccessToken, { orgId: req.org!.id, agentId }),
-        });
-        return;
+        if (available.length === 0) {
+          throw new AppError(409, 'All phone numbers in this WhatsApp account are already connected to other agents', 'PHONE_ALREADY_CONNECTED');
+        }
+
+        if (available.length === 1) {
+          effectivePhoneId = available[0]!.id;
+        } else {
+          const phoneOptions = available.map((p) => ({
+            id: p.id,
+            name: p.display_phone_number || p.id,
+            verifiedName: p.verified_name,
+          }));
+
+          res.json({
+            success: false,
+            requiresSelection: 'phone',
+            options: phoneOptions,
+            selectedWabaId: wabaId,
+            signupSessionId: signupSessionId || await createSignupSession(fbAccessToken, { orgId: req.org!.id, agentId }),
+          });
+          return;
+        }
       }
 
       // If user already selected a phone, use it

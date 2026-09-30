@@ -56,7 +56,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const [showManual, setShowManual] = useState(!hasEmbeddedSignup);
   const [signupStep, setSignupStep] = useState<string | null>(null);
   const [selectionType, setSelectionType] = useState<'waba' | 'phone' | null>(null);
-  const [selectionOptions, setSelectionOptions] = useState<Array<{ id: string; name: string; verifiedName?: string }>>([]);
+  const [selectionOptions, setSelectionOptions] = useState<Array<{ id: string; name: string; verifiedName?: string; detail?: string }>>([]);
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
   const [pendingWabaId, setPendingWabaId] = useState<string | null>(null);
 
@@ -248,7 +248,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           setSignupStep(null);
           setConnecting(false);
           setSelectionType(data.requiresSelection as 'waba' | 'phone');
-          setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
+          setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string; detail?: string }>);
           setPendingSessionId(data.signupSessionId as string);
           if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
           return;
@@ -290,7 +290,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           setSignupStep(null);
           setConnecting(false);
           setSelectionType(data.requiresSelection as 'waba' | 'phone');
-          setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
+          setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string; detail?: string }>);
           if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
           return;
         }
@@ -474,6 +474,9 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                             <span className={styles.selectionOptVerified}> — {opt.verifiedName}</span>
                           )}
                         </span>
+                        {opt.detail && (
+                          <span className={styles.selectionOptDetail}>{opt.detail}</span>
+                        )}
                         <span className={styles.selectionOptId}>{opt.id}</span>
                       </button>
                     ))}
