@@ -44,6 +44,8 @@ interface ConversationItem {
   lastMessageAt: string | null;
   messageCount: number;
   createdAt: string;
+  handedOffAt: string | null;
+  handoffActive: boolean;
   lastMessage: { content: string; role: string } | null;
 }
 
@@ -451,6 +453,14 @@ export default function ConversationsPage() {
                       <Badge variant={statusCfg.variant} size="sm">
                         {statusCfg.label}
                       </Badge>
+
+                      {conv.handoffActive && (
+                        <Badge variant="info" size="sm">
+                          <span title={conv.handedOffAt ? t('conversations.handoff.since', { time: formatRelativeTime(conv.handedOffAt, language) }) : undefined}>
+                            {t('conversations.handoff.badge')}
+                          </span>
+                        </Badge>
+                      )}
 
                       {help && (
                         <span className={styles.needsHelp}>

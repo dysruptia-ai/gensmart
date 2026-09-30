@@ -417,6 +417,46 @@
       "deleteConfirm": "¿Estás seguro de que deseas eliminar {name}? Esta acción no se puede deshacer y se perderán todas las versiones."
     },
     "editor": {
+      "handoff": {
+        "title": "Derivación a humano",
+        "description": "Cuando un cliente pide hablar con una persona, el agente envía un botón que abre un chat de WhatsApp con un miembro disponible de tu equipo.",
+        "enable": "Activar",
+        "freePlanNotice": "Disponible desde el plan Starter.",
+        "viewPlans": "Ver planes",
+        "contactsTitle": "Contactos de soporte",
+        "manageCalendars": "Gestionar horarios en Calendario",
+        "calendarsHelp": "Sin calendario, el contacto está siempre disponible.",
+        "contactName": "Nombre",
+        "contactNamePlaceholder": "p. ej. Ana (Ventas)",
+        "contactPhone": "Número de WhatsApp",
+        "phoneHelp": "Con código de país, por ejemplo 573001234567. Usa un número distinto al del agente, o el enlace volverá a abrir el chat con el bot.",
+        "calendars": "Calendarios de disponibilidad",
+        "noCalendars": "Aún no tienes calendarios. El contacto estará siempre disponible.",
+        "applyToAll": "Aplicar estos calendarios a todos",
+        "removeContact": "Quitar contacto",
+        "addContact": "Agregar contacto",
+        "contactsMax": "Hasta {max} contactos.",
+        "buttonText": "Texto del botón",
+        "advanced": "Avanzado",
+        "cooldownMinutes": "Minutos entre botones",
+        "cooldownHelp": "El agente no enviará otro botón en la misma conversación antes de que pase este tiempo.",
+        "labelTtlHours": "Horas para mostrar la etiqueta \"Derivada\"",
+        "labelTtlHelp": "Cuánto tiempo conserva la conversación la etiqueta en la lista.",
+        "save": "Guardar",
+        "saved": "Configuración de derivación a humano guardada",
+        "saveFailed": "No se pudo guardar la configuración de derivación a humano",
+        "planLimit": "La derivación a humano requiere el plan Starter o superior.",
+        "errors": {
+          "nameRequired": "Ingresa un nombre",
+          "nameTooLong": "El nombre puede tener hasta 60 caracteres",
+          "phoneInvalid": "Ingresa un número de 10 a 15 dígitos",
+          "phoneDuplicate": "Este número está repetido",
+          "needContact": "Agrega al menos un contacto para activar la derivación a humano",
+          "buttonText": "El texto del botón debe tener de 1 a {max} caracteres",
+          "cooldownRange": "Ingresa un número entero entre 1 y 1440",
+          "labelTtlRange": "Ingresa un número entero entre 1 y 720"
+        }
+      },
       "tabs": {
         "prompt": "Prompt",
         "configuration": "Configuración",
@@ -916,7 +956,8 @@
       "upgradeTakeover": "Mejora para habilitar el control humano"
     },
     "messageBubble": {
-      "aiResumed": "Agente de IA retomado"
+      "aiResumed": "Agente de IA retomado",
+      "handedOffTo": "Derivado a {name}"
     },
     "deleteConfirm": "¿Eliminar esta conversación? También se eliminará el contacto asociado si no tiene otras conversaciones.",
     "deleteSelected": "Eliminar seleccionadas",
@@ -926,6 +967,10 @@
     "allAgents": "Todos los agentes",
     "filterByAgent": "Filtrar por agente",
     "needsHelp": "Necesita ayuda",
+    "handoff": {
+      "badge": "Derivada",
+      "since": "Derivada {time}"
+    },
     "live": "En vivo"
   },
   "contacts": {

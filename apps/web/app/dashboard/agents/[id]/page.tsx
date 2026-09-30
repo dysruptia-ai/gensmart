@@ -6,7 +6,7 @@ import {
   Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { PLAN_LIMITS, type HandoffConfig } from '@gensmart/shared';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
@@ -21,6 +21,7 @@ import ToolConfigurator from '@/components/agents/ToolConfigurator';
 import { PromptGenerator } from '@/components/agents/PromptGenerator';
 import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomizer';
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
+import HandoffConfigurator from '@/components/agents/HandoffConfigurator/HandoffConfigurator';
 import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
 import PricingConfigurator from '@/components/agents/PricingConfigurator';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -69,6 +70,7 @@ interface Agent {
   messageBufferSeconds: number;
   variables: AgentVariable[];
   webConfig?: WebConfig | null;
+  handoffConfig?: HandoffConfig;
   publishedAt?: string | null;
 }
 
@@ -824,6 +826,14 @@ export default function AgentEditorPage() {
                 </div>
               </div>
             </div>
+            {orgPlanLoaded && agent && (
+              <HandoffConfigurator
+                agentId={agentId}
+                orgPlan={orgPlan}
+                initialConfig={agent.handoffConfig}
+                onSaved={(cfg) => setAgent((prev) => (prev ? { ...prev, handoffConfig: cfg } : prev))}
+              />
+            )}
           </div>
         )}
 

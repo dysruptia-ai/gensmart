@@ -1,0 +1,243 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-card);
+  max-width: 720px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.description,
+.hint {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.planNotice {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-sidebar);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--font-xs);
+  color: var(--color-primary-dark);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sectionTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.contactCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.875rem;
+  background: var(--color-bg-main);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.contactRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.removeBtn {
+  margin-top: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.removeBtn:hover {
+  border-color: var(--color-danger);
+}
+
+.calendarBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.calendarLabel {
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.calendarList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.calendarOption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--font-sm);
+}
+
+.calendarOption:hover {
+  background: var(--color-bg-card);
+}
+
+.calendarOptionDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox {
+  accent-color: var(--color-primary);
+}
+
+.calendarName {
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.calendarSummary {
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+}
+
+.linkBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--font-xs);
+  color: var(--color-primary-dark);
+  cursor: pointer;
+}
+
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.error {
+  font-size: var(--font-xs);
+  color: var(--color-danger);
+}
+
+.advancedToggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.advancedToggle:hover {
+  color: var(--color-text-primary);
+}
+
+.advancedBody {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 640px) {
+  .contactRow,
+  .advancedBody {
+    grid-template-columns: 1fr;
+  }
+
+  .removeBtn {
+    margin-top: 0;
+    justify-self: end;
+  }
+}

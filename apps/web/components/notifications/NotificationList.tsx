@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, AlertTriangle, XCircle, Bell } from 'lucide-react';
+import { Star, AlertTriangle, XCircle, Bell, UserRound, Clock } from 'lucide-react';
 import { Notification } from '@/hooks/useNotifications';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatRelativeTime } from '@/lib/formatters';
@@ -20,6 +20,8 @@ function NotifIcon({ type }: { type: string }) {
   if (type === 'plan_usage_80') return <AlertTriangle size={16} className={styles.iconWarning} />;
   if (type === 'plan_usage_100') return <AlertTriangle size={16} className={styles.iconDanger} />;
   if (type === 'plan_canceled') return <XCircle size={16} className={styles.iconDanger} />;
+  if (type === 'human_handoff') return <UserRound size={16} className={styles.iconNeutral} />;
+  if (type === 'human_handoff_offhours') return <Clock size={16} className={styles.iconWarning} />;
   return <Bell size={16} className={styles.iconNeutral} />;
 }
 
@@ -28,6 +30,10 @@ function getNavTarget(notif: Notification): string | null {
     const contactId = notif.data?.['contactId'] as string | undefined;
     const conversationId = notif.data?.['conversationId'] as string | undefined;
     if (contactId) return `/dashboard/contacts/${contactId}`;
+    if (conversationId) return `/dashboard/conversations/${conversationId}`;
+  }
+  if (notif.type === 'human_handoff' || notif.type === 'human_handoff_offhours') {
+    const conversationId = notif.data?.['conversationId'] as string | undefined;
     if (conversationId) return `/dashboard/conversations/${conversationId}`;
   }
   if (notif.type === 'plan_usage_80' || notif.type === 'plan_usage_100' || notif.type === 'plan_canceled') {

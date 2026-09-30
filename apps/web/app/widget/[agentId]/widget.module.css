@@ -479,3 +479,16 @@
   font-size: 0.75rem;
   color: #6B7280;
 }
+
+.handoffButton {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}

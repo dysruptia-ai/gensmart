@@ -417,6 +417,46 @@
       "deleteConfirm": "Are you sure you want to delete {name}? This action cannot be undone and all versions will be lost."
     },
     "editor": {
+      "handoff": {
+        "title": "Human handoff",
+        "description": "When a customer asks for a person, the agent sends a button that opens a WhatsApp chat with an available member of your team.",
+        "enable": "Enable",
+        "freePlanNotice": "Available from the Starter plan.",
+        "viewPlans": "View plans",
+        "contactsTitle": "Support contacts",
+        "manageCalendars": "Manage schedules in Calendar",
+        "calendarsHelp": "Without a calendar, the contact is always available.",
+        "contactName": "Name",
+        "contactNamePlaceholder": "e.g. Ana (Sales)",
+        "contactPhone": "WhatsApp number",
+        "phoneHelp": "With country code, for example 573001234567. Use a number different from the agent's, or the link will reopen the chat with the bot.",
+        "calendars": "Availability calendars",
+        "noCalendars": "You have no calendars yet. The contact will always be available.",
+        "applyToAll": "Apply these calendars to all",
+        "removeContact": "Remove contact",
+        "addContact": "Add contact",
+        "contactsMax": "Up to {max} contacts.",
+        "buttonText": "Button text",
+        "advanced": "Advanced",
+        "cooldownMinutes": "Minutes between buttons",
+        "cooldownHelp": "The agent will not send another button in the same conversation before this time passes.",
+        "labelTtlHours": "Hours to show the \"Handed off\" label",
+        "labelTtlHelp": "How long the conversation keeps the label in the list.",
+        "save": "Save",
+        "saved": "Human handoff settings saved",
+        "saveFailed": "Could not save the human handoff settings",
+        "planLimit": "Human handoff requires the Starter plan or higher.",
+        "errors": {
+          "nameRequired": "Enter a name",
+          "nameTooLong": "The name can have up to 60 characters",
+          "phoneInvalid": "Enter a number with 10 to 15 digits",
+          "phoneDuplicate": "This number is repeated",
+          "needContact": "Add at least one contact to enable human handoff",
+          "buttonText": "The button text must have 1 to {max} characters",
+          "cooldownRange": "Enter a whole number between 1 and 1440",
+          "labelTtlRange": "Enter a whole number between 1 and 720"
+        }
+      },
       "tabs": {
         "prompt": "Prompt",
         "configuration": "Configuration",
@@ -916,7 +956,8 @@
       "upgradeTakeover": "Upgrade to enable takeover"
     },
     "messageBubble": {
-      "aiResumed": "AI Agent resumed"
+      "aiResumed": "AI Agent resumed",
+      "handedOffTo": "Handed off to {name}"
     },
     "deleteConfirm": "Delete this conversation? This will also delete the associated contact if they have no other conversations.",
     "deleteSelected": "Delete Selected",
@@ -926,6 +967,10 @@
     "allAgents": "All agents",
     "filterByAgent": "Filter by agent",
     "needsHelp": "Needs Help",
+    "handoff": {
+      "badge": "Handed off",
+      "since": "Handed off {time}"
+    },
     "live": "Live"
   },
   "contacts": {

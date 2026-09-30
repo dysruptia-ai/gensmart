@@ -28,8 +28,15 @@ interface MessageBubbleProps {
       url: string;
       caption?: string | null;
     };
+    handoff?: {
+      url: string;
+      buttonText: string;
+      contactName?: string;
+    };
   };
 }
+
+const HANDOFF_URL_PREFIX = 'https://wa.me/';
 
 export default function MessageBubble({
   role,
@@ -59,6 +66,19 @@ export default function MessageBubble({
   if (role === 'system') return null;
 
   const isOutgoing = role === 'assistant' || role === 'human';
+
+  // Handoff button: only ever render a wa.me link. On the web channel the URL is also
+  // appended to the stored text on its own line; hide that raw line.
+  const handoff =
+    metadata?.handoff &&
+    typeof metadata.handoff.url === 'string' &&
+    metadata.handoff.url.startsWith(HANDOFF_URL_PREFIX)
+      ? metadata.handoff
+      : null;
+  const visibleContent =
+    handoff && content.endsWith(`\n${handoff.url}`)
+      ? content.slice(0, -(handoff.url.length + 1))
+      : content;
 
   return (
     <div className={[styles.wrapper, isOutgoing ? styles.outgoing : styles.incoming].join(' ')}>
@@ -144,7 +164,24 @@ export default function MessageBubble({
             <span>{metadata.imageCount === 1 ? t('chat_image_indicator') : `${metadata.imageCount} ${t('chat_images_indicator')}`}</span>
           </div>
         ) : null}
-        <p className={styles.content}>{content}</p>
+        <p className={styles.content}>{visibleContent}</p>
+        {handoff && (
+          <div className={styles.handoff}>
+            <a
+              href={handoff.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.handoffButton}
+            >
+              {handoff.buttonText}
+            </a>
+            {handoff.contactName && (
+              <span className={styles.handoffTo}>
+                {t('conversations.messageBubble.handedOffTo', { name: handoff.contactName })}
+              </span>
+            )}
+          </div>
+        )}
         <div className={styles.meta}>
           <span className={styles.time}>{formatTime(createdAt)}</span>
           {role === 'assistant' && (metadata?.tokensUsed || metadata?.toolsCalled?.length) ? (

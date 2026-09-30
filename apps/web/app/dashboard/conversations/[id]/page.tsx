@@ -27,6 +27,7 @@ import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatRelativeTime } from '@/lib/formatters';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import styles from './chat.module.css';
 
@@ -74,6 +75,8 @@ interface ConversationDetail {
   messageCount: number;
   lastMessageAt: string | null;
   createdAt: string;
+  handedOffAt: string | null;
+  handoffActive: boolean;
 }
 
 interface OrgData {
@@ -121,7 +124,7 @@ function ReferralCard({ referral, language }: { referral: Record<string, string>
 export default function ConversationDetailPage() {
   const { id: conversationId } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { language } = useTranslation();
+  const { t, language } = useTranslation();
   const { error: showError, success: showSuccess } = useToast();
   const { on, off, joinConversation, leaveConversation } = useWebSocket();
 
@@ -569,6 +572,11 @@ export default function ConversationDetailPage() {
                   >
                     {conversation.status === 'human_takeover' ? 'Takeover' : conversation.status}
                   </Badge>
+                  {conversation.handoffActive && (
+                    <span title={conversation.handedOffAt ? t('conversations.handoff.since', { time: formatRelativeTime(conversation.handedOffAt, language) }) : undefined}>
+                      <Badge variant="info" size="sm">{t('conversations.handoff.badge')}</Badge>
+                    </span>
+                  )}
                   <span className={styles.agentTag}>{conversation.agentName}</span>
                 </div>
               </div>

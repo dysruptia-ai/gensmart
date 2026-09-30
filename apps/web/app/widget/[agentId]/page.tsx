@@ -31,7 +31,23 @@ interface ChatMessage {
       url: string;
       caption?: string | null;
     };
+    handoff?: {
+      url: string;
+      buttonText: string;
+    };
   };
+}
+
+const HANDOFF_URL_PREFIX = 'https://wa.me/';
+
+// On the web channel the stored text ends with the raw handoff URL on its own line;
+// the button replaces it, so hide that line.
+function stripHandoffUrl(msg: ChatMessage): ChatMessage {
+  const url = msg.metadata?.handoff?.url;
+  if (url && url.startsWith(HANDOFF_URL_PREFIX) && msg.content.endsWith(`\n${url}`)) {
+    return { ...msg, content: msg.content.slice(0, -(url.length + 1)) };
+  }
+  return msg;
 }
 
 const SESSION_KEY_PREFIX = 'gs_widget_session_';
@@ -612,7 +628,7 @@ export default function WidgetPage() {
 
       {/* Messages */}
       <div className={styles.messages}>
-        {messages.map((msg) => (
+        {messages.map(stripHandoffUrl).map((msg) => (
           <div
             key={msg.id}
             className={[
@@ -709,6 +725,17 @@ export default function WidgetPage() {
                   <span dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }} />
                 )
               ) : null}
+              {msg.metadata?.handoff?.url?.startsWith(HANDOFF_URL_PREFIX) && (
+                <a
+                  href={msg.metadata.handoff.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.handoffButton}
+                  style={{ color: config.primary_color, borderColor: config.primary_color }}
+                >
+                  {msg.metadata.handoff.buttonText}
+                </a>
+              )}
             </div>
           </div>
         ))}
