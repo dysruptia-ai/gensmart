@@ -724,6 +724,10 @@ router.post(
       const debugData = await debugRes.json() as {
         data?: {
           is_valid?: boolean;
+          app_id?: string;
+          type?: string;
+          expires_at?: number;
+          data_access_expires_at?: number;
           granular_scopes?: Array<{
             scope: string;
             target_ids?: string[];
@@ -733,6 +737,15 @@ router.post(
 
       if (!debugData.data?.is_valid) {
         throw new AppError(401, 'Facebook token is invalid or expired', 'INVALID_FB_TOKEN');
+      }
+
+      const tokenAppId = debugData.data.app_id;
+      if (tokenAppId) {
+        if (tokenAppId !== env.FACEBOOK_APP_ID) {
+          throw new AppError(401, 'Facebook token was not issued for this app', 'INVALID_FB_TOKEN');
+        }
+      } else {
+        console.warn('[embedded-signup] debug_token response has no app_id — skipping app validation');
       }
 
       // Extract WABA IDs from granular_scopes
@@ -885,6 +898,10 @@ router.post(
         return;
       }
 
+      if (selectedWabaId && !sharedWabaIds.includes(selectedWabaId)) {
+        throw new AppError(400, 'Selected WhatsApp account is not shared with this app', 'INVALID_SELECTION');
+      }
+
       const wabaId = selectedWabaId || sharedWabaIds[0]!;
       console.log(`[embedded-signup] Using WABA: ${wabaId}`);
 
@@ -944,17 +961,31 @@ router.post(
       }
 
       // If user already selected a phone, use it
-      if (selectedPhoneId && phoneData?.data) {
-        const selected = phoneData.data.find((p) => p.id === selectedPhoneId);
-        if (selected) {
-          phoneNumberId = selected.id;
-          displayPhone = selected.display_phone_number;
+      if (selectedPhoneId) {
+        const selected = phoneData?.data?.find((p) => p.id === selectedPhoneId);
+        if (!selected) {
+          throw new AppError(400, 'Selected WhatsApp phone number is not part of the selected account', 'INVALID_SELECTION');
         }
+        phoneNumberId = selected.id;
+        displayPhone = selected.display_phone_number;
       }
 
       if (!phoneNumberId) {
         console.error('[embedded-signup] No phone numbers found for WABA:', wabaId);
         throw new AppError(400, 'No phone number found in the shared WhatsApp Business Account. Please complete WhatsApp Business setup first.', 'NO_PHONE_FOUND');
+      }
+
+      // A phone number can only feed one agent: the webhook resolves the agent by
+      // phone_number_id with LIMIT 1, so a duplicate would route messages unpredictably.
+      const phoneInUse = await query<{ id: string }>(
+        `SELECT id FROM agents
+         WHERE whatsapp_config->>'phone_number_id' = $1
+           AND id <> $2
+         LIMIT 1`,
+        [phoneNumberId, agentId]
+      );
+      if (phoneInUse.rows[0]) {
+        throw new AppError(409, 'This WhatsApp number is already connected to another agent', 'PHONE_ALREADY_CONNECTED');
       }
 
       // Diagnostic only: log WABA health/review status. Non-blocking — never throws.
@@ -1051,6 +1082,11 @@ router.post(
       //    prioritizes it over the platform token.
       const encryptedToken = encryptAccessToken(fbAccessToken);
       const agentVerifyToken = crypto.randomUUID();
+      // expires_at = 0 means the token does not expire
+      const tokenExpiresAtSec = debugData.data.expires_at ?? 0;
+      const tokenExpiresAt = tokenExpiresAtSec > 0 ? new Date(tokenExpiresAtSec * 1000).toISOString() : null;
+      const tokenType = debugData.data.type ?? null;
+      console.log(`[embedded-signup] Token metadata: type=${tokenType}, expires_at=${tokenExpiresAt ?? 'never'}, app_ok=${!!tokenAppId}`);
       await query(
         `UPDATE agents
          SET whatsapp_config = $1::jsonb,
@@ -1063,6 +1099,9 @@ router.post(
             verify_token: agentVerifyToken,
             access_token_encrypted: encryptedToken,
             connected: true,
+            token_expires_at: tokenExpiresAt,
+            token_type: tokenType,
+            token_checked_at: new Date().toISOString(),
           }),
           agentId,
         ]
