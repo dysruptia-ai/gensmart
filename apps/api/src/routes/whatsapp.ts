@@ -648,13 +648,32 @@ router.post(
         throw new AppError(403, 'WhatsApp requires Starter plan or higher', 'PLAN_LIMIT');
       }
 
-      const { agentId, fbCode, fbAccessToken: fbAccessTokenFromBody, selectedWabaId, selectedPhoneId } = req.body as {
+      const { agentId, fbCode, fbAccessToken: fbAccessTokenFromBody, selectedWabaId: explicitWabaId, selectedPhoneId, signupEvent: rawSignupEvent } = req.body as {
         agentId: string;
         fbCode?: string;
         fbAccessToken?: string;
         selectedWabaId?: string;
         selectedPhoneId?: string;
+        signupEvent?: unknown;
       };
+
+      // Optional, untrusted hint from the popup's session event. Validated below before use.
+      const ID_RE = /^\d{5,30}$/;
+      let hintEvent = 'none';
+      let hintWabaRaw: string | undefined;
+      let hintPhoneRaw: string | undefined;
+      if (rawSignupEvent !== undefined && rawSignupEvent !== null) {
+        const ev = rawSignupEvent as { event?: unknown; waba_id?: unknown; phone_number_id?: unknown };
+        if (typeof rawSignupEvent !== 'object' || typeof ev.event !== 'string') {
+          console.warn('[embedded-signup] Ignoring malformed signupEvent');
+        } else {
+          hintEvent = ev.event.slice(0, 64);
+          if (ev.event === 'FINISH' || ev.event === 'FINISH_ONLY_WABA') {
+            if (typeof ev.waba_id === 'string' && ID_RE.test(ev.waba_id)) hintWabaRaw = ev.waba_id;
+            if (typeof ev.phone_number_id === 'string' && ID_RE.test(ev.phone_number_id)) hintPhoneRaw = ev.phone_number_id;
+          }
+        }
+      }
 
       // 2. Verify agent belongs to org
       const agentCheck = await query<{ id: string }>(
@@ -866,6 +885,19 @@ router.post(
         console.log(`[embedded-signup] Fallback found ${sharedWabaIds.length} WABA(s): ${sharedWabaIds.join(', ')}`);
       }
 
+      // Validated WABA hint: only honoured when it is one of the WABAs actually shared
+      let wabaHint: 'ok' | 'ignored' | 'none' = 'none';
+      let selectedWabaId = explicitWabaId;
+      if (!selectedWabaId && hintWabaRaw) {
+        if (sharedWabaIds.includes(hintWabaRaw)) {
+          selectedWabaId = hintWabaRaw;
+          wabaHint = 'ok';
+        } else {
+          wabaHint = 'ignored';
+          console.warn('[embedded-signup] Ignoring waba_id hint: not among shared WABAs');
+        }
+      }
+
       // If multiple WABAs found, return them for user selection
       if (sharedWabaIds.length > 1 && !selectedWabaId) {
         const wabaOptions: Array<{ id: string; name: string }> = [];
@@ -898,7 +930,7 @@ router.post(
         return;
       }
 
-      if (selectedWabaId && !sharedWabaIds.includes(selectedWabaId)) {
+      if (explicitWabaId && !sharedWabaIds.includes(explicitWabaId)) {
         throw new AppError(400, 'Selected WhatsApp account is not shared with this app', 'INVALID_SELECTION');
       }
 
@@ -942,8 +974,22 @@ router.post(
         }
       }
 
+      // Validated phone hint: only honoured when it belongs to the selected WABA
+      let phoneHint: 'ok' | 'ignored' | 'none' = 'none';
+      let effectivePhoneId = selectedPhoneId;
+      if (!effectivePhoneId && hintPhoneRaw) {
+        if (phoneData?.data?.some((p) => p.id === hintPhoneRaw)) {
+          effectivePhoneId = hintPhoneRaw;
+          phoneHint = 'ok';
+        } else {
+          phoneHint = 'ignored';
+          console.warn('[embedded-signup] Ignoring phone_number_id hint: not part of the selected WABA');
+        }
+      }
+      console.log(`[embedded-signup] Session event: event=${hintEvent}, waba_hint=${wabaHint}, phone_hint=${phoneHint}`);
+
       // If multiple phones found, return them for user selection
-      if (phoneData?.data && phoneData.data.length > 1 && !selectedPhoneId) {
+      if (phoneData?.data && phoneData.data.length > 1 && !effectivePhoneId) {
         const phoneOptions = phoneData.data.map((p) => ({
           id: p.id,
           name: p.display_phone_number || p.id,
@@ -961,8 +1007,8 @@ router.post(
       }
 
       // If user already selected a phone, use it
-      if (selectedPhoneId) {
-        const selected = phoneData?.data?.find((p) => p.id === selectedPhoneId);
+      if (effectivePhoneId) {
+        const selected = phoneData?.data?.find((p) => p.id === effectivePhoneId);
         if (!selected) {
           throw new AppError(400, 'Selected WhatsApp phone number is not part of the selected account', 'INVALID_SELECTION');
         }

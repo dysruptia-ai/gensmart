@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Unplug } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import Input from '@/components/ui/Input';
@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { fbLoginEmbeddedSignup } from './fbLogin';
+import { parseSignupMessage, isFinishEvent, type SignupEvent } from './signupEvent';
 import styles from './WhatsAppConfig.module.css';
 
 interface WhatsAppStatus {
@@ -58,6 +59,18 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const [selectionOptions, setSelectionOptions] = useState<Array<{ id: string; name: string; verifiedName?: string }>>([]);
   const [pendingFbCode, setPendingFbCode] = useState<string | null>(null);
   const [pendingWabaId, setPendingWabaId] = useState<string | null>(null);
+
+  // Session event posted by the Embedded Signup popup (optional hint for the backend)
+  const signupEventRef = useRef<SignupEvent | null>(null);
+
+  useEffect(() => {
+    function handler(evt: MessageEvent) {
+      const parsed = parseSignupMessage(evt);
+      if (parsed) signupEventRef.current = parsed;
+    }
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
 
   // Load Facebook SDK when component mounts (needed for Embedded Signup)
   useEffect(() => {
@@ -192,41 +205,57 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     const configId = process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID'] ?? '';
 
+    signupEventRef.current = null;
     fbLoginEmbeddedSignup(FB, configId, function(code) {
       if (!code) {
         toastError('Connection cancelled. Click "Connect with Facebook" to try again. Make sure to complete all steps in the Facebook popup.');
         return;
       }
 
-      // Call the automated endpoint — backend exchanges the code for a token
       setConnecting(true);
       setSignupStep('Discovering your WhatsApp account...');
-      api.post<Record<string, unknown>>('/api/whatsapp/embedded-signup-complete', {
-        agentId,
-        fbCode: code,
-      })
-        .then(function(data) {
-          if (data.requiresSelection) {
-            // Backend found multiple options, ask user to select
-            setSignupStep(null);
-            setConnecting(false);
-            setSelectionType(data.requiresSelection as 'waba' | 'phone');
-            setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
-            setPendingFbCode(data.fbAccessToken as string);
-            if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
-            return;
-          }
-          setSignupStep(null);
-          success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
-          setShowManual(false);
-          return loadStatus();
-        })
-        .catch(handleSignupError)
-        .finally(function() {
-          setConnecting(false);
-          setSignupStep(null);
-        });
+
+      // The popup's session event may arrive slightly after the code: wait up to 2s for it.
+      // Plain callbacks only — this closure must not contain the forbidden keyword.
+      const startedAt = Date.now();
+      function submitWhenReady() {
+        const evt = signupEventRef.current;
+        if ((evt && isFinishEvent(evt)) || Date.now() - startedAt >= 2000) {
+          sendSignupCode(code as string, evt && isFinishEvent(evt) ? evt : null);
+          return;
+        }
+        setTimeout(submitWhenReady, 100);
+      }
+      submitWhenReady();
     });
+  }
+
+  function sendSignupCode(code: string, signupEvent: SignupEvent | null) {
+    // Call the automated endpoint — backend exchanges the code for a token
+    const body: Record<string, unknown> = { agentId, fbCode: code };
+    if (signupEvent) body.signupEvent = signupEvent;
+    api.post<Record<string, unknown>>('/api/whatsapp/embedded-signup-complete', body)
+      .then(function(data) {
+        if (data.requiresSelection) {
+          // Backend found multiple options, ask user to select
+          setSignupStep(null);
+          setConnecting(false);
+          setSelectionType(data.requiresSelection as 'waba' | 'phone');
+          setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
+          setPendingFbCode(data.fbAccessToken as string);
+          if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
+          return;
+        }
+        setSignupStep(null);
+        success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
+        setShowManual(false);
+        return loadStatus();
+      })
+      .catch(handleSignupError)
+      .finally(function() {
+        setConnecting(false);
+        setSignupStep(null);
+      });
   }
 
   function handleSelectionContinue(selectedId: string) {
