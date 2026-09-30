@@ -24,6 +24,19 @@ import { PLAN_LIMITS } from '@gensmart/shared';
 
 const router = Router();
 
+const PHONE_UNIQUE_INDEX = 'uq_agents_whatsapp_phone_number_id';
+
+// A concurrent request can win the race between the duplicate check and the UPDATE;
+// the unique index then rejects the loser with 23505.
+function isPhoneUniqueViolation(err: unknown): boolean {
+  const pgErr = err as { code?: string; constraint?: string } | null;
+  return pgErr?.code === '23505' && pgErr.constraint === PHONE_UNIQUE_INDEX;
+}
+
+function phoneAlreadyConnectedError(): AppError {
+  return new AppError(409, 'This WhatsApp number is already connected to another agent', 'PHONE_ALREADY_CONNECTED');
+}
+
 // ── GET /api/whatsapp/webhook ─────────────────────────────────────────────────
 // Meta webhook verification challenge
 router.get('/webhook', async (req: Request, res: Response): Promise<void> => {
@@ -480,6 +493,19 @@ router.post(
         throw new AppError(404, 'Agent not found', 'NOT_FOUND');
       }
 
+      // A phone number can only feed one agent (the webhook resolves the agent by
+      // phone_number_id). Do not reveal which agent or organization owns it.
+      const manualPhoneInUse = await query<{ id: string }>(
+        `SELECT id FROM agents
+         WHERE whatsapp_config->>'phone_number_id' = $1
+           AND id <> $2
+         LIMIT 1`,
+        [phoneNumberId, agentId]
+      );
+      if (manualPhoneInUse.rows[0]) {
+        throw phoneAlreadyConnectedError();
+      }
+
       // If no accessToken in body, use the one saved via Embedded Signup
       let finalAccessToken = accessToken?.trim() ?? '';
       if (!finalAccessToken) {
@@ -533,22 +559,27 @@ router.post(
       const agentVerifyToken = crypto.randomUUID();
 
       // Build new whatsapp_config
-      await query(
-        `UPDATE agents
-         SET whatsapp_config = $1::jsonb,
-             updated_at = NOW()
-         WHERE id = $2`,
-        [
-          JSON.stringify({
-            phone_number_id: phoneNumberId,
-            waba_id: wabaId,
-            access_token_encrypted: encryptedToken,
-            verify_token: agentVerifyToken,
-            connected: true,
-          }),
-          agentId,
-        ]
-      );
+      try {
+        await query(
+          `UPDATE agents
+           SET whatsapp_config = $1::jsonb,
+               updated_at = NOW()
+           WHERE id = $2`,
+          [
+            JSON.stringify({
+              phone_number_id: phoneNumberId,
+              waba_id: wabaId,
+              access_token_encrypted: encryptedToken,
+              verify_token: agentVerifyToken,
+              connected: true,
+            }),
+            agentId,
+          ]
+        );
+      } catch (saveErr) {
+        if (isPhoneUniqueViolation(saveErr)) throw phoneAlreadyConnectedError();
+        throw saveErr;
+      }
 
       // Ensure 'whatsapp' is in channels array
       await query(
@@ -1216,25 +1247,30 @@ router.post(
       const tokenExpiresAt = tokenExpiresAtSec > 0 ? new Date(tokenExpiresAtSec * 1000).toISOString() : null;
       const tokenType = debugData.data.type ?? null;
       console.log(`[embedded-signup] Token metadata: type=${tokenType}, expires_at=${tokenExpiresAt ?? 'never'}, app_ok=${!!tokenAppId}`);
-      await query(
-        `UPDATE agents
-         SET whatsapp_config = $1::jsonb,
-             updated_at = NOW()
-         WHERE id = $2`,
-        [
-          JSON.stringify({
-            phone_number_id: phoneNumberId,
-            waba_id: wabaId,
-            verify_token: agentVerifyToken,
-            access_token_encrypted: encryptedToken,
-            connected: true,
-            token_expires_at: tokenExpiresAt,
-            token_type: tokenType,
-            token_checked_at: new Date().toISOString(),
-          }),
-          agentId,
-        ]
-      );
+      try {
+        await query(
+          `UPDATE agents
+           SET whatsapp_config = $1::jsonb,
+               updated_at = NOW()
+           WHERE id = $2`,
+          [
+            JSON.stringify({
+              phone_number_id: phoneNumberId,
+              waba_id: wabaId,
+              verify_token: agentVerifyToken,
+              access_token_encrypted: encryptedToken,
+              connected: true,
+              token_expires_at: tokenExpiresAt,
+              token_type: tokenType,
+              token_checked_at: new Date().toISOString(),
+            }),
+            agentId,
+          ]
+        );
+      } catch (saveErr) {
+        if (isPhoneUniqueViolation(saveErr)) throw phoneAlreadyConnectedError();
+        throw saveErr;
+      }
       console.log(`[embedded-signup] Stored encrypted customer business token for agent ${agentId}`);
       if (signupSessionId) {
         void deleteSignupSession(signupSessionId);

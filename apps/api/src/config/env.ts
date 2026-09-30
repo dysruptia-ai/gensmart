@@ -15,6 +15,16 @@ function optionalEnv(name: string, defaultValue: string): string {
   return process.env[name] ?? defaultValue;
 }
 
+const ZERO_ENCRYPTION_KEY = '0'.repeat(64);
+
+// The development fallback key must never encrypt production tokens.
+if (
+  optionalEnv('NODE_ENV', 'development') === 'production' &&
+  (!process.env['ENCRYPTION_KEY'] || process.env['ENCRYPTION_KEY'] === ZERO_ENCRYPTION_KEY)
+) {
+  throw new Error('ENCRYPTION_KEY must be set to a non-default value when NODE_ENV=production');
+}
+
 export const env = {
   NODE_ENV: optionalEnv('NODE_ENV', 'development'),
   PORT: parseInt(optionalEnv('PORT', '4000'), 10),
@@ -22,7 +32,7 @@ export const env = {
   REDIS_URL: optionalEnv('REDIS_URL', 'redis://localhost:6379'),
   JWT_ACCESS_SECRET: optionalEnv('JWT_ACCESS_SECRET', 'dev-access-secret-change-in-production'),
   JWT_REFRESH_SECRET: optionalEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-in-production'),
-  ENCRYPTION_KEY: optionalEnv('ENCRYPTION_KEY', '0'.repeat(64)),
+  ENCRYPTION_KEY: optionalEnv('ENCRYPTION_KEY', ZERO_ENCRYPTION_KEY),
   FRONTEND_URL: optionalEnv('FRONTEND_URL', 'http://localhost:3000'),
   API_URL: optionalEnv('API_URL', 'http://localhost:4000'),
   OPENAI_API_KEY: process.env['OPENAI_API_KEY'] ?? '',
