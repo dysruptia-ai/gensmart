@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
+import { useTranslation } from '@/hooks/useTranslation';
 import { fbLoginEmbeddedSignup } from './fbLogin';
 import { parseSignupMessage, isFinishEvent, isAbortEvent, type SignupEvent } from './signupEvent';
 import styles from './WhatsAppConfig.module.css';
@@ -34,6 +35,8 @@ const MANUAL_FALLBACK_CODES = new Set(['NO_WABA_SHARED', 'NO_PHONE_FOUND']);
 
 export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps) {
   const { success, error: toastError } = useToast();
+  const { t } = useTranslation();
+  const tw = (key: string, values?: Record<string, string | number>) => t('agents.channels.whatsappConfig.' + key, values);
 
   const [status, setStatus] = useState<WhatsAppStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -123,7 +126,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
   async function handleManualConnect() {
     if (!phoneNumberId.trim() || !wabaId.trim()) {
-      toastError('Please fill in Phone Number ID and WABA ID');
+      toastError(tw('toast.fillFields'));
       return;
     }
     // Access token is optional — if empty, the platform token will be used as fallback
@@ -141,28 +144,28 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         accessToken: accessToken.trim(),
       });
 
-      success(`Connected! Phone: ${data.phoneNumber}`);
+      success(tw('toast.connected', { phone: data.phoneNumber }));
       setAccessToken('');
       setShowManual(false);
       await loadStatus();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to connect WhatsApp');
+      toastError(err instanceof ApiError ? err.message : tw('toast.connectFailed'));
     } finally {
       setConnecting(false);
     }
   }
 
   async function handleDisconnect() {
-    if (!window.confirm('Disconnect WhatsApp from this agent? The agent will no longer receive or send WhatsApp messages.')) {
+    if (!window.confirm(tw('toast.disconnectConfirm'))) {
       return;
     }
     setDisconnecting(true);
     try {
       await api.delete(`/api/whatsapp/disconnect/${agentId}`);
-      success('WhatsApp disconnected');
+      success(tw('toast.disconnected'));
       await loadStatus();
     } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to disconnect');
+      toastError(err instanceof ApiError ? err.message : tw('toast.disconnectFailed'));
     } finally {
       setDisconnecting(false);
     }
@@ -170,24 +173,49 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
   function handleSignupError(err: unknown) {
     setSignupStep(null);
-    let msg = 'Failed to connect WhatsApp.';
+    const button = tw('connectFacebook');
+    let msg = tw('errors.generic');
     if (err instanceof ApiError) {
       switch (err.code) {
         case 'NO_WABA_SHARED':
-          msg = "We couldn't find your WhatsApp Business Account. Make sure you completed all steps in the Facebook popup, or use Manual Setup below.";
+          msg = tw('errors.noWaba');
           break;
         case 'NO_PHONE_FOUND':
-          msg = 'No phone number found in your WhatsApp Business Account. Complete your WhatsApp Business setup in Meta Business Manager first.';
+          msg = tw('errors.noPhone');
           break;
         case 'SIGNUP_SESSION_EXPIRED':
           setSelectionType(null);
           setSelectionOptions([]);
           setPendingSessionId(null);
           setPendingWabaId(null);
-          msg = 'Connection session expired. Click "Connect with Facebook" to start again.';
+          msg = tw('errors.sessionExpired', { button });
+          break;
+        case 'SIGNUP_SESSION_UNAVAILABLE':
+          msg = tw('errors.sessionUnavailable');
           break;
         case 'PLAN_LIMIT':
-          msg = 'WhatsApp requires a Starter plan or higher.';
+          msg = tw('errors.planLimit');
+          break;
+        case 'PHONE_NOT_ADDED':
+          msg = tw('errors.phoneNotAdded', { button });
+          break;
+        case 'PHONE_NOT_VERIFIED':
+          msg = tw('errors.phoneNotVerified', { button });
+          break;
+        case 'PHONE_ALREADY_CONNECTED':
+          msg = tw('errors.phoneAlreadyConnected');
+          break;
+        case 'INVALID_SELECTION':
+          msg = tw('errors.invalidSelection', { button });
+          break;
+        case 'INVALID_FB_TOKEN':
+          msg = tw('errors.invalidFbToken', { button });
+          break;
+        case 'CODE_EXCHANGE_FAILED':
+          msg = tw('errors.codeExchangeFailed', { button });
+          break;
+        case 'WEBHOOK_SUBSCRIBE_FAILED':
+          msg = tw('errors.webhookSubscribeFailed', { button });
           break;
         default:
           msg = err.message; // PHONE_REGISTER_FAILED already carries Meta's error_user_msg
@@ -206,7 +234,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     } }).FB;
 
     if (!FB) {
-      toastError('Facebook SDK not loaded. Please refresh and try again.');
+      toastError(tw('toast.sdkNotLoaded'));
       return;
     }
 
@@ -224,11 +252,11 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
             return;
           }
           if (evt && evt.event === 'ERROR' && evt.error_message) {
-            toastError(`Facebook reported a problem: ${evt.error_message}. Click "Connect with Facebook" to try again.`);
+            toastError(tw('toast.abortFacebookError', { message: evt.error_message, button: tw('connectFacebook') }));
           } else if (evt && evt.event === 'CANCEL' && evt.current_step && evt.current_step.includes('PHONE')) {
-            toastError('Connection cancelled while adding your phone number. Click "Connect with Facebook" to try again and finish the phone step.');
+            toastError(tw('toast.abortPhoneStep', { button: tw('connectFacebook') }));
           } else {
-            toastError('Connection cancelled. Click "Connect with Facebook" to try again. Make sure to complete all steps in the Facebook popup.');
+            toastError(tw('toast.abortGeneric', { button: tw('connectFacebook') }));
           }
         }
         reportAbort();
@@ -236,7 +264,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
       }
 
       setConnecting(true);
-      setSignupStep('Discovering your WhatsApp account...');
+      setSignupStep(tw('steps.discovering'));
 
       // The popup's session event may arrive slightly after the code: wait up to 2s for it.
       // Plain callbacks only — this closure must not contain the forbidden keyword.
@@ -270,7 +298,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           return;
         }
         setSignupStep(null);
-        success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
+        success(tw('toast.signupConnected', { phone: (data as { phoneNumber: string }).phoneNumber }));
         setShowManual(false);
         return loadStatus();
       })
@@ -287,7 +315,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     setConnecting(true);
     setSelectionType(null);
     setSelectionOptions([]);
-    setSignupStep(selectionType === 'waba' ? 'Connecting your WhatsApp account...' : 'Registering your phone number...');
+    setSignupStep(selectionType === 'waba' ? tw('steps.connectingWaba') : tw('steps.registeringPhone'));
 
     const body: Record<string, string> = {
       agentId,
@@ -311,7 +339,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           return;
         }
         setSignupStep(null);
-        success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
+        success(tw('toast.signupConnected', { phone: (data as { phoneNumber: string }).phoneNumber }));
         setShowManual(false);
         setPendingSessionId(null);
         setPendingWabaId(null);
@@ -334,7 +362,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         setTimeout(() => setCopiedToken(false), 2500);
       }
     } catch {
-      toastError('Failed to copy');
+      toastError(tw('toast.copyFailed'));
     }
   }
 
@@ -354,16 +382,16 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           <MessageSquare size={28} color="var(--color-text-secondary)" aria-hidden="true" />
         </div>
         <div className={styles.gateText}>
-          <div className={styles.gateTitle}>WhatsApp Requires Starter Plan</div>
+          <div className={styles.gateTitle}>{tw('gateTitle')}</div>
           <p className={styles.gateDesc}>
-            Connect your WhatsApp Business account to deploy this agent on WhatsApp. Available on Starter, Pro, and Enterprise plans.
+            {tw('gateDesc')}
           </p>
         </div>
         <Button
           size="sm"
           onClick={() => window.open('/pricing', '_blank')}
         >
-          Upgrade Plan
+          {tw('upgrade')}
         </Button>
       </div>
     );
@@ -375,41 +403,41 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
       <div className={styles.statusRow}>
         <div className={styles.statusLabel}>
           <MessageSquare size={16} aria-hidden="true" />
-          WhatsApp Status
+          {t('agents.channels.whatsappStatus')}
         </div>
         <Badge variant={status?.connected ? 'success' : 'neutral'} size="sm">
-          {status?.connected ? 'Connected' : 'Not Connected'}
+          {status?.connected ? t('agents.channels.whatsappConnected') : tw('notConnected')}
         </Badge>
       </div>
 
       {status?.connected && status.phoneNumberId && (
         <div className={styles.connectedInfo}>
           <CheckCircle size={14} color="var(--color-success)" aria-hidden="true" />
-          <span>Phone Number ID: <strong>{status.phoneNumberId}</strong></span>
+          <span>{tw('phoneNumberIdInfo')}: <strong>{status.phoneNumberId}</strong></span>
         </div>
       )}
 
       {/* Connected actions */}
       {status?.connected && (
         <div className={styles.section}>
-          <div className={styles.sectionTitle}>Webhook Configuration</div>
+          <div className={styles.sectionTitle}>{tw('webhookTitle')}</div>
           <p className={styles.fieldHint}>
-            Set these values in your{' '}
+            {tw('webhookHint')}{' '}
             <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className={styles.link}>
-              Meta Developer Dashboard <ExternalLink size={11} aria-hidden="true" />
+              {tw('metaDashboard')} <ExternalLink size={11} aria-hidden="true" />
             </a>
           </p>
 
           {status.webhookUrl && (
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>Webhook URL</label>
+              <label className={styles.label}>{tw('webhookUrl')}</label>
               <div className={styles.copyRow}>
                 <code className={styles.codeValue}>{status.webhookUrl}</code>
                 <button
                   className={styles.copyBtn}
                   onClick={() => copyText(status.webhookUrl!, 'webhook')}
                   type="button"
-                  aria-label="Copy webhook URL"
+                  aria-label={tw('copyWebhookUrl')}
                 >
                   {copiedWebhook ? <Check size={13} color="var(--color-success)" /> : <Copy size={13} />}
                 </button>
@@ -419,14 +447,14 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
           {status.verifyToken && (
             <div className={styles.fieldGroup}>
-              <label className={styles.label}>Verify Token</label>
+              <label className={styles.label}>{tw('verifyToken')}</label>
               <div className={styles.copyRow}>
                 <code className={styles.codeValue}>{status.verifyToken}</code>
                 <button
                   className={styles.copyBtn}
                   onClick={() => copyText(status.verifyToken!, 'token')}
                   type="button"
-                  aria-label="Copy verify token"
+                  aria-label={tw('copyVerifyToken')}
                 >
                   {copiedToken ? <Check size={13} color="var(--color-success)" /> : <Copy size={13} />}
                 </button>
@@ -441,7 +469,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
             onClick={handleDisconnect}
             loading={disconnecting}
           >
-            Disconnect WhatsApp
+            {tw('disconnectButton')}
           </Button>
         </div>
       )}
@@ -451,9 +479,9 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         <div className={styles.section}>
           {hasEmbeddedSignup && (
             <div className={styles.embeddedSignup}>
-              <div className={styles.sectionTitle}>Quick Setup (Recommended)</div>
+              <div className={styles.sectionTitle}>{tw('quickSetupTitle')}</div>
               <p className={styles.fieldHint}>
-                Connect using Facebook Login — we&apos;ll automatically configure your WhatsApp Business account, subscribe the webhook, and register your number.
+                {tw('quickSetupDesc')}
               </p>
               <Button
                 size="sm"
@@ -461,7 +489,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                 icon={MessageSquare}
                 loading={connecting}
               >
-                Connect with Facebook
+                {tw('connectFacebook')}
               </Button>
               {connecting && signupStep && (
                 <div className={styles.signupProgress}>
@@ -473,8 +501,8 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                 <div className={styles.selectionPanel}>
                   <div className={styles.selectionTitle}>
                     {selectionType === 'waba'
-                      ? 'Select your WhatsApp Business Account'
-                      : 'Select your phone number'}
+                      ? tw('selectWaba')
+                      : tw('selectPhone')}
                   </div>
                   <div className={styles.selectionOptions}>
                     {selectionOptions.map((opt) => (
@@ -502,7 +530,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                     onClick={() => { setSelectionType(null); setSelectionOptions([]); setPendingSessionId(null); setShowManual(true); }}
                     type="button"
                   >
-                    Cancel — use Manual Setup instead
+                    {tw('cancelUseManual')}
                   </button>
                 </div>
               )}
@@ -510,13 +538,13 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           )}
 
           {!hasEmbeddedSignup && (
-            <div className={styles.sectionTitle}>Connect WhatsApp</div>
+            <div className={styles.sectionTitle}>{tw('connectTitle')}</div>
           )}
 
           {hasEmbeddedSignup && (
             <>
               <div className={styles.divider}>
-                <span>or setup manually</span>
+                <span>{tw('orSetupManually')}</span>
               </div>
 
               <button
@@ -524,41 +552,41 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                 onClick={() => setShowManual((v) => !v)}
                 type="button"
               >
-                {showManual ? '▲ Hide Manual Setup' : '▼ Manual Setup'}
+                {showManual ? tw('hideManual') : tw('showManual')}
               </button>
             </>
           )}
 
           {(showManual || !hasEmbeddedSignup) && (
             <div className={styles.manualForm}>
-              <div className={styles.sectionTitle}>Manual Setup</div>
+              <div className={styles.sectionTitle}>{tw('manualTitle')}</div>
               <p className={styles.fieldHint}>
-                Enter your WhatsApp Business credentials from the{' '}
+                {tw('manualHint')}{' '}
                 <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className={styles.link}>
-                  Meta Developer Dashboard <ExternalLink size={11} aria-hidden="true" />
+                  {tw('metaDashboard')} <ExternalLink size={11} aria-hidden="true" />
                 </a>
               </p>
 
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>Phone Number ID</label>
+                <label className={styles.label}>{tw('phoneNumberIdLabel')}</label>
                 <Input
                   value={phoneNumberId}
                   onChange={(e) => setPhoneNumberId(e.target.value)}
-                  placeholder="e.g. 123456789012345"
+                  placeholder={tw('phoneNumberIdPlaceholder')}
                 />
               </div>
 
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>WABA ID (WhatsApp Business Account ID)</label>
+                <label className={styles.label}>{tw('wabaIdLabel')}</label>
                 <Input
                   value={wabaId}
                   onChange={(e) => setWabaId(e.target.value)}
-                  placeholder="e.g. 987654321098765"
+                  placeholder={tw('wabaIdPlaceholder')}
                 />
               </div>
 
               <div className={styles.fieldGroup}>
-                <label className={styles.label}>Permanent Access Token</label>
+                <label className={styles.label}>{tw('accessTokenLabel')}</label>
                 <Input
                   type="password"
                   value={accessToken}
@@ -567,7 +595,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                   autoComplete="off"
                 />
                 <span className={styles.fieldHint}>
-                  Generate a permanent token in Meta Business Manager → System Users
+                  {tw('accessTokenHint')}
                 </span>
               </div>
 
@@ -577,7 +605,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                 loading={connecting}
                 icon={CheckCircle}
               >
-                Connect
+                {tw('connectButton')}
               </Button>
             </div>
           )}
@@ -585,7 +613,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           <div className={styles.docsLink}>
             <AlertCircle size={13} color="var(--color-info)" aria-hidden="true" />
             <a href="/docs/whatsapp-setup" target="_blank" rel="noopener noreferrer" className={styles.link}>
-              View WhatsApp Setup Guide
+              {tw('setupGuide')}
             </a>
           </div>
         </div>
