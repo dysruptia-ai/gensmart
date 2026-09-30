@@ -24,8 +24,6 @@ export function fbLoginEmbeddedSignup(
       override_default_response_type: true,
       extras: {
         setup: {},
-        featureType: '',
-        sessionInfoVersion: '3',
       },
     }
   );
