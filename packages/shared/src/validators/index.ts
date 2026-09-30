@@ -43,7 +43,36 @@ export const agentCreateSchema = z.object({
   webConfig: z.record(z.unknown()).optional(),
 });
 
-export const agentUpdateSchema = agentCreateSchema.partial();
+const handoffContactSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: z.string().trim().min(1).max(60),
+  phone: z
+    .string()
+    .transform((v) => v.replace(/\D/g, ''))
+    .refine((v) => v.length >= 10 && v.length <= 15, 'Phone must have between 10 and 15 digits'),
+  calendarIds: z
+    .array(z.string().uuid())
+    .max(5)
+    .refine((ids) => new Set(ids).size === ids.length, 'Duplicate calendars')
+    .default([]),
+});
+
+export const handoffConfigUpdateSchema = z
+  .object({
+    enabled: z.boolean(),
+    buttonText: z.string().min(1).max(20),
+    cooldownMinutes: z.number().int().min(1).max(1440),
+    labelTtlHours: z.number().int().min(1).max(720),
+    contacts: z
+      .array(handoffContactSchema)
+      .max(5)
+      .refine((cs) => new Set(cs.map((c) => c.phone)).size === cs.length, 'Duplicate phone numbers'),
+  })
+  .partial();
+
+export const agentUpdateSchema = agentCreateSchema.partial().extend({
+  handoffConfig: handoffConfigUpdateSchema.optional(),
+});
 
 export const contactUpdateSchema = z.object({
   name: z.string().max(255).optional(),
@@ -61,3 +90,4 @@ export type AgentCreateInput = z.infer<typeof agentCreateSchema>;
 export type AgentUpdateInput = z.infer<typeof agentUpdateSchema>;
 export type ContactUpdateInput = z.infer<typeof contactUpdateSchema>;
 export type VariableInput = z.infer<typeof variableSchema>;
+export type HandoffConfigUpdateInput = z.infer<typeof handoffConfigUpdateSchema>;

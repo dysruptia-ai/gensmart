@@ -23,6 +23,13 @@ import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import {
+  requestHumanHandoffToolDef,
+  handleHumanHandoff,
+  HUMAN_HANDOFF_PROMPT_BLOCK,
+  type HumanHandoffContext,
+} from '../services/human-handoff.service';
+import { resolveHandoffConfig } from '@gensmart/shared';
+import {
   addToCartWidgetToolDef,
   handleAddToCartWidget,
   ADD_TO_CART_TOOL_NAME,
@@ -78,6 +85,7 @@ interface AgentRow {
   variables: AgentVariable[];
   status: string;
   published_at: string | null;
+  handoff_config: unknown;
 }
 
 interface ToolRow {
@@ -261,7 +269,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // Step 5: Fetch agent
   const agentResult = await query<AgentRow>(
-    'SELECT id, organization_id, name, system_prompt, llm_provider, llm_model, temperature, max_tokens, context_window_messages, message_buffer_seconds, variables, status, published_at FROM agents WHERE id = $1 AND organization_id = $2',
+    'SELECT id, organization_id, name, system_prompt, llm_provider, llm_model, temperature, max_tokens, context_window_messages, message_buffer_seconds, variables, status, published_at, handoff_config FROM agents WHERE id = $1 AND organization_id = $2',
     [agentId, organizationId]
   );
   const agent = agentResult.rows[0];
@@ -354,6 +362,18 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // send_media native tool — available on WhatsApp and Web
   if (conv.channel === 'whatsapp' || conv.channel === 'web') {
     llmTools.push(sendMediaToolDef);
+  }
+
+  // request_human_handoff native tool — needs a configured contact and a paid plan
+  const handoffConfig = resolveHandoffConfig(agent.handoff_config);
+  if (
+    (conv.channel === 'whatsapp' || conv.channel === 'web') &&
+    handoffConfig.enabled &&
+    handoffConfig.contacts.length > 0 &&
+    plan !== 'free'
+  ) {
+    llmTools.push(requestHumanHandoffToolDef);
+    fullSystemPrompt += '\n\n' + HUMAN_HANDOFF_PROMPT_BLOCK;
   }
 
   // add_to_cart_widget / remove_from_cart_widget: SOLO los puede ejecutar el widget storefront de Tiendanube (nube.send("cart:add")
@@ -1019,6 +1039,51 @@ async function executeTool(
     }
 
     const result = await handleSendMedia(args, mediaContext);
+    return result.message;
+  }
+
+  // Internal tool: request_human_handoff
+  if (name === 'request_human_handoff') {
+    const ctxRes = await query<{
+      channel: string;
+      contact_phone: string | null;
+      waba_config: Record<string, unknown> | null;
+      handoff_config: unknown;
+    }>(
+      `SELECT
+         c.channel,
+         co.phone AS contact_phone,
+         a.whatsapp_config AS waba_config,
+         a.handoff_config
+       FROM conversations c
+       JOIN agents a ON a.id = c.agent_id
+       LEFT JOIN contacts co ON co.id = c.contact_id
+       WHERE c.id = $1`,
+      [conversationId]
+    );
+    const ctx = ctxRes.rows[0];
+    if (!ctx) return 'Error: conversation not found';
+
+    const handoffContext: HumanHandoffContext = {
+      conversationId,
+      agentId,
+      organizationId,
+      channel: ctx.channel as 'whatsapp' | 'web',
+      handoffConfig: resolveHandoffConfig(ctx.handoff_config),
+    };
+
+    if (
+      ctx.channel === 'whatsapp' &&
+      ctx.waba_config?.connected &&
+      ctx.waba_config?.phone_number_id &&
+      ctx.contact_phone
+    ) {
+      handoffContext.accessToken = await resolveAccessToken(ctx.waba_config);
+      handoffContext.phoneNumberId = String(ctx.waba_config.phone_number_id);
+      handoffContext.contactPhone = ctx.contact_phone;
+    }
+
+    const result = await handleHumanHandoff(args, handoffContext);
     return result.message;
   }
 

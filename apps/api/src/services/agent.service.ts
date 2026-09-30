@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import {
@@ -5,8 +6,11 @@ import {
   findMissingRequiredConfigVariables,
   initialConfigVariableValues,
   mergeConfigVariablesSchema,
+  resolveHandoffConfig,
   validateConfigVariableSchema,
   type ConfigVariableSchema,
+  type HandoffConfig,
+  type HandoffContact,
   type ConfigVariableValues,
 } from '@gensmart/shared';
 
@@ -31,6 +35,7 @@ interface AgentRow {
   variables: unknown[];
   web_config: Record<string, unknown>;
   whatsapp_config: Record<string, unknown>;
+  handoff_config: unknown;
   template_id: string | null;
   config_variables_values: unknown;
   config_variables_schema_overrides: unknown;
@@ -127,6 +132,7 @@ function formatAgent(row: AgentRow) {
     variables: row.variables ?? [],
     webConfig: row.web_config,
     whatsappConfig: row.whatsapp_config,
+    handoffConfig: resolveHandoffConfig(row.handoff_config),
     templateId: row.template_id,
     configVariablesValues:
       row.config_variables_values && typeof row.config_variables_values === 'object'
@@ -270,6 +276,60 @@ export async function createAgent(
   return formatAgent(result.rows[0]!);
 }
 
+/**
+ * Merges a partial handoffConfig update into the stored one and enforces the rules that
+ * Zod cannot (plan, calendar ownership, at least one contact when enabled).
+ */
+async function prepareHandoffConfig(orgId: string, storedRaw: unknown, partialRaw: unknown): Promise<HandoffConfig> {
+  const partial = (partialRaw && typeof partialRaw === 'object' ? partialRaw : {}) as Partial<HandoffConfig> & {
+    contacts?: Array<Partial<HandoffContact>>;
+  };
+  const stored = resolveHandoffConfig(storedRaw);
+
+  const contacts: HandoffContact[] = partial.contacts
+    ? partial.contacts.map((c) => ({
+        id: c.id ?? crypto.randomUUID(),
+        name: String(c.name ?? ''),
+        phone: String(c.phone ?? ''),
+        calendarIds: c.calendarIds ?? [],
+      }))
+    : stored.contacts;
+
+  const merged: HandoffConfig = {
+    enabled: partial.enabled ?? stored.enabled,
+    buttonText: partial.buttonText ?? stored.buttonText,
+    cooldownMinutes: partial.cooldownMinutes ?? stored.cooldownMinutes,
+    labelTtlHours: partial.labelTtlHours ?? stored.labelTtlHours,
+    contacts,
+  };
+
+  if (partial.enabled === true) {
+    const org = await query<{ plan: string }>('SELECT plan FROM organizations WHERE id = $1', [orgId]);
+    if ((org.rows[0]?.plan ?? 'free') === 'free') {
+      throw new AppError(403, 'Human handoff requires Starter plan or higher', 'PLAN_LIMIT');
+    }
+  }
+
+  if (merged.enabled && merged.contacts.length === 0) {
+    throw new AppError(400, 'At least one support contact is required to enable human handoff', 'VALIDATION_ERROR');
+  }
+
+  if (partial.contacts) {
+    const calendarIds = [...new Set(merged.contacts.flatMap((c) => c.calendarIds))];
+    if (calendarIds.length > 0) {
+      const owned = await query<{ id: string }>(
+        'SELECT id FROM calendars WHERE id = ANY($1::uuid[]) AND organization_id = $2',
+        [calendarIds, orgId]
+      );
+      if (owned.rows.length !== calendarIds.length) {
+        throw new AppError(400, 'One or more calendars do not belong to your organization', 'VALIDATION_ERROR');
+      }
+    }
+  }
+
+  return merged;
+}
+
 export async function updateAgent(
   orgId: string,
   agentId: string,
@@ -296,10 +356,18 @@ export async function updateAgent(
     variables: 'variables',
     webConfig: 'web_config',
     whatsappConfig: 'whatsapp_config',
+    handoffConfig: 'handoff_config',
     status: 'status',
   };
 
-  const jsonFields = new Set(['channels', 'variables', 'webConfig', 'whatsappConfig']);
+  if ('handoffConfig' in data) {
+    data = {
+      ...data,
+      handoffConfig: await prepareHandoffConfig(orgId, existing.rows[0]!.handoff_config, data['handoffConfig']),
+    };
+  }
+
+  const jsonFields = new Set(['channels', 'variables', 'webConfig', 'whatsappConfig', 'handoffConfig']);
   const setClauses: string[] = [];
   const params: unknown[] = [];
 

@@ -92,6 +92,8 @@ router.get(
         created_at: string;
         last_message_content: string | null;
         last_message_role: string | null;
+        handed_off_at: string | null;
+        handoff_active: boolean;
       }>(
         `SELECT
            c.id, c.agent_id, a.name as agent_name,
@@ -100,7 +102,11 @@ router.get(
            c.channel, c.status, c.taken_over_by,
            u.name as takeover_user_name,
            c.ai_score, c.captured_variables, c.last_message_at, c.message_count, c.created_at,
-           lm.content as last_message_content, lm.role as last_message_role
+           lm.content as last_message_content, lm.role as last_message_role,
+           c.handed_off_at,
+           (c.handed_off_at IS NOT NULL
+             AND c.handed_off_at > NOW() - make_interval(hours => COALESCE(NULLIF(a.handoff_config->>'labelTtlHours', '')::int, 24))
+           ) AS handoff_active
          FROM conversations c
          LEFT JOIN agents a ON c.agent_id = a.id
          LEFT JOIN contacts co ON c.contact_id = co.id
@@ -139,6 +145,8 @@ router.get(
           lastMessageAt: row.last_message_at,
           messageCount: row.message_count,
           createdAt: row.created_at,
+          handedOffAt: row.handed_off_at,
+          handoffActive: row.handoff_active,
           lastMessage: row.last_message_content
             ? {
                 content: row.last_message_content.slice(0, 100),
@@ -193,6 +201,8 @@ router.get(
         message_count: number;
         created_at: string;
         updated_at: string;
+        handed_off_at: string | null;
+        handoff_active: boolean;
       }>(
         `SELECT
            c.id, c.agent_id, a.name as agent_name, c.organization_id,
@@ -203,7 +213,11 @@ router.get(
            c.channel, c.status, c.taken_over_by,
            u.name as takeover_user_name,
            c.taken_over_at, c.ai_score, c.ai_summary, c.captured_variables,
-           c.channel_metadata, c.last_message_at, c.message_count, c.created_at, c.updated_at
+           c.channel_metadata, c.last_message_at, c.message_count, c.created_at, c.updated_at,
+           c.handed_off_at,
+           (c.handed_off_at IS NOT NULL
+             AND c.handed_off_at > NOW() - make_interval(hours => COALESCE(NULLIF(a.handoff_config->>'labelTtlHours', '')::int, 24))
+           ) AS handoff_active
          FROM conversations c
          LEFT JOIN agents a ON c.agent_id = a.id
          LEFT JOIN contacts co ON c.contact_id = co.id
@@ -286,6 +300,8 @@ router.get(
           messageCount: conv.message_count,
           createdAt: conv.created_at,
           updatedAt: conv.updated_at,
+          handedOffAt: conv.handed_off_at,
+          handoffActive: conv.handoff_active,
         },
         messages: messageRows.map((m) => ({
           id: m.id,

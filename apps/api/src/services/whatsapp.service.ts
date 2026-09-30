@@ -34,6 +34,50 @@ export async function sendTextMessage(
   }
 }
 
+/**
+ * Send an interactive call-to-action URL button (cta_url) via WhatsApp Cloud API.
+ * Meta limits: body 1024 chars, button label 20 chars, https URLs only.
+ */
+export async function sendCtaUrlMessage(
+  phoneNumberId: string,
+  accessToken: string,
+  to: string,
+  bodyText: string,
+  buttonText: string,
+  url: string
+): Promise<void> {
+  if (!url.startsWith('https://')) {
+    throw new Error('CTA URL must use https');
+  }
+  const normalizedTo = to.startsWith('+') ? to : `+${to}`;
+
+  const response = await fetch(`${META_BASE_URL}/${phoneNumberId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      to: normalizedTo,
+      type: 'interactive',
+      interactive: {
+        type: 'cta_url',
+        body: { text: bodyText.slice(0, 1024) },
+        action: {
+          name: 'cta_url',
+          parameters: { display_text: buttonText.slice(0, 20), url },
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`WhatsApp send CTA error: ${JSON.stringify(errorData)}`);
+  }
+}
+
 export async function markAsRead(
   phoneNumberId: string,
   accessToken: string,

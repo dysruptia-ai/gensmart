@@ -1376,6 +1376,7 @@ router.post(
         captureVariableToolDef,
       } = await import('../services/variable-capture.service');
       const { sendMediaToolDef } = await import('../services/send-media.service');
+      const { requestHumanHandoffToolDef, HUMAN_HANDOFF_PROMPT_BLOCK } = await import('../services/human-handoff.service');
       const { validateMediaUrl } = await import('../services/media-validator.service');
       const { queryKnowledgeBase, hasKnowledgeBase } = await import('../services/rag.service');
       const { executeCustomFunction } = await import('../services/custom-function.service');
@@ -1451,6 +1452,15 @@ router.post(
 
       // send_media is always available in preview (will be mocked — no real send)
       llmTools.push(sendMediaToolDef);
+
+      // request_human_handoff is simulated in preview (no send, no Redis, no notifications)
+      const previewHandoff = agentResult.handoffConfig;
+      const previewHandoffActive =
+        previewHandoff.enabled && previewHandoff.contacts.length > 0 && req.org!.plan !== 'free';
+      if (previewHandoffActive) {
+        llmTools.push(requestHumanHandoffToolDef);
+        fullSystemPrompt += '\n\n' + HUMAN_HANDOFF_PROMPT_BLOCK;
+      }
 
       for (const tool of toolsResult.rows) {
         if (tool.type === 'custom_function' && tool.is_enabled) {
@@ -1770,6 +1780,12 @@ router.post(
               }
             }
             previewToolResults.push({ toolCallId: tc.id, content: bookResult });
+          } else if (tc.name === 'request_human_handoff') {
+            // Simulated: nothing is sent, stored or notified.
+            previewToolResults.push({
+              toolCallId: tc.id,
+              content: '[Preview] The handoff button would be sent to the customer. Do not repeat the link. You may add one short closing sentence, and do not offer the handoff again.',
+            });
           } else if (tc.name === 'send_media') {
             // In preview mode: validate URL but do NOT actually send to WhatsApp/widget.
             const mediaType = String(tc.arguments['type'] ?? 'image');

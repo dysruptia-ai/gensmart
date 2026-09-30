@@ -1,3 +1,4 @@
+import type { HandoffConfig } from '../handoff';
 export type Plan = 'free' | 'starter' | 'pro' | 'enterprise';
 export type Role = 'owner' | 'admin' | 'member';
 export type AgentStatus = 'draft' | 'active' | 'paused';
@@ -55,6 +56,7 @@ export interface Agent {
   variables: AgentVariable[];
   webConfig: WebConfig;
   whatsappConfig: WhatsappConfig;
+  handoffConfig: HandoffConfig;
   publishedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
