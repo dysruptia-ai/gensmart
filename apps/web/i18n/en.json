@@ -924,6 +924,7 @@
     "deleted": "Conversation deleted",
     "bulkDeleted": "{count} conversations deleted",
     "allAgents": "All agents",
+    "filterByAgent": "Filter by agent",
     "needsHelp": "Needs Help",
     "live": "Live"
   },

@@ -924,6 +924,7 @@
     "deleted": "Conversación eliminada",
     "bulkDeleted": "{count} conversaciones eliminadas",
     "allAgents": "Todos los agentes",
+    "filterByAgent": "Filtrar por agente",
     "needsHelp": "Necesita ayuda",
     "live": "En vivo"
   },

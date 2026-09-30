@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare,
@@ -102,6 +102,17 @@ export default function ConversationsPage() {
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // Keep the active agent tab visible when the change comes from the dropdown
+  const activeAgentTabRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => {
+    activeAgentTabRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [agentFilter]);
+
+  // A selection hidden by a filter must never reach bulk delete
+  useEffect(() => {
+    setSelected(new Set());
+  }, [search, statusFilter, channelFilter, agentFilter]);
 
   // Fetch agents list for filter dropdown
   useEffect(() => {
@@ -321,6 +332,34 @@ export default function ConversationsPage() {
           </select>
         </div>
       </div>
+
+      {/* Agent tabs */}
+      {agents.length > 1 && (
+        <div className={styles.agentTabs} role="group" aria-label={t('conversations.filterByAgent')}>
+          <button
+            type="button"
+            ref={agentFilter === '' ? activeAgentTabRef : undefined}
+            className={`${styles.agentTab} ${agentFilter === '' ? styles.agentTabActive : ''}`}
+            aria-pressed={agentFilter === ''}
+            onClick={() => setAgentFilter('')}
+          >
+            {t('common.all')}
+          </button>
+          {agents.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              ref={agentFilter === a.id ? activeAgentTabRef : undefined}
+              className={`${styles.agentTab} ${agentFilter === a.id ? styles.agentTabActive : ''}`}
+              aria-pressed={agentFilter === a.id}
+              title={a.name}
+              onClick={() => setAgentFilter(a.id)}
+            >
+              {a.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Bulk select bar */}
       {conversations.length > 0 && (

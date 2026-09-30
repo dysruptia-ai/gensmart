@@ -310,9 +310,57 @@
   margin-top: 1.25rem;
 }
 
+.agentTabs {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-card);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.agentTab {
+  padding: 0.25rem 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.agentTab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.agentTab:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.agentTabActive {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary);
+  font-weight: 600;
+}
+
 @media (max-width: 640px) {
   .filters {
     padding: 0.75rem 1rem;
+  }
+
+  .agentTabs {
+    padding: 0.5rem 1rem;
   }
 
   .item {
