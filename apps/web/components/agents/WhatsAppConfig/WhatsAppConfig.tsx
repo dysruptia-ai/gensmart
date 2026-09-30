@@ -57,7 +57,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const [signupStep, setSignupStep] = useState<string | null>(null);
   const [selectionType, setSelectionType] = useState<'waba' | 'phone' | null>(null);
   const [selectionOptions, setSelectionOptions] = useState<Array<{ id: string; name: string; verifiedName?: string }>>([]);
-  const [pendingFbCode, setPendingFbCode] = useState<string | null>(null);
+  const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
   const [pendingWabaId, setPendingWabaId] = useState<string | null>(null);
 
   // Session event posted by the Embedded Signup popup (optional hint for the backend)
@@ -179,6 +179,13 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         case 'NO_PHONE_FOUND':
           msg = 'No phone number found in your WhatsApp Business Account. Complete your WhatsApp Business setup in Meta Business Manager first.';
           break;
+        case 'SIGNUP_SESSION_EXPIRED':
+          setSelectionType(null);
+          setSelectionOptions([]);
+          setPendingSessionId(null);
+          setPendingWabaId(null);
+          msg = 'Connection session expired. Click "Connect with Facebook" to start again.';
+          break;
         case 'PLAN_LIMIT':
           msg = 'WhatsApp requires a Starter plan or higher.';
           break;
@@ -242,7 +249,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
           setConnecting(false);
           setSelectionType(data.requiresSelection as 'waba' | 'phone');
           setSelectionOptions(data.options as Array<{ id: string; name: string; verifiedName?: string }>);
-          setPendingFbCode(data.fbAccessToken as string);
+          setPendingSessionId(data.signupSessionId as string);
           if (data.selectedWabaId) setPendingWabaId(data.selectedWabaId as string);
           return;
         }
@@ -259,7 +266,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   }
 
   function handleSelectionContinue(selectedId: string) {
-    if (!pendingFbCode) return;
+    if (!pendingSessionId) return;
 
     setConnecting(true);
     setSelectionType(null);
@@ -268,7 +275,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
 
     const body: Record<string, string> = {
       agentId,
-      fbAccessToken: pendingFbCode,
+      signupSessionId: pendingSessionId,
     };
     if (selectionType === 'waba') {
       body.selectedWabaId = selectedId;
@@ -290,7 +297,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         setSignupStep(null);
         success(`WhatsApp connected! Phone: ${(data as { phoneNumber: string }).phoneNumber}`);
         setShowManual(false);
-        setPendingFbCode(null);
+        setPendingSessionId(null);
         setPendingWabaId(null);
         return loadStatus();
       })
@@ -473,7 +480,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
                   </div>
                   <button
                     className={styles.toggleManual}
-                    onClick={() => { setSelectionType(null); setSelectionOptions([]); setPendingFbCode(null); setShowManual(true); }}
+                    onClick={() => { setSelectionType(null); setSelectionOptions([]); setPendingSessionId(null); setShowManual(true); }}
                     type="button"
                   >
                     Cancel — use Manual Setup instead

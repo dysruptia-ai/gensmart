@@ -17,6 +17,7 @@ import {
   transcribeAudio,
   resolveAccessToken,
 } from '../services/whatsapp.service';
+import { createSignupSession, loadSignupSession, deleteSignupSession } from '../services/whatsapp-signup-session.service';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
@@ -648,10 +649,10 @@ router.post(
         throw new AppError(403, 'WhatsApp requires Starter plan or higher', 'PLAN_LIMIT');
       }
 
-      const { agentId, fbCode, fbAccessToken: fbAccessTokenFromBody, selectedWabaId: explicitWabaId, selectedPhoneId, signupEvent: rawSignupEvent } = req.body as {
+      const { agentId, fbCode, signupSessionId, selectedWabaId: explicitWabaId, selectedPhoneId, signupEvent: rawSignupEvent } = req.body as {
         agentId: string;
         fbCode?: string;
-        fbAccessToken?: string;
+        signupSessionId?: string;
         selectedWabaId?: string;
         selectedPhoneId?: string;
         signupEvent?: unknown;
@@ -667,7 +668,7 @@ router.post(
         if (typeof rawSignupEvent !== 'object' || typeof ev.event !== 'string') {
           console.warn('[embedded-signup] Ignoring malformed signupEvent');
         } else {
-          hintEvent = ev.event.slice(0, 64);
+          hintEvent = ev.event.replace(/[^A-Za-z0-9_]/g, '').slice(0, 64) || 'none';
           if (ev.event === 'FINISH' || ev.event === 'FINISH_ONLY_WABA') {
             if (typeof ev.waba_id === 'string' && ID_RE.test(ev.waba_id)) hintWabaRaw = ev.waba_id;
             if (typeof ev.phone_number_id === 'string' && ID_RE.test(ev.phone_number_id)) hintPhoneRaw = ev.phone_number_id;
@@ -688,8 +689,12 @@ router.post(
       //    round trip (token already exchanged in a prior call) or the
       //    first call, which must exchange the authorization code.
       let fbAccessToken: string;
-      if (fbAccessTokenFromBody) {
-        fbAccessToken = fbAccessTokenFromBody;
+      if (signupSessionId) {
+        const sessionToken = await loadSignupSession(signupSessionId, { orgId: req.org!.id, agentId });
+        if (!sessionToken) {
+          throw new AppError(400, 'Connection session expired. Start again.', 'SIGNUP_SESSION_EXPIRED');
+        }
+        fbAccessToken = sessionToken;
       } else if (fbCode) {
         const fbAppId = env.FACEBOOK_APP_ID;
         const fbAppSecret = env.FACEBOOK_APP_SECRET;
@@ -716,7 +721,7 @@ router.post(
         fbAccessToken = tokenExchangeData.access_token;
         console.log(`[embedded-signup] Code exchanged successfully for agent ${agentId}`);
       } else {
-        throw new AppError(400, 'Missing agentId and fbCode or fbAccessToken', 'VALIDATION_ERROR');
+        throw new AppError(400, 'Missing agentId and fbCode or signupSessionId', 'VALIDATION_ERROR');
       }
 
       // 4. Get the Platform System User token (needed for debug_token, webhook, registration)
@@ -925,7 +930,7 @@ router.post(
           success: false,
           requiresSelection: 'waba',
           options: wabaOptions,
-          fbAccessToken: fbAccessToken,
+          signupSessionId: signupSessionId ?? await createSignupSession(fbAccessToken, { orgId: req.org!.id, agentId }),
         });
         return;
       }
@@ -1001,7 +1006,7 @@ router.post(
           requiresSelection: 'phone',
           options: phoneOptions,
           selectedWabaId: wabaId,
-          fbAccessToken: fbAccessToken,
+          signupSessionId: signupSessionId ?? await createSignupSession(fbAccessToken, { orgId: req.org!.id, agentId }),
         });
         return;
       }
@@ -1153,6 +1158,9 @@ router.post(
         ]
       );
       console.log(`[embedded-signup] Stored encrypted customer business token for agent ${agentId}`);
+      if (signupSessionId) {
+        void deleteSignupSession(signupSessionId);
+      }
 
       // 10. Ensure 'whatsapp' is in channels array
       await query(
