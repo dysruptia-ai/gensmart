@@ -310,7 +310,7 @@ export async function handleHumanHandoff(
         organizationId: context.organizationId,
         type: 'human_handoff_offhours',
         title: 'Human handoff requested outside office hours',
-        message: 'A customer asked to talk to a person but nobody on the team was available.',
+        message: teamSummary,
         data: { conversationId: context.conversationId, agentId: context.agentId, summary: teamSummary },
       }).catch((err) => console.error('[human-handoff] Failed to create notification:', err));
       return {

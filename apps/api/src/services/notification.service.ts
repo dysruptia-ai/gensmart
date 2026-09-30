@@ -93,7 +93,7 @@ export async function createNotification(
       [organizationId, type, title, message, JSON.stringify(data)]
     );
     const notif = rowToNotification(result.rows[0]!);
-    emitNotification(organizationId, notif);
+    emitNotification(`org:${organizationId}`, notif);
     return notif;
   }
 
@@ -108,7 +108,7 @@ export async function createNotification(
     );
     const notif = rowToNotification(result.rows[0]!);
     lastNotif = notif;
-    emitNotification(organizationId, notif);
+    emitNotification(`user:${user.id}`, notif);
 
     if (doSendEmail) {
       await sendNotificationEmail(user, type, title, message, data, user.language).catch((err) =>
@@ -124,9 +124,9 @@ export async function createNotification(
   return lastNotif!;
 }
 
-function emitNotification(organizationId: string, notif: Notification): void {
+function emitNotification(room: string, notif: Notification): void {
   try {
-    getIO().to(`org:${organizationId}`).emit('notification:new', {
+    getIO().to(room).emit('notification:new', {
       id: notif.id,
       type: notif.type,
       title: notif.title,

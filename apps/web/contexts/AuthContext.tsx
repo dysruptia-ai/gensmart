@@ -9,6 +9,7 @@ import React, {
   useRef,
 } from 'react';
 import { api, setAccessToken, ApiError } from '@/lib/api';
+import { disconnectSharedSocket } from '@/hooks/useWebSocket';
 
 export interface AuthUser {
   id: string;
@@ -71,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch {
         setUser(null);
         setAccessToken(null);
+        disconnectSharedSocket();
       }
     }, ACCESS_TOKEN_LIFETIME_MS - REFRESH_BEFORE_EXPIRY_MS);
   }, []);
@@ -90,6 +92,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!cancelled) {
           setUser(null);
           setAccessToken(null);
+          disconnectSharedSocket();
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -149,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!(err instanceof ApiError)) console.error(err);
     } finally {
       setAccessToken(null);
+      disconnectSharedSocket();
       setUser(null);
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     }
