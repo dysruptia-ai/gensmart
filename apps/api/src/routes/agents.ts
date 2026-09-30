@@ -1376,7 +1376,7 @@ router.post(
         captureVariableToolDef,
       } = await import('../services/variable-capture.service');
       const { sendMediaToolDef } = await import('../services/send-media.service');
-      const { requestHumanHandoffToolDef, HUMAN_HANDOFF_PROMPT_BLOCK } = await import('../services/human-handoff.service');
+      const { requestHumanHandoffToolDef, buildHumanHandoffPromptBlock } = await import('../services/human-handoff.service');
       const { validateMediaUrl } = await import('../services/media-validator.service');
       const { queryKnowledgeBase, hasKnowledgeBase } = await import('../services/rag.service');
       const { executeCustomFunction } = await import('../services/custom-function.service');
@@ -1459,7 +1459,8 @@ router.post(
         previewHandoff.enabled && previewHandoff.contacts.length > 0 && req.org!.plan !== 'free';
       if (previewHandoffActive) {
         llmTools.push(requestHumanHandoffToolDef);
-        fullSystemPrompt += '\n\n' + HUMAN_HANDOFF_PROMPT_BLOCK;
+        // Preview has no real conversation or contact, so the customer's name is unknown.
+        fullSystemPrompt += '\n\n' + buildHumanHandoffPromptBlock(null);
       }
 
       for (const tool of toolsResult.rows) {
@@ -1784,7 +1785,7 @@ router.post(
             // Simulated: nothing is sent, stored or notified.
             previewToolResults.push({
               toolCallId: tc.id,
-              content: '[Preview] The handoff button would be sent to the customer. Do not repeat the link. You may add one short closing sentence, and do not offer the handoff again.',
+              content: '[Preview] The handoff button would be sent. The customer must TAP the button to start the chat with the team; nobody will contact them automatically. Write one short sentence in the customer\'s language reminding them to tap the button below. Do not promise a callback or that someone will reach out, do not repeat the link, and do not offer the handoff again.',
             });
           } else if (tc.name === 'send_media') {
             // In preview mode: validate URL but do NOT actually send to WhatsApp/widget.

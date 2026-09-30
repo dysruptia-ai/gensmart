@@ -25,7 +25,8 @@ import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../ser
 import {
   requestHumanHandoffToolDef,
   handleHumanHandoff,
-  HUMAN_HANDOFF_PROMPT_BLOCK,
+  buildHumanHandoffPromptBlock,
+  resolveKnownCustomerName,
   type HumanHandoffContext,
 } from '../services/human-handoff.service';
 import { resolveHandoffConfig } from '@gensmart/shared';
@@ -373,7 +374,17 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     plan !== 'free'
   ) {
     llmTools.push(requestHumanHandoffToolDef);
-    fullSystemPrompt += '\n\n' + HUMAN_HANDOFF_PROMPT_BLOCK;
+    let handoffContactName: string | null = null;
+    if (conv.contact_id) {
+      try {
+        const nameRes = await query<{ name: string | null }>('SELECT name FROM contacts WHERE id = $1', [conv.contact_id]);
+        handoffContactName = nameRes.rows[0]?.name ?? null;
+      } catch {
+        handoffContactName = null;
+      }
+    }
+    const knownCustomerName = resolveKnownCustomerName(handoffContactName, conv.captured_variables);
+    fullSystemPrompt += '\n\n' + buildHumanHandoffPromptBlock(knownCustomerName);
   }
 
   // add_to_cart_widget / remove_from_cart_widget: SOLO los puede ejecutar el widget storefront de Tiendanube (nube.send("cart:add")
