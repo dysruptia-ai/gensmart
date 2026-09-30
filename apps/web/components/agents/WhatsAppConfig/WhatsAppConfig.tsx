@@ -9,7 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { fbLoginEmbeddedSignup } from './fbLogin';
-import { parseSignupMessage, isFinishEvent, type SignupEvent } from './signupEvent';
+import { parseSignupMessage, isFinishEvent, isAbortEvent, type SignupEvent } from './signupEvent';
 import styles from './WhatsAppConfig.module.css';
 
 interface WhatsAppStatus {
@@ -215,7 +215,23 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     signupEventRef.current = null;
     fbLoginEmbeddedSignup(FB, configId, function(code) {
       if (!code) {
-        toastError('Connection cancelled. Click "Connect with Facebook" to try again. Make sure to complete all steps in the Facebook popup.');
+        // The abort event may arrive just after the callback: wait up to 800ms for it.
+        const abortStartedAt = Date.now();
+        function reportAbort() {
+          const evt = signupEventRef.current;
+          if ((!evt || !isAbortEvent(evt)) && Date.now() - abortStartedAt < 800) {
+            setTimeout(reportAbort, 100);
+            return;
+          }
+          if (evt && evt.event === 'ERROR' && evt.error_message) {
+            toastError(`Facebook reported a problem: ${evt.error_message}. Click "Connect with Facebook" to try again.`);
+          } else if (evt && evt.event === 'CANCEL' && evt.current_step && evt.current_step.includes('PHONE')) {
+            toastError('Connection cancelled while adding your phone number. Click "Connect with Facebook" to try again and finish the phone step.');
+          } else {
+            toastError('Connection cancelled. Click "Connect with Facebook" to try again. Make sure to complete all steps in the Facebook popup.');
+          }
+        }
+        reportAbort();
         return;
       }
 

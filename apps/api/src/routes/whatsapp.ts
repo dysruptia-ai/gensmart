@@ -1002,7 +1002,7 @@ router.post(
       //    back to the shared platform token.
       let phoneNumberId = '';
       let displayPhone = '';
-      type PhoneDataType = { data?: Array<{ id: string; display_phone_number: string; verified_name?: string }> };
+      type PhoneDataType = { data?: Array<{ id: string; display_phone_number: string; verified_name?: string; code_verification_status?: string; status?: string }> };
       let phoneData: PhoneDataType | null = null;
 
       const phoneLookupTokens: Array<[string, string]> = [
@@ -1013,7 +1013,7 @@ router.post(
       for (const [label, token] of phoneLookupTokens) {
         try {
           const phoneRes = await fetch(
-            `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name`,
+            `https://graph.facebook.com/v21.0/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name,code_verification_status,status`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           if (!phoneRes.ok) {
@@ -1089,7 +1089,19 @@ router.post(
 
       if (!phoneNumberId) {
         console.error('[embedded-signup] No phone numbers found for WABA:', wabaId);
+        if (hintEvent === 'FINISH_ONLY_WABA') {
+          throw new AppError(400, 'Your WhatsApp Business Account was created but no phone number was added. Click "Connect with Facebook" again and add a phone number to finish.', 'PHONE_NOT_ADDED');
+        }
         throw new AppError(400, 'No phone number found in the shared WhatsApp Business Account. Please complete WhatsApp Business setup first.', 'NO_PHONE_FOUND');
+      }
+
+      // Only a number still pending its verification code cannot be registered.
+      // Other states (EXPIRED, VERIFIED, absent) must not block a reconnection, and a
+      // number whose status is CONNECTED (already in service) is never rejected.
+      const finalPhone = phoneData?.data?.find((p) => p.id === phoneNumberId);
+      console.log(`[embedded-signup] Phone state: verification=${finalPhone?.code_verification_status ?? 'unknown'}, status=${finalPhone?.status ?? 'unknown'}`);
+      if (finalPhone?.code_verification_status === 'NOT_VERIFIED' && finalPhone?.status !== 'CONNECTED') {
+        throw new AppError(400, 'Your phone number was added but not verified yet. Click "Connect with Facebook" again and complete the verification code step.', 'PHONE_NOT_VERIFIED');
       }
 
       // A phone number can only feed one agent: the webhook resolves the agent by

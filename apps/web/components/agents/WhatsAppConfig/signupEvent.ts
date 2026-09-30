@@ -8,10 +8,14 @@ export type SignupEvent = {
   phone_number_id?: string;
   business_id?: string;
   waba_ids?: string[];
+  current_step?: string;
+  error_message?: string;
+  error_id?: string;
 };
 
 const ID_PATTERN = /^\d{5,30}$/;
 const FINISH_EVENTS = ['FINISH', 'FINISH_ONLY_WABA', 'FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING'];
+const ABORT_EVENTS = ['CANCEL', 'ERROR'];
 
 export function isFacebookOrigin(origin: string): boolean {
   try {
@@ -58,9 +62,27 @@ export function parseSignupMessage(evt: MessageEvent): SignupEvent | null {
     if (ids.length > 0) result.waba_ids = ids.slice(0, 20);
   }
 
+  if (typeof data['current_step'] === 'string') {
+    const step = data['current_step'].replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+    if (step) result.current_step = step;
+  }
+  if (typeof data['error_id'] === 'string') {
+    const errorId = data['error_id'].replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64);
+    if (errorId) result.error_id = errorId;
+  }
+  if (typeof data['error_message'] === 'string') {
+    // eslint-disable-next-line no-control-regex
+    const message = data['error_message'].replace(/[\u0000-\u001f\u007f-\u009f]/g, '').slice(0, 200);
+    if (message) result.error_message = message;
+  }
+
   return result;
 }
 
 export function isFinishEvent(e: SignupEvent): boolean {
   return FINISH_EVENTS.includes(e.event);
+}
+
+export function isAbortEvent(e: SignupEvent): boolean {
+  return ABORT_EVENTS.includes(e.event);
 }
