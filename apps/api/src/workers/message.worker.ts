@@ -385,6 +385,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     }
     const knownCustomerName = resolveKnownCustomerName(handoffContactName, conv.captured_variables);
     fullSystemPrompt += '\n\n' + buildHumanHandoffPromptBlock(knownCustomerName);
+    console.log(`[human-handoff] Prompt block added for conversation ${conversationId} name_known=${knownCustomerName !== null}`);
   }
 
   // add_to_cart_widget / remove_from_cart_widget: SOLO los puede ejecutar el widget storefront de Tiendanube (nube.send("cart:add")
@@ -1060,12 +1061,16 @@ async function executeTool(
       contact_phone: string | null;
       waba_config: Record<string, unknown> | null;
       handoff_config: unknown;
+      contact_name: string | null;
+      captured_variables: Record<string, unknown> | null;
     }>(
       `SELECT
          c.channel,
          co.phone AS contact_phone,
          a.whatsapp_config AS waba_config,
-         a.handoff_config
+         a.handoff_config,
+         co.name AS contact_name,
+         c.captured_variables
        FROM conversations c
        JOIN agents a ON a.id = c.agent_id
        LEFT JOIN contacts co ON co.id = c.contact_id
@@ -1081,6 +1086,7 @@ async function executeTool(
       organizationId,
       channel: ctx.channel as 'whatsapp' | 'web',
       handoffConfig: resolveHandoffConfig(ctx.handoff_config),
+      knownCustomerName: resolveKnownCustomerName(ctx.contact_name, ctx.captured_variables),
     };
 
     if (
