@@ -1785,7 +1785,7 @@ router.post(
             // Simulated: nothing is sent, stored or notified.
             previewToolResults.push({
               toolCallId: tc.id,
-              content: '[Preview] The handoff button would be sent. The customer must TAP the button to start the chat with the team; nobody will contact them automatically. Write ONE short sentence in the customer\'s language reminding them to tap the button from the previous message; do not say where the button is (never above or below). Do not promise a callback or that someone will reach out, do not repeat the link, and do not offer the handoff again.',
+              content: '[Preview] The handoff button would be sent. The customer must TAP the button to start the chat with the team; nobody will contact them on their own. Write ONE short sentence in the customer\'s language reminding them to tap the button from the previous message; do not say where the button is (never above or below). Do not promise a callback or that someone will reach out, do not repeat the link, and do not offer the handoff again.',
             });
           } else if (tc.name === 'send_media') {
             // In preview mode: validate URL but do NOT actually send to WhatsApp/widget.
