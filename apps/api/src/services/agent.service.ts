@@ -835,7 +835,7 @@ export async function updateTool(
   }
 
   if (setClauses.length === 0) {
-    const existing = await query<ToolRow>('SELECT * FROM agent_tools WHERE id = $1', [toolId]);
+    const existing = await query<ToolRow>('SELECT * FROM agent_tools WHERE id = $1 AND agent_id = $2', [toolId, agentId]);
     return existing.rows[0] ? formatTool(existing.rows[0]) : undefined;
   }
 
@@ -885,7 +885,7 @@ export async function duplicateAgent(orgId: string, agentId: string, plan: strin
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-async function verifyAgentOwnership(orgId: string, agentId: string) {
+export async function verifyAgentOwnership(orgId: string, agentId: string) {
   const result = await query<{ id: string }>(
     'SELECT id FROM agents WHERE id = $1 AND organization_id = $2',
     [agentId, orgId]

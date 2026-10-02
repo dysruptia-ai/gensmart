@@ -10,6 +10,7 @@ import { validate } from '../middleware/validate';
 import { validateUUID } from '../middleware/validateUUID';
 import { checkAgentLimit, checkKnowledgeLimit } from '../middleware/planLimits';
 import * as agentService from '../services/agent.service';
+import { serverUrlMatchesProfile } from '../services/mcp-provider-url';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
@@ -363,6 +364,12 @@ router.post(
             });
             return;
           }
+          if (!serverUrlMatchesProfile(profile, validated.server_url)) {
+            res.status(400).json({
+              error: { message: 'server_url does not match the selected MCP provider', code: 'PROVIDER_URL_MISMATCH' },
+            });
+            return;
+          }
           try {
             validateProviderHeaders(profile, validated.headers);
           } catch (err) {
@@ -401,6 +408,13 @@ router.post(
   validateUUID('id'),
   async (req: Request, res: Response): Promise<void> => {
     try {
+      try {
+        await agentService.verifyAgentOwnership(req.org!.id, String(req.params['id']));
+      } catch {
+        res.status(404).json({ success: false, errorCode: 'AGENT_NOT_FOUND', error: 'Agent not found' });
+        return;
+      }
+
       const { server_url, transport, headers: rawHeaders, providerId, toolId } = req.body as {
         server_url?: string;
         transport?: string;
@@ -486,6 +500,14 @@ router.post(
       if (providerId) {
         profile = await mcpProviders.findProfileById(providerId);
         if (profile && profile.is_active) {
+          if (!serverUrlMatchesProfile(profile, server_url)) {
+            res.status(400).json({
+              success: false,
+              errorCode: 'PROVIDER_URL_MISMATCH',
+              error: 'server_url does not match the selected MCP provider',
+            });
+            return;
+          }
           profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
         } else {
           profile = null;
@@ -670,6 +692,12 @@ router.put(
             if (!profile || !profile.is_active) {
               res.status(400).json({
                 error: { message: `Unknown or inactive MCP provider: ${effectiveProviderId}`, code: 'INVALID_PROVIDER' },
+              });
+              return;
+            }
+            if (!serverUrlMatchesProfile(profile, validated.server_url)) {
+              res.status(400).json({
+                error: { message: 'server_url does not match the selected MCP provider', code: 'PROVIDER_URL_MISMATCH' },
               });
               return;
             }
@@ -1578,7 +1606,11 @@ router.post(
           try {
             const profile = await mcpProviders.findProfileById(cfg.providerId);
             if (profile && profile.is_active) {
-              profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+              if (serverUrlMatchesProfile(profile, serverUrl)) {
+                profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+              } else {
+                console.error(`[preview] Tool ${tool.id} server_url does not match provider ${cfg.providerId}; provider headers not sent`);
+              }
             }
           } catch (err) {
             console.error(`[preview] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);

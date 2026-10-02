@@ -17,6 +17,7 @@ import { executeCustomFunction } from '../services/custom-function.service';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
 import { decryptHeaders } from '../services/mcp-headers.service';
 import * as mcpProviders from '../services/mcp-providers.service';
+import { serverUrlMatchesProfile } from '../services/mcp-provider-url';
 import { decrypt } from '../config/encryption';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
@@ -519,7 +520,11 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       try {
         const profile = await mcpProviders.findProfileById(cfg.providerId);
         if (profile && profile.is_active) {
-          profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+          if (serverUrlMatchesProfile(profile, serverUrl)) {
+            profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+          } else {
+            console.error(`[msg-worker] Tool ${tool.id} server_url does not match provider ${cfg.providerId}; provider headers not sent`);
+          }
         }
       } catch (err) {
         console.error(`[msg-worker] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);

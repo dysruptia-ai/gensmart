@@ -23,6 +23,7 @@ import { updateContactStage } from '../services/contact.service';
 import { encryptHeaders, generateWebhookSecret } from './mcp-headers.service';
 import * as platformSettings from './platform-settings.service';
 import * as mcpProviders from './mcp-providers.service';
+import { serverUrlMatchesProfile } from './mcp-provider-url';
 import { connectAndListTools } from './mcp-client.service';
 
 const WOOCOMMERCE_TEMPLATE_NAME = 'WooCommerce Store Assistant';
@@ -133,7 +134,14 @@ async function refreshStoreIdAndEnsureDiscovery(
       'MCP_PROVIDER_NOT_FOUND'
     );
   }
-  const profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+  // The stored server_url is not trusted: master headers only go to the provider's own origin.
+  const reinstallServerUrl = (newConfig['server_url'] as string) ?? TIENDANUBE_SERVER_URL;
+  let profileAutoHeaders: Record<string, string> = {};
+  if (serverUrlMatchesProfile(profile, reinstallServerUrl)) {
+    profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+  } else {
+    console.error(`[tiendanube] Tool ${tool.id} server_url does not match provider ${TIENDANUBE_PROVIDER_ID}; provider headers not sent`);
+  }
   const webhookSecretEncrypted = newConfig['webhookSecret_encrypted'] as string | undefined;
   const plainHeaders: Record<string, string> = {
     ...profileAutoHeaders,
@@ -148,7 +156,7 @@ async function refreshStoreIdAndEnsureDiscovery(
     agentId,
     tool.id,
     newConfig,
-    (newConfig['server_url'] as string) ?? TIENDANUBE_SERVER_URL,
+    reinstallServerUrl,
     (newConfig['transport'] as 'sse' | 'streamable-http') ?? 'streamable-http',
     plainHeaders
   );
