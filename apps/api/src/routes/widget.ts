@@ -11,6 +11,7 @@ import { PLAN_LIMITS, injectConfigVariables } from '@gensmart/shared';
 import { loadAgentConfigForDeepInject } from '../services/agent-config.service';
 import { recordCartResult } from '../services/add-to-cart-widget.service';
 import { recordCartState } from '../services/get-cart-widget.service';
+import { sanitizeWidgetMessageMetadata } from '../services/widget-metadata.service';
 
 const router = Router();
 
@@ -540,7 +541,15 @@ router.get(
       while (true) {
         const messages = await fetchMessages();
         if (messages.length > 0) {
-          res.json({ messages });
+          res.json({
+            messages: messages.map((row) => ({
+              id: row.id,
+              role: row.role,
+              content: row.content,
+              created_at: row.created_at,
+              metadata: sanitizeWidgetMessageMetadata(row.metadata),
+            })),
+          });
           return;
         }
 
