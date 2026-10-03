@@ -33,7 +33,12 @@ export function generateTempToken(payload: TempTokenPayload): string {
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
-  return jwt.verify(token, env.JWT_ACCESS_SECRET) as AccessTokenPayload;
+  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as AccessTokenPayload & { purpose?: unknown };
+  // Temporary tokens (e.g. the 2FA step) share the signing secret: they must never act as a session.
+  if (typeof payload === 'object' && payload !== null && 'purpose' in payload) {
+    throw new Error('Invalid token purpose');
+  }
+  return payload;
 }
 
 export function verifyRefreshToken(token: string): RefreshTokenPayload {

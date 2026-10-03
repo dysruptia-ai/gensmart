@@ -1,6 +1,6 @@
 import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
-import jwt from 'jsonwebtoken';
+import { verifyAccessToken } from './jwt';
 import { env } from './env';
 import { query } from './database';
 
@@ -104,12 +104,7 @@ export function initWebSocket(httpServer: HttpServer): SocketIOServer {
     }
 
     try {
-      const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as {
-        userId: string;
-        orgId: string;
-        role: string;
-        email: string;
-      };
+      const payload = verifyAccessToken(token);
       socket.data['userId'] = payload.userId;
       socket.data['orgId'] = payload.orgId;
       socket.data['role'] = payload.role;
