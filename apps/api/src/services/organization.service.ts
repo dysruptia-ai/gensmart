@@ -319,6 +319,22 @@ export async function removeMember(
     client.release();
   }
 
-  // The removed member must not stay in the real-time rooms; never fails the removal
-  void disconnectUserFromOrg(targetUserId, orgId).catch(() => undefined);
+  // The removed member must not stay in the real-time rooms of this organization nor of its
+  // sub-accounts (their sessions there come from their role in the parent). Never fails the removal.
+  void disconnectFromOrgAndSubAccounts(targetUserId, orgId);
+}
+
+async function disconnectFromOrgAndSubAccounts(userId: string, orgId: string): Promise<void> {
+  await disconnectUserFromOrg(userId, orgId).catch(() => undefined);
+  try {
+    const children = await query<{ child_organization_id: string }>(
+      'SELECT child_organization_id FROM sub_accounts WHERE parent_organization_id = $1',
+      [orgId]
+    );
+    for (const { child_organization_id } of children.rows) {
+      await disconnectUserFromOrg(userId, child_organization_id).catch(() => undefined);
+    }
+  } catch (err) {
+    console.warn('[org] could not look up sub-accounts to disconnect a removed member:', (err as Error).message);
+  }
 }

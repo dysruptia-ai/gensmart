@@ -1,5 +1,5 @@
 import { safeFetch, UnsafeUrlError } from './safe-url';
-import { applyCustomFunctionAuth } from './custom-function-auth';
+import { applyCustomFunctionAuth, appendArgumentsAsQuery } from './custom-function-auth';
 
 const CUSTOM_FUNCTION_MAX_BYTES = 1024 * 1024;
 
@@ -177,22 +177,9 @@ export async function executeCustomFunction(
     url: substitutedUrl,
   });
   const finalHeaders = authed.headers;
-  let finalUrl = authed.url;
 
-  // For GET/HEAD requests, append tool arguments as query string parameters
-  if (['GET', 'HEAD'].includes(httpMethod.toUpperCase())) {
-    const queryParams = new URLSearchParams();
-    for (const [key, value] of Object.entries(toolArguments)) {
-      if (value !== undefined && value !== null) {
-        queryParams.append(key, String(value));
-      }
-    }
-    const queryString = queryParams.toString();
-    if (queryString) {
-      const separator = finalUrl.includes('?') ? '&' : '?';
-      finalUrl = `${finalUrl}${separator}${queryString}`;
-    }
-  }
+  // For GET/HEAD requests, append tool arguments as query string parameters (shared with the Test button)
+  const finalUrl = appendArgumentsAsQuery(authed.url, toolArguments, httpMethod);
 
   // Build body
   const body = bodyTemplate

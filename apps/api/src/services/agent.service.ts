@@ -5,7 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import { resolveCalendarIds } from './calendar.service';
 import { unlinkInside } from './upload-paths';
 import { replacePlaceholders } from './custom-function.service';
-import { applyCustomFunctionAuth } from './custom-function-auth';
+import { applyCustomFunctionAuth, appendArgumentsAsQuery } from './custom-function-auth';
 import { safeFetch, UnsafeUrlError } from './safe-url';
 import {
   protectCustomFunctionConfig,
@@ -1135,7 +1135,6 @@ export async function testTool(
 
   if (!endpointUrl) throw new AppError(400, 'Tool has no endpoint URL configured', 'MISSING_CONFIG');
 
-  // Build headers
   // Build URL — substitute {{param}} path params first (mirrors
   // custom-function.service.ts so the Test button reflects production behavior)
   const substitutedUrl = replacePlaceholders(endpointUrl, params, 'endpoint_url') as string;
@@ -1147,7 +1146,9 @@ export async function testTool(
     url: substitutedUrl,
   });
   const requestHeaders = authed.headers;
-  const url = authed.url;
+
+  // GET/HEAD: the test params travel as query parameters, as in production
+  const url = appendArgumentsAsQuery(authed.url, params, httpMethod);
 
   // Build body: substitute params into body template or use params directly
   let body: unknown = params;

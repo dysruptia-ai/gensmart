@@ -1,6 +1,7 @@
 /**
- * Authentication of custom_function requests, shared by the production engine (executeCustomFunction)
- * and the Test button (testTool) so that both send the same thing. No app imports, nothing is logged.
+ * Authentication and query arguments of custom_function requests, shared by the production engine
+ * (executeCustomFunction) and the Test button (testTool) so that both send the same thing.
+ * No app imports, nothing is logged.
  *
  * auth.type values (the form saves the first four):
  *  - 'none' / absent: nothing.
@@ -23,6 +24,23 @@ function appendQuery(url: string, encodedPair: string): string {
   const base = hashAt === -1 ? url : url.slice(0, hashAt);
   const fragment = hashAt === -1 ? '' : url.slice(hashAt);
   return `${base}${base.includes('?') ? '&' : '?'}${encodedPair}${fragment}`;
+}
+
+/**
+ * GET and HEAD carry the tool arguments as query parameters (URLSearchParams); undefined and null values
+ * are skipped, the rest go through String(). Any other method: the URL is returned unchanged.
+ * The query goes before a fragment, with ? or & depending on whether the URL already has a query.
+ */
+export function appendArgumentsAsQuery(url: string, args: Record<string, unknown>, method: string): string {
+  if (!['GET', 'HEAD'].includes(method.toUpperCase())) return url;
+  const queryParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(args)) {
+    if (value !== undefined && value !== null) {
+      queryParams.append(key, String(value));
+    }
+  }
+  const queryString = queryParams.toString();
+  return queryString ? appendQuery(url, queryString) : url;
 }
 
 export function applyCustomFunctionAuth(input: {
