@@ -2071,7 +2071,7 @@ router.post(
       };
 
       if (isMinimalResponse(finalResponse)) {
-        console.warn(`[agents.preview] Minimal LLM response detected: "${finalResponse}" — retrying`);
+        console.warn(`[agents.preview] Minimal LLM response detected (length=${finalResponse.length}) — retrying`);
         try {
           const retryResponse = await chat({
             provider: agentResult.llmProvider as 'openai' | 'anthropic',
@@ -2085,7 +2085,7 @@ router.post(
             finalResponse = stripAndExtractToolCallArtifacts(retryResponse.content).cleaned;
             totalTokens += retryResponse.usage.totalTokens;
           } else {
-            console.warn(`[agents.preview] Retry also returned minimal response: "${retryResponse.content}"`);
+            console.warn(`[agents.preview] Retry also returned minimal response (length=${retryResponse.content.length})`);
             finalResponse = agentResult.llmProvider === 'anthropic'
               ? 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?'
               : 'Sorry, I could not process your message. Could you please repeat it?';

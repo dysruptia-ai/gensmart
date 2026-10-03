@@ -12,6 +12,8 @@ import { loadAgentConfigForDeepInject } from '../services/agent-config.service';
 import { recordCartResult } from '../services/add-to-cart-widget.service';
 import { recordCartState } from '../services/get-cart-widget.service';
 import { sanitizeWidgetMessageMetadata } from '../services/widget-metadata.service';
+import { clampString, decodedHead, isBase64, isUuid } from '../services/widget-input';
+import { detectImageMime } from '../services/image-sniff';
 
 const router = Router();
 
@@ -24,8 +26,24 @@ const widgetCors = cors({
 
 router.use(widgetCors);
 
-// Larger body limit for image/audio uploads (base64 can be ~13.3MB for 10MB audio)
-router.use(express.json({ limit: '15mb' }));
+// BEGIN body parsers
+// Larger body limit only for POST /:agentId/message (image/audio uploads: base64 can be ~13.3MB for 10MB
+// audio). Every other widget route accepts at most 100kb.
+const messageJson = express.json({ limit: '15mb' });
+const smallJson = express.json({ limit: '100kb' });
+router.use((req: Request, res: Response, next: NextFunction): void => {
+  const isMessagePost = req.method === 'POST' && /^\/[^/]+\/message\/?$/.test(req.path);
+  (isMessagePost ? messageJson : smallJson)(req, res, next);
+});
+// body-parser errors would otherwise reach the global handler as a 500
+router.use((err: Error & { type?: string }, _req: Request, res: Response, next: NextFunction): void => {
+  if (err.type === 'entity.too.large') {
+    res.status(413).json({ error: { message: 'Payload too large', code: 'PAYLOAD_TOO_LARGE' } });
+    return;
+  }
+  next(err);
+});
+// END body parsers
 
 // ── Rate limiting helpers ─────────────────────────────────────────────────────
 
@@ -215,11 +233,12 @@ router.post(
         throw new AppError(403, 'Web widget is not enabled for this agent', 'CHANNEL_DISABLED');
       }
 
-      const { fingerprint, referrer, userAgent } = req.body as {
-        fingerprint?: string;
-        referrer?: string;
-        userAgent?: string;
-      };
+      // Untrusted: only strings of a sane length are stored
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const fingerprint =
+        typeof body['fingerprint'] === 'string' && body['fingerprint'].length <= 128 ? body['fingerprint'] : null;
+      const referrer = clampString(body['referrer'], 500);
+      const userAgent = clampString(body['userAgent'], 200);
 
       // Create anonymous contact (include agent_id so contacts are properly attributed)
       const contactResult = await query<{ id: string }>(
@@ -229,7 +248,7 @@ router.post(
         [
           agent.organization_id,
           agent.id,
-          JSON.stringify({ fingerprint: fingerprint ?? null, referrer: referrer ?? null }),
+          JSON.stringify({ fingerprint, referrer }),
         ]
       );
       const contactId = contactResult.rows[0]!.id;
@@ -246,8 +265,8 @@ router.post(
           contactId,
           JSON.stringify({
             ip: ip.slice(0, 15),
-            userAgent: (userAgent ?? '').slice(0, 200),
-            referrer: (referrer ?? '').slice(0, 500),
+            userAgent: userAgent ?? '',
+            referrer: referrer ?? '',
           }),
         ]
       );
@@ -278,6 +297,21 @@ router.post(
         audioMimeType?: string; // 'audio/webm', 'audio/mp4', etc.
       };
 
+      // Input shape checks first: nothing reaches the database before this
+      const isAbsent = (v: unknown): boolean => v === undefined || v === null || v === '';
+      if (!isAbsent(sessionId) && !isUuid(sessionId)) {
+        throw new AppError(400, 'Invalid session', 'VALIDATION_ERROR');
+      }
+      if (!isAbsent(message) && typeof message !== 'string') {
+        throw new AppError(400, 'Invalid message', 'VALIDATION_ERROR');
+      }
+      if (!isAbsent(image) && (typeof image !== 'string' || !isBase64(image))) {
+        throw new AppError(400, 'Invalid image', 'VALIDATION_ERROR');
+      }
+      if (!isAbsent(audio) && (typeof audio !== 'string' || !isBase64(audio))) {
+        throw new AppError(400, 'Invalid audio', 'VALIDATION_ERROR');
+      }
+
       let resolvedSessionId = sessionId;
 
       const hasText = !!message?.trim();
@@ -298,6 +332,10 @@ router.post(
         const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
         if (estimatedBytes > MAX_IMAGE_SIZE) {
           throw new AppError(400, 'Image too large. Maximum size is 5MB.', 'VALIDATION_ERROR');
+        }
+        // The real content must match the declared type
+        if (detectImageMime(decodedHead(image, 12)) !== imageMimeType) {
+          throw new AppError(400, 'Invalid image', 'VALIDATION_ERROR');
         }
       }
 

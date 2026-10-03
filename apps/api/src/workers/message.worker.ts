@@ -849,7 +849,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   };
 
   if (isMinimalResponse(finalResponse)) {
-    console.warn(`[msg-worker] Minimal LLM response detected: "${finalResponse}" — retrying`);
+    console.warn(`[msg-worker] Minimal LLM response detected (length=${finalResponse.length}) — retrying`);
     try {
       const retryResponse = await chat({
         provider: agent.llm_provider as 'openai' | 'anthropic',
@@ -864,7 +864,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         finalResponse = stripAndExtractToolCallArtifacts(retryResponse.content).cleaned;
         totalTokensUsed += retryResponse.usage.totalTokens;
       } else {
-        console.warn(`[msg-worker] Retry also returned minimal response: "${retryResponse.content}"`);
+        console.warn(`[msg-worker] Retry also returned minimal response (length=${retryResponse.content.length})`);
         finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
       }
     } catch (retryErr) {

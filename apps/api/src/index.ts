@@ -6,6 +6,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 import express from 'express';
 import cors from 'cors';
+import { redactUrlForLog } from './utils/log-redact';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
@@ -59,7 +60,13 @@ app.use((req, res, next) => {
 
 // Parsing middleware
 app.use(compression());
-app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+// Access log. In production the URL and the referrer are logged without their query string and with
+// credential-like path segments redacted (widget session ids, org-access tokens, webhook verify tokens).
+morgan.token('safe-url', (req) => redactUrlForLog((req as { originalUrl?: string; url?: string }).originalUrl ?? req.url ?? ''));
+morgan.token('safe-referrer', (req) => redactUrlForLog(String(req.headers['referer'] ?? req.headers['referrer'] ?? '')) || '-');
+const COMBINED_REDACTED =
+  ':remote-addr - :remote-user [:date[clf]] ":method :safe-url HTTP/:http-version" :status :res[content-length] ":safe-referrer" ":user-agent"';
+app.use(morgan(env.NODE_ENV === 'production' ? COMBINED_REDACTED : 'dev'));
 
 // WhatsApp webhook — raw body required for HMAC-SHA256 signature verification
 // Must be registered BEFORE express.json() so Meta's raw payload is preserved.
@@ -212,7 +219,16 @@ app.post('/api/webhooks/mcp', express.raw({ type: 'application/json' }), async (
   }
 });
 
-app.use(express.json({ limit: '10mb' }));
+// The widget router sets its own body limits per route (100kb, 15mb only for POST /message), so the
+// global parser must not consume those bodies first.
+const globalJson = express.json({ limit: '10mb' });
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/widget/')) {
+    next();
+    return;
+  }
+  globalJson(req, res, next);
+});
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
