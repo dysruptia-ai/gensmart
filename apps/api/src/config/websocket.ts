@@ -3,6 +3,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { verifyAccessToken } from './jwt';
 import { env } from './env';
 import { query } from './database';
+import { resolveEffectiveRole } from '../middleware/effective-role';
 
 let io: SocketIOServer | null = null;
 
@@ -11,6 +12,33 @@ export const MAX_CONVERSATION_ROOMS = 100;
 
 function isUuid(value: unknown): value is string {
   return typeof value === 'string' && UUID_REGEX.test(value);
+}
+
+/**
+ * Current role of the user in the organization of the token, from the database: a direct membership,
+ * or (sub-account sessions) an owner/admin role in the parent. Same rule as the orgContext middleware.
+ * Null when there is none; a database error is a denial, never a permission.
+ */
+export async function resolveSocketRole(userId: string, orgId: string): Promise<string | null> {
+  try {
+    const result = await query<{ member_role: string | null; parent_role: string | null }>(
+      `SELECT
+         (SELECT uo.role FROM user_organizations uo
+           WHERE uo.user_id = $1 AND uo.organization_id = $2) AS member_role,
+         (SELECT po.role FROM sub_accounts sa
+            JOIN user_organizations po
+              ON po.organization_id = sa.parent_organization_id AND po.user_id = $1
+           WHERE sa.child_organization_id = $2
+           ORDER BY CASE po.role WHEN 'owner' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END
+           LIMIT 1) AS parent_role`,
+      [userId, orgId]
+    );
+    const row = result.rows[0];
+    return row ? resolveEffectiveRole(row.member_role, row.parent_role) : null;
+  } catch (err) {
+    console.error('[ws] membership check failed:', (err as Error).message);
+    return null;
+  }
 }
 
 /**
@@ -93,7 +121,7 @@ export function initWebSocket(httpServer: HttpServer): SocketIOServer {
   });
 
   // JWT auth middleware
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     const token =
       (socket.handshake.auth as { token?: string }).token ??
       (socket.handshake.query['token'] as string | undefined);
@@ -105,9 +133,15 @@ export function initWebSocket(httpServer: HttpServer): SocketIOServer {
 
     try {
       const payload = verifyAccessToken(token);
+      // The token only says which organization was asked for: the membership must still exist
+      const role = await resolveSocketRole(payload.userId, payload.orgId);
+      if (!role) {
+        next(new Error('Invalid token'));
+        return;
+      }
       socket.data['userId'] = payload.userId;
       socket.data['orgId'] = payload.orgId;
-      socket.data['role'] = payload.role;
+      socket.data['role'] = role;
       next();
     } catch {
       next(new Error('Invalid token'));
@@ -130,6 +164,29 @@ export function initWebSocket(httpServer: HttpServer): SocketIOServer {
   });
 
   return io;
+}
+
+/** Disconnects the sockets of one user that are in the room of an organization. Harmless without a server. */
+export async function disconnectUserFromOrg(userId: string, orgId: string): Promise<void> {
+  if (!io) return;
+  try {
+    const sockets = await io.in(`org:${orgId}`).fetchSockets();
+    for (const s of sockets) {
+      if (s.data['userId'] === userId) s.disconnect(true);
+    }
+  } catch (err) {
+    console.error('[ws] disconnectUserFromOrg failed:', (err as Error).message);
+  }
+}
+
+/** Disconnects every socket in the room of an organization. Harmless without a server. */
+export async function disconnectOrg(orgId: string): Promise<void> {
+  if (!io) return;
+  try {
+    io.in(`org:${orgId}`).disconnectSockets(true);
+  } catch (err) {
+    console.error('[ws] disconnectOrg failed:', (err as Error).message);
+  }
 }
 
 export function getIO(): SocketIOServer {

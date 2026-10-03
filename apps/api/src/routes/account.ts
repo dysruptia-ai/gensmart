@@ -12,6 +12,7 @@ import { exportQueue } from '../config/queues';
 import { AppError } from '../middleware/errorHandler';
 import { avatarFilenameFromUrl, unlinkInside } from '../services/upload-paths';
 import { guardPasswordCheck } from '../services/attempt-limiter';
+import { disconnectOrg } from '../config/websocket';
 
 const router = Router();
 
@@ -542,6 +543,9 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
     await client.query('DELETE FROM organizations WHERE id = $1', [orgId]);
 
     await client.query('COMMIT');
+
+    // Nobody stays connected to the rooms of a deleted organization (never fails the deletion)
+    void disconnectOrg(orgId).catch(() => undefined);
 
     // Clean up export files
     const exportsDir = path.resolve(process.cwd(), 'uploads', 'exports');

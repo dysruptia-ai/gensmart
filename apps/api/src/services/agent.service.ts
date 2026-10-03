@@ -5,6 +5,7 @@ import { AppError } from '../middleware/errorHandler';
 import { resolveCalendarIds } from './calendar.service';
 import { unlinkInside } from './upload-paths';
 import { replacePlaceholders } from './custom-function.service';
+import { applyCustomFunctionAuth } from './custom-function-auth';
 import { safeFetch, UnsafeUrlError } from './safe-url';
 import {
   protectCustomFunctionConfig,
@@ -1135,22 +1136,18 @@ export async function testTool(
   if (!endpointUrl) throw new AppError(400, 'Tool has no endpoint URL configured', 'MISSING_CONFIG');
 
   // Build headers
-  const requestHeaders: Record<string, string> = { 'Content-Type': 'application/json', ...headers };
-  if (auth?.type === 'bearer' && auth.token) {
-    requestHeaders['Authorization'] = `Bearer ${auth.token}`;
-  } else if (auth?.type === 'api_key_header' && auth.headerName && auth.apiKey) {
-    requestHeaders[auth.headerName] = auth.apiKey;
-  }
-
   // Build URL — substitute {{param}} path params first (mirrors
-  // custom-function.service.ts so the Test button reflects production
-  // behavior), then add query params for API key query type.
-  let url = replacePlaceholders(endpointUrl, params, 'endpoint_url') as string;
-  if (auth?.type === 'api_key_query' && auth.queryParam && auth.apiKey) {
-    const u = new URL(url);
-    u.searchParams.set(auth.queryParam, auth.apiKey);
-    url = u.toString();
-  }
+  // custom-function.service.ts so the Test button reflects production behavior)
+  const substitutedUrl = replacePlaceholders(endpointUrl, params, 'endpoint_url') as string;
+
+  // Same authentication function as the production engine
+  const authed = applyCustomFunctionAuth({
+    auth,
+    headers: { 'Content-Type': 'application/json', ...headers },
+    url: substitutedUrl,
+  });
+  const requestHeaders = authed.headers;
+  const url = authed.url;
 
   // Build body: substitute params into body template or use params directly
   let body: unknown = params;

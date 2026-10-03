@@ -4,6 +4,7 @@ import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { sendInvitationEmail } from '../config/email';
 import { canInviteRole } from './access-rules';
+import { disconnectUserFromOrg } from '../config/websocket';
 
 export interface OrgMember {
   id: string;
@@ -317,4 +318,7 @@ export async function removeMember(
   } finally {
     client.release();
   }
+
+  // The removed member must not stay in the real-time rooms; never fails the removal
+  void disconnectUserFromOrg(targetUserId, orgId).catch(() => undefined);
 }

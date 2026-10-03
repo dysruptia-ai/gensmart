@@ -1,4 +1,5 @@
 import { safeFetch, UnsafeUrlError } from './safe-url';
+import { applyCustomFunctionAuth } from './custom-function-auth';
 
 const CUSTOM_FUNCTION_MAX_BYTES = 1024 * 1024;
 
@@ -7,7 +8,7 @@ interface ToolConfig {
   httpMethod?: string;
   headers?: Record<string, string>;
   auth?: {
-    type?: 'bearer' | 'api_key' | 'none';
+    type?: 'bearer' | 'api_key' | 'api_key_header' | 'api_key_query' | 'none';
     token?: string;
     headerName?: string;
     apiKey?: string;
@@ -165,29 +166,18 @@ export async function executeCustomFunction(
 
   console.log(`[custom-function] → ${httpMethod.toUpperCase()} ${urlForLog(endpointUrl)}`);
 
-  // Build headers
-  const finalHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...headers,
-  };
-
-  // Apply auth
-  if (auth && auth.type !== 'none') {
-    if (auth.type === 'bearer' && auth.token) {
-      finalHeaders['Authorization'] = `Bearer ${auth.token}`;
-    } else if (auth.type === 'api_key' && auth.apiKey) {
-      const headerName = auth.headerName ?? 'X-API-Key';
-      finalHeaders[headerName] = auth.apiKey;
-    }
-  }
-
   // Build URL — substitute {{param}} path params (e.g. .../contacts/{{contact_id}})
   // before appending auth/query params below.
-  let finalUrl = replacePlaceholders(endpointUrl, toolArguments, 'endpoint_url') as string;
-  if (auth?.type === 'api_key' && auth.queryParam && auth.apiKey) {
-    const separator = finalUrl.includes('?') ? '&' : '?';
-    finalUrl = `${finalUrl}${separator}${encodeURIComponent(auth.queryParam)}=${encodeURIComponent(auth.apiKey)}`;
-  }
+  const substitutedUrl = replacePlaceholders(endpointUrl, toolArguments, 'endpoint_url') as string;
+
+  // Apply auth (shared with the Test button: same type handling in both places)
+  const authed = applyCustomFunctionAuth({
+    auth,
+    headers: { 'Content-Type': 'application/json', ...headers },
+    url: substitutedUrl,
+  });
+  const finalHeaders = authed.headers;
+  let finalUrl = authed.url;
 
   // For GET/HEAD requests, append tool arguments as query string parameters
   if (['GET', 'HEAD'].includes(httpMethod.toUpperCase())) {
