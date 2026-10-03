@@ -40,25 +40,28 @@ async function processExport(exportRequestId: string, organizationId: string): P
       [organizationId]
     ),
     query(
-      `SELECT id, name, email, role, language, created_at, last_login_at
-       FROM users WHERE organization_id = $1`,
+      `SELECT u.id, u.name, u.email, uo.role, u.language, u.created_at, u.last_login_at
+       FROM user_organizations uo
+       JOIN users u ON u.id = uo.user_id
+       WHERE uo.organization_id = $1
+       ORDER BY uo.created_at`,
       [organizationId]
     ),
     query(
-      `SELECT id, name, description, type, status, channels, model, temperature,
-              max_tokens, context_window, system_prompt, web_config, created_at, updated_at
+      `SELECT id, name, description, status, channels, llm_provider, llm_model, temperature,
+              max_tokens, context_window_messages, system_prompt, web_config, created_at, updated_at
        FROM agents WHERE organization_id = $1`,
       [organizationId]
     ),
     query(
-      `SELECT at.id, at.agent_id, at.tool_type, at.tool_name, at.enabled, at.created_at
+      `SELECT at.id, at.agent_id, at.type, at.name, at.is_enabled, at.created_at
        FROM agent_tools at
        JOIN agents a ON a.id = at.agent_id
        WHERE a.organization_id = $1`,
       [organizationId]
     ),
     query(
-      `SELECT kf.id, kf.agent_id, kf.file_name, kf.file_type, kf.status,
+      `SELECT kf.id, kf.agent_id, kf.filename, kf.file_type, kf.status,
               kf.chunk_count, kf.source_url, kf.created_at
        FROM knowledge_files kf
        JOIN agents a ON a.id = kf.agent_id
@@ -72,8 +75,7 @@ async function processExport(exportRequestId: string, organizationId: string): P
       [organizationId]
     ),
     query(
-      `SELECT id, agent_id, contact_id, channel, status, is_human_controlled,
-              created_at, updated_at, closed_at
+      `SELECT id, agent_id, contact_id, channel, status, created_at, updated_at
        FROM conversations WHERE organization_id = $1 ORDER BY created_at`,
       [organizationId]
     ),
@@ -87,25 +89,25 @@ async function processExport(exportRequestId: string, organizationId: string): P
     ),
     query(
       `SELECT id, name, timezone, available_days, available_hours,
-              slot_duration_minutes, buffer_minutes, max_advance_days, created_at
+              slot_duration, buffer_minutes, max_advance_days, created_at
        FROM calendars WHERE organization_id = $1`,
       [organizationId]
     ),
     query(
       `SELECT a.id, a.calendar_id, a.contact_id, a.title, a.status,
-              a.start_time, a.end_time, a.notes, a.created_at
+              a.start_time, a.end_time, a.description, a.created_at
        FROM appointments a
        JOIN calendars cal ON cal.id = a.calendar_id
        WHERE cal.organization_id = $1 ORDER BY a.start_time`,
       [organizationId]
     ),
     query(
-      `SELECT id, event_type, stripe_event_id, amount, currency, description, created_at
+      `SELECT id, event_type, stripe_event_id, amount, currency, created_at
        FROM billing_events WHERE organization_id = $1 ORDER BY created_at`,
       [organizationId]
     ),
     query(
-      `SELECT id, type, title, message, is_read, created_at
+      `SELECT id, type, title, message, read, created_at
        FROM notifications WHERE organization_id = $1 ORDER BY created_at DESC LIMIT 500`,
       [organizationId]
     ),
@@ -177,7 +179,9 @@ async function processExport(exportRequestId: string, organizationId: string): P
   try {
     // Find org owner/admin to notify
     const ownerResult = await query<{ id: string }>(
-      `SELECT id FROM users WHERE organization_id = $1 AND role IN ('owner', 'admin') LIMIT 1`,
+      `SELECT user_id AS id FROM user_organizations
+       WHERE organization_id = $1 AND role IN ('owner', 'admin')
+       ORDER BY created_at LIMIT 1`,
       [organizationId]
     );
     const userId = ownerResult.rows[0]?.id;

@@ -11,7 +11,8 @@
     "seed": "tsx src/db/seeds/index.ts",
     "seed:test-users": "tsx src/db/seeds/test-users.seed.ts",
     "stripe:seed": "tsx src/db/seeds/stripe-products.ts",
-    "check:wa-tokens": "dotenv -e ../../.env -- tsx src/scripts/check-whatsapp-token-expiry.ts"
+    "check:wa-tokens": "dotenv -e ../../.env -- tsx src/scripts/check-whatsapp-token-expiry.ts",
+    "encrypt:cf-secrets": "dotenv -e ../../.env -- tsx src/scripts/encrypt-custom-function-secrets.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

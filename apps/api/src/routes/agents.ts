@@ -1485,6 +1485,7 @@ router.post(
       const { validateMediaUrl } = await import('../services/media-validator.service');
       const { queryKnowledgeBase, hasKnowledgeBase } = await import('../services/rag.service');
       const { executeCustomFunction } = await import('../services/custom-function.service');
+      const { revealCustomFunctionConfig } = await import('../services/secret-fields');
 
       // Fetch agent
       const agentResult = await agentService.getAgentById(req.org!.id, agentId);
@@ -1994,7 +1995,11 @@ router.post(
               );
               if (toolDef) {
                 const { schema, values } = await loadAgentConfigForDeepInject(agentId);
-                const resolvedConfig = injectConfigVariablesDeep(toolDef.config, schema, values);
+                const resolvedConfig = injectConfigVariablesDeep(
+                  revealCustomFunctionConfig(toolDef.config),
+                  schema,
+                  values
+                );
                 console.log(`[agents.preview] Custom function "${tc.name}" — config resolved`);
                 const result = await executeCustomFunction(
                   resolvedConfig as unknown as Parameters<typeof executeCustomFunction>[0],

@@ -14,6 +14,7 @@ import {
 } from '../services/variable-capture.service';
 import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
+import { revealCustomFunctionConfig } from '../services/secret-fields';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
 import { decryptHeaders } from '../services/mcp-headers.service';
 import * as mcpProviders from '../services/mcp-providers.service';
@@ -1413,7 +1414,11 @@ async function executeTool(
   if (toolDef) {
     try {
       const { schema, values } = await loadAgentConfigForDeepInject(agentId);
-      const resolvedConfig = injectConfigVariablesDeep(toolDef.config, schema, values);
+      const resolvedConfig = injectConfigVariablesDeep(
+        revealCustomFunctionConfig(toolDef.config as Record<string, unknown>),
+        schema,
+        values
+      );
       console.log(`[msg-worker] Custom function "${name}" — config resolved (placeholders substituted)`);
       return await executeCustomFunction(
         resolvedConfig as unknown as Parameters<typeof executeCustomFunction>[0],

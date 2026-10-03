@@ -7,6 +7,11 @@ import { unlinkInside } from './upload-paths';
 import { replacePlaceholders } from './custom-function.service';
 import { safeFetch, UnsafeUrlError } from './safe-url';
 import {
+  protectCustomFunctionConfig,
+  revealCustomFunctionConfig,
+  maskCustomFunctionConfig,
+} from './secret-fields';
+import {
   PLAN_LIMITS,
   findMissingRequiredConfigVariables,
   initialConfigVariableValues,
@@ -78,6 +83,12 @@ interface ToolRow {
   updated_at: string;
 }
 
+/** Credentials of custom_function tools never leave the API: they are returned masked. */
+function clientToolConfig(type: string, config: ToolRow['config']): ToolRow['config'] {
+  if (type !== 'custom_function' || typeof config !== 'object' || config === null) return config;
+  return maskCustomFunctionConfig(config as Record<string, unknown>) as ToolRow['config'];
+}
+
 function formatTool(row: ToolRow) {
   return {
     id: row.id,
@@ -85,7 +96,7 @@ function formatTool(row: ToolRow) {
     type: row.type,
     name: row.name,
     description: row.description,
-    config: row.config,
+    config: clientToolConfig(row.type, row.config),
     isEnabled: row.is_enabled,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -502,7 +513,18 @@ export async function getVersions(orgId: string, agentId: string) {
      ORDER BY av.version DESC`,
     [agentId]
   );
-  return result.rows;
+  // The snapshot of the tools is a copy of agent_tools rows: credentials go out masked here too
+  return result.rows.map((version) => ({
+    ...version,
+    tools: Array.isArray(version.tools)
+      ? version.tools.map((tool) => {
+          const t = tool as { type?: unknown; config?: unknown };
+          return t && t.type === 'custom_function' && typeof t.config === 'object' && t.config !== null
+            ? { ...t, config: maskCustomFunctionConfig(t.config as Record<string, unknown>) }
+            : tool;
+        })
+      : version.tools,
+  }));
 }
 
 export async function rollbackAgent(orgId: string, agentId: string, versionId: string) {
@@ -816,10 +838,12 @@ export async function createTool(
 ) {
   await verifyAgentOwnership(orgId, agentId);
   if (data.type === 'scheduling') await assertSchedulingCalendars(orgId, data.config);
+  // Credentials of custom functions are stored encrypted (a mask without a stored value is dropped)
+  const storedConfig = data.type === 'custom_function' ? protectCustomFunctionConfig(data.config) : data.config;
   const result = await query<ToolRow>(
     `INSERT INTO agent_tools (agent_id, type, name, description, config, created_at, updated_at)
      VALUES ($1,$2,$3,$4,$5,NOW(),NOW()) RETURNING *`,
-    [agentId, data.type, data.name, data.description ?? null, JSON.stringify(data.config)]
+    [agentId, data.type, data.name, data.description ?? null, JSON.stringify(storedConfig)]
   );
   return formatTool(result.rows[0]!);
 }
@@ -837,9 +861,17 @@ export async function updateTool(
 ) {
   await verifyAgentOwnership(orgId, agentId);
 
+  let configToStore = data.config;
   if (data.config !== undefined) {
-    const typeRes = await query<{ type: string }>('SELECT type FROM agent_tools WHERE id = $1 AND agent_id = $2', [toolId, agentId]);
+    const typeRes = await query<{ type: string; config: Record<string, unknown> }>(
+      'SELECT type, config FROM agent_tools WHERE id = $1 AND agent_id = $2',
+      [toolId, agentId]
+    );
     if (typeRes.rows[0]?.type === 'scheduling') await assertSchedulingCalendars(orgId, data.config);
+    if (typeRes.rows[0]?.type === 'custom_function') {
+      // Masked values mean "unchanged": they are resolved against the stored config of this same tool
+      configToStore = protectCustomFunctionConfig(data.config, typeRes.rows[0].config);
+    }
   }
 
   const setClauses: string[] = [];
@@ -853,8 +885,8 @@ export async function updateTool(
     params.push(data.description);
     setClauses.push(`description = $${params.length}`);
   }
-  if (data.config !== undefined) {
-    params.push(JSON.stringify(data.config));
+  if (configToStore !== undefined) {
+    params.push(JSON.stringify(configToStore));
     setClauses.push(`config = $${params.length}`);
   }
   if (data.isEnabled !== undefined) {
@@ -899,12 +931,17 @@ export async function duplicateAgent(orgId: string, agentId: string, plan: strin
     variables: source.variables as unknown[],
   });
 
-  // Copy tools from source agent (source.tools is already formatted with camelCase)
-  for (const tool of source.tools) {
+  // Copy tools from the source agent straight from the database: source.tools carries masked
+  // credentials, and the stored (already encrypted) text must be copied as it is.
+  const sourceTools = await query<ToolRow>(
+    'SELECT * FROM agent_tools WHERE agent_id = $1 ORDER BY created_at ASC',
+    [agentId]
+  );
+  for (const tool of sourceTools.rows) {
     await query(
       `INSERT INTO agent_tools (agent_id, type, name, description, config, is_enabled, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())`,
-      [newAgent.id, tool.type, tool.name, tool.description, JSON.stringify(tool.config), tool.isEnabled]
+      [newAgent.id, tool.type, tool.name, tool.description, JSON.stringify(tool.config), tool.is_enabled]
     );
   }
 
@@ -1086,7 +1123,8 @@ export async function testTool(
     throw new AppError(400, 'Only custom functions can be tested', 'INVALID_TOOL_TYPE');
   }
 
-  const cfg = tool.config as Record<string, unknown>;
+  // The config comes from the database (the request only carries the test params); credentials are decrypted here
+  const cfg = revealCustomFunctionConfig(tool.config as Record<string, unknown>);
   const endpointUrl = cfg['endpointUrl'] as string;
   const httpMethod = (cfg['httpMethod'] as string) ?? 'POST';
   const headers = (cfg['headers'] as Record<string, string>) ?? {};
