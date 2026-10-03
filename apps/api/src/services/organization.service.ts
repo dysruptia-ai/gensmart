@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { query } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { sendInvitationEmail } from '../config/email';
+import { canInviteRole } from './access-rules';
 
 export interface OrgMember {
   id: string;
@@ -87,6 +88,26 @@ export async function inviteMember(
   inviterId: string,
   data: { email: string; role: string }
 ): Promise<void> {
+  // The inviter's role is read from the database (membership first, primary user row as fallback)
+  const membership = await query<{ role: string }>(
+    'SELECT role FROM user_organizations WHERE user_id = $1 AND organization_id = $2',
+    [inviterId, orgId]
+  );
+  let inviterRole: string | undefined = membership.rows[0]?.role;
+  if (!inviterRole) {
+    const fallback = await query<{ role: string }>(
+      'SELECT role FROM users WHERE id = $1 AND organization_id = $2',
+      [inviterId, orgId]
+    );
+    inviterRole = fallback.rows[0]?.role;
+  }
+  if (inviterRole !== 'owner' && inviterRole !== 'admin') {
+    throw new AppError(403, 'Only owners and admins can invite members', 'FORBIDDEN');
+  }
+  if (!canInviteRole(inviterRole, data.role)) {
+    throw new AppError(403, 'Only the owner can invite admins', 'FORBIDDEN');
+  }
+
   // Check if already a member
   const existing = await query<{ id: string }>(
     'SELECT id FROM users WHERE email = $1 AND organization_id = $2',
@@ -220,11 +241,19 @@ export async function removeMember(
     [targetUserId, orgId]
   );
 
-  const remaining = await query<{ id: string }>(
-    'SELECT id FROM user_organizations WHERE user_id = $1 LIMIT 1',
+  const remaining = await query<{ organization_id: string; role: string }>(
+    'SELECT organization_id, role FROM user_organizations WHERE user_id = $1 ORDER BY created_at ASC',
     [targetUserId]
   );
   if (remaining.rows.length === 0) {
     await query('DELETE FROM users WHERE id = $1', [targetUserId]);
+  } else {
+    // Their primary organization must not stay pointing at the one that just removed them:
+    // login would otherwise keep placing them there. Move it to their oldest remaining membership.
+    const next = remaining.rows[0]!;
+    await query(
+      'UPDATE users SET organization_id = $1, role = $2, updated_at = NOW() WHERE id = $3 AND organization_id = $4',
+      [next.organization_id, next.role, targetUserId, orgId]
+    );
   }
 }

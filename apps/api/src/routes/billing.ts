@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { requireRole } from '../middleware/requireRole';
 import { validate } from '../middleware/validate';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
@@ -37,6 +38,7 @@ const addonSchema = z.object({
 
 router.post(
   '/create-checkout',
+  requireRole('owner', 'admin'),
   validate(createCheckoutSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -113,6 +115,7 @@ router.post(
 
 router.post(
   '/create-portal',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const orgResult = await query<{ stripe_customer_id: string | null }>(
@@ -195,6 +198,7 @@ router.get(
 
 router.get(
   '/invoices',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const orgResult = await query<{ stripe_customer_id: string | null }>(
@@ -310,6 +314,7 @@ router.get(
 
 router.post(
   '/addon',
+  requireRole('owner', 'admin'),
   validate(addonSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

@@ -18,6 +18,7 @@ import {
   sendOrgAccessEmail,
 } from '../config/email';
 import { AppError } from '../middleware/errorHandler';
+import { pickSessionMembership } from './access-rules';
 
 export interface AuthTokens {
   accessToken: string;
@@ -98,6 +99,23 @@ function generateRandomCode(length = 8): string {
     code += chars[bytes[i] % chars.length];
   }
   return code;
+}
+
+/**
+ * Organization and role of a new session come from user_organizations (not from the users row,
+ * which can be stale after a removal): the primary organization when the user is still a member,
+ * otherwise their oldest membership.
+ */
+async function resolveSessionMembership(user: UserRow): Promise<{ organization_id: string; role: string }> {
+  const result = await query<{ organization_id: string; role: string; created_at: string }>(
+    'SELECT organization_id, role, created_at FROM user_organizations WHERE user_id = $1',
+    [user.id]
+  );
+  const membership = pickSessionMembership(result.rows, user.organization_id);
+  if (!membership) {
+    throw new AppError(403, 'User is not a member of any organization', 'NOT_A_MEMBER');
+  }
+  return { organization_id: membership.organization_id, role: membership.role };
 }
 
 async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> {
@@ -325,15 +343,17 @@ export async function login(input: {
     return { requires2FA: true, tempToken };
   }
 
+  const membership = await resolveSessionMembership(user);
+  const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
   const orgResult = await query<OrgRow>(
     'SELECT id, name FROM organizations WHERE id = $1',
-    [user.organization_id]
+    [sessionUser.organization_id]
   );
   const org = orgResult.rows[0];
 
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
-  return buildAuthTokens(user, org);
+  return buildAuthTokens(sessionUser, org);
 }
 
 export async function verify2FA(input: {
@@ -378,14 +398,16 @@ export async function verify2FA(input: {
     await query('UPDATE backup_codes SET used = true, used_at = NOW() WHERE id = $1', [matchingCode.id]);
   }
 
+  const membership = await resolveSessionMembership(user);
+  const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
   const orgResult = await query<OrgRow>(
     'SELECT id, name FROM organizations WHERE id = $1',
-    [user.organization_id]
+    [sessionUser.organization_id]
   );
   const org = orgResult.rows[0];
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
-  return buildAuthTokens(user, org);
+  return buildAuthTokens(sessionUser, org);
 }
 
 export async function refreshToken(currentRefreshToken: string): Promise<AuthTokens> {

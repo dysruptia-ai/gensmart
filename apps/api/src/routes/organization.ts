@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { requireRole } from '../middleware/requireRole';
 import { validate } from '../middleware/validate';
 import { query } from '../config/database';
 import { encrypt, decrypt } from '../config/encryption';
@@ -53,6 +54,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction): Promise
 
 router.put(
   '/',
+  requireRole('owner', 'admin'),
   validate(updateOrgSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -76,6 +78,7 @@ router.get('/members', async (req: Request, res: Response, next: NextFunction): 
 
 router.post(
   '/members/invite',
+  requireRole('owner', 'admin'),
   validate(inviteMemberSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -89,6 +92,7 @@ router.post(
 
 router.put(
   '/members/:userId/role',
+  requireRole('owner'),
   validate(updateRoleSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -107,6 +111,7 @@ router.put(
 
 router.delete(
   '/members/:userId',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await orgService.removeMember(req.user!.orgId, req.user!.userId, String(req.params['userId']));
@@ -118,7 +123,7 @@ router.delete(
 );
 
 // ── BYO API Keys (Enterprise only) ──
-router.get('/api-keys', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+router.get('/api-keys', requireRole('owner', 'admin'), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const plan = (req.org?.plan ?? 'free') as PlanKey;
     if (!PLAN_LIMITS[plan]?.byoApiKey) {
@@ -158,6 +163,7 @@ router.get('/api-keys', async (req: Request, res: Response, next: NextFunction):
 
 router.put(
   '/api-keys',
+  requireRole('owner', 'admin'),
   validate(apiKeysSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -204,6 +210,7 @@ router.put(
 // POST /api/organization/api-keys/test — verify a key works
 router.post(
   '/api-keys/test',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const plan = (req.org?.plan ?? 'free') as PlanKey;
@@ -267,6 +274,7 @@ router.get('/sub-accounts', async (req: Request, res: Response, next: NextFuncti
 
 router.post(
   '/sub-accounts',
+  requireRole('owner', 'admin'),
   validate(createSubAccountSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -280,6 +288,7 @@ router.post(
 
 router.delete(
   '/sub-accounts/:childOrgId',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       await subAccountService.removeSubAccount(req.user!.orgId, String(req.params['childOrgId']));
@@ -292,6 +301,7 @@ router.delete(
 
 router.post(
   '/sub-accounts/:childOrgId/switch',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await subAccountService.switchToSubAccount(

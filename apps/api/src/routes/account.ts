@@ -5,6 +5,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { requireRole } from '../middleware/requireRole';
 import { validate } from '../middleware/validate';
 import { query, getClient } from '../config/database';
 import { exportQueue } from '../config/queues';
@@ -30,6 +31,7 @@ const confirmDeleteSchema = z.object({
 // Request a new data export. Max 1 active export per org at a time.
 router.post(
   '/export-data',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const orgId = req.user!.orgId;
@@ -77,6 +79,7 @@ router.post(
 // Get the latest export request for this org (for polling status)
 router.get(
   '/export-data/latest',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const orgId = req.user!.orgId;
@@ -121,6 +124,7 @@ router.get(
 // Download the ZIP file if completed, or return status
 router.get(
   '/export-data/:id',
+  requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const orgId = req.user!.orgId;
@@ -202,6 +206,7 @@ router.get(
 // Schedule account deletion (30-day grace period)
 router.post(
   '/delete',
+  requireRole('owner'),
   validate(deleteAccountSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -289,6 +294,7 @@ router.post(
 // Cancel a pending deletion request (within grace period)
 router.post(
   '/delete/cancel',
+  requireRole('owner'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const orgId = req.user!.orgId;
@@ -325,6 +331,7 @@ router.post(
 // Immediately delete everything — no grace period
 router.post(
   '/delete/confirm',
+  requireRole('owner'),
   validate(confirmDeleteSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -466,9 +473,14 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
     }
     await client.query('DELETE FROM calendars WHERE organization_id = $1', [orgId]);
 
-    // Delete user-related data
+    // Delete user-related data. Only users with no membership in another organization are deleted:
+    // the rest keep their account, tokens and 2FA codes (they are repointed below).
     const usersResult = await client.query<{ id: string }>(
-      'SELECT id FROM users WHERE organization_id = $1',
+      `SELECT u.id FROM users u
+       WHERE u.organization_id = $1
+         AND NOT EXISTS (
+           SELECT 1 FROM user_organizations uo WHERE uo.user_id = u.id AND uo.organization_id <> $1
+         )`,
       [orgId]
     );
     const userIds = usersResult.rows.map((r) => r.id);
@@ -507,7 +519,25 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
       [orgId]
     );
 
-    await client.query('DELETE FROM users WHERE organization_id = $1', [orgId]);
+    // Memberships of this organization go away; users that belong elsewhere are repointed to their
+    // oldest remaining membership (users.organization_id cascades on organization delete, so this
+    // must happen before the organization row is removed).
+    await client.query('DELETE FROM user_organizations WHERE organization_id = $1', [orgId]);
+    await client.query(
+      `UPDATE users u
+       SET organization_id = m.organization_id, role = m.role, updated_at = NOW()
+       FROM (
+         SELECT DISTINCT ON (user_id) user_id, organization_id, role
+         FROM user_organizations
+         WHERE organization_id <> $1
+         ORDER BY user_id, created_at ASC
+       ) m
+       WHERE u.id = m.user_id AND u.organization_id = $1`,
+      [orgId]
+    );
+    if (userIds.length > 0) {
+      await client.query('DELETE FROM users WHERE id = ANY($1::uuid[])', [userIds]);
+    }
     await client.query('DELETE FROM organizations WHERE id = $1', [orgId]);
 
     await client.query('COMMIT');
