@@ -29,6 +29,17 @@ export function errorHandler(
     return;
   }
 
+  // body-parser errors (any JSON route)
+  const parserType = (err as { type?: string }).type;
+  if (parserType === 'entity.too.large') {
+    res.status(413).json({ error: { message: 'Payload too large', code: 'PAYLOAD_TOO_LARGE' } });
+    return;
+  }
+  if (parserType === 'entity.parse.failed') {
+    res.status(400).json({ error: { message: 'Invalid JSON body', code: 'INVALID_JSON' } });
+    return;
+  }
+
   if (err.name === 'ZodError') {
     res.status(400).json({
       error: {

@@ -223,14 +223,91 @@ export async function updateAppointment(
     values.push(data.contactId);
   }
 
-  values.push(appointmentId, orgId);
-  const result = await query<AppointmentRow>(
-    `UPDATE appointments SET ${setClauses.join(', ')}
-     WHERE id = $${idx++} AND organization_id = $${idx}
-     RETURNING *`,
-    values
-  );
-  return result.rows[0] ?? null;
+  const timesChange = data.startTime !== undefined || data.endTime !== undefined;
+  // A status other than "cancelled" may bring a cancelled appointment back: its slot must be free again
+  const mayReactivate = data.status !== undefined && data.status !== 'cancelled';
+
+  if (!timesChange && !mayReactivate) {
+    values.push(appointmentId, orgId);
+    const result = await query<AppointmentRow>(
+      `UPDATE appointments SET ${setClauses.join(', ')}
+       WHERE id = $${idx++} AND organization_id = $${idx}
+       RETURNING *`,
+      values
+    );
+    return result.rows[0] ?? null;
+  }
+
+  // Rescheduling: same per-calendar advisory lock as createAppointment, so the overlap check and the
+  // UPDATE are atomic with respect to any other booking or rescheduling of that calendar.
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    const lookup = await client.query<{ calendar_id: string }>(
+      'SELECT calendar_id FROM appointments WHERE id = $1 AND organization_id = $2',
+      [appointmentId, orgId]
+    );
+    if (!lookup.rows[0]) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [lookup.rows[0].calendar_id]);
+
+    const currentResult = await client.query<{
+      calendar_id: string;
+      start_time: string | Date;
+      end_time: string | Date;
+      status: string;
+    }>(
+      'SELECT calendar_id, start_time, end_time, status FROM appointments WHERE id = $1 AND organization_id = $2 FOR UPDATE',
+      [appointmentId, orgId]
+    );
+    const current = currentResult.rows[0];
+    if (!current) {
+      await client.query('ROLLBACK');
+      return null;
+    }
+
+    const effectiveStart = data.startTime ?? new Date(current.start_time).toISOString();
+    const effectiveEnd = data.endTime ?? new Date(current.end_time).toISOString();
+    const effectiveStatus = data.status ?? current.status;
+    const reactivated = current.status === 'cancelled' && effectiveStatus !== 'cancelled';
+
+    if (timesChange && new Date(effectiveEnd).getTime() <= new Date(effectiveStart).getTime()) {
+      throw new AppError(400, 'The end time must be after the start time', 'INVALID_TIME_RANGE');
+    }
+
+    if (effectiveStatus !== 'cancelled' && (timesChange || reactivated)) {
+      const overlap = await client.query<{ id: string }>(
+        `SELECT id FROM appointments
+         WHERE calendar_id = $1
+           AND organization_id = $2
+           AND id <> $3
+           AND status != 'cancelled'
+           AND tstzrange(start_time, end_time) && tstzrange($4::timestamptz, $5::timestamptz)`,
+        [current.calendar_id, orgId, appointmentId, effectiveStart, effectiveEnd]
+      );
+      if (overlap.rows.length > 0) {
+        throw new AppError(409, 'This time slot is already booked', 'SLOT_TAKEN');
+      }
+    }
+
+    values.push(appointmentId, orgId);
+    const updated = await client.query<AppointmentRow>(
+      `UPDATE appointments SET ${setClauses.join(', ')}
+       WHERE id = $${idx++} AND organization_id = $${idx}
+       RETURNING *`,
+      values
+    );
+    await client.query('COMMIT');
+    return updated.rows[0] ?? null;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export async function cancelAppointment(

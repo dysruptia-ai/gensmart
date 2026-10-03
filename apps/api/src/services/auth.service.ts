@@ -89,6 +89,13 @@ interface BackupCodeRow {
   used: boolean;
 }
 
+/**
+ * Dummy bcrypt hash (cost 12, the same as real users) of a random value nobody knows. It is NOT a
+ * credential: login compares against it when the email does not exist, so unknown emails take as long
+ * to answer as known ones.
+ */
+const DUMMY_PASSWORD_HASH = '$2a$12$YLq4uYJCenDMzoRwIB2mv.Sl67J5yF68oLfQs3TA2eQawtz2rdVuK';
+
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }
@@ -368,6 +375,7 @@ export async function login(input: {
 
   const user = result.rows[0];
   if (!user) {
+    await bcrypt.compare(input.password, DUMMY_PASSWORD_HASH); // result ignored: only equalizes timing
     await recordLoginFailure();
     throw new AppError(401, 'Invalid email or password', 'INVALID_CREDENTIALS');
   }

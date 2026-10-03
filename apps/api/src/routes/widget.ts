@@ -26,6 +26,20 @@ const widgetCors = cors({
 
 router.use(widgetCors);
 
+// agentId is a UUID everywhere: reject anything else before it reaches the database
+router.param('agentId', (req: Request, _res: Response, next: NextFunction, value: string): void => {
+  if (isUuid(value)) {
+    next();
+    return;
+  }
+  // The session liveness check has always answered 404 for ids that cannot exist
+  if (req.method === 'GET' && /^\/[^/]+\/session\/[^/]+\/?$/.test(req.path)) {
+    next(new AppError(404, 'Session not found', 'NOT_FOUND'));
+    return;
+  }
+  next(new AppError(400, 'Invalid request', 'VALIDATION_ERROR'));
+});
+
 // BEGIN body parsers
 // Larger body limit only for POST /:agentId/message (image/audio uploads: base64 can be ~13.3MB for 10MB
 // audio). Every other widget route accepts at most 100kb.
@@ -529,12 +543,21 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const agentId = req.params['agentId'];
-      const sessionId = req.query['sessionId'] as string;
-      const afterParam = req.query['after'] as string;
+      const rawSessionId = req.query['sessionId'];
+      const rawAfter = req.query['after'];
 
-      if (!sessionId) {
+      if (rawSessionId === undefined || rawSessionId === '') {
         throw new AppError(400, 'sessionId is required', 'VALIDATION_ERROR');
       }
+      // Query values can arrive as arrays or objects (?a[]=1, ?a[b]=1): only a UUID string is accepted
+      if (typeof rawSessionId !== 'string' || !isUuid(rawSessionId)) {
+        throw new AppError(400, 'Invalid session', 'VALIDATION_ERROR');
+      }
+      if (rawAfter !== undefined && (typeof rawAfter !== 'string' || Number.isNaN(Date.parse(rawAfter)))) {
+        throw new AppError(400, 'Invalid request', 'VALIDATION_ERROR');
+      }
+      const sessionId = rawSessionId;
+      const afterParam = rawAfter as string | undefined;
 
       // Validate session — return empty messages if session was deleted (not 404)
       const convResult = await query<{ id: string; agent_id: string }>(

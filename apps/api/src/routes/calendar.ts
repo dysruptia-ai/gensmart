@@ -171,12 +171,21 @@ appointmentRouter.get('/:id', async (req: Request, res: Response) => {
 appointmentRouter.put('/:id', validate(appointmentUpdateSchema), async (req: Request, res: Response) => {
   const orgId = req.org!.id;
   const id = String(req.params['id'] ?? '');
-  const appointment = await updateAppointment(orgId, id, req.body as z.infer<typeof appointmentUpdateSchema>);
-  if (!appointment) {
-    res.status(404).json({ error: 'Appointment not found' });
-    return;
+  try {
+    const appointment = await updateAppointment(orgId, id, req.body as z.infer<typeof appointmentUpdateSchema>);
+    if (!appointment) {
+      res.status(404).json({ error: 'Appointment not found' });
+      return;
+    }
+    res.json({ appointment });
+  } catch (err) {
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
+    console.error('[appointments] Failed to update appointment:', (err as Error).message);
+    res.status(500).json({ error: 'Internal server error' });
   }
-  res.json({ appointment });
 });
 
 appointmentRouter.delete('/:id', async (req: Request, res: Response) => {

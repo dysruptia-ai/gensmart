@@ -139,26 +139,45 @@ export async function inviteMember(
   // Create invited user with temporary password hash
   const tempPasswordHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
 
-  const userResult = await query<{ id: string }>(
-    `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, false, NOW(), NOW())
-     RETURNING id`,
-    [orgId, data.email.toLowerCase(), data.email.split('@')[0], tempPasswordHash, data.role]
-  );
+  // The three inserts succeed or fail together: no user without membership or setup token is left behind
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
 
-  await query(
-    `INSERT INTO user_organizations (user_id, organization_id, role, created_at)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT (user_id, organization_id) DO NOTHING`,
-    [userResult.rows[0].id, orgId, data.role]
-  );
+    const userResult = await client.query<{ id: string }>(
+      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, false, NOW(), NOW())
+       RETURNING id`,
+      [orgId, data.email.toLowerCase(), data.email.split('@')[0], tempPasswordHash, data.role]
+    );
+    const newUserId = userResult.rows[0]!.id;
 
-  await query(
-    `INSERT INTO password_resets (id, user_id, token_hash, expires_at, created_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
-    [userResult.rows[0].id, tokenHash, expiresAt.toISOString()]
-  );
+    await client.query(
+      `INSERT INTO user_organizations (user_id, organization_id, role, created_at)
+       VALUES ($1, $2, $3, NOW())
+       ON CONFLICT (user_id, organization_id) DO NOTHING`,
+      [newUserId, orgId, data.role]
+    );
 
+    await client.query(
+      `INSERT INTO password_resets (id, user_id, token_hash, expires_at, created_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
+      [newUserId, tokenHash, expiresAt.toISOString()]
+    );
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    // Same email invited twice at the same moment: the unique index on users.email decides
+    if (err && typeof err === 'object' && (err as { code?: string }).code === '23505') {
+      throw new AppError(409, 'This email is already registered. Ask the user to contact support.', 'EMAIL_IN_USE');
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  // After the COMMIT, and without blocking the request
   sendInvitationEmail(
     inviter?.name ?? 'A teammate',
     data.email,

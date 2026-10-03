@@ -12,6 +12,8 @@ export interface AttemptStore {
   expire(key: string, seconds: number): Promise<unknown>;
   get(key: string): Promise<string | null>;
   del(key: string): Promise<unknown>;
+  /** Remaining seconds: -1 when the key has no expiry, -2 when it does not exist (Redis TTL). */
+  ttl(key: string): Promise<number>;
 }
 
 async function defaultStore(): Promise<AttemptStore> {
@@ -49,7 +51,13 @@ export function buildAttemptKey(parts: string[]): string {
 export async function recordFailure(key: string, windowSeconds: number, store?: AttemptStore): Promise<number> {
   const s = store ?? (await defaultStore());
   const count = await s.incr(key);
-  if (count === 1) await s.expire(key, windowSeconds);
+  if (count === 1) {
+    await s.expire(key, windowSeconds);
+  } else if ((await s.ttl(key)) === -1) {
+    // A previous process died (or expire failed) between incr and expire: restore the expiry so the key
+    // can never block forever
+    await s.expire(key, windowSeconds);
+  }
   return count;
 }
 
