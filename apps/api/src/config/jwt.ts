@@ -29,12 +29,12 @@ export function generateRefreshToken(payload: RefreshTokenPayload): string {
 }
 
 export function generateTempToken(payload: TempTokenPayload): string {
-  return jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn: '5m' });
+  return jwt.sign(payload, env.JWT_TEMP_SECRET, { expiresIn: '5m' });
 }
 
 export function verifyAccessToken(token: string): AccessTokenPayload {
   const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as AccessTokenPayload & { purpose?: unknown };
-  // Temporary tokens (e.g. the 2FA step) share the signing secret: they must never act as a session.
+  // Defense in depth: temporary tokens (e.g. the 2FA step) are signed with their own secret, but must never act as a session.
   if (typeof payload === 'object' && payload !== null && 'purpose' in payload) {
     throw new Error('Invalid token purpose');
   }
@@ -46,7 +46,7 @@ export function verifyRefreshToken(token: string): RefreshTokenPayload {
 }
 
 export function verifyTempToken(token: string): TempTokenPayload {
-  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as TempTokenPayload;
+  const payload = jwt.verify(token, env.JWT_TEMP_SECRET) as TempTokenPayload;
   if (payload.purpose !== '2fa') {
     throw new Error('Invalid token purpose');
   }

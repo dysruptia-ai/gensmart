@@ -1,5 +1,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import {
+  assertProductionSecrets,
+  DEV_JWT_ACCESS_SECRET,
+  DEV_JWT_REFRESH_SECRET,
+  DEV_JWT_TEMP_SECRET,
+} from './production-secrets';
 
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
@@ -25,13 +31,16 @@ if (
   throw new Error('ENCRYPTION_KEY must be set to a non-default value when NODE_ENV=production');
 }
 
+assertProductionSecrets(process.env);
+
 export const env = {
   NODE_ENV: optionalEnv('NODE_ENV', 'development'),
   PORT: parseInt(optionalEnv('PORT', '4000'), 10),
   DATABASE_URL: optionalEnv('DATABASE_URL', 'postgresql://gensmart:gensmart@localhost:5432/gensmart'),
   REDIS_URL: optionalEnv('REDIS_URL', 'redis://localhost:6379'),
-  JWT_ACCESS_SECRET: optionalEnv('JWT_ACCESS_SECRET', 'dev-access-secret-change-in-production'),
-  JWT_REFRESH_SECRET: optionalEnv('JWT_REFRESH_SECRET', 'dev-refresh-secret-change-in-production'),
+  JWT_ACCESS_SECRET: optionalEnv('JWT_ACCESS_SECRET', DEV_JWT_ACCESS_SECRET),
+  JWT_REFRESH_SECRET: optionalEnv('JWT_REFRESH_SECRET', DEV_JWT_REFRESH_SECRET),
+  JWT_TEMP_SECRET: optionalEnv('JWT_TEMP_SECRET', DEV_JWT_TEMP_SECRET),
   ENCRYPTION_KEY: optionalEnv('ENCRYPTION_KEY', ZERO_ENCRYPTION_KEY),
   FRONTEND_URL: optionalEnv('FRONTEND_URL', 'http://localhost:3000'),
   API_URL: optionalEnv('API_URL', 'http://localhost:4000'),
