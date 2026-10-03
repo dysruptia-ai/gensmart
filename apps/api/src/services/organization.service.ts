@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { query } from '../config/database';
+import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { sendInvitationEmail } from '../config/email';
 import { canInviteRole } from './access-rules';
@@ -31,11 +31,9 @@ export async function getOrganization(orgId: string): Promise<OrganizationData> 
     `SELECT o.id, o.name, o.slug, o.plan, o.subscription_status,
             COALESCE(o.settings, '{}')::json as settings, o.created_at,
             o.trial_ends_at,
-            COUNT(u.id)::int as member_count
+            (SELECT COUNT(*)::int FROM user_organizations uo WHERE uo.organization_id = o.id) as member_count
      FROM organizations o
-     LEFT JOIN users u ON u.organization_id = o.id
-     WHERE o.id = $1
-     GROUP BY o.id`,
+     WHERE o.id = $1`,
     [orgId]
   );
   const org = result.rows[0];
@@ -74,10 +72,11 @@ export async function updateOrganization(
 
 export async function getMembers(orgId: string): Promise<OrgMember[]> {
   const result = await query<OrgMember>(
-    `SELECT id, name, email, role, avatar_url, created_at
-     FROM users
-     WHERE organization_id = $1
-     ORDER BY created_at ASC`,
+    `SELECT u.id, u.name, u.email, uo.role, u.avatar_url, u.created_at
+     FROM user_organizations uo
+     JOIN users u ON u.id = uo.user_id
+     WHERE uo.organization_id = $1
+     ORDER BY uo.created_at ASC`,
     [orgId]
   );
   return result.rows;
@@ -174,86 +173,129 @@ export async function updateMemberRole(
   targetUserId: string,
   newRole: string
 ): Promise<void> {
-  const requester = await query<{ role: string }>(
-    'SELECT role FROM users WHERE id = $1 AND organization_id = $2',
-    [requesterId, orgId]
-  );
-  if (requester.rows[0]?.role !== 'owner') {
-    throw new AppError(403, 'Only the owner can change member roles', 'FORBIDDEN');
-  }
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
 
-  const target = await query<{ role: string; id: string }>(
-    'SELECT role, id FROM users WHERE id = $1 AND organization_id = $2',
-    [targetUserId, orgId]
-  );
-  if (!target.rows[0]) {
-    throw new AppError(404, 'Member not found', 'MEMBER_NOT_FOUND');
-  }
-  if (target.rows[0].role === 'owner') {
-    throw new AppError(400, 'Cannot change the owner\'s role', 'CANNOT_CHANGE_OWNER');
-  }
+    const requester = await client.query<{ role: string }>(
+      'SELECT role FROM user_organizations WHERE user_id = $1 AND organization_id = $2',
+      [requesterId, orgId]
+    );
+    if (requester.rows[0]?.role !== 'owner') {
+      throw new AppError(403, 'Only the owner can change member roles', 'FORBIDDEN');
+    }
 
-  await query(
-    'UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2',
-    [newRole, targetUserId]
-  );
-  // Keep the per-org role in sync — refreshToken() reads this, not users.role,
-  // for any org that isn't the user's primary (multi-org, migration 048).
-  await query(
-    'UPDATE user_organizations SET role = $1 WHERE user_id = $2 AND organization_id = $3',
-    [newRole, targetUserId, orgId]
-  );
+    const target = await client.query<{ role: string }>(
+      'SELECT role FROM user_organizations WHERE user_id = $1 AND organization_id = $2 FOR UPDATE',
+      [targetUserId, orgId]
+    );
+    if (!target.rows[0]) {
+      throw new AppError(404, 'Member not found', 'MEMBER_NOT_FOUND');
+    }
+    if (target.rows[0].role === 'owner') {
+      throw new AppError(400, 'Cannot change the owner\'s role', 'CANNOT_CHANGE_OWNER');
+    }
+
+    await client.query(
+      'UPDATE user_organizations SET role = $1 WHERE user_id = $2 AND organization_id = $3',
+      [newRole, targetUserId, orgId]
+    );
+    // users.role mirrors the role in the user's primary organization only
+    await client.query(
+      'UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 AND organization_id = $3',
+      [newRole, targetUserId, orgId]
+    );
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
+  }
 }
+
+/**
+ * Columns that reference users(id) without ON DELETE (all nullable, migrations 008, 014, 022, 023).
+ * They are cleared before the user row is deleted so the delete cannot fail on them.
+ * platform_settings.updated_by and promo_codes.created_by are only ever set by super admins,
+ * who cannot be removed here.
+ */
+const USER_REFERENCE_COLUMNS: ReadonlyArray<{ table: string; column: string }> = [
+  { table: 'agent_versions', column: 'published_by' },
+  { table: 'conversations', column: 'taken_over_by' },
+  { table: 'data_export_requests', column: 'requested_by' },
+  { table: 'account_deletion_requests', column: 'user_id' },
+];
 
 export async function removeMember(
   orgId: string,
   requesterId: string,
   targetUserId: string
 ): Promise<void> {
-  const requester = await query<{ role: string }>(
-    'SELECT role FROM users WHERE id = $1 AND organization_id = $2',
-    [requesterId, orgId]
-  );
-  if (!['owner', 'admin'].includes(requester.rows[0]?.role ?? '')) {
-    throw new AppError(403, 'Only owners and admins can remove members', 'FORBIDDEN');
-  }
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
 
-  const target = await query<{ role: string }>(
-    'SELECT role FROM users WHERE id = $1 AND organization_id = $2',
-    [targetUserId, orgId]
-  );
-  if (!target.rows[0]) {
-    throw new AppError(404, 'Member not found', 'MEMBER_NOT_FOUND');
-  }
-  if (target.rows[0].role === 'owner') {
-    throw new AppError(400, 'Cannot remove the organization owner', 'CANNOT_REMOVE_OWNER');
-  }
-  if (requesterId === targetUserId) {
-    throw new AppError(400, 'Cannot remove yourself', 'CANNOT_REMOVE_SELF');
-  }
-
-  // Only drop the membership in THIS org — deleting the users row outright
-  // would also destroy the user's membership in any other organization they
-  // belong to (multi-org, migration 048). Only delete the user entirely if
-  // this was their last remaining org membership.
-  await query(
-    'DELETE FROM user_organizations WHERE user_id = $1 AND organization_id = $2',
-    [targetUserId, orgId]
-  );
-
-  const remaining = await query<{ organization_id: string; role: string }>(
-    'SELECT organization_id, role FROM user_organizations WHERE user_id = $1 ORDER BY created_at ASC',
-    [targetUserId]
-  );
-  if (remaining.rows.length === 0) {
-    await query('DELETE FROM users WHERE id = $1', [targetUserId]);
-  } else {
-    // Their primary organization must not stay pointing at the one that just removed them:
-    // login would otherwise keep placing them there. Move it to their oldest remaining membership.
-    const next = remaining.rows[0]!;
-    await query(
-      'UPDATE users SET organization_id = $1, role = $2, updated_at = NOW() WHERE id = $3 AND organization_id = $4',
-      [next.organization_id, next.role, targetUserId, orgId]
+    const requester = await client.query<{ role: string }>(
+      'SELECT role FROM user_organizations WHERE user_id = $1 AND organization_id = $2',
+      [requesterId, orgId]
     );
+    if (!['owner', 'admin'].includes(requester.rows[0]?.role ?? '')) {
+      throw new AppError(403, 'Only owners and admins can remove members', 'FORBIDDEN');
+    }
+
+    const target = await client.query<{ role: string; is_super_admin: boolean | null }>(
+      `SELECT uo.role, u.is_super_admin
+       FROM user_organizations uo
+       JOIN users u ON u.id = uo.user_id
+       WHERE uo.user_id = $1 AND uo.organization_id = $2
+       FOR UPDATE OF uo`,
+      [targetUserId, orgId]
+    );
+    if (!target.rows[0]) {
+      throw new AppError(404, 'Member not found', 'MEMBER_NOT_FOUND');
+    }
+    if (target.rows[0].role === 'owner') {
+      throw new AppError(400, 'Cannot remove the organization owner', 'CANNOT_REMOVE_OWNER');
+    }
+    if (requesterId === targetUserId) {
+      throw new AppError(400, 'Cannot remove yourself', 'CANNOT_REMOVE_SELF');
+    }
+    if (target.rows[0].is_super_admin) {
+      throw new AppError(400, 'Cannot remove a super administrator', 'CANNOT_REMOVE_SUPER_ADMIN');
+    }
+
+    // Only drop the membership in THIS org; the user row goes away only with their last membership.
+    await client.query(
+      'DELETE FROM user_organizations WHERE user_id = $1 AND organization_id = $2',
+      [targetUserId, orgId]
+    );
+
+    const remaining = await client.query<{ organization_id: string; role: string }>(
+      'SELECT organization_id, role FROM user_organizations WHERE user_id = $1 ORDER BY created_at ASC',
+      [targetUserId]
+    );
+    if (remaining.rows.length === 0) {
+      for (const { table, column } of USER_REFERENCE_COLUMNS) {
+        await client.query(`UPDATE ${table} SET ${column} = NULL WHERE ${column} = $1`, [targetUserId]);
+      }
+      await client.query('DELETE FROM users WHERE id = $1', [targetUserId]);
+    } else {
+      // Their primary organization must not stay pointing at the one that just removed them:
+      // move it to their oldest remaining membership.
+      const next = remaining.rows[0]!;
+      await client.query(
+        'UPDATE users SET organization_id = $1, role = $2, updated_at = NOW() WHERE id = $3 AND organization_id = $4',
+        [next.organization_id, next.role, targetUserId, orgId]
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
   }
 }

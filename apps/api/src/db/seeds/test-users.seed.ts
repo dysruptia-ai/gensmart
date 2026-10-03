@@ -67,14 +67,23 @@ async function seedTestUsers() {
       const orgId = orgResult.rows[0]!.id;
 
       // Insert user
-      await client.query(
+      const userResult = await client.query<{ id: string }>(
         `INSERT INTO users (organization_id, email, password_hash, name, role, email_verified)
          VALUES ($1, $2, $3, $4, 'owner', true)
          ON CONFLICT (email) DO UPDATE
            SET password_hash = EXCLUDED.password_hash,
                organization_id = EXCLUDED.organization_id,
-               name = EXCLUDED.name`,
+               name = EXCLUDED.name
+         RETURNING id`,
         [orgId, user.email, passwordHash, user.userName]
+      );
+
+      // Membership row: login resolves the session organization and role from user_organizations
+      await client.query(
+        `INSERT INTO user_organizations (user_id, organization_id, role)
+         VALUES ($1, $2, 'owner')
+         ON CONFLICT (user_id, organization_id) DO NOTHING`,
+        [userResult.rows[0]!.id, orgId]
       );
 
       console.log(`  ✓ [${user.plan.toUpperCase()}] ${user.email} — org: ${user.orgName}`);
