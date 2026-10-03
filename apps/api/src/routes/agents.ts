@@ -3,6 +3,7 @@ import type { ChatMessage } from '../services/llm.service';
 import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
+import { detectImageMime } from '../services/image-sniff';
 import fs from 'fs';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
@@ -45,6 +46,14 @@ type PlanKey = keyof typeof PLAN_LIMITS;
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
+const AVATAR_MIME_TO_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
+};
+const AVATAR_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
+
 const avatarStorage = multer.diskStorage({
   destination: (_req, _file, cb) => {
     const dir = path.join(uploadsDir, 'avatars');
@@ -52,8 +61,9 @@ const avatarStorage = multer.diskStorage({
     cb(null, dir);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    // The extension comes from the validated mimetype, never from the client's file name.
+    const ext = AVATAR_MIME_TO_EXT[file.mimetype] ?? 'bin';
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`);
   },
 });
 
@@ -73,8 +83,9 @@ const uploadAvatar = multer({
   storage: avatarStorage,
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      cb(new Error('Only image files are allowed'));
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!AVATAR_MIME_TO_EXT[file.mimetype] || !AVATAR_EXTENSIONS.has(ext)) {
+      cb(new Error('Only PNG, JPEG, WebP or GIF images are allowed'));
     } else {
       cb(null, true);
     }
@@ -999,19 +1010,57 @@ router.post(
 router.post(
   '/:id/avatar',
   validateUUID('id'),
-  uploadAvatar.single('avatar'),
+  // Ownership first, so multer never writes a file for an agent of another organization.
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const file = req.file;
+      await agentService.verifyAgentOwnership(req.org!.id, String(req.params['id']));
+    } catch {
+      res.status(404).json({ error: { message: 'Agent not found', code: 'AGENT_NOT_FOUND' } });
+      return;
+    }
+    next();
+  },
+  uploadAvatar.single('avatar'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const file = req.file;
+    const removeFile = async (): Promise<void> => {
+      if (!file) return;
+      try {
+        await fs.promises.unlink(file.path);
+      } catch {
+        // best effort
+      }
+    };
+    try {
       if (!file) {
         res.status(400).json({ error: { message: 'No file uploaded', code: 'MISSING_FILE' } });
         return;
       }
+      // Trust the content, not the declared type: the real bytes must match the mimetype.
+      const head = Buffer.alloc(12);
+      const handle = await fs.promises.open(file.path, 'r');
+      let bytesRead = 0;
+      try {
+        ({ bytesRead } = await handle.read(head, 0, 12, 0));
+      } finally {
+        await handle.close();
+      }
+      if (detectImageMime(head.subarray(0, bytesRead)) !== file.mimetype) {
+        await removeFile();
+        res.status(400).json({ error: { message: 'Invalid image file', code: 'INVALID_IMAGE' } });
+        return;
+      }
       const apiBase = process.env['API_BASE_URL'] ?? 'http://localhost:4000';
       const avatarUrl = `${apiBase}/uploads/avatars/${file.filename}`;
-      const agent = await agentService.updateAgent(req.org!.id, String(req.params['id']), {
-        avatarUrl,
-      });
+      let agent;
+      try {
+        agent = await agentService.updateAgent(req.org!.id, String(req.params['id']), {
+          avatarUrl,
+        });
+      } catch (err) {
+        await removeFile();
+        throw err;
+      }
       res.json({ avatarUrl: agent.avatarUrl });
     } catch (err) {
       next(err);

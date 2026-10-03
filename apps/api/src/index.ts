@@ -216,10 +216,37 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Static files — uploaded avatars and knowledge files
+// Static files — only uploaded avatars are public. knowledge/ and exports/ are never served over HTTP
+// (exports go through the authenticated /account/export/:id/download route).
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-app.use('/uploads', express.static(uploadsDir));
+const AVATAR_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif']);
+app.use(
+  '/uploads/avatars',
+  (req, res, next) => {
+    let requestedPath = req.path;
+    try {
+      requestedPath = decodeURIComponent(req.path);
+    } catch {
+      // keep the raw path: it will not match an allowed extension unless it really is one
+    }
+    const isReadMethod = req.method === 'GET' || req.method === 'HEAD';
+    if (!isReadMethod || !AVATAR_EXTENSIONS.has(path.extname(requestedPath).toLowerCase())) {
+      res.status(404).json({ error: { message: 'Not found', code: 'NOT_FOUND' } });
+      return;
+    }
+    next();
+  },
+  express.static(path.join(uploadsDir, 'avatars'), {
+    dotfiles: 'deny',
+    index: false,
+    redirect: false,
+    setHeaders: (res) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    },
+  })
+);
 
 // Routes
 app.use('/api', router);

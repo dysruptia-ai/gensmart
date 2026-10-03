@@ -473,6 +473,14 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
 
     await client.query('DELETE FROM notifications WHERE organization_id = $1', [orgId]);
     await client.query('DELETE FROM billing_events WHERE organization_id = $1', [orgId]);
+    // Export ZIPs are named after the request id, so collect the stored paths before the rows go away.
+    const exportFilesResult = await client.query<{ file_path: string | null }>(
+      'SELECT file_path FROM data_export_requests WHERE organization_id = $1',
+      [orgId]
+    );
+    const exportFilePaths = exportFilesResult.rows
+      .map((r) => r.file_path)
+      .filter((p): p is string => typeof p === 'string' && p.length > 0);
     await client.query('DELETE FROM data_export_requests WHERE organization_id = $1', [orgId]);
     await client.query('DELETE FROM account_deletion_requests WHERE organization_id = $1', [orgId]);
 
@@ -488,16 +496,15 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
     await client.query('COMMIT');
 
     // Clean up export files
-    try {
-      const exportsDir = path.join(process.cwd(), 'uploads', 'exports');
-      const files = fs.readdirSync(exportsDir);
-      for (const file of files) {
-        if (file.includes(orgId)) {
-          fs.unlinkSync(path.join(exportsDir, file));
-        }
+    const exportsDir = path.resolve(process.cwd(), 'uploads', 'exports');
+    for (const filePath of exportFilePaths) {
+      try {
+        const resolved = path.resolve(filePath);
+        if (!resolved.startsWith(exportsDir + path.sep)) continue; // never delete outside uploads/exports
+        fs.unlinkSync(resolved);
+      } catch {
+        // Non-critical: a missing or undeletable file must not affect the response
       }
-    } catch {
-      // Non-critical
     }
 
     console.log(`[account] Organization ${orgId} deleted successfully`);
