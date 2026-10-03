@@ -106,6 +106,9 @@ router.post(
           console.warn('[whatsapp] Invalid webhook signature — ignoring');
           return;
         }
+      } else if (process.env['NODE_ENV'] === 'production') {
+        console.error('[whatsapp] No app secret configured in production — rejecting webhook');
+        return;
       } else {
         console.warn('[whatsapp] No app secret configured — skipping signature validation');
       }
