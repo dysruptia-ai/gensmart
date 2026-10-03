@@ -224,6 +224,13 @@ export async function deleteContact(orgId: string, contactId: string): Promise<b
   try {
     await client.query('BEGIN');
 
+    // 0. The contact must belong to the organization before anything is touched
+    const owned = await client.query('SELECT 1 FROM contacts WHERE id = $1 AND organization_id = $2', [contactId, orgId]);
+    if ((owned.rowCount ?? 0) === 0) {
+      await client.query('ROLLBACK');
+      return false;
+    }
+
     // 1. Delete messages from this contact's conversations
     await client.query(
       `DELETE FROM messages WHERE conversation_id IN (
@@ -235,10 +242,11 @@ export async function deleteContact(orgId: string, contactId: string): Promise<b
     // 2. Unlink appointments (keep appointments, remove contact + conversation references)
     await client.query(
       `UPDATE appointments SET contact_id = NULL, conversation_id = NULL
-       WHERE contact_id = $1
-          OR conversation_id IN (
-            SELECT id FROM conversations WHERE contact_id = $1 AND organization_id = $2
-          )`,
+       WHERE organization_id = $2
+         AND (contact_id = $1
+              OR conversation_id IN (
+                SELECT id FROM conversations WHERE contact_id = $1 AND organization_id = $2
+              ))`,
       [contactId, orgId]
     );
 

@@ -1,4 +1,5 @@
 import { query } from '../config/database';
+import { AppError } from '../middleware/errorHandler';
 
 export interface AppointmentData {
   calendarId: string;
@@ -42,17 +43,31 @@ export interface AppointmentFilters {
   agentId?: string;
 }
 
+async function assertOwned(table: 'calendars' | 'contacts' | 'conversations', label: string, id: string, orgId: string): Promise<void> {
+  const result = await query<{ id: string }>(
+    `SELECT id FROM ${table} WHERE id = $1 AND organization_id = $2`,
+    [id, orgId]
+  );
+  if (!result.rows[0]) throw new AppError(404, `${label} not found`, 'NOT_FOUND');
+}
+
 export async function createAppointment(
   orgId: string,
   data: AppointmentData
 ): Promise<AppointmentRow> {
+  // Every referenced row must belong to the organization
+  await assertOwned('calendars', 'Calendar', data.calendarId, orgId);
+  if (data.contactId) await assertOwned('contacts', 'Contact', data.contactId, orgId);
+  if (data.conversationId) await assertOwned('conversations', 'Conversation', data.conversationId, orgId);
+
   // Validate no overlap
   const overlapResult = await query<{ id: string }>(
     `SELECT id FROM appointments
      WHERE calendar_id = $1
+       AND organization_id = $4
        AND status != 'cancelled'
        AND tstzrange(start_time, end_time) && tstzrange($2::timestamptz, $3::timestamptz)`,
-    [data.calendarId, data.startTime, data.endTime]
+    [data.calendarId, data.startTime, data.endTime, orgId]
   );
   if (overlapResult.rows.length > 0) {
     throw new Error('This time slot is already booked');
@@ -117,9 +132,9 @@ export async function getAppointments(
             cal.agent_id,
             ag.name AS agent_name
      FROM appointments a
-     LEFT JOIN contacts c ON c.id = a.contact_id
-     LEFT JOIN calendars cal ON cal.id = a.calendar_id
-     LEFT JOIN agents ag ON ag.id = cal.agent_id
+     LEFT JOIN contacts c ON c.id = a.contact_id AND c.organization_id = a.organization_id
+     LEFT JOIN calendars cal ON cal.id = a.calendar_id AND cal.organization_id = a.organization_id
+     LEFT JOIN agents ag ON ag.id = cal.agent_id AND ag.organization_id = a.organization_id
      WHERE ${conditions.join(' AND ')}
      ORDER BY a.start_time ASC`,
     values
@@ -140,9 +155,9 @@ export async function getAppointment(
             cal.agent_id,
             ag.name AS agent_name
      FROM appointments a
-     LEFT JOIN contacts c ON c.id = a.contact_id
-     LEFT JOIN calendars cal ON cal.id = a.calendar_id
-     LEFT JOIN agents ag ON ag.id = cal.agent_id
+     LEFT JOIN contacts c ON c.id = a.contact_id AND c.organization_id = a.organization_id
+     LEFT JOIN calendars cal ON cal.id = a.calendar_id AND cal.organization_id = a.organization_id
+     LEFT JOIN agents ag ON ag.id = cal.agent_id AND ag.organization_id = a.organization_id
      WHERE a.id = $1 AND a.organization_id = $2`,
     [appointmentId, orgId]
   );
@@ -154,6 +169,8 @@ export async function updateAppointment(
   appointmentId: string,
   data: Partial<AppointmentData>
 ): Promise<AppointmentRow | null> {
+  if (data.contactId) await assertOwned('contacts', 'Contact', data.contactId, orgId);
+
   const setClauses: string[] = ['updated_at = NOW()'];
   const values: unknown[] = [];
   let idx = 1;

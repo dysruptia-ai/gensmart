@@ -1813,7 +1813,7 @@ router.post(
             let slotResult = 'No calendar configured for this agent.';
             if (calendarId && date) {
               try {
-                const slots = await getAvailableSlots(calendarId, date);
+                const slots = await getAvailableSlots(req.org!.id, calendarId, date);
                 slotResult = slots.length
                   ? `Available slots for ${date}: ${slots.map((s) => s.start).join(', ')}. Which time works best?`
                   : `No available slots for ${date}. Please try another date.`;

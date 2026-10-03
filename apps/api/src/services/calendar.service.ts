@@ -1,4 +1,5 @@
 import { query } from '../config/database';
+import { AppError } from '../middleware/errorHandler';
 
 export interface CalendarData {
   name: string;
@@ -43,7 +44,28 @@ export function resolveCalendarIds(toolConfig: Record<string, unknown>): string[
   return rawCalIds?.length ? rawCalIds : (legacyCalId ? [legacyCalId] : []);
 }
 
+export type CalendarChoice =
+  | { ok: true; calendarId: string }
+  | { ok: false; reason: 'none' | 'invalid' };
+
+/**
+ * The model may only use calendars configured on the agent's scheduling tool. No requested id:
+ * first configured calendar. Requested id outside the list (or nothing configured): refused.
+ */
+export function pickAllowedCalendarId(requested: string, allowed: string[]): CalendarChoice {
+  if (allowed.length === 0) return { ok: false, reason: 'none' };
+  if (!requested) return { ok: true, calendarId: allowed[0]! };
+  return allowed.includes(requested) ? { ok: true, calendarId: requested } : { ok: false, reason: 'invalid' };
+}
+
+async function assertAgentInOrg(orgId: string, agentId: string | null | undefined): Promise<void> {
+  if (!agentId) return;
+  const result = await query<{ id: string }>('SELECT id FROM agents WHERE id = $1 AND organization_id = $2', [agentId, orgId]);
+  if (!result.rows[0]) throw new AppError(400, 'Invalid agent', 'INVALID_AGENT');
+}
+
 export async function createCalendar(orgId: string, data: CalendarData): Promise<CalendarRow> {
+  await assertAgentInOrg(orgId, data.agentId);
   const {
     name,
     agentId = null,
@@ -99,6 +121,7 @@ export async function updateCalendar(
   calendarId: string,
   data: Partial<CalendarData>
 ): Promise<CalendarRow | null> {
+  await assertAgentInOrg(orgId, data.agentId);
   const setClauses: string[] = ['updated_at = NOW()'];
   const values: unknown[] = [];
   let idx = 1;
@@ -161,12 +184,13 @@ export async function deleteCalendar(orgId: string, calendarId: string): Promise
 /** Returns available time slots for a calendar on a given date (YYYY-MM-DD).
  *  All slot times are in the calendar's local timezone. */
 export async function getAvailableSlots(
+  orgId: string,
   calendarId: string,
   date: string
 ): Promise<TimeSlot[]> {
   const calResult = await query<CalendarRow>(
-    'SELECT * FROM calendars WHERE id = $1',
-    [calendarId]
+    'SELECT * FROM calendars WHERE id = $1 AND organization_id = $2',
+    [calendarId, orgId]
   );
   const cal = calResult.rows[0];
   if (!cal) {

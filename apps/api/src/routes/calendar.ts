@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { validate } from '../middleware/validate';
+import { AppError } from '../middleware/errorHandler';
 import {
   createCalendar,
   getCalendars,
@@ -125,7 +126,7 @@ appointmentRouter.get('/available-slots', async (req: Request, res: Response) =>
     return;
   }
 
-  const slots = await getAvailableSlots(calendarId, date);
+  const slots = await getAvailableSlots(req.org!.id, calendarId, date);
   res.json({ slots, date, calendarId });
 });
 
@@ -147,7 +148,8 @@ appointmentRouter.post('/', validate(appointmentCreateSchema), async (req: Reque
     const appointment = await createAppointment(orgId, req.body as z.infer<typeof appointmentCreateSchema>);
     res.status(201).json({ appointment });
   } catch (err) {
-    res.status(409).json({ error: (err as Error).message });
+    const status = err instanceof AppError ? err.statusCode : 409;
+    res.status(status).json({ error: (err as Error).message });
   }
 });
 

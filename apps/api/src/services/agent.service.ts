@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
+import { resolveCalendarIds } from './calendar.service';
 import {
   PLAN_LIMITS,
   findMissingRequiredConfigVariables,
@@ -787,12 +788,30 @@ export async function getTools(orgId: string, agentId: string) {
   return result.rows.map(formatTool);
 }
 
+/** Every calendar of a scheduling tool (calendar_ids and legacy calendar_id) must belong to the organization. */
+async function assertSchedulingCalendars(orgId: string, config: Record<string, unknown>): Promise<void> {
+  const ids = [...new Set(resolveCalendarIds(config).filter((id) => typeof id === 'string' && id.length > 0))];
+  if (ids.length === 0) return;
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!ids.every((id) => uuidRe.test(id))) {
+    throw new AppError(400, 'Invalid calendar', 'INVALID_CALENDAR');
+  }
+  const result = await query<{ id: string }>(
+    'SELECT id FROM calendars WHERE id = ANY($1::uuid[]) AND organization_id = $2',
+    [ids, orgId]
+  );
+  if (result.rows.length !== ids.length) {
+    throw new AppError(400, 'One or more calendars do not belong to your organization', 'INVALID_CALENDAR');
+  }
+}
+
 export async function createTool(
   orgId: string,
   agentId: string,
   data: { type: string; name: string; description?: string; config: Record<string, unknown> }
 ) {
   await verifyAgentOwnership(orgId, agentId);
+  if (data.type === 'scheduling') await assertSchedulingCalendars(orgId, data.config);
   const result = await query<ToolRow>(
     `INSERT INTO agent_tools (agent_id, type, name, description, config, created_at, updated_at)
      VALUES ($1,$2,$3,$4,$5,NOW(),NOW()) RETURNING *`,
@@ -813,6 +832,11 @@ export async function updateTool(
   }
 ) {
   await verifyAgentOwnership(orgId, agentId);
+
+  if (data.config !== undefined) {
+    const typeRes = await query<{ type: string }>('SELECT type FROM agent_tools WHERE id = $1 AND agent_id = $2', [toolId, agentId]);
+    if (typeRes.rows[0]?.type === 'scheduling') await assertSchedulingCalendars(orgId, data.config);
+  }
 
   const setClauses: string[] = [];
   const params: unknown[] = [];

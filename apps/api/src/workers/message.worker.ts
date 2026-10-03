@@ -51,7 +51,7 @@ import {
   handleSendEmailNotification,
   type EmailNotificationToolConfig,
 } from '../services/send-email-notification.service';
-import { getAvailableSlots, localTimeToUTC, resolveCalendarIds } from '../services/calendar.service';
+import { getAvailableSlots, localTimeToUTC, pickAllowedCalendarId, resolveCalendarIds } from '../services/calendar.service';
 import {
   renderSystemPromptWithConfig,
   loadAgentConfigForDeepInject,
@@ -605,8 +605,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
     if (calendarIds.length > 1) {
       const calResult = await query<{ id: string; name: string }>(
-        'SELECT id, name FROM calendars WHERE id = ANY($1::uuid[])',
-        [calendarIds]
+        'SELECT id, name FROM calendars WHERE id = ANY($1::uuid[]) AND organization_id = $2',
+        [calendarIds, organizationId]
       );
       const calList = calResult.rows.map((c) => `- "${c.name}" → calendar_id: ${c.id}`).join('\n');
 
@@ -1114,20 +1114,19 @@ async function executeTool(
     const date = String(args['date'] ?? '');
     if (!date) return 'Please provide a date in YYYY-MM-DD format.';
 
-    // Multi-calendar: prefer calendar_id from LLM args, fallback to first in config
-    let calendarId = String(args['calendar_id'] ?? '');
-    if (!calendarId) {
-      const schedulingTool = agentTools.find((t) => t.type === 'scheduling');
-      const calIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
-      calendarId = calIds[0] ?? '';
+    // Multi-calendar: the model may only use the calendars configured on the scheduling tool
+    const schedulingTool = agentTools.find((t) => t.type === 'scheduling');
+    const allowedCalendarIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
+    const choice = pickAllowedCalendarId(String(args['calendar_id'] ?? ''), allowedCalendarIds);
+    if (!choice.ok) {
+      return choice.reason === 'none'
+        ? 'No calendar configured for this agent.'
+        : `The calendar_id provided is not valid for this agent. Valid calendar_id values: ${allowedCalendarIds.join(', ')}.`;
     }
-
-    if (!calendarId) {
-      return 'No calendar configured for this agent.';
-    }
+    const calendarId = choice.calendarId;
 
     try {
-      const slots = await getAvailableSlots(calendarId, date);
+      const slots = await getAvailableSlots(organizationId, calendarId, date);
       if (!slots.length) {
         return `No available slots found for ${date}. Please try a different date.`;
       }
@@ -1146,17 +1145,16 @@ async function executeTool(
 
     if (!date || !time) return 'Please provide both date and time for the appointment.';
 
-    // Multi-calendar: prefer calendar_id from LLM args, fallback to first in config
-    let calendarId = String(args['calendar_id'] ?? '');
-    if (!calendarId) {
-      const schedulingTool = agentTools.find((t) => t.type === 'scheduling');
-      const calIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
-      calendarId = calIds[0] ?? '';
+    // Multi-calendar: the model may only use the calendars configured on the scheduling tool
+    const schedulingTool = agentTools.find((t) => t.type === 'scheduling');
+    const allowedCalendarIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
+    const choice = pickAllowedCalendarId(String(args['calendar_id'] ?? ''), allowedCalendarIds);
+    if (!choice.ok) {
+      return choice.reason === 'none'
+        ? 'No calendar configured for this agent.'
+        : `The calendar_id provided is not valid for this agent. Valid calendar_id values: ${allowedCalendarIds.join(', ')}.`;
     }
-
-    if (!calendarId) {
-      return 'No calendar configured for this agent.';
-    }
+    const calendarId = choice.calendarId;
 
     // Get slot duration and timezone from calendar
     let slotDuration = 30;
@@ -1164,8 +1162,8 @@ async function executeTool(
     try {
       const { query: dbQuery } = await import('../config/database');
       const calResult = await dbQuery<{ slot_duration: number; timezone: string }>(
-        'SELECT slot_duration, timezone FROM calendars WHERE id = $1',
-        [calendarId]
+        'SELECT slot_duration, timezone FROM calendars WHERE id = $1 AND organization_id = $2',
+        [calendarId, organizationId]
       );
       if (calResult.rows[0]) {
         slotDuration = calResult.rows[0].slot_duration;
@@ -1242,8 +1240,8 @@ async function executeTool(
       // Send email notification to calendar owner
       try {
         const calNotifResult = await query<{ notification_email: string | null; name: string }>(
-          'SELECT notification_email, name FROM calendars WHERE id = $1',
-          [calendarId]
+          'SELECT notification_email, name FROM calendars WHERE id = $1 AND organization_id = $2',
+          [calendarId, organizationId]
         );
         const notifEmail = calNotifResult.rows[0]?.notification_email;
         const calName = calNotifResult.rows[0]?.name || 'Calendar';
@@ -1283,8 +1281,8 @@ async function executeTool(
           const { sendEmail, emailTemplate } = await import('../config/email');
 
           const calNameResult = await query<{ name: string }>(
-            'SELECT name FROM calendars WHERE id = $1',
-            [calendarId]
+            'SELECT name FROM calendars WHERE id = $1 AND organization_id = $2',
+            [calendarId, organizationId]
           );
           const calName = calNameResult.rows[0]?.name || 'Calendar';
           const summaryText = meetingSummary || 'Your appointment has been scheduled successfully.';
