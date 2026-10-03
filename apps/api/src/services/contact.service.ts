@@ -1,5 +1,6 @@
 import { query, getClient } from '../config/database';
 import { PLAN_LIMITS } from '@gensmart/shared';
+import { csvCell } from '../utils/csv';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -368,12 +369,7 @@ export async function exportContactsCSV(
 ): Promise<string> {
   const { contacts } = await getContacts(orgId, { ...filters, limit: 10000, page: 1 });
 
-  const escape = (val: unknown): string => {
-    const str = String(val ?? '');
-    return str.includes(',') || str.includes('"') || str.includes('\n')
-      ? `"${str.replace(/"/g, '""')}"`
-      : str;
-  };
+  const escape = (val: unknown): string => csvCell(val);
 
   const header = 'name,phone,email,agent,score,stage,service,source,created_at';
   const rows = contacts.map((c) =>

@@ -1194,7 +1194,7 @@ router.post(
 
       // 7. Register the phone number using the customer's business token
       console.log(`[embedded-signup] Registering phone ${phoneNumberId}...`);
-      const pin = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit random pin
+      const pin = String(crypto.randomInt(100000, 1000000)); // 6-digit pin from a CSPRNG
       const registerRes = await fetch(
         `https://graph.facebook.com/v21.0/${phoneNumberId}/register`,
         {

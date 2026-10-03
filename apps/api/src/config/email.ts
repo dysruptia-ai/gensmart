@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { env } from './env';
+import { escapeHtml, stripLineBreaks } from '../utils/html';
 
 interface UserInfo {
   name: string;
@@ -80,7 +81,7 @@ export async function sendWelcomeEmail(user: UserInfo): Promise<void> {
     to: user.email,
     subject: 'Welcome to GenSmart!',
     html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Welcome, ${user.name}!</h1>
+      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Welcome, ${escapeHtml(user.name)}!</h1>
       <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Your GenSmart account is ready. Start building AI agents in minutes.</p>
       <p style="margin-top: 24px;">
         <a href="${FRONTEND_URL}/dashboard" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Go to Dashboard</a>
@@ -96,7 +97,7 @@ export async function sendPasswordResetEmail(user: UserInfo, token: string): Pro
     subject: 'Reset your GenSmart password',
     html: emailTemplate(`
       <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Password Reset</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${user.name},</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)},</p>
       <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Click the button below to reset your password. This link expires in 1 hour.</p>
       <p style="margin-top: 24px;">
         <a href="${resetUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Reset Password</a>
@@ -115,10 +116,10 @@ export async function sendInvitationEmail(
   const setupUrl = `${FRONTEND_URL}/reset-password/${setupToken}`;
   await sendEmail({
     to: inviteeEmail,
-    subject: `You've been invited to join ${orgName} on GenSmart`,
+    subject: `You've been invited to join ${stripLineBreaks(orgName)} on GenSmart`,
     html: emailTemplate(`
       <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">You're Invited!</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">${inviterName} has invited you to join <strong>${orgName}</strong> on GenSmart.</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">${escapeHtml(inviterName)} has invited you to join <strong>${escapeHtml(orgName)}</strong> on GenSmart.</p>
       <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Click the button below to set up your account:</p>
       <p style="margin-top: 24px;">
         <a href="${setupUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Accept Invitation</a>
@@ -136,11 +137,11 @@ export async function sendOrgAccessEmail(
   const accessUrl = `${FRONTEND_URL}/org-access/${token}`;
   await sendEmail({
     to: user.email,
-    subject: `Tu agente de ventas para ${storeName} ya está listo`,
+    subject: `Tu agente de ventas para ${stripLineBreaks(storeName)} ya está listo`,
     html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Tu agente de ventas para ${storeName} ya está listo</h1>
+      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Tu agente de ventas para ${escapeHtml(storeName)} ya está listo</h1>
       <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hola,</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Tu agente de ventas con IA para <strong>${storeName}</strong> ya está activo y conectado a tu catálogo.</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Tu agente de ventas con IA para <strong>${escapeHtml(storeName)}</strong> ya está activo y conectado a tu catálogo.</p>
       <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">A partir de ahora, cuando un cliente le escriba, el agente va a poder buscar tus productos, resolver dudas y ayudarlo a completar la compra con el link de pago de tu propia tienda.</p>
       <p style="color: #6B7280; font-size: 16px; line-height: 1.6; margin-top: 24px;">Para entrar a tu panel y ver conversaciones, ajustar el agente o revisar estadísticas:</p>
       <p style="margin-top: 16px;">
@@ -160,15 +161,15 @@ export async function sendHighScoreLeadEmail(
   const { contactName, score, agentName, conversationUrl } = leadInfo;
   await sendEmail({
     to: user.email,
-    subject: `High-Score Lead: ${contactName} scored ${score}/10`,
+    subject: `High-Score Lead: ${stripLineBreaks(contactName)} scored ${score}/10`,
     html: emailTemplate(`
       <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">High-Score Lead Alert</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${user.name}, a high-value lead has been identified by your agent.</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)}, a high-value lead has been identified by your agent.</p>
       <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin: 24px 0;">
         <table style="width: 100%; border-collapse: collapse;">
-          <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Lead</td><td style="color: #1A1A1A; font-weight: 600; padding: 4px 0;">${contactName}</td></tr>
+          <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Lead</td><td style="color: #1A1A1A; font-weight: 600; padding: 4px 0;">${escapeHtml(contactName)}</td></tr>
           <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Score</td><td style="padding: 4px 0;"><span style="background: #25D366; color: white; font-weight: 700; padding: 2px 10px; border-radius: 12px;">${score}/10</span></td></tr>
-          <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Agent</td><td style="color: #1A1A1A; padding: 4px 0;">${agentName}</td></tr>
+          <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Agent</td><td style="color: #1A1A1A; padding: 4px 0;">${escapeHtml(agentName)}</td></tr>
         </table>
       </div>
       <p style="margin-top: 24px;">
@@ -191,7 +192,7 @@ export async function sendPlanLimitEmail(
     subject: `Plan Usage Alert: ${percent}% of messages used`,
     html: emailTemplate(`
       <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Usage Alert</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${user.name}, you've used ${percent}% of your ${planName} plan messages this month.</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)}, you've used ${percent}% of your ${escapeHtml(planName)} plan messages this month.</p>
       <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin: 24px 0;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
           <span style="color: #1A1A1A; font-weight: 600;">${used.toLocaleString()} messages used</span>

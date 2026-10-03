@@ -4,6 +4,7 @@
  * BullMQ worker for the 'data-export' queue.
  * Assembles all organization data into a ZIP file for GDPR data portability.
  */
+import { csvCell } from '../utils/csv';
 import path from 'path';
 import fs from 'fs';
 import { Worker } from 'bullmq';
@@ -113,7 +114,7 @@ async function processExport(exportRequestId: string, organizationId: string): P
   // Build contacts CSV
   const csvHeader = 'name,email,phone,score,service,funnel_stage,notes,created_at\n';
   const csvRows = contactsResult.rows.map((c: Record<string, unknown>) => {
-    const escape = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const escape = (v: unknown) => csvCell(v, true);
     return [
       escape(c['name']), escape(c['email']), escape(c['phone']),
       escape(c['ai_score']), escape(c['ai_service']), escape(c['funnel_stage']),

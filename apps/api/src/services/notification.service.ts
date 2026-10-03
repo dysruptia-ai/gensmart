@@ -2,6 +2,7 @@ import { query } from '../config/database';
 import { getIO } from '../config/websocket';
 import { sendEmail } from '../config/email';
 import { env } from '../config/env';
+import { escapeHtml } from '../utils/html';
 
 export interface Notification {
   id: string;
@@ -205,15 +206,15 @@ async function sendNotificationEmail(
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; padding: 24px; border-radius: 12px;">
           <h1 style="color: #1A1A1A; font-size: 22px; margin-bottom: 8px;">${s.heading}</h1>
-          <p style="color: #6B7280; margin-bottom: 24px;">${s.greeting(user.name)}</p>
+          <p style="color: #6B7280; margin-bottom: 24px;">${s.greeting(escapeHtml(user.name))}</p>
           <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
               <span style="background: #25D366; color: white; font-size: 28px; font-weight: 700; padding: 8px 16px; border-radius: 8px;">${score ?? '?'}/10</span>
               <div>
-                <p style="color: #1A1A1A; font-weight: 600; margin: 0;">${title}</p>
+                <p style="color: #1A1A1A; font-weight: 600; margin: 0;">${escapeHtml(title)}</p>
               </div>
             </div>
-            ${contactId ? `<p style="color: #6B7280; font-size: 14px; margin: 0;">${s.contactId(contactId)}</p>` : ''}
+            ${contactId ? `<p style="color: #6B7280; font-size: 14px; margin: 0;">${s.contactId(escapeHtml(contactId))}</p>` : ''}
           </div>
           <a href="${conversationUrl}" style="display: inline-block; background: #25D366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">${s.cta}</a>
           <p style="color: #6B7280; font-size: 12px; margin-top: 24px;">GenSmart — AI Conversational Agents Platform</p>
@@ -232,7 +233,7 @@ async function sendNotificationEmail(
       html: `
         <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; padding: 24px; border-radius: 12px;">
           <h1 style="color: #EF4444; font-size: 22px; margin-bottom: 8px;">${s.heading}</h1>
-          <p style="color: #6B7280; margin-bottom: 24px;">${s.greeting(user.name)}</p>
+          <p style="color: #6B7280; margin-bottom: 24px;">${s.greeting(escapeHtml(user.name))}</p>
           <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
             <p style="color: #1A1A1A; font-weight: 600; margin: 0 0 8px;">${s.used(String(used ?? '?'), String(limit ?? '?'))}</p>
             <div style="background: #E5E0DB; border-radius: 4px; height: 8px; overflow: hidden;">

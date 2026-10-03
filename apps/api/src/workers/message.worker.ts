@@ -60,6 +60,14 @@ import {
   type CTWAReferral,
 } from '../services/agent-config.service';
 import { createAppointment } from '../services/appointment.service';
+import { escapeHtml, escapeHtmlWithBreaks, stripLineBreaks } from '../utils/html';
+import {
+  BOOKING_LIMITS,
+  bookingCalendarKey,
+  bookingConversationKey,
+  confirmationEmailKey,
+  isOverLimit,
+} from '../utils/booking-limits';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
 import { mentionsShippingCost, correctShippingHallucination, isEmptyShippingZonesResult } from '../services/shipping-guard.service';
 
@@ -1193,6 +1201,27 @@ async function executeTool(
       // ignore
     }
 
+    // Booking limits (each booking can send mail to an address the customer typed). If Redis is
+    // unavailable the booking is allowed, like the other limiters.
+    const bumpCounter = async (key: string, windowSeconds: number): Promise<number | null> => {
+      try {
+        const count = await redis.incr(key);
+        if (count === 1) await redis.expire(key, windowSeconds);
+        return count;
+      } catch {
+        console.warn('[worker] Booking rate limit unavailable (Redis error): booking allowed');
+        return null;
+      }
+    };
+    const convCount = await bumpCounter(bookingConversationKey(conversationId), BOOKING_LIMITS.perConversation.windowSeconds);
+    if (convCount !== null && isOverLimit(convCount, BOOKING_LIMITS.perConversation.max)) {
+      return 'Booking limit reached for now. Please try again later or contact the business directly.';
+    }
+    const calCount = await bumpCounter(bookingCalendarKey(calendarId), BOOKING_LIMITS.perCalendar.windowSeconds);
+    if (calCount !== null && isOverLimit(calCount, BOOKING_LIMITS.perCalendar.max)) {
+      return 'Booking limit reached for now. Please try again later or contact the business directly.';
+    }
+
     // Convert local calendar time → UTC for storage
     const startUTC = localTimeToUTC(date, time, calendarTimezone);
     const startTime = startUTC.toISOString();
@@ -1256,15 +1285,15 @@ async function executeTool(
           const { sendEmail, emailTemplate, getFrontendUrl } = await import('../config/email');
           await sendEmail({
             to: notifEmail,
-            subject: `New Appointment: ${personName} — ${date} at ${time}`,
+            subject: stripLineBreaks(`New Appointment: ${personName} — ${date} at ${time}`),
             html: emailTemplate(
               `<h2 style="margin:0 0 16px">New Appointment Booked</h2>
-               <p><strong>Calendar:</strong> ${calName}</p>
-               <p><strong>Client:</strong> ${personName}</p>
-               <p><strong>Date:</strong> ${date}</p>
-               <p><strong>Time:</strong> ${time}</p>
-               <p><strong>Phone:</strong> ${String(args['phone'] ?? 'Not provided')}</p>
-               ${meetingSummary ? `<p style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #25D366;font-size:14px;color:#1A1A1A;line-height:1.5;"><strong>Meeting topic:</strong><br/>${meetingSummary}</p>` : ''}
+               <p><strong>Calendar:</strong> ${escapeHtml(calName)}</p>
+               <p><strong>Client:</strong> ${escapeHtml(personName)}</p>
+               <p><strong>Date:</strong> ${escapeHtml(date)}</p>
+               <p><strong>Time:</strong> ${escapeHtml(time)}</p>
+               <p><strong>Phone:</strong> ${escapeHtml(String(args['phone'] ?? 'Not provided'))}</p>
+               ${meetingSummary ? `<p style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #25D366;font-size:14px;color:#1A1A1A;line-height:1.5;"><strong>Meeting topic:</strong><br/>${escapeHtmlWithBreaks(meetingSummary)}</p>` : ''}
                <p style="margin-top:16px"><a href="${getFrontendUrl()}/dashboard/calendar" style="background:#25D366;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block">View Calendar</a></p>`
             ),
           });
@@ -1284,7 +1313,17 @@ async function executeTool(
         const contactEmail = contactEmailResult.rows[0]?.email;
         const contactName = contactEmailResult.rows[0]?.name || personName;
 
+        // At most 3 confirmation emails per address per 24h (key built from a hash of the address)
+        let sendConfirmation = !!contactEmail;
         if (contactEmail) {
+          const mailCount = await bumpCounter(confirmationEmailKey(contactEmail), BOOKING_LIMITS.confirmationEmailPerAddress.windowSeconds);
+          if (mailCount !== null && isOverLimit(mailCount, BOOKING_LIMITS.confirmationEmailPerAddress.max)) {
+            sendConfirmation = false;
+            console.warn('[worker] Confirmation email limit reached for an address: booking kept, email not sent');
+          }
+        }
+
+        if (contactEmail && sendConfirmation) {
           const { sendEmail, emailTemplate } = await import('../config/email');
 
           const calNameResult = await query<{ name: string }>(
@@ -1303,15 +1342,15 @@ async function executeTool(
 
           await sendEmail({
             to: contactEmail,
-            subject: `Your Appointment is Confirmed — ${date} at ${time}`,
+            subject: stripLineBreaks(`Your Appointment is Confirmed — ${date} at ${time}`),
             html: emailTemplate(
               `<h2 style="margin:0 0 16px;color:#1A1A1A;">Your Appointment is Confirmed! ✓</h2>
-               <p style="color:#6B7280;font-size:15px;line-height:1.6;">Hi ${contactName}, your appointment has been booked. Here are the details:</p>
+               <p style="color:#6B7280;font-size:15px;line-height:1.6;">Hi ${escapeHtml(contactName)}, your appointment has been booked. Here are the details:</p>
                <div style="background:#FFFFFF;border:1px solid #E5E0DB;border-radius:8px;padding:20px;margin:20px 0;">
                  <table style="width:100%;border-collapse:collapse;">
-                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;width:80px;">Date</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${date}</td></tr>
-                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Time</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${time}</td></tr>
-                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Calendar</td><td style="color:#1A1A1A;padding:6px 0;">${calName}</td></tr>
+                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;width:80px;">Date</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${escapeHtml(date)}</td></tr>
+                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Time</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${escapeHtml(time)}</td></tr>
+                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Calendar</td><td style="color:#1A1A1A;padding:6px 0;">${escapeHtml(calName)}</td></tr>
                  </table>
                </div>
                <div style="text-align:center;margin:20px 0;">
@@ -1321,7 +1360,7 @@ async function executeTool(
                </div>
                <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0;border-left:3px solid #25D366;">
                  <p style="margin:0 0 8px;font-weight:600;color:#1A1A1A;font-size:14px;">What we'll discuss:</p>
-                 <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">${summaryText}</p>
+                 <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">${escapeHtmlWithBreaks(summaryText)}</p>
                </div>
                <div style="background:#FAF8F5;border-radius:8px;padding:16px;margin:16px 0;">
                  <p style="margin:0 0 10px;font-weight:600;color:#1A1A1A;font-size:14px;">Before your appointment:</p>
@@ -1334,7 +1373,7 @@ async function executeTool(
                <p style="color:#9CA3AF;font-size:12px;margin-top:20px;">If you need to reschedule, please contact us directly.</p>`
             ),
           });
-          console.log(`[worker] Confirmation email sent to end user: ${contactEmail}`);
+          console.log('[worker] Confirmation email sent to end user');
         }
       } catch (userEmailErr) {
         console.error('[worker] Failed to send user confirmation email:', userEmailErr);

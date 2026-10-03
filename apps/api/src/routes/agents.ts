@@ -65,7 +65,7 @@ const avatarStorage = multer.diskStorage({
   filename: (_req, file, cb) => {
     // The extension comes from the validated mimetype, never from the client's file name.
     const ext = AVATAR_MIME_TO_EXT[file.mimetype] ?? 'bin';
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`);
+    cb(null, `${randomUUID()}.${ext}`);
   },
 });
 
@@ -77,7 +77,7 @@ const knowledgeStorage = multer.diskStorage({
   },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+    cb(null, `${randomUUID()}${ext}`);
   },
 });
 

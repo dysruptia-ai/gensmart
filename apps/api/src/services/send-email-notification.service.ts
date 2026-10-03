@@ -2,6 +2,7 @@ import { type ToolDefinition } from './llm.service';
 import { query } from '../config/database';
 import { sendEmail, emailTemplate, getFrontendUrl } from '../config/email';
 import { redis } from '../config/redis';
+import { escapeHtml, escapeHtmlWithBreaks, sanitizeDisplayName, stripLineBreaks } from '../utils/html';
 
 // ── Rate limits ───────────────────────────────────────────────────────────────
 
@@ -73,21 +74,21 @@ export function buildEmailNotificationToolDef(
 
 // ── Template renderer ─────────────────────────────────────────────────────────
 
-function renderTemplate(template: string, params: Record<string, unknown>): string {
+/**
+ * Substitutes {{param}} values. The values come from the model or from the customer, so in the body
+ * they are HTML-escaped (the template's own HTML, written by the organization, is kept as is) and in
+ * the subject they only lose their line breaks (it is a header, not HTML).
+ */
+function renderTemplate(
+  template: string,
+  params: Record<string, unknown>,
+  target: 'body' | 'subject' = 'body'
+): string {
   return template.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => {
     const val = params[key];
     if (val === undefined || val === null) return '';
-    return String(val);
+    return target === 'subject' ? stripLineBreaks(String(val)) : escapeHtmlWithBreaks(String(val));
   });
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
 }
 
 // ── Context and result types ──────────────────────────────────────────────────
@@ -207,8 +208,8 @@ export async function handleSendEmailNotification(
   };
 
   // 7. Render subject and body
-  const renderedSubject = renderTemplate(config.subject, placeholders);
-  const renderedBody = renderTemplate(config.bodyTemplate, placeholders);
+  const renderedSubject = stripLineBreaks(renderTemplate(config.subject, placeholders, 'subject'));
+  const renderedBody = renderTemplate(config.bodyTemplate, placeholders, 'body');
 
   // 8. Build the full HTML email using the standard GenSmart template
   const fullHtml = emailTemplate(`
@@ -232,17 +233,21 @@ export async function handleSendEmailNotification(
 
   // 9. Send via Nodemailer/SMTP
   try {
-    const fromAddress = config.fromName
-      ? `${config.fromName} <${process.env['SMTP_FROM'] ?? 'noreply@gensmart.co'}>`
+    const safeFromName = config.fromName ? sanitizeDisplayName(config.fromName) : '';
+    const fromAddress = safeFromName
+      ? `"${safeFromName}" <${process.env['SMTP_FROM'] ?? 'noreply@gensmart.co'}>`
       : undefined;
+    // Only well-formed addresses are used; anything else is dropped
+    const ccList = (config.ccEmails ?? []).filter((e) => typeof e === 'string' && EMAIL_REGEX.test(e.trim())).map((e) => e.trim());
+    const replyTo = config.replyTo && EMAIL_REGEX.test(config.replyTo.trim()) ? config.replyTo.trim() : undefined;
 
     const result = await sendEmail({
       to: config.recipientEmail,
-      cc: config.ccEmails,
+      cc: ccList.length > 0 ? ccList : undefined,
       subject: renderedSubject,
       html: fullHtml,
       from: fromAddress,
-      replyTo: config.replyTo,
+      replyTo,
     });
 
     const bodyPreview = renderedBody.replace(/<[^>]+>/g, '').slice(0, 500);
