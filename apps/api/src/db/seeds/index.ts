@@ -22,5 +22,5 @@ async function seed() {
 
 seed().catch((err) => {
   console.error('Seeding failed:', err);
-  pool.end().finally(() => process.exit(1));
+  void pool.end().finally(() => process.exit(1));
 });

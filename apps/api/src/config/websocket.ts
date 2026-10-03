@@ -120,8 +120,8 @@ export function initWebSocket(httpServer: HttpServer): SocketIOServer {
     path: '/socket.io',
   });
 
-  // JWT auth middleware
-  io.use(async (socket, next) => {
+  // JWT auth middleware (the async handshake never throws: every path ends in next())
+  const authenticate = async (socket: Socket, next: (err?: Error) => void): Promise<void> => {
     const token =
       (socket.handshake.auth as { token?: string }).token ??
       (socket.handshake.query['token'] as string | undefined);
@@ -146,13 +146,17 @@ export function initWebSocket(httpServer: HttpServer): SocketIOServer {
     } catch {
       next(new Error('Invalid token'));
     }
+  };
+  io.use((socket, next) => {
+    void authenticate(socket, next);
   });
 
   io.on('connection', (socket) => {
     const orgId = socket.data['orgId'] as string;
     const userId = socket.data['userId'] as string;
-    socket.join(`org:${orgId}`);
-    socket.join(`user:${userId}`);
+    void Promise.all([socket.join(`org:${orgId}`), socket.join(`user:${userId}`)]).catch((err: unknown) => {
+      console.error('[ws] could not join rooms:', (err as Error).message);
+    });
     console.log(`[ws] Client connected: ${socket.id} (org: ${orgId})`);
 
     socket.on('disconnect', () => {

@@ -7,7 +7,7 @@
 import http from 'http';
 import https from 'https';
 import { env } from '../config/env';
-import { assertSafeUrl, safeLookup, UnsafeUrlError } from './safe-url';
+import { assertSafeUrl, safeLookup, safeUndiciFetch, UnsafeUrlError } from './safe-url';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -353,13 +353,13 @@ async function withStreamableHTTPSession<T>(
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
-      // redirect: 'error' — a redirect must not move the request to another destination
-      const response = await fetch(serverUrl, {
+      // safeUndiciFetch connects through safeLookup (no DNS rebinding window) and refuses redirects:
+      // a redirect must not move the request to another destination
+      const response = await safeUndiciFetch(serverUrl, {
         method: 'POST',
         headers,
         body,
         signal: controller.signal,
-        redirect: 'error',
       });
 
       clearTimeout(timer);
@@ -478,12 +478,13 @@ async function withStreamableHTTPSession<T>(
     }
 
     try {
-      await fetch(serverUrl, {
+      const response = await safeUndiciFetch(serverUrl, {
         method: 'POST',
         headers,
         body: notifyBody,
-        redirect: 'error',
       });
+      // Nothing to read: release the connection instead of waiting for the body
+      await response.body?.cancel().catch(() => undefined);
     } catch {
       // Notifications don't require a response
     }

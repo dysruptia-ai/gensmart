@@ -6,8 +6,10 @@
  * - safeLookup: dns.lookup replacement used by the sockets themselves, so the address that is
  *   checked is the address that is connected to (closes the DNS rebinding window).
  * - safeFetch: HTTP client with manual redirects (revalidated on every hop), size and time limits.
+ * - createSafeDispatcher / safeUndiciFetch: the undici fetch (streaming bodies) connected through
+ *   safeLookup, with redirects refused.
  *
- * No imports from the rest of the app: it only depends on Node built-ins.
+ * No imports from the rest of the app: it only depends on Node built-ins and undici.
  */
 
 import dns from 'dns';
@@ -15,6 +17,7 @@ import http from 'http';
 import https from 'https';
 import net from 'net';
 import zlib from 'zlib';
+import { Agent, fetch as undiciFetch, type RequestInit as UndiciRequestInit, type Response as UndiciResponse } from 'undici';
 
 export type UnsafeUrlCode =
   | 'INVALID_URL'
@@ -471,3 +474,27 @@ export async function safeFetch(rawUrl: string, init: SafeFetchInit = {}): Promi
     return buildResponse(raw, current.href);
   }
 }
+
+// ── undici fetch (streaming) ──────────────────────────────────────────────────
+
+/**
+ * undici Agent whose sockets resolve names through safeLookup: the address that is connected to is the
+ * address that was checked, so there is no DNS rebinding window between assertSafeUrl and the connection.
+ */
+export function createSafeDispatcher(): Agent {
+  return new Agent({ connect: { lookup: safeLookup } });
+}
+
+let sharedDispatcher: Agent | null = null;
+
+/**
+ * fetch (undici) for callers that need to stream the response body. Always connects through safeLookup
+ * and refuses redirects (a redirect must not move the request to another destination). It does not
+ * validate the URL: call assertSafeUrl first, as safeFetch does. Both undici pieces come from the same
+ * package version, so Response, Headers and AbortSignal are compatible.
+ */
+export function safeUndiciFetch(url: string, init: UndiciRequestInit = {}): Promise<UndiciResponse> {
+  sharedDispatcher ??= createSafeDispatcher();
+  return undiciFetch(url, { ...init, dispatcher: sharedDispatcher, redirect: 'error' });
+}
+

@@ -292,7 +292,7 @@ startMcpWebhookWorker();
 
 // Trial expiration check — runs every hour
 import { query as dbQuery } from './config/database';
-setInterval(async () => {
+async function expireTrials(): Promise<void> {
   try {
     const result = await dbQuery<{ id: string; name: string }>(
       `UPDATE organizations
@@ -307,6 +307,10 @@ setInterval(async () => {
   } catch (err) {
     console.error('[trial-cron] Error checking expired trials:', err);
   }
+}
+
+setInterval(() => {
+  void expireTrials();
 }, 60 * 60 * 1000);
 
 // Start server
