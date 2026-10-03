@@ -7,6 +7,7 @@
 import http from 'http';
 import https from 'https';
 import { env } from '../config/env';
+import { assertSafeUrl, safeLookup, UnsafeUrlError } from './safe-url';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,16 @@ interface JsonRpcResponse {
 const CONNECT_TIMEOUT_MS = 15_000;
 const REQUEST_TIMEOUT_MS = 30_000;
 
+/** Refuses any MCP server URL that is not a public https destination, without saying why. */
+async function assertMcpUrl(url: string): Promise<void> {
+  try {
+    await assertSafeUrl(url);
+  } catch (err) {
+    if (err instanceof UnsafeUrlError) throw new Error('MCP server URL is not allowed');
+    throw err;
+  }
+}
+
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
 function postJson(
@@ -52,6 +63,7 @@ function postJson(
         port: parsed.port || (isHttps ? 443 : 80),
         path: parsed.pathname + parsed.search,
         method: 'POST',
+        lookup: safeLookup,
         headers: {
           ...(extraHeaders ?? {}),
           'Content-Type': 'application/json',
@@ -126,6 +138,7 @@ async function withMCPSession<T>(
         port: parsed.port || (isHttps ? 443 : 80),
         path: parsed.pathname + parsed.search,
         method: 'GET',
+        lookup: safeLookup,
         headers: {
           ...(extraHeaders ?? {}),
           Accept: 'text/event-stream',
@@ -167,14 +180,29 @@ async function withMCPSession<T>(
             if (!data) continue;
 
             if (eventType === 'endpoint') {
-              // Resolve endpoint URL (may be relative path)
+              // Resolve endpoint URL (may be relative path). The server chooses it, so it is validated
+              // like any other user-controlled destination before a single POST goes there.
+              let endpointHref: string;
               try {
-                postEndpoint = new URL(data, serverUrl).href;
+                endpointHref = new URL(data, serverUrl).href;
               } catch {
-                postEndpoint = data;
+                clearTimeout(connectTimer);
+                sseRef.req?.destroy();
+                reject(new Error('MCP server URL is not allowed'));
+                return;
               }
-              clearTimeout(connectTimer);
-              resolve();
+              void assertMcpUrl(endpointHref).then(
+                () => {
+                  postEndpoint = endpointHref;
+                  clearTimeout(connectTimer);
+                  resolve();
+                },
+                (err: Error) => {
+                  clearTimeout(connectTimer);
+                  sseRef.req?.destroy();
+                  reject(err);
+                }
+              );
             } else if (eventType === 'message') {
               try {
                 const msg = JSON.parse(data) as JsonRpcResponse;
@@ -325,11 +353,13 @@ async function withStreamableHTTPSession<T>(
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
+      // redirect: 'error' — a redirect must not move the request to another destination
       const response = await fetch(serverUrl, {
         method: 'POST',
         headers,
         body,
         signal: controller.signal,
+        redirect: 'error',
       });
 
       clearTimeout(timer);
@@ -452,6 +482,7 @@ async function withStreamableHTTPSession<T>(
         method: 'POST',
         headers,
         body: notifyBody,
+        redirect: 'error',
       });
     } catch {
       // Notifications don't require a response
@@ -492,6 +523,8 @@ export async function connectAndListTools(
   } else {
     console.log(`[MCP] Connecting to ${serverUrl} via ${transport} to list tools`);
   }
+
+  await assertMcpUrl(serverUrl);
 
   const result = transport === 'streamable-http'
     ? await withStreamableHTTPSession(serverUrl, async (send) => send('tools/list', {}), extraHeaders)
@@ -538,6 +571,8 @@ export async function executeMCPTool(
   }
 
   try {
+    await assertMcpUrl(serverUrl);
+
     const result = transport === 'streamable-http'
       ? await withStreamableHTTPSession(
           serverUrl,

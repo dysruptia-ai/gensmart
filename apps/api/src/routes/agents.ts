@@ -5,6 +5,7 @@ import multer from 'multer';
 import path from 'path';
 import { detectImageMime } from '../services/image-sniff';
 import { unlinkInside } from '../services/upload-paths';
+import { assertSafeUrl } from '../services/safe-url';
 import fs from 'fs';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
@@ -1170,11 +1171,11 @@ router.post(
         res.status(400).json({ error: { message: 'URL is required', code: 'MISSING_URL' } });
         return;
       }
-      // Validate URL
+      // Validate URL (public https destination only)
       try {
-        new URL(url);
+        await assertSafeUrl(url);
       } catch {
-        res.status(400).json({ error: { message: 'Invalid URL format', code: 'INVALID_URL' } });
+        res.status(400).json({ error: { message: 'Invalid or not allowed URL', code: 'INVALID_URL' } });
         return;
       }
 
@@ -1228,6 +1229,16 @@ router.post(
 
       // Re-enqueue appropriate processing job
       if (file.fileType === 'web') {
+        try {
+          await assertSafeUrl(file.sourceUrl ?? '');
+        } catch {
+          await query(
+            `UPDATE knowledge_files SET status = 'error', error_message = 'URL not allowed', updated_at = NOW() WHERE id = $1 AND agent_id = $2`,
+            [file.id, String(req.params['id'])]
+          ).catch(() => {});
+          res.status(400).json({ error: { message: 'Invalid or not allowed URL', code: 'INVALID_URL' } });
+          return;
+        }
         await scrapingQueue.add('scrape-url', {
           fileId: file.id,
           agentId: String(req.params['id']),

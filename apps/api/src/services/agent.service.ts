@@ -4,6 +4,8 @@ import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { resolveCalendarIds } from './calendar.service';
 import { unlinkInside } from './upload-paths';
+import { replacePlaceholders } from './custom-function.service';
+import { safeFetch, UnsafeUrlError } from './safe-url';
 import {
   PLAN_LIMITS,
   findMissingRequiredConfigVariables,
@@ -1105,14 +1107,7 @@ export async function testTool(
   // Build URL — substitute {{param}} path params first (mirrors
   // custom-function.service.ts so the Test button reflects production
   // behavior), then add query params for API key query type.
-  let url = endpointUrl.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => {
-    const val = params[key];
-    if (val === undefined || val === null) {
-      console.warn(`[custom-function] parámetro "{{${key}}}" no recibido en endpoint_url, usando valor vacío`);
-      return '';
-    }
-    return String(val);
-  });
+  let url = replacePlaceholders(endpointUrl, params, 'endpoint_url') as string;
   if (auth?.type === 'api_key_query' && auth.queryParam && auth.apiKey) {
     const u = new URL(url);
     u.searchParams.set(auth.queryParam, auth.apiKey);
@@ -1134,31 +1129,41 @@ export async function testTool(
   }
 
   const startTime = Date.now();
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url, {
       method: httpMethod,
       headers: requestHeaders,
       body: httpMethod !== 'GET' ? JSON.stringify(body) : undefined,
-      signal: controller.signal,
+      timeoutMs,
+      maxBytes: 1024 * 1024,
     });
-    clearTimeout(timeout);
 
     const latencyMs = Date.now() - startTime;
     let responseData: unknown;
     const contentType = res.headers.get('content-type') ?? '';
     if (contentType.includes('application/json')) {
-      responseData = await res.json();
+      try {
+        responseData = await res.json();
+      } catch {
+        responseData = await res.text();
+      }
     } else {
       responseData = await res.text();
     }
 
     return { status: res.status, latencyMs, data: responseData };
   } catch (err: unknown) {
-    clearTimeout(timeout);
-    const e = err as { name?: string; message?: string };
+    const e = err as { name?: string; message?: string; code?: string };
+    if (err instanceof UnsafeUrlError && err.code !== 'RESPONSE_TOO_LARGE') {
+      throw new AppError(400, 'The endpoint URL is not allowed', 'URL_NOT_ALLOWED');
+    }
+    if (e.code === 'EUNSAFE_ADDRESS') {
+      throw new AppError(400, 'The endpoint URL is not allowed', 'URL_NOT_ALLOWED');
+    }
+    if (err instanceof UnsafeUrlError) {
+      throw new AppError(502, 'The endpoint response is too large', 'RESPONSE_TOO_LARGE');
+    }
     if (e.name === 'AbortError') {
       throw new AppError(408, `Request timed out after ${timeoutMs}ms`, 'TIMEOUT');
     }

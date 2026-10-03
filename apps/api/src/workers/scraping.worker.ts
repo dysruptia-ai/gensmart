@@ -2,6 +2,7 @@ import { Worker, Job } from 'bullmq';
 import { createBullConnection } from '../config/queues';
 import { query } from '../config/database';
 import { chunkText, storeChunks } from '../services/rag.service';
+import { safeFetch, UnsafeUrlError } from '../services/safe-url';
 
 interface ScrapingJobData {
   fileId: string;
@@ -10,19 +11,37 @@ interface ScrapingJobData {
   url: string;
 }
 
+const SCRAPE_MAX_BYTES = 5 * 1024 * 1024;
+const SCRAPE_ALLOWED_CONTENT_TYPES = new Set(['text/html', 'application/xhtml+xml', 'text/plain']);
+
+/** Message stored on the file: it never reveals why a URL was rejected. */
+function describeScrapeError(err: unknown): string {
+  if (err instanceof UnsafeUrlError) {
+    return err.code === 'RESPONSE_TOO_LARGE' ? 'The page exceeds the maximum size (5MB)' : 'URL not allowed';
+  }
+  if ((err as { code?: string }).code === 'EUNSAFE_ADDRESS') return 'URL not allowed';
+  return err instanceof Error ? err.message : String(err);
+}
+
 async function scrapeUrl(url: string): Promise<string> {
   const cheerio = await import('cheerio');
 
-  const response = await fetch(url, {
+  const response = await safeFetch(url, {
     headers: {
       'User-Agent': 'GenSmart-Bot/1.0 (knowledge base crawler)',
       Accept: 'text/html,application/xhtml+xml',
     },
-    signal: AbortSignal.timeout(30000),
+    timeoutMs: 30000,
+    maxBytes: SCRAPE_MAX_BYTES,
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status} fetching ${url}`);
+    throw new Error(`HTTP ${response.status} fetching the URL`);
+  }
+
+  const contentType = (response.headers.get('content-type') ?? '').split(';')[0]!.trim().toLowerCase();
+  if (!SCRAPE_ALLOWED_CONTENT_TYPES.has(contentType)) {
+    throw new Error('The URL does not return an HTML or plain text page');
   }
 
   const html = await response.text();
@@ -72,7 +91,7 @@ async function processScrapingJob(job: Job<ScrapingJobData>): Promise<void> {
   }
 
   try {
-    console.log(`[scraping-worker] Scraping: ${url}`);
+    console.log(`[scraping-worker] Scraping file ${fileId}`);
 
     await query(
       `UPDATE knowledge_files SET status = 'processing', updated_at = NOW() WHERE id = $1 AND agent_id = $2`,
@@ -90,7 +109,7 @@ async function processScrapingJob(job: Job<ScrapingJobData>): Promise<void> {
     }
 
     const chunks = chunkText(text);
-    console.log(`[scraping-worker] Created ${chunks.length} chunks for ${url}`);
+    console.log(`[scraping-worker] Created ${chunks.length} chunks for file ${fileId}`);
 
     await storeChunks(fileId, agentId, chunks, {
       filename: file.filename,
@@ -102,10 +121,10 @@ async function processScrapingJob(job: Job<ScrapingJobData>): Promise<void> {
       [chunks.length, fileId, agentId]
     );
 
-    console.log(`[scraping-worker] Done: ${url} — ${chunks.length} chunks`);
+    console.log(`[scraping-worker] Done: file ${fileId} — ${chunks.length} chunks`);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`[scraping-worker] Error scraping ${url}:`, err);
+    const message = describeScrapeError(err);
+    console.error(`[scraping-worker] Error scraping file ${fileId}: ${message}`);
     await query(
       `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
       [message.slice(0, 500), fileId, agentId]

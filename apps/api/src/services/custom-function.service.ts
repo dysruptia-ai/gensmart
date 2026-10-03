@@ -1,3 +1,7 @@
+import { safeFetch, UnsafeUrlError } from './safe-url';
+
+const CUSTOM_FUNCTION_MAX_BYTES = 1024 * 1024;
+
 interface ToolConfig {
   endpointUrl: string;
   httpMethod?: string;
@@ -33,8 +37,13 @@ function resolvePath(obj: unknown, path: string): unknown {
  * or null value becomes an empty string (with a warning log) instead of
  * leaving the literal `{{param}}` text in the outgoing request — the LLM
  * regularly omits optional parameters it hasn't captured yet.
+ *
+ * In the `endpoint_url` context every value is URL-encoded: the values come from the model (which an
+ * end customer can influence), so "../owners" or "x?archived=true#" must not change the path or the
+ * query of the template. encodeURIComponent leaves dots alone, so a value that is exactly "." or ".."
+ * (a path traversal segment) is treated as empty. The `body_template` context (JSON) is unchanged.
  */
-function replacePlaceholders(
+export function replacePlaceholders(
   template: unknown,
   params: Record<string, unknown>,
   context: string
@@ -45,6 +54,14 @@ function replacePlaceholders(
       if (val === undefined || val === null) {
         console.warn(`[custom-function] parámetro "{{${key}}}" no recibido en ${context}, usando valor vacío`);
         return '';
+      }
+      if (context === 'endpoint_url') {
+        const encoded = encodeURIComponent(String(val));
+        if (encoded === '.' || encoded === '..') {
+          console.warn(`[custom-function] parámetro "{{${key}}}" no válido en ${context}, usando valor vacío`);
+          return '';
+        }
+        return encoded;
       }
       return String(val);
     });
@@ -118,6 +135,16 @@ function resolveFormatTemplate(format: string, data: unknown): string {
   });
 }
 
+/** Origin and path only: the query string can carry API keys. */
+function urlForLog(url: string): string {
+  try {
+    const u = new URL(url);
+    return `${u.origin}${u.pathname}`;
+  } catch {
+    return '(invalid url)';
+  }
+}
+
 export async function executeCustomFunction(
   config: ToolConfig,
   toolArguments: Record<string, unknown>
@@ -136,7 +163,7 @@ export async function executeCustomFunction(
     return 'Error: Tool has no endpoint URL configured.';
   }
 
-  console.log(`[custom-function] → ${httpMethod.toUpperCase()} ${endpointUrl}`);
+  console.log(`[custom-function] → ${httpMethod.toUpperCase()} ${urlForLog(endpointUrl)}`);
 
   // Build headers
   const finalHeaders: Record<string, string> = {
@@ -182,36 +209,34 @@ export async function executeCustomFunction(
     ? replacePlaceholders(bodyTemplate, toolArguments, 'body_template')
     : toolArguments;
 
-  // Execute with timeout
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
+  // Execute with timeout (the validation runs on the FINAL url, after substitution)
   try {
-    console.log(`[custom-function]   final URL: ${finalUrl}`);
+    console.log(`[custom-function]   final URL: ${urlForLog(finalUrl)}`);
     console.log(`[custom-function]   headers: ${Object.keys(finalHeaders).join(', ')}`);
-    if (!['GET', 'HEAD'].includes(httpMethod.toUpperCase())) {
-      console.log(`[custom-function]   body: ${JSON.stringify(body).slice(0, 500)}`);
-    }
-    const response = await fetch(finalUrl, {
+    const response = await safeFetch(finalUrl, {
       method: httpMethod.toUpperCase(),
       headers: finalHeaders,
       body: ['GET', 'HEAD'].includes(httpMethod.toUpperCase())
         ? undefined
         : JSON.stringify(body),
-      signal: controller.signal,
+      timeoutMs,
+      maxBytes: CUSTOM_FUNCTION_MAX_BYTES,
     });
 
-    clearTimeout(timeoutId);
-
-    console.log(`[custom-function] ← ${response.status} ${response.statusText} from ${endpointUrl}`);
+    console.log(`[custom-function] ← ${response.status} ${response.statusText} from ${urlForLog(finalUrl)}`);
 
     if (!response.ok) {
-      const errBody = await response.text().catch(() => '');
-      console.error(`[custom-function] ✗ HTTP ${response.status} body: ${errBody.slice(0, 500)}`);
-      return `Error: HTTP ${response.status} ${response.statusText} from ${endpointUrl}. Body: ${errBody.slice(0, 300)}`;
+      // The remote body is never logged or returned: it can contain anything.
+      return `Error: HTTP ${response.status} ${response.statusText} from the endpoint.`;
     }
 
-    const responseData: unknown = await response.json();
+    let responseData: unknown;
+    try {
+      responseData = await response.json();
+    } catch {
+      // The parser error can quote the start of the remote body: return a fixed text instead.
+      return 'Error: the endpoint did not return valid JSON';
+    }
 
     // Apply response mapping
     // Frontend saves { path, format }, interface expects { path, displayFormat }
@@ -235,12 +260,20 @@ export async function executeCustomFunction(
       ? responseData
       : JSON.stringify(responseData, null, 2);
   } catch (err: unknown) {
-    clearTimeout(timeoutId);
+    if (err instanceof UnsafeUrlError && err.code !== 'RESPONSE_TOO_LARGE') {
+      return 'Error: the endpoint URL is not allowed';
+    }
+    if ((err as { code?: string }).code === 'EUNSAFE_ADDRESS') {
+      return 'Error: the endpoint URL is not allowed';
+    }
+    if (err instanceof UnsafeUrlError) {
+      return 'Error: the endpoint response is too large';
+    }
     if ((err as { name?: string }).name === 'AbortError') {
-      console.error(`[custom-function] ✗ Timeout after ${timeoutMs}ms on ${endpointUrl}`);
+      console.error(`[custom-function] ✗ Timeout after ${timeoutMs}ms on ${urlForLog(endpointUrl)}`);
       return `Error: Request timed out after ${timeoutMs}ms`;
     }
-    console.error(`[custom-function] ✗ Exception on ${endpointUrl}:`, (err as Error).message);
+    console.error(`[custom-function] ✗ Exception on ${urlForLog(endpointUrl)}:`, (err as Error).message);
     return `Error: ${(err as Error).message ?? 'Unknown error calling custom function'}`;
   }
 }

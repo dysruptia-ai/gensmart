@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { redis } from '../config/redis';
+import { assertSafeUrl, safeFetch, UnsafeUrlError } from './safe-url';
 
 // Meta WhatsApp Cloud API limits (https://developers.facebook.com/docs/whatsapp/cloud-api/reference/media)
 export const MEDIA_LIMITS = {
@@ -33,23 +34,6 @@ export const MEDIA_LIMITS = {
 export const MEDIA_VALIDATION_CACHE_TTL = 3600; // 1 hour
 export const MEDIA_VALIDATION_HEAD_TIMEOUT_MS = 8000;
 
-// SSRF blocklist — private IP ranges, metadata endpoints, localhost
-// TODO: For stronger SSRF protection, also resolve hostname via dns.promises.lookup()
-// and check the resulting IP against these patterns (prevents DNS-rebinding attacks).
-export const BLOCKED_HOST_PATTERNS: RegExp[] = [
-  /^localhost$/i,
-  /^127\./,
-  /^10\./,
-  /^192\.168\./,
-  /^172\.(1[6-9]|2\d|3[0-1])\./,
-  /^169\.254\./,                            // AWS/GCP metadata endpoint
-  /^::1$/,                                  // IPv6 localhost
-  /^fc00:/i,                                // IPv6 private
-  /^fe80:/i,                                // IPv6 link-local
-  /\.local$/i,
-  /\.internal$/i,
-];
-
 export interface MediaValidationResult {
   valid: boolean;
   mimeType?: string;
@@ -63,10 +47,6 @@ export interface MediaValidationResult {
 }
 
 export type MediaType = 'image' | 'video' | 'document' | 'audio';
-
-export function isHostBlocked(hostname: string): boolean {
-  return BLOCKED_HOST_PATTERNS.some((pattern) => pattern.test(hostname));
-}
 
 // MIME types that some object stores (e.g. S3) return when the upload had no
 // explicit Content-Type set. We can't trust these — fall back to magic bytes.
@@ -99,27 +79,38 @@ export function detectImageMimeFromBytes(bytes: Buffer): string | null {
   return null;
 }
 
+/** Maps a failed request to a result without revealing why a destination was refused. */
+function mediaFetchFailure(err: unknown, timeoutMessage: string, failureMessage: string): MediaValidationResult {
+  if (err instanceof UnsafeUrlError && err.code !== 'RESPONSE_TOO_LARGE') {
+    return { valid: false, error: 'URL is not allowed', errorCode: 'SSRF_BLOCKED' };
+  }
+  if ((err as { code?: string }).code === 'EUNSAFE_ADDRESS') {
+    return { valid: false, error: 'URL is not allowed', errorCode: 'SSRF_BLOCKED' };
+  }
+  const isTimeout = (err as Error).name === 'AbortError';
+  return {
+    valid: false,
+    error: isTimeout ? timeoutMessage : failureMessage,
+    errorCode: isTimeout ? 'TIMEOUT' : 'HEAD_FAILED',
+  };
+}
+
 export async function validateMediaUrl(
   url: string,
   type: MediaType
 ): Promise<MediaValidationResult> {
-  // 1. Parse the URL
-  let parsed: URL;
+  // 1-3. Scheme, credentials and destination (DNS is resolved and every address must be public)
   try {
-    parsed = new URL(url);
-  } catch {
-    return { valid: false, error: 'Invalid URL format', errorCode: 'INVALID_URL' };
-  }
-
-  // 2. Validate protocol
-  const isDev = process.env['NODE_ENV'] === 'development';
-  if (parsed.protocol !== 'https:' && !(isDev && parsed.protocol === 'http:')) {
-    return { valid: false, error: 'URL must use HTTPS', errorCode: 'NOT_HTTPS' };
-  }
-
-  // 3. SSRF protection — check hostname against blocklist
-  if (isHostBlocked(parsed.hostname)) {
-    return { valid: false, error: 'URL points to a blocked host (private network or localhost)', errorCode: 'SSRF_BLOCKED' };
+    await assertSafeUrl(url);
+  } catch (err) {
+    const code = err instanceof UnsafeUrlError ? err.code : 'INVALID_URL';
+    if (code === 'INVALID_URL') {
+      return { valid: false, error: 'Invalid URL format', errorCode: 'INVALID_URL' };
+    }
+    if (code === 'NOT_HTTPS' || code === 'CREDENTIALS_IN_URL') {
+      return { valid: false, error: 'URL must use HTTPS', errorCode: 'NOT_HTTPS' };
+    }
+    return { valid: false, error: 'URL is not allowed', errorCode: 'SSRF_BLOCKED' };
   }
 
   // 4. Check Redis cache
@@ -144,20 +135,15 @@ export async function validateMediaUrl(
     return { valid: false, error: `Unsupported media type: ${type}`, errorCode: 'WRONG_TYPE' };
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), MEDIA_VALIDATION_HEAD_TIMEOUT_MS);
-
   let contentType: string | null = null;
   let contentLength: number | null = null;
 
   try {
-    const headRes = await fetch(url, {
+    // Redirects are followed manually and every hop is validated again (see safeFetch)
+    const headRes = await safeFetch(url, {
       method: 'HEAD',
-      signal: controller.signal,
-      redirect: 'follow',    // Follow redirects but still validate host (browser behavior)
+      timeoutMs: MEDIA_VALIDATION_HEAD_TIMEOUT_MS,
     });
-
-    clearTimeout(timeoutId);
 
     if (!headRes.ok) {
       return {
@@ -171,13 +157,7 @@ export async function validateMediaUrl(
     const lengthHeader = headRes.headers.get('content-length');
     contentLength = lengthHeader ? parseInt(lengthHeader, 10) : null;
   } catch (err) {
-    clearTimeout(timeoutId);
-    const isTimeout = (err as Error).name === 'AbortError';
-    return {
-      valid: false,
-      error: isTimeout ? 'URL validation timed out' : `Could not reach URL: ${(err as Error).message}`,
-      errorCode: isTimeout ? 'TIMEOUT' : 'HEAD_FAILED',
-    };
+    return mediaFetchFailure(err, 'URL validation timed out', 'Could not reach URL');
   }
 
   // 6. Validate Content-Type
@@ -190,17 +170,16 @@ export async function validateMediaUrl(
   // to inspecting the first bytes of the file to detect the real MIME type.
   let effectiveMimeType: string = baseMimeType;
   if (type === 'image' && UNTRUSTED_MIME_TYPES.has(baseMimeType)) {
-    const rangeController = new AbortController();
-    const rangeTimeout = setTimeout(() => rangeController.abort(), MEDIA_VALIDATION_HEAD_TIMEOUT_MS);
     let detected: string | null = null;
     try {
-      const rangeRes = await fetch(url, {
+      // Only the first bytes are needed; a server that ignores Range is cut after 12 bytes
+      const rangeRes = await safeFetch(url, {
         method: 'GET',
         headers: { Range: 'bytes=0-11' },
-        signal: rangeController.signal,
-        redirect: 'follow',
+        timeoutMs: MEDIA_VALIDATION_HEAD_TIMEOUT_MS,
+        maxBytes: 12,
+        truncate: true,
       });
-      clearTimeout(rangeTimeout);
       if (!rangeRes.ok && rangeRes.status !== 206) {
         return {
           valid: false,
@@ -211,13 +190,7 @@ export async function validateMediaUrl(
       const buf = Buffer.from(await rangeRes.arrayBuffer());
       detected = detectImageMimeFromBytes(buf);
     } catch (err) {
-      clearTimeout(rangeTimeout);
-      const isTimeout = (err as Error).name === 'AbortError';
-      return {
-        valid: false,
-        error: isTimeout ? 'Media byte check timed out' : `Could not fetch media bytes: ${(err as Error).message}`,
-        errorCode: isTimeout ? 'TIMEOUT' : 'HEAD_FAILED',
-      };
+      return mediaFetchFailure(err, 'Media byte check timed out', 'Could not fetch media bytes');
     }
 
     if (!detected || (!allowedTypes.includes(detected) && detected !== 'image/webp')) {

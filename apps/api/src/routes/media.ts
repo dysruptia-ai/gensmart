@@ -2,9 +2,9 @@ import { Router, Request, Response, NextFunction } from 'express';
 import sharp from 'sharp';
 import {
   detectImageMimeFromBytes,
-  isHostBlocked,
   MEDIA_LIMITS,
 } from '../services/media-validator.service';
+import { assertSafeUrl, safeFetch, UnsafeUrlError } from '../services/safe-url';
 
 const router = Router();
 
@@ -20,8 +20,8 @@ const MAX_IMAGE_BYTES = MEDIA_LIMITS.image.maxSizeBytes;
  * explicit content type. This endpoint downloads such files, detects the real
  * MIME type from magic bytes, and re-serves them with the correct header.
  *
- * No auth — Meta must be able to fetch it. SSRF-protected via the shared
- * blocklist; only HTTPS upstreams allowed.
+ * No auth — Meta must be able to fetch it. SSRF-protected by the shared safe-url module
+ * (DNS resolved and every address must be public, redirects revalidated); only HTTPS upstreams.
  */
 // Helmet's global Cross-Origin-Resource-Policy: same-origin would block <img>
 // loads from the embedded storefront widget; relax it for this route only.
@@ -39,42 +39,29 @@ router.get('/proxy', async (req: Request, res: Response) => {
 
   let parsed: URL;
   try {
-    parsed = new URL(raw);
-  } catch {
-    res.status(400).json({ error: 'Invalid URL' });
+    parsed = await assertSafeUrl(raw);
+  } catch (err) {
+    const code = err instanceof UnsafeUrlError ? err.code : 'INVALID_URL';
+    if (code === 'INVALID_URL') {
+      res.status(400).json({ error: 'Invalid URL' });
+    } else if (code === 'NOT_HTTPS' || code === 'CREDENTIALS_IN_URL') {
+      res.status(400).json({ error: 'URL must use HTTPS' });
+    } else {
+      res.status(403).json({ error: 'URL is not allowed' });
+    }
     return;
   }
-
-  if (parsed.protocol !== 'https:') {
-    res.status(400).json({ error: 'URL must use HTTPS' });
-    return;
-  }
-
-  if (isHostBlocked(parsed.hostname)) {
-    res.status(403).json({ error: 'URL points to a blocked host' });
-    return;
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), PROXY_FETCH_TIMEOUT_MS);
 
   try {
-    const upstream = await fetch(parsed.toString(), {
+    // Redirects are followed manually; every hop is validated again and the size is capped while reading
+    const upstream = await safeFetch(parsed.toString(), {
       method: 'GET',
-      signal: controller.signal,
-      redirect: 'follow',
+      timeoutMs: PROXY_FETCH_TIMEOUT_MS,
+      maxBytes: MAX_IMAGE_BYTES,
     });
-    clearTimeout(timeoutId);
 
     if (!upstream.ok) {
       res.status(502).json({ error: `Upstream returned HTTP ${upstream.status}` });
-      return;
-    }
-
-    const lengthHeader = upstream.headers.get('content-length');
-    const declaredLength = lengthHeader ? parseInt(lengthHeader, 10) : NaN;
-    if (!isNaN(declaredLength) && declaredLength > MAX_IMAGE_BYTES) {
-      res.status(413).json({ error: 'Image exceeds maximum size (5MB)' });
       return;
     }
 
@@ -112,13 +99,19 @@ router.get('/proxy', async (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'public, max-age=86400');
     res.status(200).end(buf);
   } catch (err) {
-    clearTimeout(timeoutId);
-    const isTimeout = (err as Error).name === 'AbortError';
-    if (isTimeout) {
+    if (err instanceof UnsafeUrlError && err.code === 'RESPONSE_TOO_LARGE') {
+      res.status(413).json({ error: 'Image exceeds maximum size (5MB)' });
+      return;
+    }
+    if ((err instanceof UnsafeUrlError) || (err as { code?: string }).code === 'EUNSAFE_ADDRESS') {
+      res.status(403).json({ error: 'URL is not allowed' });
+      return;
+    }
+    if ((err as Error).name === 'AbortError') {
       res.status(504).json({ error: 'Upstream fetch timed out' });
       return;
     }
-    res.status(502).json({ error: `Could not fetch upstream: ${(err as Error).message}` });
+    res.status(502).json({ error: 'Could not fetch upstream' });
   }
 });
 
