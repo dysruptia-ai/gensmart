@@ -51,6 +51,7 @@ import {
   handleSendEmailNotification,
   type EmailNotificationToolConfig,
 } from '../services/send-email-notification.service';
+import { conversationMatchesJob } from '../services/job-guards';
 import { getAvailableSlots, localTimeToUTC, pickAllowedCalendarId, resolveCalendarIds } from '../services/calendar.service';
 import {
   renderSystemPromptWithConfig,
@@ -174,6 +175,12 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   const conv = convResult.rows[0];
   if (!conv) {
     console.error(`[msg-worker] Conversation not found: ${conversationId}`);
+    return;
+  }
+  if (!conversationMatchesJob(conv, agentId, organizationId)) {
+    console.error(
+      `[msg-worker] Job ids do not match the conversation, skipping: conversation=${conversationId} job agent=${agentId} job org=${organizationId}`
+    );
     return;
   }
 
@@ -904,8 +911,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   if (updatedMessageCount >= 6) {
     try {
       const scoreCheck = await query<{ ai_score: number | null }>(
-        'SELECT ai_score FROM conversations WHERE id = $1',
-        [conversationId]
+        'SELECT ai_score FROM conversations WHERE id = $1 AND organization_id = $2',
+        [conversationId, organizationId]
       );
       if (scoreCheck.rows[0]?.ai_score === null) {
         const { scoringQueue } = await import('../config/queues');
@@ -1030,8 +1037,8 @@ async function executeTool(
        FROM conversations c
        JOIN agents a ON a.id = c.agent_id
        LEFT JOIN contacts co ON co.id = c.contact_id
-       WHERE c.id = $1`,
-      [conversationId]
+       WHERE c.id = $1 AND c.organization_id = $2`,
+      [conversationId, organizationId]
     );
 
     const ctx = ctxRes.rows[0];
@@ -1079,8 +1086,8 @@ async function executeTool(
        FROM conversations c
        JOIN agents a ON a.id = c.agent_id
        LEFT JOIN contacts co ON co.id = c.contact_id
-       WHERE c.id = $1`,
-      [conversationId]
+       WHERE c.id = $1 AND c.organization_id = $2`,
+      [conversationId, organizationId]
     );
     const ctx = ctxRes.rows[0];
     if (!ctx) return 'Error: conversation not found';
@@ -1178,8 +1185,8 @@ async function executeTool(
     try {
       const { query: dbQuery } = await import('../config/database');
       const convResult = await dbQuery<{ contact_id: string | null }>(
-        'SELECT contact_id FROM conversations WHERE id = $1',
-        [conversationId]
+        'SELECT contact_id FROM conversations WHERE id = $1 AND organization_id = $2',
+        [conversationId, organizationId]
       );
       contactId = convResult.rows[0]?.contact_id ?? null;
     } catch {
@@ -1271,8 +1278,8 @@ async function executeTool(
         const contactEmailResult = await query<{ email: string | null; name: string | null }>(
           `SELECT co.email, co.name FROM contacts co
            JOIN conversations cv ON cv.contact_id = co.id
-           WHERE cv.id = $1`,
-          [conversationId]
+           WHERE cv.id = $1 AND cv.organization_id = $2`,
+          [conversationId, organizationId]
         );
         const contactEmail = contactEmailResult.rows[0]?.email;
         const contactName = contactEmailResult.rows[0]?.name || personName;

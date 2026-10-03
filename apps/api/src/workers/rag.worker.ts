@@ -34,7 +34,7 @@ async function extractText(filePath: string, fileType: string): Promise<string> 
 }
 
 async function processRagJob(job: Job<RagJobData>): Promise<void> {
-  const { fileId, agentId } = job.data;
+  const { fileId, agentId, organizationId } = job.data;
 
   // Fetch knowledge file record
   const fileResult = await query<{
@@ -44,20 +44,25 @@ async function processRagJob(job: Job<RagJobData>): Promise<void> {
     file_path: string | null;
     status: string;
   }>(
-    'SELECT id, filename, file_type, file_path, status FROM knowledge_files WHERE id = $1',
-    [fileId]
+    `SELECT kf.id, kf.filename, kf.file_type, kf.file_path, kf.status
+     FROM knowledge_files kf
+     JOIN agents a ON a.id = kf.agent_id
+     WHERE kf.id = $1 AND kf.agent_id = $2 AND a.organization_id = $3`,
+    [fileId, agentId, organizationId]
   );
 
   const file = fileResult.rows[0];
   if (!file) {
-    console.error(`[rag-worker] File not found: ${fileId}`);
+    console.error(
+      `[rag-worker] File not found or ids do not match, skipping: file=${fileId} job agent=${agentId} job org=${organizationId}`
+    );
     return;
   }
 
   if (!file.file_path) {
     await query(
-      `UPDATE knowledge_files SET status = 'error', error_message = 'No file path', updated_at = NOW() WHERE id = $1`,
-      [fileId]
+      `UPDATE knowledge_files SET status = 'error', error_message = 'No file path', updated_at = NOW() WHERE id = $1 AND agent_id = $2`,
+      [fileId, agentId]
     );
     return;
   }
@@ -67,8 +72,8 @@ async function processRagJob(job: Job<RagJobData>): Promise<void> {
 
     // Mark as processing
     await query(
-      `UPDATE knowledge_files SET status = 'processing', updated_at = NOW() WHERE id = $1`,
-      [fileId]
+      `UPDATE knowledge_files SET status = 'processing', updated_at = NOW() WHERE id = $1 AND agent_id = $2`,
+      [fileId, agentId]
     );
 
     // Extract text
@@ -76,8 +81,8 @@ async function processRagJob(job: Job<RagJobData>): Promise<void> {
 
     if (!text.trim()) {
       await query(
-        `UPDATE knowledge_files SET status = 'error', error_message = 'No text content extracted', updated_at = NOW() WHERE id = $1`,
-        [fileId]
+        `UPDATE knowledge_files SET status = 'error', error_message = 'No text content extracted', updated_at = NOW() WHERE id = $1 AND agent_id = $2`,
+        [fileId, agentId]
       );
       return;
     }
@@ -91,8 +96,8 @@ async function processRagJob(job: Job<RagJobData>): Promise<void> {
 
     // Update status
     await query(
-      `UPDATE knowledge_files SET status = 'ready', chunk_count = $1, last_processed_at = NOW(), error_message = NULL, updated_at = NOW() WHERE id = $2`,
-      [chunks.length, fileId]
+      `UPDATE knowledge_files SET status = 'ready', chunk_count = $1, last_processed_at = NOW(), error_message = NULL, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+      [chunks.length, fileId, agentId]
     );
 
     console.log(`[rag-worker] Done: ${file.filename} — ${chunks.length} chunks`);
@@ -100,8 +105,8 @@ async function processRagJob(job: Job<RagJobData>): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[rag-worker] Error processing ${file.filename}:`, err);
     await query(
-      `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
-      [message.slice(0, 500), fileId]
+      `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+      [message.slice(0, 500), fileId, agentId]
     );
   }
 }

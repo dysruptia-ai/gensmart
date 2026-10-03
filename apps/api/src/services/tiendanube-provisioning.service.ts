@@ -118,10 +118,10 @@ async function refreshStoreIdAndEnsureDiscovery(
   };
 
   // is_enabled=true: a prior app/uninstalled|suspended webhook may have left the tool disabled.
-  await query(`UPDATE agent_tools SET config = $1::jsonb, is_enabled = true, updated_at = NOW() WHERE id = $2`, [
-    JSON.stringify(newConfig),
-    tool.id,
-  ]);
+  await query(
+    `UPDATE agent_tools SET config = $1::jsonb, is_enabled = true, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+    [JSON.stringify(newConfig), tool.id, agentId]
+  );
 
   const selectedTools = Array.isArray(newConfig['selected_tools']) ? (newConfig['selected_tools'] as unknown[]) : [];
   if (selectedTools.length > 0) return;

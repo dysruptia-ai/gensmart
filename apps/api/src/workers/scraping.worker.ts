@@ -50,16 +50,24 @@ async function scrapeUrl(url: string): Promise<string> {
 }
 
 async function processScrapingJob(job: Job<ScrapingJobData>): Promise<void> {
-  const { fileId, agentId, url } = job.data;
+  const { fileId, agentId, organizationId, url } = job.data;
 
   const fileResult = await query<{
     id: string;
     filename: string;
-  }>('SELECT id, filename FROM knowledge_files WHERE id = $1', [fileId]);
+  }>(
+    `SELECT kf.id, kf.filename
+     FROM knowledge_files kf
+     JOIN agents a ON a.id = kf.agent_id
+     WHERE kf.id = $1 AND kf.agent_id = $2 AND a.organization_id = $3`,
+    [fileId, agentId, organizationId]
+  );
 
   const file = fileResult.rows[0];
   if (!file) {
-    console.error(`[scraping-worker] File not found: ${fileId}`);
+    console.error(
+      `[scraping-worker] File not found or ids do not match, skipping: file=${fileId} job agent=${agentId} job org=${organizationId}`
+    );
     return;
   }
 
@@ -67,16 +75,16 @@ async function processScrapingJob(job: Job<ScrapingJobData>): Promise<void> {
     console.log(`[scraping-worker] Scraping: ${url}`);
 
     await query(
-      `UPDATE knowledge_files SET status = 'processing', updated_at = NOW() WHERE id = $1`,
-      [fileId]
+      `UPDATE knowledge_files SET status = 'processing', updated_at = NOW() WHERE id = $1 AND agent_id = $2`,
+      [fileId, agentId]
     );
 
     const text = await scrapeUrl(url);
 
     if (!text.trim()) {
       await query(
-        `UPDATE knowledge_files SET status = 'error', error_message = 'No text content scraped from URL', updated_at = NOW() WHERE id = $1`,
-        [fileId]
+        `UPDATE knowledge_files SET status = 'error', error_message = 'No text content scraped from URL', updated_at = NOW() WHERE id = $1 AND agent_id = $2`,
+        [fileId, agentId]
       );
       return;
     }
@@ -90,8 +98,8 @@ async function processScrapingJob(job: Job<ScrapingJobData>): Promise<void> {
     });
 
     await query(
-      `UPDATE knowledge_files SET status = 'ready', chunk_count = $1, last_processed_at = NOW(), error_message = NULL, updated_at = NOW() WHERE id = $2`,
-      [chunks.length, fileId]
+      `UPDATE knowledge_files SET status = 'ready', chunk_count = $1, last_processed_at = NOW(), error_message = NULL, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+      [chunks.length, fileId, agentId]
     );
 
     console.log(`[scraping-worker] Done: ${url} — ${chunks.length} chunks`);
@@ -99,8 +107,8 @@ async function processScrapingJob(job: Job<ScrapingJobData>): Promise<void> {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[scraping-worker] Error scraping ${url}:`, err);
     await query(
-      `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
-      [message.slice(0, 500), fileId]
+      `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+      [message.slice(0, 500), fileId, agentId]
     );
   }
 }

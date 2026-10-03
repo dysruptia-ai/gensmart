@@ -473,8 +473,8 @@ export async function publishAgent(orgId: string, agentId: string, userId: strin
 
     const updated = await client.query<AgentRow>(
       `UPDATE agents SET status = 'active', published_at = NOW(), updated_at = NOW()
-       WHERE id = $1 RETURNING *`,
-      [agentId]
+       WHERE id = $1 AND organization_id = $2 RETURNING *`,
+      [agentId, orgId]
     );
 
     await client.query('COMMIT');

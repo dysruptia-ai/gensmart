@@ -810,8 +810,8 @@ router.post(
       };
 
       await query(
-        'UPDATE agent_tools SET config = $1, updated_at = NOW() WHERE id = $2',
-        [JSON.stringify(newConfig), toolId]
+        'UPDATE agent_tools SET config = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3',
+        [JSON.stringify(newConfig), toolId, agentId]
       );
 
       // Invalidate MCP tool cache so the worker picks up the new secret on next call
@@ -1126,8 +1126,8 @@ router.post(
       }).catch(async (err) => {
         console.error('[agents] Failed to enqueue RAG job:', err);
         await query(
-          `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
-          ['Processing queue unavailable. Click reprocess to retry.', knowledgeFile.id]
+          `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+          ['Processing queue unavailable. Click reprocess to retry.', knowledgeFile.id, agentId]
         ).catch(() => {});
         return null;
       });
@@ -1183,8 +1183,8 @@ router.post(
       }).catch(async (err) => {
         console.error('[agents] Failed to enqueue scraping job:', err);
         await query(
-          `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
-          ['Processing queue unavailable. Click reprocess to retry.', file.id]
+          `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+          ['Processing queue unavailable. Click reprocess to retry.', file.id, agentId]
         ).catch(() => {});
         return null;
       });
@@ -1219,8 +1219,8 @@ router.post(
         }).catch(async (err) => {
           console.error('[agents] Failed to re-enqueue scraping job:', err);
           await query(
-            `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
-            ['Processing queue unavailable. Try again later.', file.id]
+            `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+            ['Processing queue unavailable. Try again later.', file.id, String(req.params['id'])]
           ).catch(() => {});
         });
       } else {
@@ -1231,8 +1231,8 @@ router.post(
         }).catch(async (err) => {
           console.error('[agents] Failed to re-enqueue RAG job:', err);
           await query(
-            `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2`,
-            ['Processing queue unavailable. Try again later.', file.id]
+            `UPDATE knowledge_files SET status = 'error', error_message = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3`,
+            ['Processing queue unavailable. Try again later.', file.id, String(req.params['id'])]
           ).catch(() => {});
         });
       }
