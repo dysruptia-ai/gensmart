@@ -148,8 +148,12 @@ appointmentRouter.post('/', validate(appointmentCreateSchema), async (req: Reque
     const appointment = await createAppointment(orgId, req.body as z.infer<typeof appointmentCreateSchema>);
     res.status(201).json({ appointment });
   } catch (err) {
-    const status = err instanceof AppError ? err.statusCode : 409;
-    res.status(status).json({ error: (err as Error).message });
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({ error: err.message });
+      return;
+    }
+    console.error('[appointments] Failed to create appointment:', (err as Error).message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -4,6 +4,7 @@ import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
 import { detectImageMime } from '../services/image-sniff';
+import { unlinkInside } from '../services/upload-paths';
 import fs from 'fs';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
@@ -1087,8 +1088,21 @@ router.post(
   '/:id/knowledge',
   validateUUID('id'),
   checkKnowledgeLimit(),
+  // Ownership first, so multer never writes a file for an agent of another organization.
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await agentService.verifyAgentOwnership(req.org!.id, String(req.params['id']));
+    } catch {
+      res.status(404).json({ error: { message: 'Agent not found', code: 'AGENT_NOT_FOUND' } });
+      return;
+    }
+    next();
+  },
   uploadKnowledge.single('file'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const uploaded = req.file;
+    // Any exit without a stored knowledge row must not leave the uploaded file on disk.
+    let keepUpload = false;
     try {
       const agentId = String(req.params['id']);
       const plan = req.org!.plan as PlanKey;
@@ -1117,6 +1131,7 @@ router.post(
         filePath: file.path,
         fileSize: file.size,
       });
+      keepUpload = true; // the row owns the file from here on
 
       // Enqueue RAG processing job
       const ragEnqueued = await ragQueue.add('process-file', {
@@ -1136,6 +1151,8 @@ router.post(
       res.status(201).json({ file: knowledgeFile });
     } catch (err) {
       next(err);
+    } finally {
+      if (!keepUpload && uploaded) await unlinkInside(uploaded.path, path.join(uploadsDir, 'knowledge'));
     }
   }
 );
@@ -1799,19 +1816,19 @@ router.post(
             capturedVars[name] = val;
             previewToolResults.push({ toolCallId: tc.id, content: `Variable '${name}' captured: ${val}` });
           } else if (tc.name === 'check_availability') {
-            const { getAvailableSlots, resolveCalendarIds } = await import('../services/calendar.service');
+            const { getAvailableSlots, resolveCalendarIds, pickAllowedCalendarId } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
 
-            // Multi-calendar: prefer calendar_id from LLM args, fallback to first in config
-            let calendarId = String(tc.arguments['calendar_id'] ?? '');
-            if (!calendarId) {
-              const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
-              const calIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
-              calendarId = calIds[0] ?? '';
-            }
+            // Same rule as the worker: only the calendars configured on the scheduling tool
+            const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
+            const allowedCalendarIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
+            const choice = pickAllowedCalendarId(String(tc.arguments['calendar_id'] ?? ''), allowedCalendarIds);
+            const calendarId = choice.ok ? choice.calendarId : '';
 
             let slotResult = 'No calendar configured for this agent.';
-            if (calendarId && date) {
+            if (!choice.ok && choice.reason === 'invalid') {
+              slotResult = `The calendar_id provided is not valid for this agent. Valid calendar_id values: ${allowedCalendarIds.join(', ')}.`;
+            } else if (calendarId && date) {
               try {
                 const slots = await getAvailableSlots(req.org!.id, calendarId, date);
                 slotResult = slots.length
@@ -1824,25 +1841,25 @@ router.post(
             previewToolResults.push({ toolCallId: tc.id, content: slotResult });
           } else if (tc.name === 'book_appointment') {
             const { createAppointment } = await import('../services/appointment.service');
-            const { localTimeToUTC, resolveCalendarIds } = await import('../services/calendar.service');
+            const { localTimeToUTC, resolveCalendarIds, pickAllowedCalendarId } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
             const time = String(tc.arguments['time'] ?? '');
             const personName = String(tc.arguments['name'] ?? 'Guest');
 
-            // Multi-calendar: prefer calendar_id from LLM args, fallback to first in config
-            let calendarId = String(tc.arguments['calendar_id'] ?? '');
-            if (!calendarId) {
-              const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
-              const calIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
-              calendarId = calIds[0] ?? '';
-            }
+            // Same rule as the worker: only the calendars configured on the scheduling tool
+            const schedulingTool = toolsResult.rows.find((t) => t.type === 'scheduling');
+            const allowedCalendarIds = schedulingTool ? resolveCalendarIds(schedulingTool.config as Record<string, unknown>) : [];
+            const choice = pickAllowedCalendarId(String(tc.arguments['calendar_id'] ?? ''), allowedCalendarIds);
+            const calendarId = choice.ok ? choice.calendarId : '';
 
             let bookResult = 'Could not book appointment — missing information.';
-            if (calendarId && date && time) {
+            if (!choice.ok && choice.reason === 'invalid') {
+              bookResult = `The calendar_id provided is not valid for this agent. Valid calendar_id values: ${allowedCalendarIds.join(', ')}.`;
+            } else if (calendarId && date && time) {
               try {
                 const calResult = await query<{ slot_duration: number; timezone: string }>(
-                  'SELECT slot_duration, timezone FROM calendars WHERE id = $1',
-                  [calendarId]
+                  'SELECT slot_duration, timezone FROM calendars WHERE id = $1 AND organization_id = $2',
+                  [calendarId, req.org!.id]
                 );
                 const slotDuration = calResult.rows[0]?.slot_duration ?? 30;
                 const calTz = calResult.rows[0]?.timezone || 'UTC';

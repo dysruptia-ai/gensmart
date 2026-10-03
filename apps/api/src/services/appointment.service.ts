@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 
 export interface AppointmentData {
@@ -43,8 +43,18 @@ export interface AppointmentFilters {
   agentId?: string;
 }
 
-async function assertOwned(table: 'calendars' | 'contacts' | 'conversations', label: string, id: string, orgId: string): Promise<void> {
-  const result = await query<{ id: string }>(
+interface Queryable {
+  query(text: string, values?: unknown[]): Promise<{ rows: Array<{ id: string }> }>;
+}
+
+async function assertOwned(
+  db: Queryable,
+  table: 'calendars' | 'contacts' | 'conversations',
+  label: string,
+  id: string,
+  orgId: string
+): Promise<void> {
+  const result = await db.query(
     `SELECT id FROM ${table} WHERE id = $1 AND organization_id = $2`,
     [id, orgId]
   );
@@ -55,43 +65,56 @@ export async function createAppointment(
   orgId: string,
   data: AppointmentData
 ): Promise<AppointmentRow> {
-  // Every referenced row must belong to the organization
-  await assertOwned('calendars', 'Calendar', data.calendarId, orgId);
-  if (data.contactId) await assertOwned('contacts', 'Contact', data.contactId, orgId);
-  if (data.conversationId) await assertOwned('conversations', 'Conversation', data.conversationId, orgId);
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
 
-  // Validate no overlap
-  const overlapResult = await query<{ id: string }>(
-    `SELECT id FROM appointments
-     WHERE calendar_id = $1
-       AND organization_id = $4
-       AND status != 'cancelled'
-       AND tstzrange(start_time, end_time) && tstzrange($2::timestamptz, $3::timestamptz)`,
-    [data.calendarId, data.startTime, data.endTime, orgId]
-  );
-  if (overlapResult.rows.length > 0) {
-    throw new Error('This time slot is already booked');
+    // Serialize bookings of the same calendar: the overlap check and the INSERT become atomic.
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [data.calendarId]);
+
+    // Every referenced row must belong to the organization
+    await assertOwned(client, 'calendars', 'Calendar', data.calendarId, orgId);
+    if (data.contactId) await assertOwned(client, 'contacts', 'Contact', data.contactId, orgId);
+    if (data.conversationId) await assertOwned(client, 'conversations', 'Conversation', data.conversationId, orgId);
+
+    const overlapResult = await client.query<{ id: string }>(
+      `SELECT id FROM appointments
+       WHERE calendar_id = $1
+         AND organization_id = $4
+         AND status != 'cancelled'
+         AND tstzrange(start_time, end_time) && tstzrange($2::timestamptz, $3::timestamptz)`,
+      [data.calendarId, data.startTime, data.endTime, orgId]
+    );
+    if (overlapResult.rows.length > 0) {
+      throw new AppError(409, 'This time slot is already booked', 'SLOT_TAKEN');
+    }
+
+    const result = await client.query<AppointmentRow>(
+      `INSERT INTO appointments
+         (organization_id, calendar_id, contact_id, conversation_id, title, description,
+          start_time, end_time, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::timestamptz, COALESCE($9, 'scheduled'))
+       RETURNING *`,
+      [
+        orgId,
+        data.calendarId,
+        data.contactId ?? null,
+        data.conversationId ?? null,
+        data.title,
+        data.description ?? null,
+        data.startTime,
+        data.endTime,
+        data.status ?? null,
+      ]
+    );
+    await client.query('COMMIT');
+    return result.rows[0]!;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
   }
-
-  const result = await query<AppointmentRow>(
-    `INSERT INTO appointments
-       (organization_id, calendar_id, contact_id, conversation_id, title, description,
-        start_time, end_time, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7::timestamptz, $8::timestamptz, COALESCE($9, 'scheduled'))
-     RETURNING *`,
-    [
-      orgId,
-      data.calendarId,
-      data.contactId ?? null,
-      data.conversationId ?? null,
-      data.title,
-      data.description ?? null,
-      data.startTime,
-      data.endTime,
-      data.status ?? null,
-    ]
-  );
-  return result.rows[0]!;
 }
 
 export async function getAppointments(
@@ -169,7 +192,7 @@ export async function updateAppointment(
   appointmentId: string,
   data: Partial<AppointmentData>
 ): Promise<AppointmentRow | null> {
-  if (data.contactId) await assertOwned('contacts', 'Contact', data.contactId, orgId);
+  if (data.contactId) await assertOwned({ query }, 'contacts', 'Contact', data.contactId, orgId);
 
   const setClauses: string[] = ['updated_at = NOW()'];
   const values: unknown[] = [];

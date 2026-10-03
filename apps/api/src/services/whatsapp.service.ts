@@ -107,7 +107,7 @@ export async function markAsRead(
 }
 
 export function verifyWebhookSignature(
-  payload: string,
+  payload: string | Buffer,
   signature: string,
   appSecret: string
 ): boolean {

@@ -9,6 +9,7 @@ import { validate } from '../middleware/validate';
 import { query, getClient } from '../config/database';
 import { exportQueue } from '../config/queues';
 import { AppError } from '../middleware/errorHandler';
+import { avatarFilenameFromUrl, unlinkInside } from '../services/upload-paths';
 
 const router = Router();
 
@@ -397,6 +398,22 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
     );
     const agentIds = agentsResult.rows.map((r) => r.id);
 
+    // Files on disk that belong to this organization: collected now, deleted after the COMMIT
+    const knowledgeFilePaths: string[] = [];
+    const avatarUrls: string[] = [];
+    if (agentIds.length > 0) {
+      const kfPaths = await client.query<{ file_path: string | null }>(
+        'SELECT file_path FROM knowledge_files WHERE agent_id = ANY($1::uuid[])',
+        [agentIds]
+      );
+      for (const r of kfPaths.rows) if (r.file_path) knowledgeFilePaths.push(r.file_path);
+      const avatars = await client.query<{ avatar_url: string | null }>(
+        'SELECT avatar_url FROM agents WHERE organization_id = $1 AND avatar_url IS NOT NULL',
+        [orgId]
+      );
+      for (const r of avatars.rows) if (r.avatar_url) avatarUrls.push(r.avatar_url);
+    }
+
     // 5. Delete knowledge chunks
     if (agentIds.length > 0) {
       const kfResult = await client.query<{ id: string }>(
@@ -504,6 +521,29 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
         fs.unlinkSync(resolved);
       } catch {
         // Non-critical: a missing or undeletable file must not affect the response
+      }
+    }
+
+    // Knowledge documents and avatars (skipping any file another row still references)
+    const knowledgeDir = path.join(process.cwd(), 'uploads', 'knowledge');
+    for (const filePath of knowledgeFilePaths) {
+      try {
+        const stillUsed = await query('SELECT 1 FROM knowledge_files WHERE file_path = $1 LIMIT 1', [filePath]);
+        if ((stillUsed.rowCount ?? 0) === 0) await unlinkInside(filePath, knowledgeDir);
+      } catch {
+        // Non-critical
+      }
+    }
+    const avatarsDir = path.join(process.cwd(), 'uploads', 'avatars');
+    const apiBase = process.env['API_BASE_URL'] ?? 'http://localhost:4000';
+    for (const avatarUrl of avatarUrls) {
+      try {
+        const filename = avatarFilenameFromUrl(avatarUrl, apiBase);
+        if (!filename) continue;
+        const stillUsed = await query('SELECT 1 FROM agents WHERE avatar_url = $1 LIMIT 1', [avatarUrl]);
+        if ((stillUsed.rowCount ?? 0) === 0) await unlinkInside(path.join(avatarsDir, filename), avatarsDir);
+      } catch {
+        // Non-critical
       }
     }
 

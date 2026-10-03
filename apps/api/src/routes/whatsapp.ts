@@ -102,7 +102,7 @@ router.post(
       const appSecret = env.WHATSAPP_APP_SECRET || env.META_APP_SECRET;
       if (appSecret) {
         const signature = req.headers['x-hub-signature-256'] as string;
-        if (!signature || !verifyWebhookSignature(rawBuffer.toString(), signature, appSecret)) {
+        if (!signature || !verifyWebhookSignature(rawBuffer, signature, appSecret)) {
           console.warn('[whatsapp] Invalid webhook signature — ignoring');
           return;
         }

@@ -1,7 +1,9 @@
 import crypto from 'crypto';
+import path from 'path';
 import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { resolveCalendarIds } from './calendar.service';
+import { unlinkInside } from './upload-paths';
 import {
   PLAN_LIMITS,
   findMissingRequiredConfigVariables,
@@ -1011,7 +1013,20 @@ export async function reprocessKnowledgeFile(orgId: string, agentId: string, fil
 
 export async function deleteKnowledgeFile(orgId: string, agentId: string, fileId: string) {
   await verifyAgentOwnership(orgId, agentId);
+  const existing = await query<{ file_path: string | null }>(
+    'SELECT file_path FROM knowledge_files WHERE id = $1 AND agent_id = $2',
+    [fileId, agentId]
+  );
   await query('DELETE FROM knowledge_files WHERE id = $1 AND agent_id = $2', [fileId, agentId]);
+
+  // Best effort: remove the uploaded document from disk unless another row still points to it.
+  const filePath = existing.rows[0]?.file_path;
+  if (filePath) {
+    const stillUsed = await query('SELECT 1 FROM knowledge_files WHERE file_path = $1 LIMIT 1', [filePath]);
+    if ((stillUsed.rowCount ?? 0) === 0) {
+      await unlinkInside(filePath, path.join(process.cwd(), 'uploads', 'knowledge'));
+    }
+  }
 }
 
 // ── Preview agent ─────────────────────────────────────────────────────────────
