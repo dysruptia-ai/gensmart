@@ -19,6 +19,15 @@ import {
 } from '../config/email';
 import { AppError } from '../middleware/errorHandler';
 import { pickSessionMembership } from './access-rules';
+import {
+  ATTEMPT_LIMITS,
+  buildAttemptKey,
+  clearFailures,
+  failureCount,
+  guardPasswordCheck,
+  isBlocked,
+  recordFailure,
+} from './attempt-limiter';
 
 export interface AuthTokens {
   accessToken: string;
@@ -318,7 +327,36 @@ export async function register(input: {
 export async function login(input: {
   email: string;
   password: string;
+  ip?: string;
 }): Promise<AuthTokens | TwoFactorRequired> {
+  // Failed-login counters: per (email + IP) and per email. They are checked BEFORE the bcrypt
+  // comparison; if Redis is down the login is allowed (a warning is logged, never the email).
+  const emailLower = input.email.toLowerCase();
+  const pairKey = buildAttemptKey(['login', emailLower, input.ip ?? 'unknown']);
+  const emailKey = buildAttemptKey(['login-email', emailLower]);
+  try {
+    const [pairCount, emailCount] = await Promise.all([failureCount(pairKey), failureCount(emailKey)]);
+    if (
+      isBlocked(pairCount, ATTEMPT_LIMITS.loginPerEmailAndIp.max) ||
+      isBlocked(emailCount, ATTEMPT_LIMITS.loginPerEmail.max)
+    ) {
+      throw new AppError(429, 'Too many attempts, please try again later', 'TOO_MANY_ATTEMPTS');
+    }
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    console.warn('[auth] Login attempt limiter unavailable (Redis error): login allowed');
+  }
+  const recordLoginFailure = async (): Promise<void> => {
+    try {
+      await Promise.all([
+        recordFailure(pairKey, ATTEMPT_LIMITS.loginPerEmailAndIp.windowSeconds),
+        recordFailure(emailKey, ATTEMPT_LIMITS.loginPerEmail.windowSeconds),
+      ]);
+    } catch {
+      console.warn('[auth] Could not record a failed login (Redis error)');
+    }
+  };
+
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
             u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
@@ -330,13 +368,16 @@ export async function login(input: {
 
   const user = result.rows[0];
   if (!user) {
+    await recordLoginFailure();
     throw new AppError(401, 'Invalid email or password', 'INVALID_CREDENTIALS');
   }
 
   const passwordMatch = await bcrypt.compare(input.password, user.password_hash);
   if (!passwordMatch) {
+    await recordLoginFailure();
     throw new AppError(401, 'Invalid email or password', 'INVALID_CREDENTIALS');
   }
+  await clearFailures(pairKey).catch(() => undefined);
 
   if (user.totp_enabled) {
     const tempToken = generateTempToken({ userId: user.id, purpose: '2fa' });
@@ -360,11 +401,23 @@ export async function verify2FA(input: {
   tempToken: string;
   code: string;
 }): Promise<AuthTokens> {
-  let payload: { userId: string };
+  let payload: { userId: string; orgId?: string };
   try {
     payload = verifyTempToken(input.tempToken);
   } catch {
     throw new AppError(401, 'Invalid or expired token', 'INVALID_TOKEN');
+  }
+
+  // Wrong-code limiter per user. It FAILS CLOSED: without Redis there is no way to bound the guesses.
+  const twoFaKey = buildAttemptKey(['2fa', payload.userId]);
+  try {
+    if (isBlocked(await failureCount(twoFaKey), ATTEMPT_LIMITS.twoFactorPerUser.max)) {
+      throw new AppError(429, 'Too many attempts, please try again later', 'TOO_MANY_ATTEMPTS');
+    }
+  } catch (err) {
+    if (err instanceof AppError) throw err;
+    console.warn('[auth] 2FA attempt limiter unavailable (Redis error): verification refused');
+    throw new AppError(503, 'Service temporarily unavailable', 'RATE_LIMIT_UNAVAILABLE');
   }
 
   const result = await query<UserRow>(
@@ -392,13 +445,28 @@ export async function verify2FA(input: {
     const matchingCode = backupCodes.rows.find(bc => bc.code_hash === codeHash);
 
     if (!matchingCode) {
+      await recordFailure(twoFaKey, ATTEMPT_LIMITS.twoFactorPerUser.windowSeconds).catch(() => undefined);
       throw new AppError(401, 'Invalid 2FA code', 'INVALID_2FA_CODE');
     }
 
     await query('UPDATE backup_codes SET used = true, used_at = NOW() WHERE id = $1', [matchingCode.id]);
   }
+  await clearFailures(twoFaKey).catch(() => undefined);
 
-  const membership = await resolveSessionMembership(user);
+  // A temporary token issued by an organization access link targets that organization
+  let membership: { organization_id: string; role: string };
+  if (payload.orgId) {
+    const targetMembership = await query<{ role: string }>(
+      'SELECT role FROM user_organizations WHERE user_id = $1 AND organization_id = $2',
+      [user.id, payload.orgId]
+    );
+    if (!targetMembership.rows[0]) {
+      throw new AppError(403, 'User is not a member of this organization', 'NOT_A_MEMBER');
+    }
+    membership = { organization_id: payload.orgId, role: targetMembership.rows[0].role };
+  } else {
+    membership = await resolveSessionMembership(user);
+  }
   const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
   const orgResult = await query<OrgRow>(
     'SELECT id, name FROM organizations WHERE id = $1',
@@ -408,6 +476,31 @@ export async function verify2FA(input: {
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
   return buildAuthTokens(sessionUser, org);
+}
+
+const REFRESH_GRACE_SECONDS = 10;
+const refreshRotatedKey = (tokenId: string) => `refresh:rotated:${tokenId}`;
+
+/**
+ * A refresh token that is already marked as used. If it was rotated a moment ago (two tabs refreshing
+ * at once) the request is simply refused; otherwise it is treated as a stolen token and every token
+ * of the user is invalidated. If Redis is unavailable the strict behaviour applies.
+ */
+async function rejectUsedRefreshToken(tokenId: string, userId: string): Promise<never> {
+  const justRotated = async (): Promise<boolean> => {
+    try {
+      return (await redis.exists(refreshRotatedKey(tokenId))) === 1;
+    } catch {
+      return false;
+    }
+  };
+  // The winner of the race sets the marker right after its UPDATE: allow it a moment to appear
+  if ((await justRotated()) || (await new Promise((r) => setTimeout(r, 75)).then(justRotated))) {
+    throw new AppError(401, 'Refresh token already rotated', 'TOKEN_ROTATED');
+  }
+  // Invalidate all tokens for this user (possible token theft)
+  await query('UPDATE refresh_tokens SET used = true WHERE user_id = $1', [userId]);
+  throw new AppError(401, 'Refresh token reuse detected. Please log in again.', 'TOKEN_REUSE');
 }
 
 export async function refreshToken(currentRefreshToken: string): Promise<AuthTokens> {
@@ -426,11 +519,9 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
     throw new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
   }
 
-  // Reuse detection: token was already used
+  // Reuse detection (with a short grace period for concurrent renewals): token was already used
   if (storedToken.used) {
-    // Invalidate all tokens for this user (possible token theft)
-    await query('UPDATE refresh_tokens SET used = true WHERE user_id = $1', [storedToken.user_id]);
-    throw new AppError(401, 'Refresh token reuse detected. Please log in again.', 'TOKEN_REUSE');
+    await rejectUsedRefreshToken(storedToken.id, storedToken.user_id);
   }
 
   if (new Date(storedToken.expires_at) < new Date()) {
@@ -453,8 +544,16 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
     throw new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
   }
 
-  // Mark current token as used
-  await query('UPDATE refresh_tokens SET used = true WHERE id = $1', [storedToken.id]);
+  // Atomic gate: only one request can flip used from false to true
+  const gate = await query<{ id: string }>(
+    'UPDATE refresh_tokens SET used = true WHERE id = $1 AND used = false RETURNING id',
+    [storedToken.id]
+  );
+  if (gate.rows.length === 0) {
+    await rejectUsedRefreshToken(storedToken.id, storedToken.user_id);
+  }
+  // Marker for the concurrent request that lost the race (set right away, before any other work)
+  await redis.set(refreshRotatedKey(storedToken.id), '1', 'EX', REFRESH_GRACE_SECONDS).catch(() => undefined);
 
   const userResult = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
@@ -496,6 +595,18 @@ export async function logout(currentRefreshToken: string): Promise<void> {
 }
 
 export async function forgotPassword(email: string): Promise<void> {
+  // At most 3 requests per email per hour. Over the limit nothing is created or sent, and the caller
+  // still answers the same generic message (the limit is never revealed). Redis down: carry on.
+  try {
+    const count = await recordFailure(
+      buildAttemptKey(['forgot', email.toLowerCase()]),
+      ATTEMPT_LIMITS.forgotPasswordPerEmail.windowSeconds
+    );
+    if (count > ATTEMPT_LIMITS.forgotPasswordPerEmail.max) return;
+  } catch {
+    console.warn('[auth] Forgot-password limiter unavailable (Redis error): request allowed');
+  }
+
   const result = await query<UserRow>(
     'SELECT id, email, name FROM users WHERE email = $1',
     [email.toLowerCase()]
@@ -526,29 +637,39 @@ export async function resetPassword(input: {
 }): Promise<void> {
   const tokenHash = hashToken(input.token);
 
-  const resetResult = await query<{ id: string; user_id: string; used: boolean; expires_at: string }>(
-    `SELECT id, user_id, used, expires_at
-     FROM password_resets
-     WHERE token_hash = $1`,
-    [tokenHash]
-  );
-  const reset = resetResult.rows[0];
-
-  if (!reset || reset.used || new Date(reset.expires_at) < new Date()) {
-    throw new AppError(400, 'Invalid or expired reset token', 'INVALID_RESET_TOKEN');
-  }
-
+  // Hash first (slow), then claim the token and change the password in one transaction
   const passwordHash = await bcrypt.hash(input.password, 12);
 
-  await query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [
-    passwordHash,
-    reset.user_id,
-  ]);
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
 
-  await query('UPDATE password_resets SET used = true WHERE id = $1', [reset.id]);
+    const claimed = await client.query<{ user_id: string }>(
+      `UPDATE password_resets SET used = true
+       WHERE token_hash = $1 AND used = false AND expires_at > NOW()
+       RETURNING user_id`,
+      [tokenHash]
+    );
+    const row = claimed.rows[0];
+    if (!row) {
+      await client.query('ROLLBACK');
+      throw new AppError(400, 'Invalid or expired reset token', 'INVALID_RESET_TOKEN');
+    }
 
-  // Invalidate all refresh tokens
-  await query('UPDATE refresh_tokens SET used = true WHERE user_id = $1', [reset.user_id]);
+    await client.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [
+      passwordHash,
+      row.user_id,
+    ]);
+    // Invalidate all refresh tokens
+    await client.query('UPDATE refresh_tokens SET used = true WHERE user_id = $1', [row.user_id]);
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
+  }
 }
 
 export async function setup2FA(_userId: string): Promise<{ secret: string; qrCode: string }> {
@@ -562,6 +683,12 @@ export async function enable2FA(
   secret: string,
   code: string
 ): Promise<{ backupCodes: string[] }> {
+  // A second factor that is already active cannot be replaced from here (disable it first)
+  const current = await query<{ totp_enabled: boolean }>('SELECT totp_enabled FROM users WHERE id = $1', [userId]);
+  if (current.rows[0]?.totp_enabled) {
+    throw new AppError(409, '2FA is already enabled', 'TOTP_ALREADY_ENABLED');
+  }
+
   const isValid = speakeasy.totp.verify({ secret, token: code, encoding: 'base32', window: 1 });
   if (!isValid) {
     throw new AppError(400, 'Invalid 2FA code', 'INVALID_2FA_CODE');
@@ -729,22 +856,18 @@ export async function sendOrgAccessLinkEmail(
  * from the user's `users.organization_id` (their other, primary org). Reads
  * the effective role from `user_organizations` for that specific org.
  */
-export async function consumeOrgAccessToken(token: string): Promise<AuthTokens> {
+export async function consumeOrgAccessToken(token: string): Promise<AuthTokens | TwoFactorRequired> {
   const tokenHash = hashToken(token);
 
-  const tokenResult = await query<{
-    id: string;
-    user_id: string;
-    organization_id: string;
-    used: boolean;
-    expires_at: string;
-  }>(
-    `SELECT id, user_id, organization_id, used, expires_at
-     FROM org_access_tokens WHERE token_hash = $1`,
+  // Atomic gate: the first request to flip used from false to true gets the token
+  const claimed = await query<{ id: string; user_id: string; organization_id: string }>(
+    `UPDATE org_access_tokens SET used = true
+     WHERE token_hash = $1 AND used = false AND expires_at > NOW()
+     RETURNING id, user_id, organization_id`,
     [tokenHash]
   );
-  const tokenRow = tokenResult.rows[0];
-  if (!tokenRow || tokenRow.used || new Date(tokenRow.expires_at) < new Date()) {
+  const tokenRow = claimed.rows[0];
+  if (!tokenRow) {
     throw new AppError(400, 'Invalid or expired access token', 'INVALID_ACCESS_TOKEN');
   }
 
@@ -774,7 +897,12 @@ export async function consumeOrgAccessToken(token: string): Promise<AuthTokens> 
   const org = orgResult.rows[0];
   if (!org) throw new AppError(404, 'Organization not found', 'ORG_NOT_FOUND');
 
-  await query('UPDATE org_access_tokens SET used = true WHERE id = $1', [tokenRow.id]);
+  // The link must not skip the second factor: the session is issued after /2fa/verify
+  if (user.totp_enabled) {
+    const tempToken = generateTempToken({ userId: user.id, purpose: '2fa', orgId: tokenRow.organization_id });
+    return { requires2FA: true, tempToken };
+  }
+
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
   // Override organization_id/role with the token's target org — not the
@@ -846,7 +974,7 @@ export async function disable2FA(userId: string, password: string): Promise<void
     throw new AppError(404, 'User not found', 'USER_NOT_FOUND');
   }
 
-  const passwordMatch = await bcrypt.compare(password, user.password_hash);
+  const passwordMatch = await guardPasswordCheck(userId, () => bcrypt.compare(password, user.password_hash));
   if (!passwordMatch) {
     throw new AppError(401, 'Invalid password', 'INVALID_PASSWORD');
   }

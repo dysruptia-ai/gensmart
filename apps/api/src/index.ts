@@ -7,6 +7,8 @@ dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 import express from 'express';
 import cors from 'cors';
 import { redactUrlForLog } from './utils/log-redact';
+import { parseTrustProxyHops } from './utils/trust-proxy';
+import { computeAllowedOrigins } from './utils/cors-origins';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
@@ -34,15 +36,13 @@ import {
 
 const app = express();
 
+// Behind nginx (1 hop in production) req.ip is the real client address taken from X-Forwarded-For
+app.set('trust proxy', parseTrustProxyHops(process.env['TRUST_PROXY_HOPS'], env.NODE_ENV === 'production'));
+
 // Security middleware
 app.use(helmet());
-const corsOrigins = [env.FRONTEND_URL];
 // Always allow both www and non-www variants
-if (env.FRONTEND_URL.includes('://www.')) {
-  corsOrigins.push(env.FRONTEND_URL.replace('://www.', '://'));
-} else {
-  corsOrigins.push(env.FRONTEND_URL.replace('://', '://www.'));
-}
+const corsOrigins = computeAllowedOrigins(env.FRONTEND_URL);
 
 const restrictedCors = cors({
   origin: corsOrigins,

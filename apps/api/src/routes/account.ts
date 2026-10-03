@@ -11,6 +11,7 @@ import { query, getClient } from '../config/database';
 import { exportQueue } from '../config/queues';
 import { AppError } from '../middleware/errorHandler';
 import { avatarFilenameFromUrl, unlinkInside } from '../services/upload-paths';
+import { guardPasswordCheck } from '../services/attempt-limiter';
 
 const router = Router();
 
@@ -222,7 +223,7 @@ router.post(
       const user = userResult.rows[0];
       if (!user) throw new AppError(404, 'User not found', 'NOT_FOUND');
 
-      const passwordMatch = await bcrypt.compare(password, user.password_hash);
+      const passwordMatch = await guardPasswordCheck(userId, () => bcrypt.compare(password, user.password_hash));
       if (!passwordMatch) throw new AppError(401, 'Invalid password', 'INVALID_PASSWORD');
 
       // Check for existing pending request
@@ -347,7 +348,7 @@ router.post(
       const user = userResult.rows[0];
       if (!user) throw new AppError(404, 'User not found', 'NOT_FOUND');
 
-      const passwordMatch = await bcrypt.compare(password, user.password_hash);
+      const passwordMatch = await guardPasswordCheck(userId, () => bcrypt.compare(password, user.password_hash));
       if (!passwordMatch) throw new AppError(401, 'Invalid password', 'INVALID_PASSWORD');
 
       await performAccountDeletion(orgId);

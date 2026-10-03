@@ -69,11 +69,9 @@ async function checkResolveRateLimit(ip: string): Promise<boolean> {
 }
 
 function getClientIp(req: Request): string {
-  return (
-    (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-    req.socket.remoteAddress ||
-    'unknown'
-  );
+  // req.ip honours the 'trust proxy' setting (the address added by our own proxy), never the
+  // first X-Forwarded-For value, which the client controls.
+  return req.ip || req.socket.remoteAddress || 'unknown';
 }
 
 // ── GET /api/widget/tiendanube/resolve ────────────────────────────────────────

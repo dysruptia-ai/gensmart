@@ -18,6 +18,8 @@ export interface RefreshTokenPayload {
 export interface TempTokenPayload {
   userId: string;
   purpose: '2fa';
+  /** Set when the temporary token comes from an organization access link: the session targets that org. */
+  orgId?: string;
 }
 
 export function generateAccessToken(payload: AccessTokenPayload): string {

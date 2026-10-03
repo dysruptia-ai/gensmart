@@ -6,10 +6,23 @@ import { requireAuth } from '../middleware/auth';
 import * as authService from '../services/auth.service';
 import { registerSchema, loginSchema } from '@gensmart/shared';
 import { query } from '../config/database';
+import { env } from '../config/env';
+import { requireTrustedOrigin } from '../middleware/trustedOrigin';
+import { computeAllowedOrigins } from '../utils/cors-origins';
 
 const router = Router();
 
 const authLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 10, keyPrefix: 'auth' });
+// refresh and logout are cookie-authenticated: a per-IP limit plus an Origin check against CSRF
+const sessionCookieLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 60, keyPrefix: 'auth-session' });
+const trustedOrigin = requireTrustedOrigin(computeAllowedOrigins(env.FRONTEND_URL));
+// 2FA management: per user (these routes run after requireAuth)
+const twoFactorManageLimiter = rateLimiter({
+  windowSeconds: 60,
+  maxRequests: 10,
+  keyPrefix: 'auth-2fa-manage',
+  keyFn: (req) => req.user?.userId ?? null,
+});
 
 const verify2FASchema = z.object({
   tempToken: z.string().min(1),
@@ -89,7 +102,7 @@ router.post(
   validate(loginSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await authService.login(req.body);
+      const result = await authService.login({ ...req.body, ip: req.ip });
 
       if ('requires2FA' in result) {
         res.json({ requires2FA: true, tempToken: result.tempToken });
@@ -106,6 +119,8 @@ router.post(
 
 router.post(
   '/refresh',
+  sessionCookieLimiter,
+  trustedOrigin,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const refreshToken = req.cookies?.['refresh_token'] as string | undefined;
@@ -125,6 +140,8 @@ router.post(
 
 router.post(
   '/logout',
+  sessionCookieLimiter,
+  trustedOrigin,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const refreshToken = req.cookies?.['refresh_token'] as string | undefined;
@@ -177,9 +194,16 @@ router.post(
   validate(orgAccessConsumeSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const tokens = await authService.consumeOrgAccessToken(req.body.token);
-      setRefreshCookie(res, tokens.refreshToken);
-      res.json({ accessToken: tokens.accessToken, user: tokens.user });
+      const result = await authService.consumeOrgAccessToken(req.body.token);
+
+      // Users with 2FA finish the sign-in at /auth/2fa/verify, exactly like a password login
+      if ('requires2FA' in result) {
+        res.json({ requires2FA: true, tempToken: result.tempToken });
+        return;
+      }
+
+      setRefreshCookie(res, result.refreshToken);
+      res.json({ accessToken: result.accessToken, user: result.user });
     } catch (err) {
       next(err);
     }
@@ -208,6 +232,7 @@ router.post(
 router.post(
   '/2fa/setup',
   requireAuth,
+  twoFactorManageLimiter,
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const result = await authService.setup2FA(req.user!.userId);
@@ -221,6 +246,7 @@ router.post(
 router.post(
   '/2fa/enable',
   requireAuth,
+  twoFactorManageLimiter,
   validate(enable2FASchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -235,6 +261,7 @@ router.post(
 router.post(
   '/2fa/disable',
   requireAuth,
+  twoFactorManageLimiter,
   validate(disable2FASchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
