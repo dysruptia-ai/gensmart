@@ -21,7 +21,7 @@ import { createSignupSession, loadSignupSession, deleteSignupSession } from '../
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
-import { phoneBelongsToWaba } from '../services/waba-phones';
+import { findPhoneInPages, safeEqual, tokensForWaba } from '../services/waba-phones';
 
 const router = Router();
 
@@ -534,21 +534,38 @@ router.post(
 
       // The phone number must belong to the WABA the client declares (waba_id is stored and later
       // used to discover this organization's WABAs).
-      let phoneInWaba = false;
+      // The platform token is known only to the operator (no customer has it), so a connection made
+      // with it skips the membership check: its permission on the customer's WABA may not allow listing.
+      let usingPlatformToken = false;
       try {
-        const phonesRes = await fetch(
-          `https://graph.facebook.com/v21.0/${encodeURIComponent(wabaId)}/phone_numbers?fields=id&limit=100`,
-          { headers: { Authorization: `Bearer ${finalAccessToken}` } }
-        );
-        if (phonesRes.ok) {
-          const phonesData = await phonesRes.json() as { data?: Array<{ id?: string }> };
-          phoneInWaba = phoneBelongsToWaba(
-            (phonesData.data ?? []).map((p) => String(p.id ?? '')),
-            phoneNumberId
-          );
-        }
+        const { getWhatsAppToken } = await import('../services/platform-settings.service');
+        const platformToken = await getWhatsAppToken();
+        usingPlatformToken = !!platformToken && safeEqual(finalAccessToken, platformToken);
       } catch {
-        phoneInWaba = false;
+        usingPlatformToken = false;
+      }
+
+      let phoneInWaba = true;
+      if (usingPlatformToken) {
+        console.log('[whatsapp] connect with platform token: WABA membership check skipped');
+      } else {
+        const memberToken = finalAccessToken;
+        phoneInWaba = await findPhoneInPages(async (after) => {
+          const afterParam = after ? `&after=${encodeURIComponent(after)}` : '';
+          const phonesRes = await fetch(
+            `https://graph.facebook.com/v21.0/${encodeURIComponent(wabaId)}/phone_numbers?fields=id&limit=100${afterParam}`,
+            { headers: { Authorization: `Bearer ${memberToken}` } }
+          );
+          if (!phonesRes.ok) return null;
+          const phonesData = await phonesRes.json() as {
+            data?: Array<{ id?: string }>;
+            paging?: { cursors?: { after?: string }; next?: string };
+          };
+          return {
+            ids: (phonesData.data ?? []).map((p) => String(p.id ?? '')),
+            next: phonesData.paging?.next ? (phonesData.paging.cursors?.after ?? null) : null,
+          };
+        }, phoneNumberId);
       }
       if (!phoneInWaba) {
         throw new AppError(400, 'The phone number does not belong to the given WhatsApp Business Account', 'INVALID_CREDENTIALS');
@@ -804,6 +821,8 @@ router.post(
 
       // Extract WABA IDs from granular_scopes
       const sharedWabaIds: string[] = [];
+      // WABAs that came from the user's own token. Only these may be queried with the platform token.
+      const userValidatedWabaIds = new Set<string>();
       const wabaScope = debugData.data.granular_scopes?.find(
         (s) => s.scope === 'whatsapp_business_management'
       );
@@ -820,6 +839,7 @@ router.post(
           sharedWabaIds.push(...msgScope.target_ids);
         }
       }
+      for (const id of sharedWabaIds) userValidatedWabaIds.add(id);
 
       if (sharedWabaIds.length === 0) {
         // Fallback for reconnections: granular_scopes may have the scope but no target_ids
@@ -869,6 +889,9 @@ router.post(
               }
             }
           }
+
+          // Everything found so far comes from the user's own token
+          for (const id of sharedWabaIds) userValidatedWabaIds.add(id);
 
           if (sharedWabaIds.length === 0) {
             // Final fallback: check WABAs already known to this organization only
@@ -931,7 +954,8 @@ router.post(
         const wabaOptions = await Promise.all(sharedWabaIds.slice(0, 5).map(async (wId) => {
           let wabaName: string | undefined;
           let phones: WabaPhone[] | null = null;
-          for (const token of [fbAccessToken, platformToken]) {
+          const wabaTokens = tokensForWaba(wId, userValidatedWabaIds, fbAccessToken, platformToken);
+          for (const token of wabaTokens) {
             try {
               const wabaInfoRes = await fetch(
                 `https://graph.facebook.com/v21.0/${wId}?fields=id,name`,
@@ -946,7 +970,7 @@ router.post(
               // try next token
             }
           }
-          for (const token of [fbAccessToken, platformToken]) {
+          for (const token of wabaTokens) {
             try {
               const phonesRes = await fetch(
                 `https://graph.facebook.com/v21.0/${wId}/phone_numbers?fields=id,display_phone_number`,
@@ -1013,10 +1037,12 @@ router.post(
       type PhoneDataType = { data?: Array<{ id: string; display_phone_number: string; verified_name?: string; code_verification_status?: string; status?: string }> };
       let phoneData: PhoneDataType | null = null;
 
-      const phoneLookupTokens: Array<[string, string]> = [
-        ['customer token', fbAccessToken],
-        ['platform token', platformToken],
-      ];
+      const phoneLookupTokens: Array<[string, string]> = tokensForWaba(
+        wabaId,
+        userValidatedWabaIds,
+        fbAccessToken,
+        platformToken
+      ).map((token): [string, string] => [token === fbAccessToken ? 'customer token' : 'platform token', token]);
 
       for (const [label, token] of phoneLookupTokens) {
         try {
