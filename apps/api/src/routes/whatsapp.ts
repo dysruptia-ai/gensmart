@@ -21,6 +21,7 @@ import { createSignupSession, loadSignupSession, deleteSignupSession } from '../
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
+import { phoneBelongsToWaba } from '../services/waba-phones';
 
 const router = Router();
 
@@ -509,25 +510,17 @@ router.post(
         throw phoneAlreadyConnectedError();
       }
 
-      // If no accessToken in body, use the one saved via Embedded Signup
+      // The token comes from the request or from a previous Embedded Signup of this agent.
+      // The platform (System User) token is never used to claim a number for a customer.
       let finalAccessToken = accessToken?.trim() ?? '';
       if (!finalAccessToken) {
         const savedEncrypted = agentCheck.rows[0]!.whatsapp_config?.['access_token_encrypted'] as string | undefined;
         if (savedEncrypted) {
           finalAccessToken = decryptAccessToken(savedEncrypted);
-        } else {
-          // Fallback to platform token
-          try {
-            const { getWhatsAppToken } = await import('../services/platform-settings.service');
-            finalAccessToken = await getWhatsAppToken();
-            if (!finalAccessToken) {
-              throw new AppError(400, 'No access token provided, saved, or configured at platform level.', 'VALIDATION_ERROR');
-            }
-          } catch (err) {
-            if (err instanceof AppError) throw err;
-            throw new AppError(400, 'No access token available. Please reconnect with Facebook.', 'VALIDATION_ERROR');
-          }
         }
+      }
+      if (!finalAccessToken) {
+        throw new AppError(400, 'An access token is required. Provide one or connect with Facebook.', 'VALIDATION_ERROR');
       }
 
       // Validate access token by calling Meta API
@@ -535,27 +528,30 @@ router.post(
       try {
         const info = await getPhoneNumberInfo(phoneNumberId, finalAccessToken);
         phoneDisplay = info.display_phone_number;
-      } catch (tokenErr) {
-        // If the token we tried was the platform token, try the user's FB token from Embedded Signup
-        if (!accessToken?.trim()) {
-          // We were using platform token and it failed — try user token from Embedded Signup if saved
-          const savedEncrypted = agentCheck.rows[0]!.whatsapp_config?.['access_token_encrypted'] as string | undefined;
-          if (savedEncrypted) {
-            try {
-              const userToken = decryptAccessToken(savedEncrypted);
-              const info = await getPhoneNumberInfo(phoneNumberId, userToken);
-              phoneDisplay = info.display_phone_number;
-              // User token worked — use it instead
-              finalAccessToken = userToken;
-            } catch {
-              throw new AppError(400, 'Neither platform token nor saved user token can access this phone number. Please ensure Dysruptia is assigned as a partner to this WABA with "Manage phone numbers" permission, then wait 5 minutes and try again.', 'INVALID_CREDENTIALS');
-            }
-          } else {
-            throw new AppError(400, 'Platform token cannot access this phone number. Please ensure Dysruptia is assigned as a partner to this WABA with "Manage phone numbers" permission, then wait 5 minutes and try again.', 'INVALID_CREDENTIALS');
-          }
-        } else {
-          throw new AppError(400, 'Invalid access token or phone number ID. Please check your credentials.', 'INVALID_CREDENTIALS');
+      } catch {
+        throw new AppError(400, 'Invalid access token or phone number ID. Please check your credentials.', 'INVALID_CREDENTIALS');
+      }
+
+      // The phone number must belong to the WABA the client declares (waba_id is stored and later
+      // used to discover this organization's WABAs).
+      let phoneInWaba = false;
+      try {
+        const phonesRes = await fetch(
+          `https://graph.facebook.com/v21.0/${encodeURIComponent(wabaId)}/phone_numbers?fields=id&limit=100`,
+          { headers: { Authorization: `Bearer ${finalAccessToken}` } }
+        );
+        if (phonesRes.ok) {
+          const phonesData = await phonesRes.json() as { data?: Array<{ id?: string }> };
+          phoneInWaba = phoneBelongsToWaba(
+            (phonesData.data ?? []).map((p) => String(p.id ?? '')),
+            phoneNumberId
+          );
         }
+      } catch {
+        phoneInWaba = false;
+      }
+      if (!phoneInWaba) {
+        throw new AppError(400, 'The phone number does not belong to the given WhatsApp Business Account', 'INVALID_CREDENTIALS');
       }
 
       const encryptedToken = encryptAccessToken(finalAccessToken);
@@ -888,28 +884,6 @@ router.post(
             );
             for (const row of knownWaba.rows) {
               if (row.waba_id) sharedWabaIds.push(row.waba_id);
-            }
-
-            // If still nothing for this org, try platform token to list WABAs the System User can access
-            if (sharedWabaIds.length === 0) {
-              console.log('[embedded-signup] No WABAs in DB for this org, trying platform token to list accessible WABAs...');
-              try {
-                const platformWabaRes = await fetch(
-                  `https://graph.facebook.com/v21.0/me/whatsapp_business_accounts?fields=id,name`,
-                  { headers: { Authorization: `Bearer ${platformToken}` } }
-                );
-                if (platformWabaRes.ok) {
-                  const platformWabaData = await platformWabaRes.json() as { data?: Array<{ id: string }> };
-                  for (const w of platformWabaData.data ?? []) {
-                    sharedWabaIds.push(w.id);
-                  }
-                  if (sharedWabaIds.length > 0) {
-                    console.log(`[embedded-signup] Platform token found ${sharedWabaIds.length} accessible WABA(s): ${sharedWabaIds.join(', ')}`);
-                  }
-                }
-              } catch (platformErr) {
-                console.warn('[embedded-signup] Platform token WABA list failed:', (platformErr as Error).message);
-              }
             }
           }
         } catch (fallbackErr) {
