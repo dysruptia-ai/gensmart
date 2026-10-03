@@ -1767,7 +1767,7 @@ router.post(
 
       // LLM call
       const startTime = Date.now();
-      let capturedVars: Record<string, string> = {};
+      const capturedVars: Record<string, string> = {};
       const toolsCalledLog: string[] = [];
       const previewMedia: Array<{ type: string; url: string; caption?: string; valid: boolean; error?: string }> = [];
       let finalResponse = '';
@@ -1781,7 +1781,7 @@ router.post(
         { role: 'user' as const, content: message.trim() },
       ];
 
-      let currentMessages = [...messages];
+      const currentMessages = [...messages];
       let sawEmptyShippingZones = false;
       // 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
       // varias capture_variable -> create_order) necesitaban mas de 5 rondas y se

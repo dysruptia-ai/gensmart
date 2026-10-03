@@ -682,7 +682,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   const toolsCalledLog: string[] = [];
   let iterationCount = 0;
   let sawEmptyShippingZones = false;
-  let currentMessages = [...messages];
+  const currentMessages = [...messages];
 
   try {
 
@@ -800,7 +800,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         finalResponse = cleaned;
       }
     }
-  } catch (err) {
+  } catch {
     // Retry once
     try {
       const retryResponse = await chat({

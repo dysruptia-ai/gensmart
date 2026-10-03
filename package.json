@@ -14,7 +14,7 @@
     "db:seed:test-users": "npm run seed:test-users --workspace=apps/api"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.18.1"
   },
   "devDependencies": {
     "turbo": "^2.8.10"
