@@ -37,6 +37,10 @@ const createSubAccountSchema = z.object({
   label: z.string().min(1).max(100),
 });
 
+const removeSubAccountSchema = z.object({
+  confirmName: z.string().min(1).max(255),
+});
+
 const apiKeysSchema = z.object({
   openai_key: z.string().max(200).optional(),
   anthropic_key: z.string().max(200).optional(),
@@ -289,9 +293,11 @@ router.post(
 router.delete(
   '/sub-accounts/:childOrgId',
   requireRole('owner', 'admin'),
+  validate(removeSubAccountSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await subAccountService.removeSubAccount(req.user!.orgId, String(req.params['childOrgId']));
+      const { confirmName } = req.body as z.infer<typeof removeSubAccountSchema>;
+      await subAccountService.removeSubAccount(req.user!.orgId, String(req.params['childOrgId']), confirmName);
       res.json({ message: 'Sub-account removed' });
     } catch (err) {
       next(err);

@@ -4,8 +4,12 @@ import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { resolveCalendarIds } from './calendar.service';
 import { unlinkInside } from './upload-paths';
-import { replacePlaceholders } from './custom-function.service';
-import { applyCustomFunctionAuth, appendArgumentsAsQuery } from './custom-function-auth';
+import {
+  replacePlaceholders,
+  applyCustomFunctionAuth,
+  appendArgumentsAsQuery,
+  buildRequestBody,
+} from './custom-function-auth';
 import { safeFetch, UnsafeUrlError } from './safe-url';
 import {
   protectCustomFunctionConfig,
@@ -1127,7 +1131,8 @@ export async function testTool(
   // The config comes from the database (the request only carries the test params); credentials are decrypted here
   const cfg = revealCustomFunctionConfig(tool.config as Record<string, unknown>);
   const endpointUrl = cfg['endpointUrl'] as string;
-  const httpMethod = (cfg['httpMethod'] as string) ?? 'POST';
+  // Method in upper case once, as the production engine does
+  const httpMethod = ((cfg['httpMethod'] as string) ?? 'POST').toUpperCase();
   const headers = (cfg['headers'] as Record<string, string>) ?? {};
   const auth = cfg['auth'] as { type?: string; token?: string; headerName?: string; apiKey?: string; queryParam?: string } | undefined;
   const bodyTemplate = cfg['bodyTemplate'] as Record<string, unknown> | undefined;
@@ -1150,27 +1155,13 @@ export async function testTool(
   // GET/HEAD: the test params travel as query parameters, as in production
   const url = appendArgumentsAsQuery(authed.url, params, httpMethod);
 
-  // Build body: substitute params into body template or use params directly
-  let body: unknown = params;
-  if (bodyTemplate) {
-    const bodyStr = JSON.stringify(bodyTemplate).replace(
-      /\{\{(\w+)\}\}/g,
-      (_: string, key: string) => String(params[key] ?? '')
-    );
-    try {
-      body = JSON.parse(bodyStr);
-    } catch {
-      body = params;
-    }
-  }
-
   const startTime = Date.now();
 
   try {
     const res = await safeFetch(url, {
       method: httpMethod,
       headers: requestHeaders,
-      body: httpMethod !== 'GET' ? JSON.stringify(body) : undefined,
+      body: buildRequestBody(httpMethod, bodyTemplate, params),
       timeoutMs,
       maxBytes: 1024 * 1024,
     });

@@ -12,6 +12,7 @@
 import path from 'path';
 import fs from 'fs';
 import { query } from '../config/database';
+import { AppError } from '../middleware/errorHandler';
 
 interface AppointmentReminder {
   id: string;
@@ -70,6 +71,40 @@ async function checkReminders(): Promise<void> {
   }
 }
 
+/** A scheduled deletion that cannot run because the organization has sub-accounts: not retried. */
+async function closeBlockedDeletion(requestId: string, orgId: string, userId: string | null): Promise<void> {
+  try {
+    await query(
+      `UPDATE account_deletion_requests SET status = 'cancelled', completed_at = NOW()
+       WHERE id = $1 AND status = 'pending'`,
+      [requestId]
+    );
+    let recipient = userId;
+    if (!recipient) {
+      const owner = await query<{ user_id: string }>(
+        `SELECT user_id FROM user_organizations WHERE organization_id = $1 AND role = 'owner' ORDER BY created_at LIMIT 1`,
+        [orgId]
+      );
+      recipient = owner.rows[0]?.user_id ?? null;
+    }
+    if (recipient) {
+      await query(
+        `INSERT INTO notifications (id, organization_id, user_id, type, title, message, created_at)
+         VALUES (gen_random_uuid(), $1, $2, 'account_deletion_cancelled', $3, $4, NOW())`,
+        [
+          orgId,
+          recipient,
+          'Account Deletion Not Executed',
+          'Your scheduled account deletion was not executed: remove your sub-accounts first',
+        ]
+      );
+    }
+    console.warn('[cleanup] Scheduled deletion closed: the organization has sub-accounts');
+  } catch (err) {
+    console.error('[cleanup] Failed to close a blocked scheduled deletion:', (err as Error).message);
+  }
+}
+
 let lastCleanupDate = '';
 
 async function runDailyCleanup(): Promise<void> {
@@ -103,14 +138,14 @@ async function runDailyCleanup(): Promise<void> {
 
   // 2. Execute scheduled account deletions that are past their grace period
   try {
-    const due = await query<{ id: string; organization_id: string }>(
-      `SELECT id, organization_id FROM account_deletion_requests
+    const due = await query<{ id: string; organization_id: string; user_id: string | null }>(
+      `SELECT id, organization_id, user_id FROM account_deletion_requests
        WHERE status = 'pending' AND scheduled_at <= NOW()`
     );
 
     for (const req of due.rows) {
       try {
-        const { performAccountDeletion } = await import('../routes/account');
+        const { performAccountDeletion } = await import('../services/account-deletion.service');
         await performAccountDeletion(req.organization_id);
         await query(
           `UPDATE account_deletion_requests SET status = 'completed', completed_at = NOW() WHERE id = $1`,
@@ -118,6 +153,11 @@ async function runDailyCleanup(): Promise<void> {
         );
         console.log(`[cleanup] Deleted organization ${req.organization_id} (scheduled deletion)`);
       } catch (deleteErr) {
+        if (deleteErr instanceof AppError && deleteErr.code === 'HAS_SUB_ACCOUNTS') {
+          // Retrying every 5 minutes would never succeed: close the request and tell the owner
+          await closeBlockedDeletion(req.id, req.organization_id, req.user_id);
+          continue;
+        }
         console.error(`[cleanup] Failed to delete org ${req.organization_id}:`, (deleteErr as Error).message);
       }
     }

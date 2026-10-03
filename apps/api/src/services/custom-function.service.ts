@@ -1,5 +1,5 @@
 import { safeFetch, UnsafeUrlError } from './safe-url';
-import { applyCustomFunctionAuth, appendArgumentsAsQuery } from './custom-function-auth';
+import { applyCustomFunctionAuth, appendArgumentsAsQuery, buildRequestBody, replacePlaceholders } from './custom-function-auth';
 
 const CUSTOM_FUNCTION_MAX_BYTES = 1024 * 1024;
 
@@ -33,52 +33,8 @@ function resolvePath(obj: unknown, path: string): unknown {
   return current;
 }
 
-/**
- * Substitutes `{{param}}` placeholders with values from `params`. A missing
- * or null value becomes an empty string (with a warning log) instead of
- * leaving the literal `{{param}}` text in the outgoing request — the LLM
- * regularly omits optional parameters it hasn't captured yet.
- *
- * In the `endpoint_url` context every value is URL-encoded: the values come from the model (which an
- * end customer can influence), so "../owners" or "x?archived=true#" must not change the path or the
- * query of the template. encodeURIComponent leaves dots alone, so a value that is exactly "." or ".."
- * (a path traversal segment) is treated as empty. The `body_template` context (JSON) is unchanged.
- */
-export function replacePlaceholders(
-  template: unknown,
-  params: Record<string, unknown>,
-  context: string
-): unknown {
-  if (typeof template === 'string') {
-    return template.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => {
-      const val = params[key];
-      if (val === undefined || val === null) {
-        console.warn(`[custom-function] parámetro "{{${key}}}" no recibido en ${context}, usando valor vacío`);
-        return '';
-      }
-      if (context === 'endpoint_url') {
-        const encoded = encodeURIComponent(String(val));
-        if (encoded === '.' || encoded === '..') {
-          console.warn(`[custom-function] parámetro "{{${key}}}" no válido en ${context}, usando valor vacío`);
-          return '';
-        }
-        return encoded;
-      }
-      return String(val);
-    });
-  }
-  if (Array.isArray(template)) {
-    return template.map((item) => replacePlaceholders(item, params, context));
-  }
-  if (template !== null && typeof template === 'object') {
-    const result: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(template as Record<string, unknown>)) {
-      result[k] = replacePlaceholders(v, params, context);
-    }
-    return result;
-  }
-  return template;
-}
+// Shared with the Test button (and used by other services); lives in the pure module next to the auth logic
+export { replacePlaceholders } from './custom-function-auth';
 
 function resolveFormatTemplate(format: string, data: unknown): string {
   return format.replace(/\{\{(.+?)\}\}/g, (_match, expr: string) => {
@@ -181,10 +137,6 @@ export async function executeCustomFunction(
   // For GET/HEAD requests, append tool arguments as query string parameters (shared with the Test button)
   const finalUrl = appendArgumentsAsQuery(authed.url, toolArguments, httpMethod);
 
-  // Build body
-  const body = bodyTemplate
-    ? replacePlaceholders(bodyTemplate, toolArguments, 'body_template')
-    : toolArguments;
 
   // Execute with timeout (the validation runs on the FINAL url, after substitution)
   try {
@@ -193,9 +145,7 @@ export async function executeCustomFunction(
     const response = await safeFetch(finalUrl, {
       method: httpMethod.toUpperCase(),
       headers: finalHeaders,
-      body: ['GET', 'HEAD'].includes(httpMethod.toUpperCase())
-        ? undefined
-        : JSON.stringify(body),
+      body: buildRequestBody(httpMethod, bodyTemplate, toolArguments),
       timeoutMs,
       maxBytes: CUSTOM_FUNCTION_MAX_BYTES,
     });

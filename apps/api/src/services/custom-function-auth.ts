@@ -1,5 +1,5 @@
 /**
- * Authentication and query arguments of custom_function requests, shared by the production engine
+ * Authentication, query arguments and body of custom_function requests, shared by the production engine
  * (executeCustomFunction) and the Test button (testTool) so that both send the same thing.
  * No app imports, nothing is logged.
  *
@@ -41,6 +41,67 @@ export function appendArgumentsAsQuery(url: string, args: Record<string, unknown
   }
   const queryString = queryParams.toString();
   return queryString ? appendQuery(url, queryString) : url;
+}
+
+/**
+ * Substitutes `{{param}}` placeholders with values from `params`. A missing
+ * or null value becomes an empty string (with a warning log) instead of
+ * leaving the literal `{{param}}` text in the outgoing request — the LLM
+ * regularly omits optional parameters it hasn't captured yet.
+ *
+ * In the `endpoint_url` context every value is URL-encoded: the values come from the model (which an
+ * end customer can influence), so "../owners" or "x?archived=true#" must not change the path or the
+ * query of the template. encodeURIComponent leaves dots alone, so a value that is exactly "." or ".."
+ * (a path traversal segment) is treated as empty. The `body_template` context (JSON) is unchanged.
+ */
+export function replacePlaceholders(
+  template: unknown,
+  params: Record<string, unknown>,
+  context: string
+): unknown {
+  if (typeof template === 'string') {
+    return template.replace(/\{\{(\w+)\}\}/g, (_match, key: string) => {
+      const val = params[key];
+      if (val === undefined || val === null) {
+        console.warn(`[custom-function] parámetro "{{${key}}}" no recibido en ${context}, usando valor vacío`);
+        return '';
+      }
+      if (context === 'endpoint_url') {
+        const encoded = encodeURIComponent(String(val));
+        if (encoded === '.' || encoded === '..') {
+          console.warn(`[custom-function] parámetro "{{${key}}}" no válido en ${context}, usando valor vacío`);
+          return '';
+        }
+        return encoded;
+      }
+      return String(val);
+    });
+  }
+  if (Array.isArray(template)) {
+    return template.map((item) => replacePlaceholders(item, params, context));
+  }
+  if (template !== null && typeof template === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(template as Record<string, unknown>)) {
+      result[k] = replacePlaceholders(v, params, context);
+    }
+    return result;
+  }
+  return template;
+}
+
+/**
+ * Serialized request body. GET and HEAD carry no body (their arguments go in the query); any other
+ * method sends the body template with its placeholders replaced, or the arguments as they are.
+ */
+export function buildRequestBody(
+  method: string,
+  bodyTemplate: unknown,
+  args: Record<string, unknown>
+): string | undefined {
+  if (['GET', 'HEAD'].includes(method.toUpperCase())) return undefined;
+  const body = bodyTemplate ? replacePlaceholders(bodyTemplate, args, 'body_template') : args;
+  return JSON.stringify(body);
 }
 
 export function applyCustomFunctionAuth(input: {

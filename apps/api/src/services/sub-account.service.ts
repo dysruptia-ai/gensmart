@@ -2,6 +2,7 @@ import { query } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { generateAccessToken } from '../config/jwt';
 import { PLAN_LIMITS } from '@gensmart/shared';
+import { performAccountDeletion } from './account-deletion.service';
 
 interface SubAccountRow {
   id: string;
@@ -108,18 +109,33 @@ export async function createSubAccount(
   };
 }
 
-export async function removeSubAccount(parentOrgId: string, childOrgId: string): Promise<void> {
-  const existing = await query<{ id: string }>(
-    'SELECT id FROM sub_accounts WHERE parent_organization_id = $1 AND child_organization_id = $2',
+/**
+ * Removing a sub-account deletes its organization for real (same full deletion as any account: one
+ * transaction, files, sockets). The link and the organization go away together; the caller must type
+ * the name of the sub-account as confirmation.
+ */
+export async function removeSubAccount(
+  parentOrgId: string,
+  childOrgId: string,
+  confirmName: string | undefined
+): Promise<void> {
+  const existing = await query<{ name: string }>(
+    `SELECT o.name FROM sub_accounts sa
+     JOIN organizations o ON o.id = sa.child_organization_id
+     WHERE sa.parent_organization_id = $1 AND sa.child_organization_id = $2`,
     [parentOrgId, childOrgId]
   );
-  if (!existing.rows[0]) {
+  const child = existing.rows[0];
+  if (!child) {
     throw new AppError(404, 'Sub-account not found', 'SUB_ACCOUNT_NOT_FOUND');
   }
-  await query(
-    'DELETE FROM sub_accounts WHERE parent_organization_id = $1 AND child_organization_id = $2',
-    [parentOrgId, childOrgId]
-  );
+  if (
+    typeof confirmName !== 'string' ||
+    confirmName.trim().toLowerCase() !== child.name.trim().toLowerCase()
+  ) {
+    throw new AppError(400, 'Confirmation does not match', 'CONFIRMATION_REQUIRED');
+  }
+  await performAccountDeletion(childOrgId);
 }
 
 export async function switchToSubAccount(
