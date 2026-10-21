@@ -121,7 +121,36 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
+export interface DownloadResult {
+  blob: Blob;
+  // From Content-Disposition; null when the header is missing or not exposed by CORS
+  filename: string | null;
+}
+
+// Authenticated binary download (a plain browser navigation cannot send the in-memory access token)
+async function download(path: string, retried = false): Promise<DownloadResult> {
+  const headers: Record<string, string> = {};
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'GET',
+    credentials: 'include',
+    headers,
+  });
+
+  if (res.status === 401 && !retried) {
+    if (await tryRefresh()) return download(path, true);
+    throw new ApiError(401, 'Session expired');
+  }
+  if (!res.ok) throw await parseError(res);
+
+  const disposition = res.headers.get('Content-Disposition');
+  const match = disposition ? /filename="?([^";]+)"?/i.exec(disposition) : null;
+  return { blob: await res.blob(), filename: match?.[1] ?? null };
+}
+
 export const api = {
+  download,
   get: <T>(path: string) => request<T>(path, { method: 'GET' }),
   post: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'POST', body: body !== undefined ? JSON.stringify(body) : undefined }),

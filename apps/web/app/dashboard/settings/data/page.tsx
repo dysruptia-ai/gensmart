@@ -43,6 +43,7 @@ export default function DataSettingsPage() {
   const [exportReq, setExportReq] = useState<ExportRequest | null>(null);
   const [exportLoading, setExportLoading] = useState(true);
   const [requestingExport, setRequestingExport] = useState(false);
+  const [downloadingExport, setDownloadingExport] = useState(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Deletion state
@@ -119,8 +120,28 @@ export default function DataSettingsPage() {
     }
   }
 
-  function handleDownload(id: string) {
-    window.location.href = `/api/account/export-data/${id}`;
+  async function handleDownload(id: string) {
+    setDownloadingExport(true);
+    try {
+      const { blob, filename } = await api.download(`/api/account/export-data/${id}`);
+      // The endpoint answers 200 with a JSON status body while the export is not downloadable
+      if (blob.type !== 'application/zip') {
+        toastError('No se pudo descargar la exportación');
+        return;
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename ?? `gensmart-export-${new Date().toISOString().split('T')[0]}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toastError('No se pudo descargar la exportación');
+    } finally {
+      setDownloadingExport(false);
+    }
   }
 
   async function handleDeleteAccount() {
@@ -215,7 +236,11 @@ export default function DataSettingsPage() {
                 {t('settings.data.export.ready')}
               </div>
               <div className={styles.readyActions}>
-                <Button variant="primary" onClick={() => handleDownload(exportReq.id)}>
+                <Button
+                  variant="primary"
+                  onClick={() => handleDownload(exportReq.id)}
+                  loading={downloadingExport}
+                >
                   <Download size={16} />
                   {t('settings.data.export.download')}
                 </Button>
