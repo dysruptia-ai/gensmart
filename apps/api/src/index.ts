@@ -260,6 +260,10 @@ app.use(
     setHeaders: (res) => {
       res.setHeader('X-Content-Type-Options', 'nosniff');
       res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      // Helmet's global Cross-Origin-Resource-Policy: same-origin would block <img>
+      // loads of agent avatars from the web app and embedded widgets on other origins;
+      // relax it for this route only.
+      res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     },
   })
 );
