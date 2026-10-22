@@ -13,6 +13,8 @@ import { computeAllowedOrigins } from '../utils/cors-origins';
 const router = Router();
 
 const authLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 10, keyPrefix: 'auth' });
+// Registration is far stricter than login: a real user rarely needs more than 1-2 attempts per hour
+const registerLimiter = rateLimiter({ windowSeconds: 3600, maxRequests: 3, keyPrefix: 'auth-register' });
 // refresh and logout are cookie-authenticated: a per-IP limit plus an Origin check against CSRF
 const sessionCookieLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 60, keyPrefix: 'auth-session' });
 const trustedOrigin = requireTrustedOrigin(computeAllowedOrigins(env.FRONTEND_URL));
@@ -80,7 +82,7 @@ function setRefreshCookie(res: Response, token: string): void {
 
 router.post(
   '/register',
-  authLimiter,
+  registerLimiter,
   validate(registerSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
