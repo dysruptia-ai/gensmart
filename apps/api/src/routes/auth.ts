@@ -14,7 +14,12 @@ const router = Router();
 
 const authLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 10, keyPrefix: 'auth' });
 // Registration is far stricter than login: a real user rarely needs more than 1-2 attempts per hour
-const registerLimiter = rateLimiter({ windowSeconds: 3600, maxRequests: 3, keyPrefix: 'auth-register' });
+const registerLimiter = rateLimiter({
+  windowSeconds: 3600,
+  maxRequests: 3,
+  keyPrefix: 'auth-register',
+  failClosed: true,
+});
 // refresh and logout are cookie-authenticated: a per-IP limit plus an Origin check against CSRF
 const sessionCookieLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 60, keyPrefix: 'auth-session' });
 const trustedOrigin = requireTrustedOrigin(computeAllowedOrigins(env.FRONTEND_URL));
@@ -38,6 +43,10 @@ const forgotPasswordSchema = z.object({
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
   password: z.string().min(8),
+});
+
+const verifyEmailSchema = z.object({
+  token: z.string().min(1),
 });
 
 const orgAccessConsumeSchema = z.object({
@@ -184,6 +193,20 @@ router.post(
     try {
       await authService.resetPassword(req.body);
       res.json({ message: 'Password reset successfully' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/verify-email',
+  authLimiter,
+  validate(verifyEmailSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await authService.consumeEmailVerificationToken(req.body.token);
+      res.json({ message: 'Email verified successfully' });
     } catch (err) {
       next(err);
     }

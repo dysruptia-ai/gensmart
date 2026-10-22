@@ -321,6 +321,17 @@
       "success": "Contraseña restablecida correctamente. Ya puedes iniciar sesión.",
       "invalidToken": "Este enlace de restablecimiento es inválido o ha expirado."
     },
+    "verifyEmail": {
+      "loading": "Confirmando tu correo…",
+      "successTitle": "¡Correo confirmado!",
+      "successSubtitle": "Gracias por confirmar tu dirección. Tu cuenta de GenSmart está lista.",
+      "goToDashboard": "Ir al panel",
+      "invalidTitle": "Este link ya no es válido",
+      "invalidSubtitle": "Puede que ya se haya usado o que haya expirado. Intenta de nuevo o contacta a soporte y te ayudamos.",
+      "retry": "Intentar de nuevo",
+      "contactSupport": "Contactar a soporte",
+      "backToLogin": "Volver al login"
+    },
     "orgAccess": {
       "loading": "Iniciando sesión…",
       "invalidTitle": "Este link ya no es válido",

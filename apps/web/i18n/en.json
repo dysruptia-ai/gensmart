@@ -321,6 +321,17 @@
       "success": "Password reset successfully. You can now sign in.",
       "invalidToken": "This reset link is invalid or has expired."
     },
+    "verifyEmail": {
+      "loading": "Confirming your email…",
+      "successTitle": "Email confirmed!",
+      "successSubtitle": "Thanks for confirming your address. Your GenSmart account is all set.",
+      "goToDashboard": "Go to dashboard",
+      "invalidTitle": "This link is no longer valid",
+      "invalidSubtitle": "It may have already been used or expired. Try again, or contact support and we'll help you.",
+      "retry": "Try again",
+      "contactSupport": "Contact support",
+      "backToLogin": "Back to login"
+    },
     "orgAccess": {
       "loading": "Signing you in…",
       "invalidTitle": "This link is no longer valid",

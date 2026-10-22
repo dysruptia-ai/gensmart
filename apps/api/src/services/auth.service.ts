@@ -14,6 +14,7 @@ import {
 } from '../config/jwt';
 import {
   sendWelcomeEmail,
+  sendVerificationEmail,
   sendPasswordResetEmail,
   sendOrgAccessEmail,
 } from '../config/email';
@@ -289,10 +290,11 @@ export async function register(input: {
 
     await client.query('COMMIT');
 
-    // Send welcome email async (don't block)
-    sendWelcomeEmail({ name: user.name, email: user.email }).catch(err =>
-      console.error('[Email] Failed to send welcome email:', err)
-    );
+    // Ask the address owner to confirm before sending anything else (the welcome email goes out on
+    // confirmation). Async, don't block registration.
+    generateEmailVerificationToken(user.id)
+      .then(token => sendVerificationEmail({ name: user.name, email: user.email }, token))
+      .catch(err => console.error('[Email] Failed to send verification email:', err));
 
     // Create Stripe customer async (don't block registration)
     import('../services/stripe.service').then(({ createCustomer }) =>
@@ -600,6 +602,61 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
 export async function logout(currentRefreshToken: string): Promise<void> {
   const tokenHash = hashToken(currentRefreshToken);
   await query('UPDATE refresh_tokens SET used = true WHERE token_hash = $1', [tokenHash]);
+}
+
+export async function generateEmailVerificationToken(userId: string): Promise<string> {
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashToken(token);
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+  await query(
+    `INSERT INTO email_verifications (id, user_id, token_hash, expires_at, created_at)
+     VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
+    [userId, tokenHash, expiresAt.toISOString()]
+  );
+
+  return token;
+}
+
+export async function consumeEmailVerificationToken(token: string): Promise<void> {
+  const tokenHash = hashToken(token);
+
+  const client = await getClient();
+  let user: { email: string; name: string } | undefined;
+  try {
+    await client.query('BEGIN');
+
+    const claimed = await client.query<{ user_id: string }>(
+      `UPDATE email_verifications SET used = true
+       WHERE token_hash = $1 AND used = false AND expires_at > NOW()
+       RETURNING user_id`,
+      [tokenHash]
+    );
+    const row = claimed.rows[0];
+    if (!row) {
+      await client.query('ROLLBACK');
+      throw new AppError(400, 'Invalid or expired verification token', 'INVALID_VERIFICATION_TOKEN');
+    }
+
+    const updated = await client.query<{ email: string; name: string }>(
+      'UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1 RETURNING email, name',
+      [row.user_id]
+    );
+    user = updated.rows[0];
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    client.release();
+  }
+
+  if (user) {
+    sendWelcomeEmail({ name: user.name, email: user.email }).catch(err =>
+      console.error('[Email] Failed to send welcome email:', err)
+    );
+  }
 }
 
 export async function forgotPassword(email: string): Promise<void> {

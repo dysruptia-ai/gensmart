@@ -90,6 +90,23 @@ export async function sendWelcomeEmail(user: UserInfo): Promise<void> {
   });
 }
 
+export async function sendVerificationEmail(user: UserInfo, token: string): Promise<void> {
+  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
+  await sendEmail({
+    to: user.email,
+    subject: 'Confirm your email — GenSmart',
+    html: emailTemplate(`
+      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Confirm your email</h1>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)},</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Click the button below to confirm your email address and finish setting up your GenSmart account. This link expires in 24 hours.</p>
+      <p style="margin-top: 24px;">
+        <a href="${verifyUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Confirm Email</a>
+      </p>
+      <p style="color: #6B7280; font-size: 14px; margin-top: 24px;">If you didn't create a GenSmart account, please ignore this email.</p>
+    `),
+  });
+}
+
 export async function sendPasswordResetEmail(user: UserInfo, token: string): Promise<void> {
   const resetUrl = `${FRONTEND_URL}/reset-password/${token}`;
   await sendEmail({
