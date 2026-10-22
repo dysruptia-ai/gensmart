@@ -11,6 +11,7 @@ import {
   buildRequestBody,
 } from './custom-function-auth';
 import { safeFetch, UnsafeUrlError } from './safe-url';
+import { loadAgentConfigForDeepInject } from './agent-config.service';
 import {
   protectCustomFunctionConfig,
   revealCustomFunctionConfig,
@@ -18,6 +19,7 @@ import {
 } from './secret-fields';
 import {
   PLAN_LIMITS,
+  injectConfigVariablesDeep,
   findMissingRequiredConfigVariables,
   initialConfigVariableValues,
   mergeConfigVariablesSchema,
@@ -1129,7 +1131,13 @@ export async function testTool(
   }
 
   // The config comes from the database (the request only carries the test params); credentials are decrypted here
-  const cfg = revealCustomFunctionConfig(tool.config as Record<string, unknown>);
+  // and {{config.*}} placeholders are resolved with the agent's config values, as the production engine does
+  const { schema, values } = await loadAgentConfigForDeepInject(agentId);
+  const cfg = injectConfigVariablesDeep(
+    revealCustomFunctionConfig(tool.config as Record<string, unknown>),
+    schema,
+    values
+  );
   const endpointUrl = cfg['endpointUrl'] as string;
   // Method in upper case once, as the production engine does
   const httpMethod = ((cfg['httpMethod'] as string) ?? 'POST').toUpperCase();
