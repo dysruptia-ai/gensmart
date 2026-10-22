@@ -31,13 +31,18 @@ interface LoginResult {
   tempToken?: string;
 }
 
+interface RegisterResult {
+  email: string;
+  promoApplied: boolean;
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
   verify2FA: (tempToken: string, code: string) => Promise<void>;
-  register: (email: string, password: string, name: string, organizationName: string, promoCode?: string) => Promise<void>;
+  register: (email: string, password: string, name: string, organizationName: string, promoCode?: string) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateOnboarding: (step?: number, completed?: boolean, editorTourCompleted?: boolean) => Promise<void>;
@@ -129,19 +134,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string, name: string, organizationName: string, promoCode?: string): Promise<void> => {
-      const data = await api.post<AuthResponse>('/api/auth/register', {
+    async (email: string, password: string, name: string, organizationName: string, promoCode?: string): Promise<RegisterResult> => {
+      // No session is created: the account becomes usable once the emailed link is confirmed
+      const data = await api.post<{ message: string; email: string; promoApplied: boolean }>('/api/auth/register', {
         email,
         password,
         name,
         organizationName,
         ...(promoCode ? { promoCode } : {}),
       });
-      setAccessToken(data.accessToken);
-      setUser(data.user);
-      scheduleRefresh();
+      return { email: data.email, promoApplied: data.promoApplied };
     },
-    [scheduleRefresh]
+    []
   );
 
   const logout = useCallback(async (): Promise<void> => {

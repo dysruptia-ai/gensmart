@@ -49,6 +49,10 @@ const verifyEmailSchema = z.object({
   token: z.string().min(1),
 });
 
+const resendVerificationSchema = z.object({
+  email: z.string().email(),
+});
+
 const orgAccessConsumeSchema = z.object({
   token: z.string().min(1),
 });
@@ -95,11 +99,11 @@ router.post(
   validate(registerSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const tokens = await authService.register(req.body);
-      setRefreshCookie(res, tokens.refreshToken);
+      const result = await authService.register(req.body);
       res.status(201).json({
-        accessToken: tokens.accessToken,
-        user: tokens.user,
+        message: 'Registration successful. Please check your email to verify your account before logging in.',
+        email: result.email,
+        promoApplied: result.promoApplied,
       });
     } catch (err) {
       next(err);
@@ -210,6 +214,21 @@ router.post(
     } catch (err) {
       next(err);
     }
+  }
+);
+
+router.post(
+  '/resend-verification',
+  authLimiter,
+  validate(resendVerificationSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      await authService.resendVerificationEmail(req.body.email);
+    } catch (err) {
+      next(err);
+      return;
+    }
+    res.json({ message: 'If an unverified account exists with that email, we resent the verification link.' });
   }
 );
 

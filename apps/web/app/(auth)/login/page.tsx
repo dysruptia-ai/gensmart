@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Mail, Lock, ArrowLeft, ShieldCheck, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { ApiError } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
@@ -24,12 +24,17 @@ function LoginForm() {
   const [tempToken, setTempToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendSent, setResendSent] = useState(false);
 
   const from = searchParams.get('from') ?? '/dashboard';
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setUnverifiedEmail('');
+    setResendSent(false);
     setLoading(true);
     try {
       const result = await login(email, password);
@@ -39,9 +44,27 @@ function LoginForm() {
         router.replace(from);
       }
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('errors.generic'));
+      if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
+        setUnverifiedEmail(email);
+        setError(t('auth.login.emailNotVerified'));
+      } else {
+        setUnverifiedEmail('');
+        setError(err instanceof ApiError ? err.message : t('errors.generic'));
+      }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    setResendLoading(true);
+    try {
+      await api.post('/api/auth/resend-verification', { email: unverifiedEmail });
+      setResendSent(true);
+    } catch {
+      // the endpoint always answers 200 with a generic message; an error here is a network one
+    } finally {
+      setResendLoading(false);
     }
   }
 
@@ -126,6 +149,18 @@ function LoginForm() {
           {error}
         </div>
       )}
+
+      {unverifiedEmail && !resendSent && (
+        <button
+          type="button"
+          className={styles.backLink}
+          disabled={resendLoading}
+          onClick={handleResendVerification}
+        >
+          {t('auth.login.resendVerification')}
+        </button>
+      )}
+      {resendSent && <p className={styles.footer}>{t('auth.login.verificationResent')}</p>}
 
       <form onSubmit={handleLogin} className={styles.form}>
         <Input

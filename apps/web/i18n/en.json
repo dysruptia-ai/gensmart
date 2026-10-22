@@ -285,7 +285,10 @@
       "noAccount": "Don't have an account?",
       "register": "Sign up",
       "invalidCredentials": "Invalid email or password",
-      "twoFactorRequired": "Enter your 2FA code"
+      "twoFactorRequired": "Enter your 2FA code",
+      "emailNotVerified": "Please verify your email before logging in.",
+      "resendVerification": "Resend verification email",
+      "verificationResent": "Verification email sent. Check your inbox."
     },
     "register": {
       "title": "Create your account",
@@ -300,7 +303,10 @@
       "login": "Sign in",
       "terms": "By creating an account, you agree to our {terms} and {privacy}",
       "termsLink": "Terms of Service",
-      "privacyLink": "Privacy Policy"
+      "privacyLink": "Privacy Policy",
+      "checkEmailTitle": "Check your email",
+      "checkEmailSubtitle": "We sent a verification link to your email. Click it to activate your account and start using GenSmart.",
+      "promoActivatedPendingVerification": "Your promo code is valid — your 30-day Pro trial will activate once you verify your email."
     },
     "forgotPassword": {
       "title": "Forgot your password?",

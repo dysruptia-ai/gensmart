@@ -69,6 +69,7 @@ interface UserRow {
   onboarding_step: number;
   editor_tour_completed: boolean;
   is_super_admin: boolean;
+  email_verified: boolean;
 }
 
 interface OrgRow {
@@ -182,13 +183,51 @@ async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> 
   };
 }
 
+interface PromoRow {
+  id: string;
+  plan: string;
+  duration_days: number;
+  max_uses: number | null;
+  used_count: number;
+  is_active: boolean;
+  expires_at: string | null;
+}
+
+/** The promo code row when it is active, not exhausted and not expired; otherwise null. */
+async function findValidPromo(
+  client: Awaited<ReturnType<typeof getClient>>,
+  code: string
+): Promise<PromoRow | null> {
+  const promoResult = await client.query<PromoRow>(
+    `SELECT id, plan, duration_days, max_uses, used_count, is_active, expires_at
+     FROM promo_codes WHERE code = $1`,
+    [code.toUpperCase().trim()]
+  );
+  const promo = promoResult.rows[0];
+  if (
+    promo && promo.is_active
+    && (promo.max_uses === null || promo.used_count < promo.max_uses)
+    && (!promo.expires_at || new Date(promo.expires_at) > new Date())
+  ) {
+    return promo;
+  }
+  return null;
+}
+
+export interface RegisterResult {
+  email: string;
+  name: string;
+  /** True when the promo code was valid at registration; the trial itself is applied on email verification */
+  promoApplied: boolean;
+}
+
 export async function register(input: {
   email: string;
   password: string;
   name: string;
   organizationName: string;
   promoCode?: string;
-}): Promise<AuthTokens> {
+}): Promise<RegisterResult> {
   const existing = await query<{ id: string }>(
     'SELECT id FROM users WHERE email = $1',
     [input.email.toLowerCase()]
@@ -199,6 +238,7 @@ export async function register(input: {
 
   const passwordHash = await bcrypt.hash(input.password, 12);
   const client = await getClient();
+  let promoApplied = false;
 
   try {
     await client.query('BEGIN');
@@ -227,64 +267,10 @@ export async function register(input: {
       [user.id, org.id]
     );
 
-    const tokenId = crypto.randomUUID();
-    const accessToken = generateAccessToken({
-      userId: user.id,
-      orgId: user.organization_id,
-      role: user.role,
-      email: user.email,
-      isSuperAdmin: false,
-    });
-    const refreshTokenRaw = generateRefreshToken({
-      userId: user.id,
-      orgId: user.organization_id,
-      tokenId,
-    });
-    const tokenHash = hashToken(refreshTokenRaw);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-    await client.query(
-      `INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at, created_at)
-       VALUES ($1, $2, $3, $4, NOW())`,
-      [tokenId, user.id, tokenHash, expiresAt.toISOString()]
-    );
-
-    // If promo code provided, validate and apply
+    // Promo code: only checked here. It is applied when the email is verified (consumeEmailVerificationToken),
+    // so an account that never confirms cannot consume a code's limited uses.
     if (input.promoCode) {
-      const promoResult = await client.query<{
-        id: string;
-        plan: string;
-        duration_days: number;
-        max_uses: number | null;
-        used_count: number;
-        is_active: boolean;
-        expires_at: string | null;
-      }>(
-        `SELECT id, plan, duration_days, max_uses, used_count, is_active, expires_at
-         FROM promo_codes WHERE code = $1`,
-        [input.promoCode.toUpperCase().trim()]
-      );
-      const promo = promoResult.rows[0];
-
-      if (promo && promo.is_active
-        && (promo.max_uses === null || promo.used_count < promo.max_uses)
-        && (!promo.expires_at || new Date(promo.expires_at) > new Date())) {
-
-        const trialEndsAt = new Date();
-        trialEndsAt.setDate(trialEndsAt.getDate() + promo.duration_days);
-
-        await client.query(
-          `UPDATE organizations
-           SET plan = $1, trial_ends_at = $2, promo_code_id = $3, updated_at = NOW()
-           WHERE id = $4`,
-          [promo.plan, trialEndsAt.toISOString(), promo.id, org.id]
-        );
-
-        await client.query(
-          `UPDATE promo_codes SET used_count = used_count + 1 WHERE id = $1`,
-          [promo.id]
-        );
-      }
+      promoApplied = (await findValidPromo(client, input.promoCode)) !== null;
       // If code is invalid, silently ignore — user still registers on Free plan
     }
 
@@ -292,7 +278,7 @@ export async function register(input: {
 
     // Ask the address owner to confirm before sending anything else (the welcome email goes out on
     // confirmation). Async, don't block registration.
-    generateEmailVerificationToken(user.id)
+    generateEmailVerificationToken(user.id, promoApplied ? input.promoCode : undefined)
       .then(token => sendVerificationEmail({ name: user.name, email: user.email }, token))
       .catch(err => console.error('[Email] Failed to send verification email:', err));
 
@@ -303,24 +289,7 @@ export async function register(input: {
       )
     ).catch(() => {/* ignore import error */});
 
-    return {
-      accessToken,
-      refreshToken: refreshTokenRaw,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        orgId: user.organization_id,
-        orgName: org.name,
-        totpEnabled: user.totp_enabled,
-        language: user.language ?? 'en',
-        onboardingCompleted: false,
-        onboardingStep: 0,
-        editorTourCompleted: false,
-        isSuperAdmin: false,
-      },
-    };
+    return { email: user.email, name: user.name, promoApplied };
   } catch (err) {
     await client.query('ROLLBACK');
     // Handle unique constraint violation on org slug
@@ -369,7 +338,8 @@ export async function login(input: {
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
             u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
-            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed, u.is_super_admin
+            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed, u.is_super_admin,
+            u.email_verified
      FROM users u
      WHERE u.email = $1`,
     [input.email.toLowerCase()]
@@ -388,6 +358,10 @@ export async function login(input: {
     throw new AppError(401, 'Invalid email or password', 'INVALID_CREDENTIALS');
   }
   await clearFailures(pairKey).catch(() => undefined);
+
+  if (!user.email_verified) {
+    throw new AppError(403, 'Please verify your email before logging in', 'EMAIL_NOT_VERIFIED');
+  }
 
   if (user.totp_enabled) {
     const tempToken = generateTempToken({ userId: user.id, purpose: '2fa' });
@@ -604,15 +578,15 @@ export async function logout(currentRefreshToken: string): Promise<void> {
   await query('UPDATE refresh_tokens SET used = true WHERE token_hash = $1', [tokenHash]);
 }
 
-export async function generateEmailVerificationToken(userId: string): Promise<string> {
+export async function generateEmailVerificationToken(userId: string, promoCode?: string): Promise<string> {
   const token = crypto.randomBytes(32).toString('hex');
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
   await query(
-    `INSERT INTO email_verifications (id, user_id, token_hash, expires_at, created_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
-    [userId, tokenHash, expiresAt.toISOString()]
+    `INSERT INTO email_verifications (id, user_id, token_hash, expires_at, promo_code, created_at)
+     VALUES (gen_random_uuid(), $1, $2, $3, $4, NOW())`,
+    [userId, tokenHash, expiresAt.toISOString(), promoCode ?? null]
   );
 
   return token;
@@ -622,14 +596,14 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
   const tokenHash = hashToken(token);
 
   const client = await getClient();
-  let user: { email: string; name: string } | undefined;
+  let user: { email: string; name: string; organization_id: string } | undefined;
   try {
     await client.query('BEGIN');
 
-    const claimed = await client.query<{ user_id: string }>(
+    const claimed = await client.query<{ user_id: string; promo_code: string | null }>(
       `UPDATE email_verifications SET used = true
        WHERE token_hash = $1 AND used = false AND expires_at > NOW()
-       RETURNING user_id`,
+       RETURNING user_id, promo_code`,
       [tokenHash]
     );
     const row = claimed.rows[0];
@@ -638,11 +612,35 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
       throw new AppError(400, 'Invalid or expired verification token', 'INVALID_VERIFICATION_TOKEN');
     }
 
-    const updated = await client.query<{ email: string; name: string }>(
-      'UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1 RETURNING email, name',
+    const updated = await client.query<{ email: string; name: string; organization_id: string }>(
+      'UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1 RETURNING email, name, organization_id',
       [row.user_id]
     );
     user = updated.rows[0];
+
+    // Apply the promo code chosen at registration, re-validated now: it may have expired or been
+    // exhausted by others since. If so the account is still verified and simply stays on Free.
+    if (row.promo_code && user) {
+      const promo = await findValidPromo(client, row.promo_code);
+      if (promo) {
+        // Guarded increment: never goes past max_uses even with concurrent verifications
+        const bumped = await client.query(
+          `UPDATE promo_codes SET used_count = used_count + 1
+           WHERE id = $1 AND (max_uses IS NULL OR used_count < max_uses)`,
+          [promo.id]
+        );
+        if ((bumped.rowCount ?? 0) > 0) {
+          const trialEndsAt = new Date();
+          trialEndsAt.setDate(trialEndsAt.getDate() + promo.duration_days);
+          await client.query(
+            `UPDATE organizations
+             SET plan = $1, trial_ends_at = $2, promo_code_id = $3, updated_at = NOW()
+             WHERE id = $4`,
+            [promo.plan, trialEndsAt.toISOString(), promo.id, user.organization_id]
+          );
+        }
+      }
+    }
 
     await client.query('COMMIT');
   } catch (err) {
@@ -657,6 +655,41 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
       console.error('[Email] Failed to send welcome email:', err)
     );
   }
+}
+
+export async function resendVerificationEmail(email: string): Promise<void> {
+  // Same per-email hourly cap as forgot-password, under its own key. Over the limit nothing is created
+  // or sent; the caller still answers the same generic message. Redis down: carry on.
+  try {
+    const count = await recordFailure(
+      buildAttemptKey(['resend-verify', email.toLowerCase()]),
+      ATTEMPT_LIMITS.forgotPasswordPerEmail.windowSeconds
+    );
+    if (count > ATTEMPT_LIMITS.forgotPasswordPerEmail.max) return;
+  } catch {
+    console.warn('[auth] Resend-verification limiter unavailable (Redis error): request allowed');
+  }
+
+  const result = await query<{ id: string; email: string; name: string; email_verified: boolean }>(
+    'SELECT id, email, name, email_verified FROM users WHERE email = $1',
+    [email.toLowerCase()]
+  );
+  const user = result.rows[0];
+
+  // Never reveal whether the email exists or is already verified
+  if (!user || user.email_verified) return;
+
+  // Carry over the promo code chosen at registration, so asking for a new link does not lose it
+  const previous = await query<{ promo_code: string }>(
+    `SELECT promo_code FROM email_verifications
+     WHERE user_id = $1 AND promo_code IS NOT NULL
+     ORDER BY created_at DESC LIMIT 1`,
+    [user.id]
+  );
+  const token = await generateEmailVerificationToken(user.id, previous.rows[0]?.promo_code);
+  sendVerificationEmail({ name: user.name, email: user.email }, token).catch(err =>
+    console.error('[Email] Failed to resend verification email:', err)
+  );
 }
 
 export async function forgotPassword(email: string): Promise<void> {
@@ -721,10 +754,11 @@ export async function resetPassword(input: {
       throw new AppError(400, 'Invalid or expired reset token', 'INVALID_RESET_TOKEN');
     }
 
-    await client.query('UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2', [
-      passwordHash,
-      row.user_id,
-    ]);
+    // Using an emailed reset link proves the user reads this mailbox, so the email counts as verified too
+    await client.query(
+      'UPDATE users SET password_hash = $1, email_verified = true, updated_at = NOW() WHERE id = $2',
+      [passwordHash, row.user_id]
+    );
     // Invalidate all refresh tokens
     await client.query('UPDATE refresh_tokens SET used = true WHERE user_id = $1', [row.user_id]);
 

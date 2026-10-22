@@ -285,7 +285,10 @@
       "noAccount": "¿No tienes una cuenta?",
       "register": "Regístrate",
       "invalidCredentials": "Correo o contraseña inválidos",
-      "twoFactorRequired": "Ingresa tu código de doble factor"
+      "twoFactorRequired": "Ingresa tu código de doble factor",
+      "emailNotVerified": "Verifica tu correo antes de iniciar sesión.",
+      "resendVerification": "Reenviar correo de verificación",
+      "verificationResent": "Correo de verificación reenviado. Revisa tu bandeja de entrada."
     },
     "register": {
       "title": "Crea tu cuenta",
@@ -300,7 +303,10 @@
       "login": "Inicia sesión",
       "terms": "Al crear una cuenta, aceptas nuestros {terms} y {privacy}",
       "termsLink": "Términos de servicio",
-      "privacyLink": "Política de privacidad"
+      "privacyLink": "Política de privacidad",
+      "checkEmailTitle": "Revisa tu correo",
+      "checkEmailSubtitle": "Te enviamos un enlace de verificación a tu correo. Haz clic en él para activar tu cuenta y empezar a usar GenSmart.",
+      "promoActivatedPendingVerification": "Tu código promocional es válido — tu prueba Pro de 30 días se activará en cuanto verifiques tu correo."
     },
     "forgotPassword": {
       "title": "¿Olvidaste tu contraseña?",

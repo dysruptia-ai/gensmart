@@ -2,14 +2,13 @@
 
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { Mail, Lock, User, Building2, AlertCircle, Tag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
-import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../auth.module.css';
 
@@ -35,11 +34,9 @@ function useValidateForm() {
 }
 
 function RegisterForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const codeFromUrl = searchParams.get('code') || '';
   const { register } = useAuth();
-  const { success } = useToast();
   const { t } = useTranslation();
   const validateForm = useValidateForm();
 
@@ -51,6 +48,8 @@ function RegisterForm() {
   const [promoCode, setPromoCode] = useState(codeFromUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,18 +61,39 @@ function RegisterForm() {
     setError('');
     setLoading(true);
     try {
-      await register(email, password, name, orgName, promoCode || undefined);
-      if (promoCode) {
-        success('Pro trial activated!', 'You have 30 days of Pro features. Enjoy!');
-      } else {
-        success('Account created!', 'Welcome to GenSmart. Setting up your dashboard…');
-      }
-      router.replace('/dashboard');
+      const result = await register(email, password, name, orgName, promoCode || undefined);
+      setPromoApplied(result.promoApplied);
+      setRegisteredEmail(result.email);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('errors.generic'));
     } finally {
       setLoading(false);
     }
+  }
+
+  if (registeredEmail) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.logoCenter}>
+          <Logo size="lg" href="/" />
+        </div>
+        <div className={styles.twoFAWrapper}>
+          <Mail size={40} color="var(--color-primary)" aria-hidden="true" />
+          <h2 className={styles.twoFATitle} style={{ marginTop: '0.75rem' }}>
+            {t('auth.register.checkEmailTitle')}
+          </h2>
+          <p className={styles.twoFADesc}>{t('auth.register.checkEmailSubtitle')}</p>
+        </div>
+        {promoApplied && (
+          <div className={styles.successBanner} role="status">
+            {t('auth.register.promoActivatedPendingVerification')}
+          </div>
+        )}
+        <p className={styles.footer}>
+          <Link href="/login">{t('auth.register.login')}</Link>
+        </p>
+      </div>
+    );
   }
 
   return (
