@@ -504,6 +504,27 @@
   gap: 1rem;
 }
 
+.channelTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.channelIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.whatsappIcon {
+  flex-shrink: 0;
+  color: #25D366;
+}
+
+.messengerIcon {
+  flex-shrink: 0;
+  color: #0084FF;
+}
+
 .channelDesc {
   font-size: var(--font-xs);
   color: var(--color-text-secondary);

@@ -539,7 +539,9 @@
         "webOffHint": "Enable Web Widget to configure and get your embed code.",
         "whatsapp": "WhatsApp",
         "whatsappDesc": "Connect your WhatsApp Business number",
-        "whatsappOffHint": "Enable WhatsApp to configure your WhatsApp Business integration."
+        "whatsappOffHint": "Enable WhatsApp to configure your WhatsApp Business integration.",
+        "messenger": "Messenger",
+        "messengerDesc": "Connect your Facebook Page to answer in Messenger"
       },
       "versions": {
         "noVersions": "No published versions yet.",
@@ -900,6 +902,48 @@
           "invalidFbToken": "Your Facebook session is invalid or expired. Click \"{button}\" to try again.",
           "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
           "webhookSubscribeFailed": "We couldn't subscribe the webhook for your WhatsApp account. Click \"{button}\" to try again."
+        }
+      },
+      "messengerConfig": {
+        "gateTitle": "Messenger Requires Starter Plan",
+        "gateDesc": "Connect your Facebook Page to deploy this agent on Messenger. Available on Starter, Pro, and Enterprise plans.",
+        "upgrade": "Upgrade Plan",
+        "statusLabel": "Messenger status",
+        "connected": "Connected",
+        "notConnected": "Not Connected",
+        "pageInfo": "Facebook Page",
+        "disconnectButton": "Disconnect Messenger",
+        "quickSetupTitle": "Connect your Facebook Page",
+        "quickSetupDesc": "Connect using Facebook Login — we'll list the Pages you manage and subscribe the one you choose to this agent.",
+        "connectMessenger": "Connect Messenger",
+        "unavailable": "Messenger connection is not available on this server yet.",
+        "selectPage": "Select the Facebook Page to connect",
+        "cancelSelection": "Cancel",
+        "toast": {
+          "disconnectConfirm": "Disconnect Messenger from this agent? The agent will no longer receive or send Messenger messages.",
+          "disconnected": "Messenger disconnected",
+          "disconnectFailed": "Failed to disconnect",
+          "sdkNotLoaded": "Facebook SDK not loaded. Please refresh and try again.",
+          "signupConnected": "Messenger connected! Page: {page}",
+          "abortGeneric": "Connection cancelled. Click \"{button}\" to try again and complete all steps in the Facebook popup."
+        },
+        "steps": {
+          "connecting": "Connecting your Facebook Page...",
+          "connectingPage": "Subscribing the selected Page..."
+        },
+        "errors": {
+          "generic": "Failed to connect Messenger.",
+          "noPages": "We could not find any Facebook Page you manage. Make sure you granted access to your Page in the Facebook popup.",
+          "pageListFailed": "We could not list your Facebook Pages. Please try again.",
+          "sessionExpired": "Connection session expired. Click \"{button}\" to start again.",
+          "sessionUnavailable": "We could not start the connection session. Please try again.",
+          "planLimit": "Messenger requires a Starter plan or higher.",
+          "pageAlreadyConnected": "This Facebook Page is already connected to another agent. Choose a different one.",
+          "invalidSelection": "The selected Facebook Page is not valid. Click \"{button}\" to start again.",
+          "invalidFbToken": "Your Facebook session is invalid or expired. Click \"{button}\" to try again.",
+          "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
+          "webhookSubscribeFailed": "We could not subscribe your Page to Messenger. Check that you granted all permissions and click \"{button}\" to try again.",
+          "notConfigured": "Messenger is not configured on this server. Contact support."
         }
       }
     },

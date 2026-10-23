@@ -539,7 +539,9 @@
         "webOffHint": "Activa Web Widget para configurarlo y obtener tu código de inserción.",
         "whatsapp": "WhatsApp",
         "whatsappDesc": "Conecta tu número de WhatsApp Business",
-        "whatsappOffHint": "Activa WhatsApp para configurar tu integración de WhatsApp Business."
+        "whatsappOffHint": "Activa WhatsApp para configurar tu integración de WhatsApp Business.",
+        "messenger": "Messenger",
+        "messengerDesc": "Conecta tu página de Facebook para responder en Messenger"
       },
       "versions": {
         "noVersions": "Aún no hay versiones publicadas.",
@@ -900,6 +902,48 @@
           "invalidFbToken": "Tu sesión de Facebook no es válida o expiró. Haz clic en \"{button}\" para intentarlo de nuevo.",
           "codeExchangeFailed": "La autorización de Facebook expiró antes de que pudiéramos usarla. Haz clic en \"{button}\" para intentarlo de nuevo.",
           "webhookSubscribeFailed": "No pudimos suscribir el webhook de tu cuenta de WhatsApp. Haz clic en \"{button}\" para intentarlo de nuevo."
+        }
+      },
+      "messengerConfig": {
+        "gateTitle": "Messenger requiere el plan Starter",
+        "gateDesc": "Conecta tu página de Facebook para desplegar este agente en Messenger. Disponible en los planes Starter, Pro y Enterprise.",
+        "upgrade": "Mejorar plan",
+        "statusLabel": "Estado de Messenger",
+        "connected": "Conectado",
+        "notConnected": "No conectado",
+        "pageInfo": "Página de Facebook",
+        "disconnectButton": "Desconectar Messenger",
+        "quickSetupTitle": "Conecta tu página de Facebook",
+        "quickSetupDesc": "Conéctate con Facebook Login: mostraremos las páginas que administras y suscribiremos la que elijas a este agente.",
+        "connectMessenger": "Conectar Messenger",
+        "unavailable": "La conexión con Messenger aún no está disponible en este servidor.",
+        "selectPage": "Selecciona la página de Facebook que quieres conectar",
+        "cancelSelection": "Cancelar",
+        "toast": {
+          "disconnectConfirm": "¿Desconectar Messenger de este agente? El agente dejará de recibir y enviar mensajes de Messenger.",
+          "disconnected": "Messenger desconectado",
+          "disconnectFailed": "No se pudo desconectar",
+          "sdkNotLoaded": "El SDK de Facebook no se cargó. Actualiza la página e inténtalo de nuevo.",
+          "signupConnected": "¡Messenger conectado! Página: {page}",
+          "abortGeneric": "Conexión cancelada. Haz clic en \"{button}\" para intentarlo de nuevo y completa todos los pasos en la ventana emergente de Facebook."
+        },
+        "steps": {
+          "connecting": "Conectando tu página de Facebook...",
+          "connectingPage": "Suscribiendo la página seleccionada..."
+        },
+        "errors": {
+          "generic": "No se pudo conectar Messenger.",
+          "noPages": "No encontramos ninguna página de Facebook que administres. Asegúrate de haber dado acceso a tu página en la ventana emergente de Facebook.",
+          "pageListFailed": "No pudimos listar tus páginas de Facebook. Inténtalo de nuevo.",
+          "sessionExpired": "La sesión de conexión expiró. Haz clic en \"{button}\" para empezar de nuevo.",
+          "sessionUnavailable": "No pudimos iniciar la sesión de conexión. Inténtalo de nuevo.",
+          "planLimit": "Messenger requiere el plan Starter o superior.",
+          "pageAlreadyConnected": "Esta página de Facebook ya está conectada a otro agente. Elige una diferente.",
+          "invalidSelection": "La página de Facebook seleccionada no es válida. Haz clic en \"{button}\" para empezar de nuevo.",
+          "invalidFbToken": "Tu sesión de Facebook no es válida o expiró. Haz clic en \"{button}\" para intentarlo de nuevo.",
+          "codeExchangeFailed": "La autorización de Facebook expiró antes de que pudiéramos usarla. Haz clic en \"{button}\" para intentarlo de nuevo.",
+          "webhookSubscribeFailed": "No pudimos suscribir tu página a Messenger. Verifica que diste todos los permisos y haz clic en \"{button}\" para intentarlo de nuevo.",
+          "notConfigured": "Messenger no está configurado en este servidor. Contacta a soporte."
         }
       }
     },

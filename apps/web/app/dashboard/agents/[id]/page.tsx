@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import {
-  Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText,
+  Globe, Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { PLAN_LIMITS, type HandoffConfig } from '@gensmart/shared';
@@ -21,6 +21,8 @@ import ToolConfigurator from '@/components/agents/ToolConfigurator';
 import { PromptGenerator } from '@/components/agents/PromptGenerator';
 import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomizer';
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
+import MessengerConfig from '@/components/agents/MessengerConfig/MessengerConfig';
+import { FaWhatsapp, FaFacebookMessenger } from 'react-icons/fa6';
 import HandoffConfigurator from '@/components/agents/HandoffConfigurator/HandoffConfigurator';
 import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
 import PricingConfigurator from '@/components/agents/PricingConfigurator';
@@ -823,6 +825,13 @@ export default function AgentEditorPage() {
                       onChange={(_checked) => toggleChannel('whatsapp')}
                     />
                   </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span className={styles.fieldLabel}>{t('agents.editor.channels.messenger')}</span>
+                    <Toggle
+                      checked={channels.includes('facebook')}
+                      onChange={(_checked) => toggleChannel('facebook')}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -844,9 +853,12 @@ export default function AgentEditorPage() {
               <div className={styles.channelSection}>
                 <div className={styles.channelHeader}>
                   <div className={styles.channelToggleRow}>
-                    <div>
-                      <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.webWidget')}</div>
-                      <span className={styles.channelDesc}>{t('agents.editor.channels.webDesc')}</span>
+                    <div className={styles.channelTitleRow}>
+                      <Globe size={24} className={styles.channelIcon} aria-hidden="true" />
+                      <div>
+                        <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.webWidget')}</div>
+                        <span className={styles.channelDesc}>{t('agents.editor.channels.webDesc')}</span>
+                      </div>
                     </div>
                     <Toggle
                       checked={channels.includes('web')}
@@ -874,9 +886,12 @@ export default function AgentEditorPage() {
               <div className={styles.channelSection}>
                 <div className={styles.channelHeader}>
                   <div className={styles.channelToggleRow}>
-                    <div>
-                      <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.whatsapp')}</div>
-                      <span className={styles.channelDesc}>{t('agents.editor.channels.whatsappDesc')}</span>
+                    <div className={styles.channelTitleRow}>
+                      <FaWhatsapp size={24} className={styles.whatsappIcon} aria-hidden="true" />
+                      <div>
+                        <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.whatsapp')}</div>
+                        <span className={styles.channelDesc}>{t('agents.editor.channels.whatsappDesc')}</span>
+                      </div>
                     </div>
                     <Toggle
                       checked={channels.includes('whatsapp')}
@@ -888,6 +903,31 @@ export default function AgentEditorPage() {
                 {orgPlanLoaded && (
                   <div className={styles.channelBody}>
                     <WhatsAppConfig agentId={agentId} orgPlan={orgPlan} />
+                  </div>
+                )}
+              </div>
+
+              {/* Messenger */}
+              <div className={styles.channelSection}>
+                <div className={styles.channelHeader}>
+                  <div className={styles.channelToggleRow}>
+                    <div className={styles.channelTitleRow}>
+                      <FaFacebookMessenger size={24} className={styles.messengerIcon} aria-hidden="true" />
+                      <div>
+                        <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.messenger')}</div>
+                        <span className={styles.channelDesc}>{t('agents.editor.channels.messengerDesc')}</span>
+                      </div>
+                    </div>
+                    <Toggle
+                      checked={channels.includes('facebook')}
+                      onChange={(_checked) => toggleChannel('facebook')}
+                      disabled={orgPlan === 'free'}
+                    />
+                  </div>
+                </div>
+                {orgPlanLoaded && (
+                  <div className={styles.channelBody}>
+                    <MessengerConfig agentId={agentId} orgPlan={orgPlan} />
                   </div>
                 )}
               </div>

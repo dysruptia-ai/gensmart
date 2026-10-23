@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_FACEBOOK_APP_ID: process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'] ?? '',
     NEXT_PUBLIC_FACEBOOK_CONFIG_ID: process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID'] ?? '',
+    NEXT_PUBLIC_FACEBOOK_CONFIG_ID_MESSENGER: process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID_MESSENGER'] ?? '',
     NEXT_PUBLIC_TURNSTILE_SITE_KEY: process.env['NEXT_PUBLIC_TURNSTILE_SITE_KEY'] ?? '',
   },
   async rewrites() {
