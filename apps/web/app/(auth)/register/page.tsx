@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import Script from 'next/script';
 import { useSearchParams } from 'next/navigation';
 import { Mail, Lock, User, Building2, AlertCircle, Tag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +12,15 @@ import Input from '@/components/ui/Input';
 import { Logo } from '@/components/ui/Logo';
 import { useTranslation } from '@/hooks/useTranslation';
 import styles from '../auth.module.css';
+
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (container: HTMLElement, options: Record<string, unknown>) => string;
+      reset: (widgetId?: string) => void;
+    };
+  }
+}
 
 function useValidateForm() {
   const { t } = useTranslation();
@@ -50,6 +60,25 @@ function RegisterForm() {
   const [error, setError] = useState('');
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const captchaRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | undefined>(undefined);
+
+  function renderTurnstile() {
+    if (!captchaRef.current || !window.turnstile || widgetIdRef.current) return;
+    widgetIdRef.current = window.turnstile.render(captchaRef.current, {
+      sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+      callback: (token: string) => setTurnstileToken(token),
+      'error-callback': () => setTurnstileToken(''),
+      'expired-callback': () => setTurnstileToken(''),
+    });
+  }
+
+  // A Turnstile token is single-use: after any failed submit the widget must issue a new one
+  function resetTurnstile() {
+    if (window.turnstile && widgetIdRef.current) window.turnstile.reset(widgetIdRef.current);
+    setTurnstileToken('');
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,14 +87,19 @@ function RegisterForm() {
       setError(validationError);
       return;
     }
+    if (!turnstileToken) {
+      setError(t('errors.captchaFailed'));
+      return;
+    }
     setError('');
     setLoading(true);
     try {
-      const result = await register(email, password, name, orgName, promoCode || undefined);
+      const result = await register(email, password, name, orgName, turnstileToken, promoCode || undefined);
       setPromoApplied(result.promoApplied);
       setRegisteredEmail(result.email);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('errors.generic'));
+      resetTurnstile();
     } finally {
       setLoading(false);
     }
@@ -98,6 +132,11 @@ function RegisterForm() {
 
   return (
     <div className={styles.container}>
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="afterInteractive"
+        onReady={renderTurnstile}
+      />
       <div className={styles.logoCenter}>
         <Logo size="lg" href="/" />
       </div>
@@ -172,6 +211,7 @@ function RegisterForm() {
           placeholder="Enter promo code"
           icon={Tag}
         />
+        <div ref={captchaRef} className={styles.captchaWrapper} />
         <Button type="submit" fullWidth loading={loading}>
           {t('auth.register.submit')}
         </Button>

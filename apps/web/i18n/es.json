@@ -1494,6 +1494,7 @@
     "title": "Chat"
   },
   "errors": {
+    "captchaFailed": "La verificación captcha falló. Intenta de nuevo.",
     "required": "Este campo es obligatorio",
     "invalidEmail": "Correo electrónico inválido",
     "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",

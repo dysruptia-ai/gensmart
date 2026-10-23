@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { rateLimiter } from '../middleware/rateLimiter';
+import { verifyTurnstileToken } from '../services/turnstile.service';
 import { validate } from '../middleware/validate';
 import { requireAuth } from '../middleware/auth';
 import * as authService from '../services/auth.service';
@@ -99,6 +100,14 @@ router.post(
   validate(registerSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
+      const captchaOk = await verifyTurnstileToken(req.body.turnstileToken, req.ip);
+      if (!captchaOk) {
+        res.status(400).json({
+          error: { message: 'Captcha verification failed. Please try again.', code: 'CAPTCHA_FAILED' },
+        });
+        return;
+      }
+
       const result = await authService.register(req.body);
       res.status(201).json({
         message: 'Registration successful. Please check your email to verify your account before logging in.',

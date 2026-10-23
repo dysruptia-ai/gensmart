@@ -69,6 +69,8 @@ export const env = {
   // Facebook Embedded Signup
   FACEBOOK_APP_ID: process.env['FACEBOOK_APP_ID'] ?? '',
   FACEBOOK_APP_SECRET: process.env['FACEBOOK_APP_SECRET'] ?? '',
+  // Cloudflare Turnstile (captcha on /register). Empty = registration is refused (verification fails closed)
+  TURNSTILE_SECRET_KEY: process.env['TURNSTILE_SECRET_KEY'] ?? '',
   SMTP_HOST: process.env['SMTP_HOST'] ?? '',
   SMTP_PORT: parseInt(optionalEnv('SMTP_PORT', '587'), 10),
   SMTP_USER: process.env['SMTP_USER'] ?? '',

@@ -1494,6 +1494,7 @@
     "title": "Chat"
   },
   "errors": {
+    "captchaFailed": "Captcha verification failed. Please try again.",
     "required": "This field is required",
     "invalidEmail": "Invalid email address",
     "passwordTooShort": "Password must be at least 8 characters",

@@ -42,7 +42,7 @@ interface AuthContextValue {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
   verify2FA: (tempToken: string, code: string) => Promise<void>;
-  register: (email: string, password: string, name: string, organizationName: string, promoCode?: string) => Promise<RegisterResult>;
+  register: (email: string, password: string, name: string, organizationName: string, turnstileToken: string, promoCode?: string) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   updateOnboarding: (step?: number, completed?: boolean, editorTourCompleted?: boolean) => Promise<void>;
@@ -134,13 +134,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string, name: string, organizationName: string, promoCode?: string): Promise<RegisterResult> => {
+    async (email: string, password: string, name: string, organizationName: string, turnstileToken: string, promoCode?: string): Promise<RegisterResult> => {
       // No session is created: the account becomes usable once the emailed link is confirmed
       const data = await api.post<{ message: string; email: string; promoApplied: boolean }>('/api/auth/register', {
         email,
         password,
         name,
         organizationName,
+        turnstileToken,
         ...(promoCode ? { promoCode } : {}),
       });
       return { email: data.email, promoApplied: data.promoApplied };

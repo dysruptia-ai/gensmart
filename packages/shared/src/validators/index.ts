@@ -12,6 +12,7 @@ export const registerSchema = z.object({
   password: passwordSchema,
   organizationName: z.string().min(2, 'Organization name must be at least 2 characters').max(255),
   promoCode: z.string().max(100).optional(),
+  turnstileToken: z.string().min(1, 'Captcha verification is required'),
 });
 
 export const loginSchema = z.object({
