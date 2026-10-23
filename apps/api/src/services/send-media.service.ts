@@ -5,6 +5,11 @@ import {
   sendDocumentMessage,
   sendVideoMessage,
 } from './whatsapp.service';
+import {
+  sendImageMessage as sendMessengerImage,
+  sendDocumentMessage as sendMessengerDocument,
+  sendVideoMessage as sendMessengerVideo,
+} from './messenger.service';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { env } from '../config/env';
@@ -58,11 +63,14 @@ export interface SendMediaContext {
   conversationId: string;
   agentId: string;
   organizationId: string;
-  channel: 'whatsapp' | 'web';
+  channel: 'whatsapp' | 'web' | 'facebook';
   // WhatsApp-specific
   phoneNumberId?: string;
   accessToken?: string;
   contactPhone?: string;
+  // Messenger-specific
+  pageAccessToken?: string;
+  recipientPsid?: string;
 }
 
 export interface SendMediaResult {
@@ -159,6 +167,18 @@ export async function handleSendMedia(
         await sendDocumentMessage(context.phoneNumberId, context.accessToken, context.contactPhone, url, undefined, caption);
       } else if (type === 'video') {
         await sendVideoMessage(context.phoneNumberId, context.accessToken, context.contactPhone, url, caption);
+      }
+    } else if (context.channel === 'facebook') {
+      if (!context.pageAccessToken || !context.recipientPsid) {
+        throw new Error('Messenger context missing (pageAccessToken or recipientPsid)');
+      }
+
+      if (type === 'image') {
+        await sendMessengerImage(context.pageAccessToken, context.recipientPsid, proxiedUrl, caption);
+      } else if (type === 'document') {
+        await sendMessengerDocument(context.pageAccessToken, context.recipientPsid, url, caption);
+      } else if (type === 'video') {
+        await sendMessengerVideo(context.pageAccessToken, context.recipientPsid, url, caption);
       }
     } else if (context.channel !== 'web') {
       throw new Error(`Unsupported channel: ${context.channel}`);

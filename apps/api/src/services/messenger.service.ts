@@ -65,6 +65,89 @@ export async function sendTextMessage(pageAccessToken: string, recipientPsid: st
   }
 }
 
+async function postMessage(pageAccessToken: string, recipientPsid: string, message: Record<string, unknown>, label: string): Promise<void> {
+  const response = await fetch(`${META_BASE_URL}/me/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${pageAccessToken}`,
+    },
+    body: JSON.stringify({ messaging_type: 'RESPONSE', recipient: { id: recipientPsid }, message }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(`Messenger ${label} error: ${JSON.stringify(errorData)}`);
+  }
+}
+
+type AttachmentType = 'image' | 'video' | 'file';
+
+// Messenger attachments carry no caption: the caption (if any) goes as a text message right after.
+async function sendAttachment(
+  pageAccessToken: string,
+  recipientPsid: string,
+  type: AttachmentType,
+  url: string,
+  caption?: string
+): Promise<void> {
+  if (!url.startsWith('https://')) {
+    throw new Error('Media URL must use https');
+  }
+  await postMessage(
+    pageAccessToken,
+    recipientPsid,
+    { attachment: { type, payload: { url, is_reusable: true } } },
+    `send ${type}`
+  );
+  if (caption?.trim()) {
+    await sendTextMessage(pageAccessToken, recipientPsid, caption);
+  }
+}
+
+export function sendImageMessage(pageAccessToken: string, recipientPsid: string, imageUrl: string, caption?: string): Promise<void> {
+  return sendAttachment(pageAccessToken, recipientPsid, 'image', imageUrl, caption);
+}
+
+export function sendVideoMessage(pageAccessToken: string, recipientPsid: string, videoUrl: string, caption?: string): Promise<void> {
+  return sendAttachment(pageAccessToken, recipientPsid, 'video', videoUrl, caption);
+}
+
+export function sendDocumentMessage(pageAccessToken: string, recipientPsid: string, documentUrl: string, caption?: string): Promise<void> {
+  return sendAttachment(pageAccessToken, recipientPsid, 'file', documentUrl, caption);
+}
+
+/**
+ * Button Template with one web_url button — Messenger's equivalent of WhatsApp's cta_url.
+ * Meta limits: text 640 chars, button title 20 chars, https URLs only.
+ */
+export async function sendButtonMessage(
+  pageAccessToken: string,
+  recipientPsid: string,
+  text: string,
+  buttonText: string,
+  url: string
+): Promise<void> {
+  if (!url.startsWith('https://')) {
+    throw new Error('Button URL must use https');
+  }
+  await postMessage(
+    pageAccessToken,
+    recipientPsid,
+    {
+      attachment: {
+        type: 'template',
+        payload: {
+          template_type: 'button',
+          text: text.slice(0, 640),
+          buttons: [{ type: 'web_url', url, title: buttonText.slice(0, 20) }],
+        },
+      },
+    },
+    'send button'
+  );
+}
+
 /** Fire-and-forget sender action (mark_seen / typing_on). Failures never affect delivery. */
 export async function sendSenderAction(
   pageAccessToken: string,

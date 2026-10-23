@@ -1,6 +1,7 @@
 import type { HandoffConfig, HandoffContact } from '@gensmart/shared';
 import { ToolDefinition } from './llm.service';
 import { sendCtaUrlMessage } from './whatsapp.service';
+import { sendButtonMessage as sendMessengerButtonMessage } from './messenger.service';
 import { createNotification } from './notification.service';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
@@ -287,12 +288,15 @@ export interface HumanHandoffContext {
   conversationId: string;
   agentId: string;
   organizationId: string;
-  channel: 'whatsapp' | 'web';
+  channel: 'whatsapp' | 'web' | 'facebook';
   handoffConfig: HandoffConfig;
   // WhatsApp-specific
   phoneNumberId?: string;
   accessToken?: string;
   contactPhone?: string;
+  // Messenger-specific
+  pageAccessToken?: string;
+  recipientPsid?: string;
   knownCustomerName?: string | null;
 }
 
@@ -471,6 +475,11 @@ export async function handleHumanHandoff(
           throw new Error('WhatsApp context missing (phoneNumberId, accessToken, or contactPhone)');
         }
         await sendCtaUrlMessage(context.phoneNumberId, context.accessToken, context.contactPhone, body, buttonText, url);
+      } else if (context.channel === 'facebook') {
+        if (!context.pageAccessToken || !context.recipientPsid) {
+          throw new Error('Messenger context missing (pageAccessToken or recipientPsid)');
+        }
+        await sendMessengerButtonMessage(context.pageAccessToken, context.recipientPsid, body, buttonText, url);
       } else if (context.channel !== 'web') {
         throw new Error(`Unsupported channel: ${context.channel}`);
       }

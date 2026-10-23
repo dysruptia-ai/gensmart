@@ -381,15 +381,15 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     llmTools.push(captureVariableToolDef);
   }
 
-  // send_media native tool — available on WhatsApp and Web
-  if (conv.channel === 'whatsapp' || conv.channel === 'web') {
+  // send_media native tool — available on WhatsApp, Messenger and Web
+  if (conv.channel === 'whatsapp' || conv.channel === 'web' || conv.channel === 'facebook') {
     llmTools.push(sendMediaToolDef);
   }
 
   // request_human_handoff native tool — needs a configured contact and a paid plan
   const handoffConfig = resolveHandoffConfig(agent.handoff_config);
   if (
-    (conv.channel === 'whatsapp' || conv.channel === 'web') &&
+    (conv.channel === 'whatsapp' || conv.channel === 'web' || conv.channel === 'facebook') &&
     handoffConfig.enabled &&
     handoffConfig.contacts.length > 0 &&
     plan !== 'free'
@@ -1069,12 +1069,16 @@ async function executeTool(
       agent_id: string;
       contact_phone: string | null;
       waba_config: Record<string, unknown> | null;
+      contact_psid: string | null;
+      fb_config: Record<string, unknown> | null;
     }>(
       `SELECT
          c.channel,
          c.agent_id,
          co.phone AS contact_phone,
-         a.whatsapp_config AS waba_config
+         a.whatsapp_config AS waba_config,
+         co.facebook_psid AS contact_psid,
+         a.facebook_config AS fb_config
        FROM conversations c
        JOIN agents a ON a.id = c.agent_id
        LEFT JOIN contacts co ON co.id = c.contact_id
@@ -1089,7 +1093,7 @@ async function executeTool(
       conversationId,
       agentId: ctx.agent_id,
       organizationId,
-      channel: ctx.channel as 'whatsapp' | 'web',
+      channel: ctx.channel as 'whatsapp' | 'web' | 'facebook',
     };
 
     if (
@@ -1101,6 +1105,14 @@ async function executeTool(
       mediaContext.accessToken = await resolveAccessToken(ctx.waba_config);
       mediaContext.phoneNumberId = String(ctx.waba_config.phone_number_id);
       mediaContext.contactPhone = ctx.contact_phone;
+    } else if (
+      ctx.channel === 'facebook' &&
+      ctx.fb_config?.connected &&
+      ctx.fb_config?.page_id &&
+      ctx.contact_psid
+    ) {
+      mediaContext.pageAccessToken = resolveMessengerAccessToken(ctx.fb_config);
+      mediaContext.recipientPsid = ctx.contact_psid;
     }
 
     const result = await handleSendMedia(args, mediaContext);
@@ -1113,6 +1125,8 @@ async function executeTool(
       channel: string;
       contact_phone: string | null;
       waba_config: Record<string, unknown> | null;
+      contact_psid: string | null;
+      fb_config: Record<string, unknown> | null;
       handoff_config: unknown;
       contact_name: string | null;
       captured_variables: Record<string, unknown> | null;
@@ -1121,6 +1135,8 @@ async function executeTool(
          c.channel,
          co.phone AS contact_phone,
          a.whatsapp_config AS waba_config,
+         co.facebook_psid AS contact_psid,
+         a.facebook_config AS fb_config,
          a.handoff_config,
          co.name AS contact_name,
          c.captured_variables
@@ -1137,7 +1153,7 @@ async function executeTool(
       conversationId,
       agentId,
       organizationId,
-      channel: ctx.channel as 'whatsapp' | 'web',
+      channel: ctx.channel as 'whatsapp' | 'web' | 'facebook',
       handoffConfig: resolveHandoffConfig(ctx.handoff_config),
       knownCustomerName: resolveKnownCustomerName(ctx.contact_name, ctx.captured_variables),
     };
@@ -1151,6 +1167,14 @@ async function executeTool(
       handoffContext.accessToken = await resolveAccessToken(ctx.waba_config);
       handoffContext.phoneNumberId = String(ctx.waba_config.phone_number_id);
       handoffContext.contactPhone = ctx.contact_phone;
+    } else if (
+      ctx.channel === 'facebook' &&
+      ctx.fb_config?.connected &&
+      ctx.fb_config?.page_id &&
+      ctx.contact_psid
+    ) {
+      handoffContext.pageAccessToken = resolveMessengerAccessToken(ctx.fb_config);
+      handoffContext.recipientPsid = ctx.contact_psid;
     }
 
     const result = await handleHumanHandoff(args, handoffContext);
