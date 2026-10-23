@@ -212,16 +212,16 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
     setLaunching(true);
 
     // Plain callbacks only: the SDK scans this closure for the forbidden keyword.
-    fbLoginEmbeddedSignup(FB, configId as string, function(code) {
-      if (!code) {
+    fbLoginEmbeddedSignup(FB, configId as string, function(accessToken) {
+      if (!accessToken) {
         setLaunching(false);
         toastError(tm('toast.abortGeneric', { button: tm('connectMessenger') }));
         return;
       }
       setConnecting(true);
       setSignupStep(tm('steps.connecting'));
-      submitSignup({ agentId, fbCode: code });
-    });
+      submitSignup({ agentId, fbToken: accessToken });
+    }, { responseType: 'token' });
   }
 
   function handleSelectionContinue(pageId: string) {

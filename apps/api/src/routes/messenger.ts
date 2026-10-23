@@ -372,13 +372,11 @@ router.post(
   }
 );
 
-// redirect_uri is sent explicitly EMPTY on the code exchange. The code comes from FB.login() (JS SDK,
-// response_type 'code', popup), whose dialog uses an internal relay URI (xd_arbiter) that matches
-// nothing registered in the Meta panel. Already tried and failed with error_subcode 36008:
-//   (a) omitting the parameter, (b) sending the registered URL 'https://www.gensmart.co/'.
-// This third attempt follows a third-party report of the same mechanism; it is not documented by Meta.
-// If it also fails, change the flow (response_type 'token' + fb_exchange_token) instead of varying this.
-// Not needed in the WhatsApp exchange (Embedded Signup is exempt from redirect_uri validation).
+// The web client now uses FB.login with response_type 'token' + fb_exchange_token (the fbToken branch),
+// which involves no redirect_uri. The fbCode branch below is kept as an unused fallback.
+// Why: the code from FB.login() (JS SDK popup) is tied to Facebook's internal relay URI (xd_arbiter), and all
+// three redirect_uri variants failed with error_subcode 36008: (a) omitted, (b) 'https://www.gensmart.co/',
+// (c) sent empty. Not needed in the WhatsApp exchange (Embedded Signup is exempt from the validation).
 const MESSENGER_REDIRECT_URI = '';
 
 // ── POST /api/messenger/embedded-signup-complete ─────────────────────────────
@@ -404,9 +402,10 @@ router.post(
         throw new AppError(503, 'Facebook App credentials not configured on this server', 'NOT_CONFIGURED');
       }
 
-      const { agentId, fbCode, signupSessionId, selectedPageId } = req.body as {
+      const { agentId, fbCode, fbToken, signupSessionId, selectedPageId } = req.body as {
         agentId: string;
         fbCode?: string;
+        fbToken?: string;
         signupSessionId?: string;
         selectedPageId?: string;
       };
@@ -429,6 +428,10 @@ router.post(
           throw new AppError(400, 'Connection session expired. Start again.', 'SIGNUP_SESSION_EXPIRED');
         }
         userToken = sessionToken;
+      } else if (fbToken) {
+        // Short-lived user token handed over by FB.login (response_type 'token'): no code to redeem and
+        // no redirect_uri involved. Validity and app ownership are verified by debug_token below.
+        userToken = await exchangeForLongLivedToken(fbToken, fbAppId, fbAppSecret);
       } else if (fbCode) {
         // Server-to-server only — never expose this call to the client. The code has a 30-second TTL.
         const tokenExchangeRes = await fetch(
@@ -446,7 +449,7 @@ router.post(
         // Page tokens derived from a long-lived user token do not expire
         userToken = await exchangeForLongLivedToken(tokenExchangeData.access_token, fbAppId, fbAppSecret);
       } else {
-        throw new AppError(400, 'Missing agentId and fbCode or signupSessionId', 'VALIDATION_ERROR');
+        throw new AppError(400, 'Missing agentId and fbToken, fbCode or signupSessionId', 'VALIDATION_ERROR');
       }
 
       // 4. Validate the token was issued for this app (app access token = "<app_id>|<app_secret>")
