@@ -457,6 +457,33 @@ router.post(
         }
       }
 
+      // Send via Messenger if channel is facebook (text only, same as WhatsApp)
+      if (conv.channel === 'facebook') {
+        try {
+          const agentResult = await query<{ facebook_config: Record<string, unknown> | null }>(
+            'SELECT facebook_config FROM agents WHERE id = $1',
+            [conv.agent_id]
+          );
+          const fbConfig = agentResult.rows[0]?.facebook_config;
+
+          if (fbConfig?.['connected'] && fbConfig?.['page_id'] && fbConfig?.['page_access_token_encrypted']) {
+            const contactResult = await query<{ facebook_psid: string | null }>(
+              'SELECT facebook_psid FROM contacts WHERE id = (SELECT contact_id FROM conversations WHERE id = $1)',
+              [conversationId]
+            );
+            const psid = contactResult.rows[0]?.facebook_psid;
+
+            if (psid) {
+              const { sendTextMessage, resolveAccessToken } = await import('../services/messenger.service');
+              await sendTextMessage(resolveAccessToken(fbConfig), psid, messageContent);
+            }
+          }
+        } catch (err) {
+          console.error(`[conversations] Messenger send error:`, (err as Error).message);
+          // Non-fatal — message is saved, just couldn't send via Messenger
+        }
+      }
+
       // Emit WebSocket events
       try {
         const io = getIO();

@@ -52,6 +52,7 @@ interface AgentRow {
   variables: unknown[];
   web_config: Record<string, unknown>;
   whatsapp_config: Record<string, unknown>;
+  facebook_config: Record<string, unknown> | null;
   handoff_config: unknown;
   template_id: string | null;
   config_variables_values: unknown;
@@ -155,6 +156,12 @@ function formatAgent(row: AgentRow) {
     variables: row.variables ?? [],
     webConfig: row.web_config,
     whatsappConfig: row.whatsapp_config,
+    // Read-only and without the encrypted Page token: written only by /api/messenger/*
+    facebookConfig: {
+      pageId: row.facebook_config?.['page_id'] ?? null,
+      pageName: row.facebook_config?.['page_name'] ?? null,
+      connected: !!row.facebook_config?.['connected'],
+    },
     handoffConfig: resolveHandoffConfig(row.handoff_config),
     templateId: row.template_id,
     configVariablesValues:

@@ -23,6 +23,10 @@ import { decrypt } from '../config/encryption';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
+import {
+  sendTextMessage as sendMessengerTextMessage,
+  resolveAccessToken as resolveMessengerAccessToken,
+} from '../services/messenger.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import {
   requestHumanHandoffToolDef,
@@ -964,6 +968,34 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       }
     } catch (err) {
       console.error(`[msg-worker] WhatsApp send error for conv ${conversationId}:`, (err as Error).message);
+    }
+  } else if (conv.channel === 'facebook') {
+    try {
+      const agentFbResult = await query<{ facebook_config: Record<string, unknown> | null }>(
+        'SELECT facebook_config FROM agents WHERE id = $1',
+        [agentId]
+      );
+      const fbConfig = agentFbResult.rows[0]?.facebook_config;
+
+      if (fbConfig?.connected && fbConfig?.page_id) {
+        const contactResult = await query<{ facebook_psid: string | null }>(
+          'SELECT facebook_psid FROM contacts WHERE id = $1',
+          [conv.contact_id]
+        );
+        const psid = contactResult.rows[0]?.facebook_psid;
+
+        if (psid) {
+          const pageToken = resolveMessengerAccessToken(fbConfig);
+          await sendMessengerTextMessage(pageToken, psid, finalResponse);
+          console.log(`[msg-worker] Messenger message sent to ${psid.slice(0, 4)}*** conv: ${conversationId}`);
+        } else {
+          console.warn(`[msg-worker] No PSID for contact — conv: ${conversationId}`);
+        }
+      } else {
+        console.warn(`[msg-worker] Messenger not configured for agent ${agentId}`);
+      }
+    } catch (err) {
+      console.error(`[msg-worker] Messenger send error for conv ${conversationId}:`, (err as Error).message);
     }
   } else if (conv.channel === 'web') {
     // Web widget notification via WebSocket (room per session)
