@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, CheckCircle, Unplug } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
@@ -49,6 +49,9 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  // True from the click until the flow ends (covers the window while the Facebook popup is open)
+  const [launching, setLaunching] = useState(false);
+  const submittingRef = useRef(false);
   const [signupStep, setSignupStep] = useState<string | null>(null);
   const [selectionOptions, setSelectionOptions] = useState<PageOption[]>([]);
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
@@ -170,6 +173,8 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
 
   // Shared by the first call (fbCode) and the page re-selection call (signupSessionId + selectedPageId)
   function submitSignup(body: Record<string, string>) {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     api.post<SignupResponse>('/api/messenger/embedded-signup-complete', body)
       .then(function(data) {
         if (data.requiresSelection === 'page') {
@@ -184,13 +189,15 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
       })
       .catch(handleSignupError)
       .finally(function() {
+        submittingRef.current = false;
         setConnecting(false);
+        setLaunching(false);
         setSignupStep(null);
       });
   }
 
   function handleConnect() {
-    if (!hasSignup) return;
+    if (!hasSignup || launching || connecting || submittingRef.current) return;
 
     const FB = (window as Window & { FB?: {
       init: (opts: Record<string, unknown>) => void;
@@ -202,9 +209,12 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
       return;
     }
 
+    setLaunching(true);
+
     // Plain callbacks only: the SDK scans this closure for the forbidden keyword.
     fbLoginEmbeddedSignup(FB, configId as string, function(code) {
       if (!code) {
+        setLaunching(false);
         toastError(tm('toast.abortGeneric', { button: tm('connectMessenger') }));
         return;
       }
@@ -215,7 +225,7 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
   }
 
   function handleSelectionContinue(pageId: string) {
-    if (!pendingSessionId) return;
+    if (!pendingSessionId || connecting || submittingRef.current) return;
 
     setConnecting(true);
     setSignupStep(tm('steps.connectingPage'));
@@ -295,7 +305,7 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
                 size="sm"
                 onClick={handleConnect}
                 icon={MessageSquare}
-                loading={connecting}
+                loading={launching || connecting}
               >
                 {tm('connectMessenger')}
               </Button>
@@ -317,6 +327,7 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
                       key={opt.id}
                       className={styles.selectionOption}
                       onClick={() => handleSelectionContinue(opt.id)}
+                      disabled={connecting}
                       type="button"
                     >
                       <span className={styles.selectionOptName}>{opt.name}</span>

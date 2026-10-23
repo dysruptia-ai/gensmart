@@ -372,6 +372,12 @@ router.post(
   }
 );
 
+// Must match, character for character (including the trailing slash), the entry registered in
+// Meta → Facebook Login → Settings → "Valid OAuth Redirect URIs". If it changes there, update it here.
+// Needed here but not in the WhatsApp exchange: Messenger uses a standard Login Configuration
+// ("General"), which enforces redirect_uri validation; WhatsApp Embedded Signup is exempt.
+const MESSENGER_REDIRECT_URI = 'https://www.gensmart.co/';
+
 // ── POST /api/messenger/embedded-signup-complete ─────────────────────────────
 // Exchange the Facebook Login code, list the user's Pages, subscribe the chosen Page and connect the agent
 router.post(
@@ -423,7 +429,7 @@ router.post(
       } else if (fbCode) {
         // Server-to-server only — never expose this call to the client. The code has a 30-second TTL.
         const tokenExchangeRes = await fetch(
-          `${META_BASE_URL}/oauth/access_token?client_id=${encodeURIComponent(fbAppId)}&client_secret=${encodeURIComponent(fbAppSecret)}&code=${encodeURIComponent(fbCode)}`
+          `${META_BASE_URL}/oauth/access_token?client_id=${encodeURIComponent(fbAppId)}&client_secret=${encodeURIComponent(fbAppSecret)}&code=${encodeURIComponent(fbCode)}&redirect_uri=${encodeURIComponent(MESSENGER_REDIRECT_URI)}`
         );
         if (!tokenExchangeRes.ok) {
           const exchangeErr = await tokenExchangeRes.json().catch(() => ({}));
