@@ -987,7 +987,8 @@
           "invalidFbToken": "Your Facebook session is invalid or expired. Click \"{button}\" to try again.",
           "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
           "webhookSubscribeFailed": "We could not subscribe your account's Page to Instagram messages. Check that you granted all permissions and click \"{button}\" to try again.",
-          "notConfigured": "Instagram is not configured on this server. Contact support."
+          "notConfigured": "Instagram is not configured on this server. Contact support.",
+          "messagingDisabled": "This Instagram account has not enabled third-party access to messages. Ask the account owner to go to Instagram → Settings → Messages and story replies → Message controls → Connected tools, and turn on 'Allow access to messages'. Then try connecting again."
         }
       }
     },

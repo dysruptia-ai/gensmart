@@ -631,7 +631,18 @@ router.delete(
 
       // Stop Meta from delivering this Page's events to us (best effort)
       const cfg = agent.facebook_config ?? {};
-      if (cfg['page_id'] && cfg['page_access_token_encrypted']) {
+      // Skipped when the same Page still feeds an Instagram agent: unsubscribing removes the whole app
+      // subscription for that Page, which would also stop its Instagram webhooks.
+      const pageStillUsed = cfg['page_id']
+        ? (await query(
+            `SELECT 1 FROM agents
+             WHERE instagram_config->>'page_id' = $1
+               AND (instagram_config->>'connected')::boolean = true
+             LIMIT 1`,
+            [String(cfg['page_id'])]
+          )).rows.length > 0
+        : false;
+      if (cfg['page_id'] && cfg['page_access_token_encrypted'] && !pageStillUsed) {
         try {
           await unsubscribePageFromApp(
             String(cfg['page_id']),

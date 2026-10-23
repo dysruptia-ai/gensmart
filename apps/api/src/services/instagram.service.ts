@@ -35,6 +35,21 @@ export function resolveInstagramId(igConfig: Record<string, unknown> | null | un
   return String(id);
 }
 
+/** Thrown when Meta reports the account owner has not enabled "Allow access to messages" (Connected tools). */
+export class InstagramMessagingDisabledError extends Error {
+  constructor() {
+    super('The Instagram account owner has disabled third-party access to messages');
+    this.name = 'InstagramMessagingDisabledError';
+  }
+}
+
+// Substring match on the lower-cased error body: Meta varies the wording slightly
+function isMessagingDisabledError(errorBody: unknown): boolean {
+  const msg = JSON.stringify(errorBody).toLowerCase();
+  return msg.includes('disabled access to instagram direct messages')
+    || msg.includes('disabled third-party access');
+}
+
 function messagesUrl(instagramAccountId: string): string {
   return `${META_BASE_URL}/${encodeURIComponent(instagramAccountId)}/messages`;
 }
@@ -82,6 +97,7 @@ async function postMessage(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+    if (isMessagingDisabledError(errorData)) throw new InstagramMessagingDisabledError();
     throw new Error(`Instagram ${label} error: ${JSON.stringify(errorData)}`);
   }
 }
@@ -261,6 +277,7 @@ export async function listInstagramAccounts(userAccessToken: string): Promise<In
     const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${userAccessToken}` } });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
+      if (isMessagingDisabledError(err)) throw new InstagramMessagingDisabledError();
       throw new Error(`Failed to list Instagram accounts: ${JSON.stringify(err)}`);
     }
     const body = await res.json() as {
@@ -317,6 +334,7 @@ export async function subscribePageToApp(pageId: string, pageAccessToken: string
   );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (isMessagingDisabledError(err)) throw new InstagramMessagingDisabledError();
     console.error('[instagram] Page subscribe failed:', JSON.stringify(err));
     return false;
   }

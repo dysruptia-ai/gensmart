@@ -506,7 +506,12 @@ router.post(
             }
           }
         } catch (err) {
-          console.error(`[conversations] Instagram send error:`, (err as Error).message);
+          const { InstagramMessagingDisabledError } = await import('../services/instagram.service');
+          if (err instanceof InstagramMessagingDisabledError) {
+            console.warn(`[conversations] Instagram: cliente no activó "Permitir acceso a mensajes" — conv: ${conversationId}`);
+          } else {
+            console.error(`[conversations] Instagram send error:`, (err as Error).message);
+          }
           // Non-fatal — message is saved, just couldn't send via Instagram
         }
       }

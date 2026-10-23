@@ -161,6 +161,9 @@ export default function InstagramConfig({ agentId, orgPlan }: InstagramConfigPro
         case 'WEBHOOK_SUBSCRIBE_FAILED':
           msg = tm('errors.webhookSubscribeFailed', { button });
           break;
+        case 'MESSAGING_DISABLED':
+          msg = tm('errors.messagingDisabled');
+          break;
         case 'NOT_CONFIGURED':
           msg = tm('errors.notConfigured');
           break;

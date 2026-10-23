@@ -17,6 +17,7 @@ import {
   subscribePageToApp,
   unsubscribePageFromApp,
   decryptPageAccessToken,
+  InstagramMessagingDisabledError,
   META_BASE_URL,
 } from '../services/instagram.service';
 import type { InstagramAccount } from '../services/instagram.service';
@@ -34,6 +35,10 @@ const ACCOUNT_UNIQUE_INDEX = 'uq_agents_instagram_account_id';
 function isAccountUniqueViolation(err: unknown): boolean {
   const pgErr = err as { code?: string; constraint?: string } | null;
   return pgErr?.code === '23505' && pgErr.constraint === ACCOUNT_UNIQUE_INDEX;
+}
+
+function messagingDisabledError(): AppError {
+  return new AppError(409, 'This Instagram account has not enabled third-party message access', 'MESSAGING_DISABLED');
 }
 
 function instagramAccountAlreadyConnectedError(): AppError {
@@ -477,6 +482,7 @@ router.post(
       try {
         accounts = await listInstagramAccounts(userToken);
       } catch (listErr) {
+        if (listErr instanceof InstagramMessagingDisabledError) throw messagingDisabledError();
         console.error('[instagram-signup]', (listErr as Error).message);
         throw new AppError(502, 'Could not list your Instagram accounts. Please try again.', 'ACCOUNT_LIST_FAILED');
       }
@@ -521,7 +527,13 @@ router.post(
 
       // 7. Subscribe the linked Page to the app's webhook with the PAGE token (the Instagram account's
       //    messages are delivered through its linked Page subscription).
-      const subscribed = await subscribePageToApp(selected.pageId, selected.accessToken);
+      let subscribed: boolean;
+      try {
+        subscribed = await subscribePageToApp(selected.pageId, selected.accessToken);
+      } catch (subscribeErr) {
+        if (subscribeErr instanceof InstagramMessagingDisabledError) throw messagingDisabledError();
+        throw subscribeErr;
+      }
       if (!subscribed) {
         throw new AppError(500, 'Failed to subscribe the Page to webhooks. Check the app permissions and try connecting again.', 'WEBHOOK_SUBSCRIBE_FAILED');
       }

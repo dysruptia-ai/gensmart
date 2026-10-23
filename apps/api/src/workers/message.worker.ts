@@ -31,6 +31,7 @@ import {
   sendTextMessage as sendInstagramTextMessage,
   resolveAccessToken as resolveInstagramAccessToken,
   resolveInstagramId,
+  InstagramMessagingDisabledError,
 } from '../services/instagram.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import {
@@ -1032,7 +1033,11 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         console.warn(`[msg-worker] Instagram not configured for agent ${agentId}`);
       }
     } catch (err) {
-      console.error(`[msg-worker] Instagram send error for conv ${conversationId}:`, (err as Error).message);
+      if (err instanceof InstagramMessagingDisabledError) {
+        console.warn(`[msg-worker] Instagram: cliente no activó "Permitir acceso a mensajes" — conv: ${conversationId}`);
+      } else {
+        console.error(`[msg-worker] Instagram send error for conv ${conversationId}:`, (err as Error).message);
+      }
     }
   } else if (conv.channel === 'web') {
     // Web widget notification via WebSocket (room per session)

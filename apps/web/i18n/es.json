@@ -987,7 +987,8 @@
           "invalidFbToken": "Tu sesión de Facebook no es válida o expiró. Haz clic en \"{button}\" para intentarlo de nuevo.",
           "codeExchangeFailed": "La autorización de Facebook expiró antes de que pudiéramos usarla. Haz clic en \"{button}\" para intentarlo de nuevo.",
           "webhookSubscribeFailed": "No pudimos suscribir la página de tu cuenta a los mensajes de Instagram. Verifica que diste todos los permisos y haz clic en \"{button}\" para intentarlo de nuevo.",
-          "notConfigured": "Instagram no está configurado en este servidor. Contacta a soporte."
+          "notConfigured": "Instagram no está configurado en este servidor. Contacta a soporte.",
+          "messagingDisabled": "Esta cuenta de Instagram no tiene activado el acceso de terceros a los mensajes. Pídele al dueño de la cuenta que vaya a Instagram → Configuración → Mensajes y respuestas a historias → Controles de mensajes → Herramientas conectadas, y active «Permitir acceso a mensajes». Luego intenta conectar de nuevo."
         }
       }
     },
