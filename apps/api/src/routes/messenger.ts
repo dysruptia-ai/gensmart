@@ -372,11 +372,14 @@ router.post(
   }
 );
 
-// Must match, character for character (including the trailing slash), the entry registered in
-// Meta → Facebook Login → Settings → "Valid OAuth Redirect URIs". If it changes there, update it here.
-// Needed here but not in the WhatsApp exchange: Messenger uses a standard Login Configuration
-// ("General"), which enforces redirect_uri validation; WhatsApp Embedded Signup is exempt.
-const MESSENGER_REDIRECT_URI = 'https://www.gensmart.co/';
+// redirect_uri is sent explicitly EMPTY on the code exchange. The code comes from FB.login() (JS SDK,
+// response_type 'code', popup), whose dialog uses an internal relay URI (xd_arbiter) that matches
+// nothing registered in the Meta panel. Already tried and failed with error_subcode 36008:
+//   (a) omitting the parameter, (b) sending the registered URL 'https://www.gensmart.co/'.
+// This third attempt follows a third-party report of the same mechanism; it is not documented by Meta.
+// If it also fails, change the flow (response_type 'token' + fb_exchange_token) instead of varying this.
+// Not needed in the WhatsApp exchange (Embedded Signup is exempt from redirect_uri validation).
+const MESSENGER_REDIRECT_URI = '';
 
 // ── POST /api/messenger/embedded-signup-complete ─────────────────────────────
 // Exchange the Facebook Login code, list the user's Pages, subscribe the chosen Page and connect the agent

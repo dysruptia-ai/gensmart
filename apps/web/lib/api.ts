@@ -41,6 +41,19 @@ async function parseError(res: Response): Promise<ApiError> {
   return new ApiError(res.status, message, code, body.error?.details);
 }
 
+// Only these backend codes (middleware/auth.ts) mean "session expired". Any other 401 is a business
+// error (e.g. CODE_EXCHANGE_FAILED) and must be propagated, never retried. Reads a clone so the
+// original body stays available for parseError.
+async function isSessionExpired(res: Response): Promise<boolean> {
+  try {
+    const body = (await res.clone().json()) as ApiErrorBody;
+    const code = body.error?.code;
+    return code === 'UNAUTHORIZED' || code === 'INVALID_TOKEN';
+  } catch {
+    return false;
+  }
+}
+
 let isRefreshing = false;
 let pendingRequests: Array<() => void> = [];
 
@@ -93,7 +106,7 @@ async function request<T>(
     headers,
   });
 
-  if (res.status === 401 && !retried) {
+  if (res.status === 401 && !retried && (await isSessionExpired(res))) {
     // Don't attempt refresh for auth endpoints — their 401s mean "invalid credentials", not "expired session"
     const isAuthEndpoint = path.startsWith('/api/auth/');
     if (!isAuthEndpoint) {
@@ -138,7 +151,7 @@ async function download(path: string, retried = false): Promise<DownloadResult> 
     headers,
   });
 
-  if (res.status === 401 && !retried) {
+  if (res.status === 401 && !retried && (await isSessionExpired(res))) {
     if (await tryRefresh()) return download(path, true);
     throw new ApiError(401, 'Session expired');
   }
@@ -170,7 +183,7 @@ export const api = {
       headers,
       body: formData,
     }).then(async (res) => {
-      if (res.status === 401) {
+      if (res.status === 401 && (await isSessionExpired(res))) {
         const refreshed = await tryRefresh();
         if (refreshed) {
           const headers2: Record<string, string> = {};
