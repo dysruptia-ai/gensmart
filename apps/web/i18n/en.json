@@ -541,7 +541,9 @@
         "whatsappDesc": "Connect your WhatsApp Business number",
         "whatsappOffHint": "Enable WhatsApp to configure your WhatsApp Business integration.",
         "messenger": "Messenger",
-        "messengerDesc": "Connect your Facebook Page to answer in Messenger"
+        "messengerDesc": "Connect your Facebook Page to answer in Messenger",
+        "instagram": "Instagram",
+        "instagramDesc": "Connect your Instagram professional account to answer DMs"
       },
       "versions": {
         "noVersions": "No published versions yet.",
@@ -944,6 +946,48 @@
           "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
           "webhookSubscribeFailed": "We could not subscribe your Page to Messenger. Check that you granted all permissions and click \"{button}\" to try again.",
           "notConfigured": "Messenger is not configured on this server. Contact support."
+        }
+      },
+      "instagramConfig": {
+        "gateTitle": "Instagram Requires Starter Plan",
+        "gateDesc": "Connect your Instagram professional account to deploy this agent on Instagram DM. Available on Starter, Pro, and Enterprise plans.",
+        "upgrade": "Upgrade Plan",
+        "statusLabel": "Instagram status",
+        "connected": "Connected",
+        "notConnected": "Not Connected",
+        "accountInfo": "Instagram account",
+        "disconnectButton": "Disconnect Instagram",
+        "quickSetupTitle": "Connect your Instagram account",
+        "quickSetupDesc": "Connect using Facebook Login — we'll list the Instagram professional accounts linked to the Facebook Pages you manage and connect the one you choose to this agent. The account must be Business or Creator.",
+        "connectInstagram": "Connect Instagram",
+        "unavailable": "Instagram connection is not available on this server yet.",
+        "selectAccount": "Select the Instagram account to connect",
+        "cancelSelection": "Cancel",
+        "toast": {
+          "disconnectConfirm": "Disconnect Instagram from this agent? The agent will no longer receive or send Instagram messages.",
+          "disconnected": "Instagram disconnected",
+          "disconnectFailed": "Failed to disconnect",
+          "sdkNotLoaded": "Facebook SDK not loaded. Please refresh and try again.",
+          "signupConnected": "Instagram connected! Account: {account}",
+          "abortGeneric": "Connection cancelled. Click \"{button}\" to try again and complete all steps in the Facebook popup."
+        },
+        "steps": {
+          "connecting": "Connecting your Instagram account...",
+          "connectingAccount": "Subscribing the selected account..."
+        },
+        "errors": {
+          "generic": "Failed to connect Instagram.",
+          "noAccounts": "We could not find any Instagram professional account linked to a Facebook Page you manage. Make sure the account is Business or Creator, linked to your Page, and that you granted access in the Facebook popup.",
+          "accountListFailed": "We could not list your Instagram accounts. Please try again.",
+          "sessionExpired": "Connection session expired. Click \"{button}\" to start again.",
+          "sessionUnavailable": "We could not start the connection session. Please try again.",
+          "planLimit": "Instagram requires a Starter plan or higher.",
+          "accountAlreadyConnected": "This Instagram account is already connected to another agent. Choose a different one.",
+          "invalidSelection": "The selected Instagram account is not valid. Click \"{button}\" to start again.",
+          "invalidFbToken": "Your Facebook session is invalid or expired. Click \"{button}\" to try again.",
+          "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
+          "webhookSubscribeFailed": "We could not subscribe your account's Page to Instagram messages. Check that you granted all permissions and click \"{button}\" to try again.",
+          "notConfigured": "Instagram is not configured on this server. Contact support."
         }
       }
     },

@@ -525,6 +525,11 @@
   color: #0084FF;
 }
 
+.instagramIcon {
+  flex-shrink: 0;
+  color: #E4405F;
+}
+
 .channelDesc {
   font-size: var(--font-xs);
   color: var(--color-text-secondary);

@@ -38,7 +38,7 @@ export const agentCreateSchema = z.object({
   temperature: z.number().min(0).max(2).default(0.7),
   maxTokens: z.number().int().min(1).max(8192).default(1024),
   contextWindowMessages: z.number().int().min(1).max(100).default(15),
-  channels: z.array(z.enum(['web', 'whatsapp', 'facebook'])).default([]),
+  channels: z.array(z.enum(['web', 'whatsapp', 'facebook', 'instagram'])).default([]),
   messageBufferSeconds: z.number().int().min(0).max(30).default(5),
   variables: z.array(variableSchema).optional(),
   webConfig: z.record(z.unknown()).optional(),

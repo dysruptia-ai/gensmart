@@ -27,6 +27,11 @@ import {
   sendTextMessage as sendMessengerTextMessage,
   resolveAccessToken as resolveMessengerAccessToken,
 } from '../services/messenger.service';
+import {
+  sendTextMessage as sendInstagramTextMessage,
+  resolveAccessToken as resolveInstagramAccessToken,
+  resolveInstagramId,
+} from '../services/instagram.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import {
   requestHumanHandoffToolDef,
@@ -996,6 +1001,38 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       }
     } catch (err) {
       console.error(`[msg-worker] Messenger send error for conv ${conversationId}:`, (err as Error).message);
+    }
+  } else if (conv.channel === 'instagram') {
+    try {
+      const agentIgResult = await query<{ instagram_config: Record<string, unknown> | null }>(
+        'SELECT instagram_config FROM agents WHERE id = $1',
+        [agentId]
+      );
+      const igConfig = agentIgResult.rows[0]?.instagram_config;
+
+      if (igConfig?.connected && igConfig?.instagram_id) {
+        const contactResult = await query<{ instagram_psid: string | null }>(
+          'SELECT instagram_psid FROM contacts WHERE id = $1',
+          [conv.contact_id]
+        );
+        const igsid = contactResult.rows[0]?.instagram_psid;
+
+        if (igsid) {
+          await sendInstagramTextMessage(
+            resolveInstagramAccessToken(igConfig),
+            resolveInstagramId(igConfig),
+            igsid,
+            finalResponse
+          );
+          console.log(`[msg-worker] Instagram message sent to ${igsid.slice(0, 4)}*** conv: ${conversationId}`);
+        } else {
+          console.warn(`[msg-worker] No IGSID for contact — conv: ${conversationId}`);
+        }
+      } else {
+        console.warn(`[msg-worker] Instagram not configured for agent ${agentId}`);
+      }
+    } catch (err) {
+      console.error(`[msg-worker] Instagram send error for conv ${conversationId}:`, (err as Error).message);
     }
   } else if (conv.channel === 'web') {
     // Web widget notification via WebSocket (room per session)

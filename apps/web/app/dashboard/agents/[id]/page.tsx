@@ -22,7 +22,8 @@ import { PromptGenerator } from '@/components/agents/PromptGenerator';
 import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomizer';
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
 import MessengerConfig from '@/components/agents/MessengerConfig/MessengerConfig';
-import { FaWhatsapp, FaFacebookMessenger } from 'react-icons/fa6';
+import InstagramConfig from '@/components/agents/InstagramConfig/InstagramConfig';
+import { FaWhatsapp, FaFacebookMessenger, FaInstagram } from 'react-icons/fa6';
 import HandoffConfigurator from '@/components/agents/HandoffConfigurator/HandoffConfigurator';
 import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
 import PricingConfigurator from '@/components/agents/PricingConfigurator';
@@ -832,6 +833,13 @@ export default function AgentEditorPage() {
                       onChange={(_checked) => toggleChannel('facebook')}
                     />
                   </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span className={styles.fieldLabel}>{t('agents.editor.channels.instagram')}</span>
+                    <Toggle
+                      checked={channels.includes('instagram')}
+                      onChange={(_checked) => toggleChannel('instagram')}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -928,6 +936,31 @@ export default function AgentEditorPage() {
                 {orgPlanLoaded && (
                   <div className={styles.channelBody}>
                     <MessengerConfig agentId={agentId} orgPlan={orgPlan} />
+                  </div>
+                )}
+              </div>
+
+              {/* Instagram */}
+              <div className={styles.channelSection}>
+                <div className={styles.channelHeader}>
+                  <div className={styles.channelToggleRow}>
+                    <div className={styles.channelTitleRow}>
+                      <FaInstagram size={24} className={styles.instagramIcon} aria-hidden="true" />
+                      <div>
+                        <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.instagram')}</div>
+                        <span className={styles.channelDesc}>{t('agents.editor.channels.instagramDesc')}</span>
+                      </div>
+                    </div>
+                    <Toggle
+                      checked={channels.includes('instagram')}
+                      onChange={(_checked) => toggleChannel('instagram')}
+                      disabled={orgPlan === 'free'}
+                    />
+                  </div>
+                </div>
+                {orgPlanLoaded && (
+                  <div className={styles.channelBody}>
+                    <InstagramConfig agentId={agentId} orgPlan={orgPlan} />
                   </div>
                 )}
               </div>

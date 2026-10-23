@@ -484,6 +484,33 @@ router.post(
         }
       }
 
+      // Send via Instagram if channel is instagram (text only, same as Messenger)
+      if (conv.channel === 'instagram') {
+        try {
+          const agentResult = await query<{ instagram_config: Record<string, unknown> | null }>(
+            'SELECT instagram_config FROM agents WHERE id = $1',
+            [conv.agent_id]
+          );
+          const igConfig = agentResult.rows[0]?.instagram_config;
+
+          if (igConfig?.['connected'] && igConfig?.['instagram_id'] && igConfig?.['page_access_token_encrypted']) {
+            const contactResult = await query<{ instagram_psid: string | null }>(
+              'SELECT instagram_psid FROM contacts WHERE id = (SELECT contact_id FROM conversations WHERE id = $1)',
+              [conversationId]
+            );
+            const igsid = contactResult.rows[0]?.instagram_psid;
+
+            if (igsid) {
+              const { sendTextMessage, resolveAccessToken, resolveInstagramId } = await import('../services/instagram.service');
+              await sendTextMessage(resolveAccessToken(igConfig), resolveInstagramId(igConfig), igsid, messageContent);
+            }
+          }
+        } catch (err) {
+          console.error(`[conversations] Instagram send error:`, (err as Error).message);
+          // Non-fatal — message is saved, just couldn't send via Instagram
+        }
+      }
+
       // Emit WebSocket events
       try {
         const io = getIO();

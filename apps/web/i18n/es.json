@@ -541,7 +541,9 @@
         "whatsappDesc": "Conecta tu número de WhatsApp Business",
         "whatsappOffHint": "Activa WhatsApp para configurar tu integración de WhatsApp Business.",
         "messenger": "Messenger",
-        "messengerDesc": "Conecta tu página de Facebook para responder en Messenger"
+        "messengerDesc": "Conecta tu página de Facebook para responder en Messenger",
+        "instagram": "Instagram",
+        "instagramDesc": "Conecta tu cuenta profesional de Instagram para responder mensajes directos"
       },
       "versions": {
         "noVersions": "Aún no hay versiones publicadas.",
@@ -944,6 +946,48 @@
           "codeExchangeFailed": "La autorización de Facebook expiró antes de que pudiéramos usarla. Haz clic en \"{button}\" para intentarlo de nuevo.",
           "webhookSubscribeFailed": "No pudimos suscribir tu página a Messenger. Verifica que diste todos los permisos y haz clic en \"{button}\" para intentarlo de nuevo.",
           "notConfigured": "Messenger no está configurado en este servidor. Contacta a soporte."
+        }
+      },
+      "instagramConfig": {
+        "gateTitle": "Instagram requiere el plan Starter",
+        "gateDesc": "Conecta tu cuenta profesional de Instagram para desplegar este agente en los mensajes directos de Instagram. Disponible en los planes Starter, Pro y Enterprise.",
+        "upgrade": "Mejorar plan",
+        "statusLabel": "Estado de Instagram",
+        "connected": "Conectado",
+        "notConnected": "No conectado",
+        "accountInfo": "Cuenta de Instagram",
+        "disconnectButton": "Desconectar Instagram",
+        "quickSetupTitle": "Conecta tu cuenta de Instagram",
+        "quickSetupDesc": "Conéctate con Facebook Login: mostraremos las cuentas profesionales de Instagram vinculadas a las páginas de Facebook que administras y conectaremos la que elijas a este agente. La cuenta debe ser Business o Creator.",
+        "connectInstagram": "Conectar Instagram",
+        "unavailable": "La conexión con Instagram aún no está disponible en este servidor.",
+        "selectAccount": "Selecciona la cuenta de Instagram que quieres conectar",
+        "cancelSelection": "Cancelar",
+        "toast": {
+          "disconnectConfirm": "¿Desconectar Instagram de este agente? El agente dejará de recibir y enviar mensajes de Instagram.",
+          "disconnected": "Instagram desconectado",
+          "disconnectFailed": "No se pudo desconectar",
+          "sdkNotLoaded": "El SDK de Facebook no se cargó. Actualiza la página e inténtalo de nuevo.",
+          "signupConnected": "¡Instagram conectado! Cuenta: {account}",
+          "abortGeneric": "Conexión cancelada. Haz clic en \"{button}\" para intentarlo de nuevo y completa todos los pasos en la ventana emergente de Facebook."
+        },
+        "steps": {
+          "connecting": "Conectando tu cuenta de Instagram...",
+          "connectingAccount": "Suscribiendo la cuenta seleccionada..."
+        },
+        "errors": {
+          "generic": "No se pudo conectar Instagram.",
+          "noAccounts": "No encontramos ninguna cuenta profesional de Instagram vinculada a una página de Facebook que administres. Asegúrate de que la cuenta sea Business o Creator, esté vinculada a tu página y de haber dado acceso en la ventana emergente de Facebook.",
+          "accountListFailed": "No pudimos listar tus cuentas de Instagram. Inténtalo de nuevo.",
+          "sessionExpired": "La sesión de conexión expiró. Haz clic en \"{button}\" para empezar de nuevo.",
+          "sessionUnavailable": "No pudimos iniciar la sesión de conexión. Inténtalo de nuevo.",
+          "planLimit": "Instagram requiere el plan Starter o superior.",
+          "accountAlreadyConnected": "Esta cuenta de Instagram ya está conectada a otro agente. Elige una diferente.",
+          "invalidSelection": "La cuenta de Instagram seleccionada no es válida. Haz clic en \"{button}\" para empezar de nuevo.",
+          "invalidFbToken": "Tu sesión de Facebook no es válida o expiró. Haz clic en \"{button}\" para intentarlo de nuevo.",
+          "codeExchangeFailed": "La autorización de Facebook expiró antes de que pudiéramos usarla. Haz clic en \"{button}\" para intentarlo de nuevo.",
+          "webhookSubscribeFailed": "No pudimos suscribir la página de tu cuenta a los mensajes de Instagram. Verifica que diste todos los permisos y haz clic en \"{button}\" para intentarlo de nuevo.",
+          "notConfigured": "Instagram no está configurado en este servidor. Contacta a soporte."
         }
       }
     },
