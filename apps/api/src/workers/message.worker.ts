@@ -33,6 +33,10 @@ import {
   resolveInstagramId,
   InstagramMessagingDisabledError,
 } from '../services/instagram.service';
+import {
+  sendTelegramMessage,
+  resolveBotToken as resolveTelegramBotToken,
+} from '../services/telegram.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import {
   requestHumanHandoffToolDef,
@@ -387,8 +391,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     llmTools.push(captureVariableToolDef);
   }
 
-  // send_media native tool — available on WhatsApp, Messenger and Web
-  if (conv.channel === 'whatsapp' || conv.channel === 'web' || conv.channel === 'facebook') {
+  // send_media native tool — available on WhatsApp, Messenger, Telegram and Web
+  if (conv.channel === 'whatsapp' || conv.channel === 'web' || conv.channel === 'facebook' || conv.channel === 'telegram') {
     llmTools.push(sendMediaToolDef);
   }
 
@@ -1039,6 +1043,33 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         console.error(`[msg-worker] Instagram send error for conv ${conversationId}:`, (err as Error).message);
       }
     }
+  } else if (conv.channel === 'telegram') {
+    try {
+      const agentTgResult = await query<{ telegram_config: Record<string, unknown> | null }>(
+        'SELECT telegram_config FROM agents WHERE id = $1',
+        [agentId]
+      );
+      const tgConfig = agentTgResult.rows[0]?.telegram_config;
+
+      if (tgConfig?.connected && tgConfig?.bot_id) {
+        const contactResult = await query<{ telegram_chat_id: string | null }>(
+          'SELECT telegram_chat_id FROM contacts WHERE id = $1',
+          [conv.contact_id]
+        );
+        const chatId = contactResult.rows[0]?.telegram_chat_id;
+
+        if (chatId) {
+          await sendTelegramMessage(resolveTelegramBotToken(tgConfig), chatId, finalResponse);
+          console.log(`[msg-worker] Telegram message sent to ${chatId.slice(0, 4)}*** conv: ${conversationId}`);
+        } else {
+          console.warn(`[msg-worker] No chat_id for contact — conv: ${conversationId}`);
+        }
+      } else {
+        console.warn(`[msg-worker] Telegram not configured for agent ${agentId}`);
+      }
+    } catch (err) {
+      console.error(`[msg-worker] Telegram send error for conv ${conversationId}:`, (err as Error).message);
+    }
   } else if (conv.channel === 'web') {
     // Web widget notification via WebSocket (room per session)
     try {
@@ -1113,6 +1144,8 @@ async function executeTool(
       waba_config: Record<string, unknown> | null;
       contact_psid: string | null;
       fb_config: Record<string, unknown> | null;
+      contact_telegram_chat_id: string | null;
+      tg_config: Record<string, unknown> | null;
     }>(
       `SELECT
          c.channel,
@@ -1120,7 +1153,9 @@ async function executeTool(
          co.phone AS contact_phone,
          a.whatsapp_config AS waba_config,
          co.facebook_psid AS contact_psid,
-         a.facebook_config AS fb_config
+         a.facebook_config AS fb_config,
+         co.telegram_chat_id AS contact_telegram_chat_id,
+         a.telegram_config AS tg_config
        FROM conversations c
        JOIN agents a ON a.id = c.agent_id
        LEFT JOIN contacts co ON co.id = c.contact_id
@@ -1135,7 +1170,7 @@ async function executeTool(
       conversationId,
       agentId: ctx.agent_id,
       organizationId,
-      channel: ctx.channel as 'whatsapp' | 'web' | 'facebook',
+      channel: ctx.channel as 'whatsapp' | 'web' | 'facebook' | 'telegram',
     };
 
     if (
@@ -1155,6 +1190,14 @@ async function executeTool(
     ) {
       mediaContext.pageAccessToken = resolveMessengerAccessToken(ctx.fb_config);
       mediaContext.recipientPsid = ctx.contact_psid;
+    } else if (
+      ctx.channel === 'telegram' &&
+      ctx.tg_config?.connected &&
+      ctx.tg_config?.bot_id &&
+      ctx.contact_telegram_chat_id
+    ) {
+      mediaContext.telegramBotToken = resolveTelegramBotToken(ctx.tg_config);
+      mediaContext.telegramChatId = ctx.contact_telegram_chat_id;
     }
 
     const result = await handleSendMedia(args, mediaContext);

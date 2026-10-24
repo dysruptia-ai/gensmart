@@ -10,6 +10,11 @@ import {
   sendDocumentMessage as sendMessengerDocument,
   sendVideoMessage as sendMessengerVideo,
 } from './messenger.service';
+import {
+  sendTelegramPhoto,
+  sendTelegramDocument,
+  sendTelegramVideo,
+} from './telegram.service';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { env } from '../config/env';
@@ -63,7 +68,7 @@ export interface SendMediaContext {
   conversationId: string;
   agentId: string;
   organizationId: string;
-  channel: 'whatsapp' | 'web' | 'facebook';
+  channel: 'whatsapp' | 'web' | 'facebook' | 'telegram';
   // WhatsApp-specific
   phoneNumberId?: string;
   accessToken?: string;
@@ -71,6 +76,9 @@ export interface SendMediaContext {
   // Messenger-specific
   pageAccessToken?: string;
   recipientPsid?: string;
+  // Telegram-specific
+  telegramBotToken?: string;
+  telegramChatId?: string;
 }
 
 export interface SendMediaResult {
@@ -179,6 +187,18 @@ export async function handleSendMedia(
         await sendMessengerDocument(context.pageAccessToken, context.recipientPsid, url, caption);
       } else if (type === 'video') {
         await sendMessengerVideo(context.pageAccessToken, context.recipientPsid, url, caption);
+      }
+    } else if (context.channel === 'telegram') {
+      if (!context.telegramBotToken || !context.telegramChatId) {
+        throw new Error('Telegram context missing (telegramBotToken or telegramChatId)');
+      }
+
+      if (type === 'image') {
+        await sendTelegramPhoto(context.telegramBotToken, context.telegramChatId, proxiedUrl, caption);
+      } else if (type === 'document') {
+        await sendTelegramDocument(context.telegramBotToken, context.telegramChatId, url, caption);
+      } else if (type === 'video') {
+        await sendTelegramVideo(context.telegramBotToken, context.telegramChatId, url, caption);
       }
     } else if (context.channel !== 'web') {
       throw new Error(`Unsupported channel: ${context.channel}`);

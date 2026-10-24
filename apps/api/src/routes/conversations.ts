@@ -484,6 +484,33 @@ router.post(
         }
       }
 
+      // Send via Telegram if channel is telegram (text only, same as Messenger)
+      if (conv.channel === 'telegram') {
+        try {
+          const agentResult = await query<{ telegram_config: Record<string, unknown> | null }>(
+            'SELECT telegram_config FROM agents WHERE id = $1',
+            [conv.agent_id]
+          );
+          const tgConfig = agentResult.rows[0]?.telegram_config;
+
+          if (tgConfig?.['connected'] && tgConfig?.['bot_id'] && tgConfig?.['bot_token_encrypted']) {
+            const contactResult = await query<{ telegram_chat_id: string | null }>(
+              'SELECT telegram_chat_id FROM contacts WHERE id = (SELECT contact_id FROM conversations WHERE id = $1)',
+              [conversationId]
+            );
+            const chatId = contactResult.rows[0]?.telegram_chat_id;
+
+            if (chatId) {
+              const { sendTelegramMessage, resolveBotToken } = await import('../services/telegram.service');
+              await sendTelegramMessage(resolveBotToken(tgConfig), chatId, messageContent);
+            }
+          }
+        } catch (err) {
+          console.error(`[conversations] Telegram send error:`, (err as Error).message);
+          // Non-fatal — message is saved, just couldn't send via Telegram
+        }
+      }
+
       // Send via Instagram if channel is instagram (text only, same as Messenger)
       if (conv.channel === 'instagram') {
         try {
