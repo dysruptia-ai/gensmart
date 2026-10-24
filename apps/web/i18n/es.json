@@ -543,7 +543,9 @@
         "messenger": "Messenger",
         "messengerDesc": "Conecta tu página de Facebook para responder en Messenger",
         "instagram": "Instagram",
-        "instagramDesc": "Conecta tu cuenta profesional de Instagram para responder mensajes directos"
+        "instagramDesc": "Conecta tu cuenta profesional de Instagram para responder mensajes directos",
+        "telegram": "Telegram",
+        "telegramDesc": "Conecta un bot de Telegram para responder los mensajes de tus clientes"
       },
       "versions": {
         "noVersions": "Aún no hay versiones publicadas.",
@@ -989,6 +991,41 @@
           "webhookSubscribeFailed": "No pudimos suscribir la página de tu cuenta a los mensajes de Instagram. Verifica que diste todos los permisos y haz clic en \"{button}\" para intentarlo de nuevo.",
           "notConfigured": "Instagram no está configurado en este servidor. Contacta a soporte.",
           "messagingDisabled": "Esta cuenta de Instagram no tiene activado el acceso de terceros a los mensajes. Pídele al dueño de la cuenta que vaya a Instagram → Configuración → Mensajes y respuestas a historias → Controles de mensajes → Herramientas conectadas, y active «Permitir acceso a mensajes». Luego intenta conectar de nuevo."
+        }
+      },
+      "telegramConfig": {
+        "statusLabel": "Estado de Telegram",
+        "connected": "Conectado",
+        "notConnected": "No conectado",
+        "botInfo": "Bot de Telegram",
+        "tokenInfo": "Token del bot",
+        "disconnectButton": "Desconectar Telegram",
+        "setupTitle": "Conecta tu bot de Telegram",
+        "setupDesc": "Obtén tu Bot Token escribiéndole a @BotFather en Telegram: envía /newbot, sigue los pasos y copia el token que te entrega. Luego pégalo abajo.",
+        "tokenLabel": "Token del bot",
+        "tokenPlaceholder": "123456789:AAH...",
+        "tokenHint": "Tu token se guarda cifrado y no se vuelve a mostrar.",
+        "connectButton": "Conectar Telegram",
+        "validation": {
+          "required": "Pega el token de tu bot para continuar.",
+          "format": "Esto no parece un token de bot de Telegram. Debe verse como 123456789:AAH..."
+        },
+        "toast": {
+          "connected": "¡Telegram conectado! Bot: {bot}",
+          "disconnectConfirm": "¿Desconectar Telegram de este agente? El agente dejará de recibir y enviar mensajes de Telegram.",
+          "disconnected": "Telegram desconectado",
+          "disconnectFailed": "No se pudo desconectar"
+        },
+        "steps": {
+          "connecting": "Verificando tu bot y configurando el webhook..."
+        },
+        "errors": {
+          "generic": "No se pudo conectar Telegram. Inténtalo de nuevo.",
+          "invalidBotToken": "Telegram rechazó este token. Verifica que lo copiaste completo desde @BotFather.",
+          "botAlreadyConnected": "Este bot ya está conectado a otro agente. Usa otro bot o desconéctalo primero.",
+          "telegramUnavailable": "No pudimos comunicarnos con Telegram. Inténtalo de nuevo en un momento.",
+          "webhookSetFailed": "Telegram aceptó el token, pero no pudimos configurar el webhook. Inténtalo de nuevo.",
+          "notConfigured": "Telegram no está configurado en este servidor. Contacta a soporte."
         }
       }
     },

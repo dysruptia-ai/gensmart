@@ -1,0 +1,88 @@
+.loadingWrapper {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 560px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-sidebar);
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+}
+
+.statusLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.connectedInfo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  padding: 0 0.25rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+}
+
+.sectionTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.fieldHint {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.maskedToken {
+  font-family: monospace;
+  color: var(--color-text-primary);
+}
+
+.errorBox {
+  padding: 0.625rem 0.875rem;
+  background: var(--color-bg-sidebar);
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  font-size: var(--font-sm);
+  color: var(--color-danger);
+  line-height: 1.5;
+}
+
+.progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  background: var(--color-bg-sidebar);
+  border-radius: 8px;
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+}

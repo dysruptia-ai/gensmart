@@ -530,6 +530,11 @@
   color: #E4405F;
 }
 
+.telegramIcon {
+  flex-shrink: 0;
+  color: #26A5E4;
+}
+
 .channelDesc {
   font-size: var(--font-xs);
   color: var(--color-text-secondary);

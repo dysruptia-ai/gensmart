@@ -23,7 +23,8 @@ import WidgetCustomizer from '@/components/agents/WidgetCustomizer/WidgetCustomi
 import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
 import MessengerConfig from '@/components/agents/MessengerConfig/MessengerConfig';
 import InstagramConfig from '@/components/agents/InstagramConfig/InstagramConfig';
-import { FaWhatsapp, FaFacebookMessenger, FaInstagram } from 'react-icons/fa6';
+import TelegramConfig from '@/components/agents/TelegramConfig/TelegramConfig';
+import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaTelegram } from 'react-icons/fa6';
 import HandoffConfigurator from '@/components/agents/HandoffConfigurator/HandoffConfigurator';
 import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
 import PricingConfigurator from '@/components/agents/PricingConfigurator';
@@ -840,6 +841,13 @@ export default function AgentEditorPage() {
                       onChange={(_checked) => toggleChannel('instagram')}
                     />
                   </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span className={styles.fieldLabel}>{t('agents.editor.channels.telegram')}</span>
+                    <Toggle
+                      checked={channels.includes('telegram')}
+                      onChange={(_checked) => toggleChannel('telegram')}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -963,6 +971,28 @@ export default function AgentEditorPage() {
                     <InstagramConfig agentId={agentId} orgPlan={orgPlan} />
                   </div>
                 )}
+              </div>
+
+              {/* Telegram — no plan gate yet (deliberately available on every plan) */}
+              <div className={styles.channelSection}>
+                <div className={styles.channelHeader}>
+                  <div className={styles.channelToggleRow}>
+                    <div className={styles.channelTitleRow}>
+                      <FaTelegram size={24} className={styles.telegramIcon} aria-hidden="true" />
+                      <div>
+                        <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.telegram')}</div>
+                        <span className={styles.channelDesc}>{t('agents.editor.channels.telegramDesc')}</span>
+                      </div>
+                    </div>
+                    <Toggle
+                      checked={channels.includes('telegram')}
+                      onChange={(_checked) => toggleChannel('telegram')}
+                    />
+                  </div>
+                </div>
+                <div className={styles.channelBody}>
+                  <TelegramConfig agentId={agentId} />
+                </div>
               </div>
             </div>
           </div>
