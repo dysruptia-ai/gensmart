@@ -535,6 +535,11 @@
   color: #26A5E4;
 }
 
+.emailIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
 .channelDesc {
   font-size: var(--font-xs);
   color: var(--color-text-secondary);

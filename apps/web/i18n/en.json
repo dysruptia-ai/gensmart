@@ -545,7 +545,9 @@
         "instagram": "Instagram",
         "instagramDesc": "Connect your Instagram professional account to answer DMs",
         "telegram": "Telegram",
-        "telegramDesc": "Connect a Telegram bot to answer messages from your customers"
+        "telegramDesc": "Connect a Telegram bot to answer messages from your customers",
+        "email": "Email",
+        "emailDesc": "Forward your emails to this agent and let it reply in the same thread"
       },
       "versions": {
         "noVersions": "No published versions yet.",
@@ -1026,6 +1028,52 @@
           "telegramUnavailable": "We could not reach Telegram. Please try again in a moment.",
           "webhookSetFailed": "Telegram accepted the token but we could not set up the webhook. Please try again.",
           "notConfigured": "Telegram is not configured on this server. Contact support."
+        }
+      },
+      "emailConfig": {
+        "gateTitle": "Email Requires Starter Plan",
+        "gateDesc": "Let this agent answer your customers' emails. Available on Starter, Pro, and Enterprise plans.",
+        "upgrade": "Upgrade Plan",
+        "statusLabel": "Email status",
+        "connected": "Active",
+        "notConnected": "Not active",
+        "addressLabel": "Your agent's email address",
+        "copy": "Copy",
+        "copied": "Copied",
+        "addressHint": "This is not a mailbox you log into. Anything sent or forwarded to this address is answered by your agent.",
+        "howTitle": "How to connect your email",
+        "step1": "Copy the address above.",
+        "step2": "In your own email provider (Gmail, Outlook, your domain's mail panel), create an automatic forwarding rule that sends the emails you want answered to that address.",
+        "step3": "Gmail asks you to confirm the forwarding address: the confirmation code arrives as a new conversation in GenSmart. Then send yourself a test email to check the reply.",
+        "settingsTitle": "Reply settings",
+        "fromNameLabel": "Sender name",
+        "fromNamePlaceholder": "Acme Support",
+        "fromNameHint": "Shown as the sender of replies. Leave empty to use the agent's name.",
+        "signatureLabel": "Signature",
+        "signaturePlaceholder": "Best regards,\nThe Acme team\nwww.acme.com",
+        "signatureHint": "Plain text added at the end of every reply. Line breaks are kept.",
+        "autoReplyLabel": "Auto-reply",
+        "autoReplyHint": "Sent once, right when a new email conversation starts. The agent's own answer follows as a separate email.",
+        "autoReplyTextLabel": "Auto-reply message",
+        "autoReplyTextPlaceholder": "Thanks for writing to us! We received your message and will reply shortly.",
+        "activateButton": "Activate email",
+        "saveButton": "Save changes",
+        "disconnectButton": "Deactivate email",
+        "validation": {
+          "autoReplyRequired": "Write the auto-reply message or turn the auto-reply off."
+        },
+        "toast": {
+          "connected": "Email activated",
+          "saved": "Email settings saved",
+          "disconnectConfirm": "Deactivate email for this agent? It will stop answering emails sent to its address.",
+          "disconnected": "Email deactivated",
+          "disconnectFailed": "Failed to deactivate"
+        },
+        "errors": {
+          "generic": "Something went wrong with the email channel. Please try again.",
+          "planLimit": "Email requires the Starter plan or higher.",
+          "notConfigured": "Email is not configured on this server. Contact support.",
+          "copyFailed": "Could not copy the address. Select it and copy it manually."
         }
       }
     },

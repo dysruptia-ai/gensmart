@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useParams, usePathname } from 'next/navigation';
 import {
-  Globe, Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText,
+  Globe, Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText, Mail,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { PLAN_LIMITS, type HandoffConfig } from '@gensmart/shared';
@@ -24,6 +24,7 @@ import WhatsAppConfig from '@/components/agents/WhatsAppConfig/WhatsAppConfig';
 import MessengerConfig from '@/components/agents/MessengerConfig/MessengerConfig';
 import InstagramConfig from '@/components/agents/InstagramConfig/InstagramConfig';
 import TelegramConfig from '@/components/agents/TelegramConfig/TelegramConfig';
+import EmailConfig from '@/components/agents/EmailConfig/EmailConfig';
 import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaTelegram } from 'react-icons/fa6';
 import HandoffConfigurator from '@/components/agents/HandoffConfigurator/HandoffConfigurator';
 import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
@@ -848,6 +849,14 @@ export default function AgentEditorPage() {
                       onChange={(_checked) => toggleChannel('telegram')}
                     />
                   </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span className={styles.fieldLabel}>{t('agents.editor.channels.email')}</span>
+                    <Toggle
+                      checked={channels.includes('email')}
+                      onChange={(_checked) => toggleChannel('email')}
+                      disabled={orgPlan === 'free'}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -993,6 +1002,31 @@ export default function AgentEditorPage() {
                 <div className={styles.channelBody}>
                   <TelegramConfig agentId={agentId} />
                 </div>
+              </div>
+
+              {/* Email */}
+              <div className={styles.channelSection}>
+                <div className={styles.channelHeader}>
+                  <div className={styles.channelToggleRow}>
+                    <div className={styles.channelTitleRow}>
+                      <Mail size={24} className={styles.emailIcon} aria-hidden="true" />
+                      <div>
+                        <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.email')}</div>
+                        <span className={styles.channelDesc}>{t('agents.editor.channels.emailDesc')}</span>
+                      </div>
+                    </div>
+                    <Toggle
+                      checked={channels.includes('email')}
+                      onChange={(_checked) => toggleChannel('email')}
+                      disabled={orgPlan === 'free'}
+                    />
+                  </div>
+                </div>
+                {orgPlanLoaded && (
+                  <div className={styles.channelBody}>
+                    <EmailConfig agentId={agentId} orgPlan={orgPlan} />
+                  </div>
+                )}
               </div>
             </div>
           </div>

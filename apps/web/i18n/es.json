@@ -545,7 +545,9 @@
         "instagram": "Instagram",
         "instagramDesc": "Conecta tu cuenta profesional de Instagram para responder mensajes directos",
         "telegram": "Telegram",
-        "telegramDesc": "Conecta un bot de Telegram para responder los mensajes de tus clientes"
+        "telegramDesc": "Conecta un bot de Telegram para responder los mensajes de tus clientes",
+        "email": "Email",
+        "emailDesc": "Reenvía tus correos a este agente y deja que responda en el mismo hilo"
       },
       "versions": {
         "noVersions": "Aún no hay versiones publicadas.",
@@ -1026,6 +1028,52 @@
           "telegramUnavailable": "No pudimos comunicarnos con Telegram. Inténtalo de nuevo en un momento.",
           "webhookSetFailed": "Telegram aceptó el token, pero no pudimos configurar el webhook. Inténtalo de nuevo.",
           "notConfigured": "Telegram no está configurado en este servidor. Contacta a soporte."
+        }
+      },
+      "emailConfig": {
+        "gateTitle": "Email requiere el plan Starter",
+        "gateDesc": "Deja que este agente responda los correos de tus clientes. Disponible en los planes Starter, Pro y Enterprise.",
+        "upgrade": "Mejorar plan",
+        "statusLabel": "Estado del email",
+        "connected": "Activo",
+        "notConnected": "No activo",
+        "addressLabel": "Dirección de correo de tu agente",
+        "copy": "Copiar",
+        "copied": "Copiada",
+        "addressHint": "No es un buzón al que inicies sesión. Todo lo que se envíe o reenvíe a esta dirección lo responde tu agente.",
+        "howTitle": "Cómo conectar tu correo",
+        "step1": "Copia la dirección de arriba.",
+        "step2": "En tu propio proveedor de correo (Gmail, Outlook, el panel de correo de tu dominio), crea una regla de reenvío automático que envíe a esa dirección los correos que quieras que se respondan.",
+        "step3": "Gmail te pide confirmar la dirección de reenvío: el código de confirmación llega como una conversación nueva en GenSmart. Luego envíate un correo de prueba para ver la respuesta.",
+        "settingsTitle": "Ajustes de respuesta",
+        "fromNameLabel": "Nombre del remitente",
+        "fromNamePlaceholder": "Soporte Acme",
+        "fromNameHint": "Se muestra como remitente de las respuestas. Déjalo vacío para usar el nombre del agente.",
+        "signatureLabel": "Firma",
+        "signaturePlaceholder": "Saludos cordiales,\nEl equipo de Acme\nwww.acme.com",
+        "signatureHint": "Texto plano que se añade al final de cada respuesta. Se respetan los saltos de línea.",
+        "autoReplyLabel": "Respuesta automática",
+        "autoReplyHint": "Se envía una sola vez, al iniciar una conversación nueva por correo. La respuesta del agente llega después como un correo aparte.",
+        "autoReplyTextLabel": "Mensaje de respuesta automática",
+        "autoReplyTextPlaceholder": "¡Gracias por escribirnos! Recibimos tu mensaje y te responderemos en breve.",
+        "activateButton": "Activar email",
+        "saveButton": "Guardar cambios",
+        "disconnectButton": "Desactivar email",
+        "validation": {
+          "autoReplyRequired": "Escribe el mensaje de respuesta automática o desactívala."
+        },
+        "toast": {
+          "connected": "Email activado",
+          "saved": "Ajustes de email guardados",
+          "disconnectConfirm": "¿Desactivar el email de este agente? Dejará de responder los correos enviados a su dirección.",
+          "disconnected": "Email desactivado",
+          "disconnectFailed": "No se pudo desactivar"
+        },
+        "errors": {
+          "generic": "Algo salió mal con el canal de email. Inténtalo de nuevo.",
+          "planLimit": "Email requiere el plan Starter o superior.",
+          "notConfigured": "El email no está configurado en este servidor. Contacta a soporte.",
+          "copyFailed": "No se pudo copiar la dirección. Selecciónala y cópiala manualmente."
         }
       }
     },
