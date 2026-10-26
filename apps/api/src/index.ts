@@ -76,6 +76,9 @@ app.use('/api/messenger/webhook', express.raw({ type: 'application/json' }));
 // Instagram webhook — same Meta app secret, same raw-body requirement
 app.use('/api/instagram/webhook', express.raw({ type: 'application/json' }));
 
+// Email webhook (Resend/Svix) — signature is computed over the raw body
+app.use('/api/email/webhook', express.raw({ type: 'application/json' }));
+
 // Stripe webhook — registered BEFORE express.json() so the stream is consumed
 // as a raw Buffer by express.raw(). The handler is inline (not via a router)
 // to guarantee no other middleware intercepts the body first.

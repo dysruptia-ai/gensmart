@@ -76,6 +76,11 @@ export const env = {
   SMTP_USER: process.env['SMTP_USER'] ?? '',
   SMTP_PASS: process.env['SMTP_PASS'] ?? '',
   SMTP_FROM: optionalEnv('SMTP_FROM', 'noreply@gensmart.co'),
+  // Email channel (Resend Inbound + API). The API key falls back to SMTP_PASS when SMTP is Resend's relay,
+  // since that password IS the Resend key. It needs full access (receiving.get is not a sending-only scope).
+  RESEND_API_KEY: process.env['RESEND_API_KEY'] ?? (process.env['SMTP_HOST'] === 'smtp.resend.com' ? process.env['SMTP_PASS'] ?? '' : ''),
+  RESEND_WEBHOOK_SECRET: process.env['RESEND_WEBHOOK_SECRET'] ?? '',
+  EMAIL_INBOUND_DOMAIN: optionalEnv('EMAIL_INBOUND_DOMAIN', 'inbound.gensmart.co').toLowerCase(),
 };
 
 // Keep requireEnv available for future use

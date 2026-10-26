@@ -511,6 +511,17 @@ router.post(
         }
       }
 
+      // Send via Email if channel is email (continues the prospect's thread)
+      if (conv.channel === 'email') {
+        try {
+          const { sendEmailToConversation } = await import('../services/email.service');
+          await sendEmailToConversation(conversationId, conv.agent_id, messageContent);
+        } catch (err) {
+          console.error(`[conversations] Email send error:`, (err as Error).message);
+          // Non-fatal — message is saved, just couldn't send via email
+        }
+      }
+
       // Send via Instagram if channel is instagram (text only, same as Messenger)
       if (conv.channel === 'instagram') {
         try {

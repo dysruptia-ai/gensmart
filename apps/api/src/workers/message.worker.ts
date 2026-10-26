@@ -37,6 +37,7 @@ import {
   sendTelegramMessage,
   resolveBotToken as resolveTelegramBotToken,
 } from '../services/telegram.service';
+import { sendEmailToConversation } from '../services/email.service';
 import { sendMediaToolDef, handleSendMedia, type SendMediaContext } from '../services/send-media.service';
 import {
   requestHumanHandoffToolDef,
@@ -1069,6 +1070,13 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       }
     } catch (err) {
       console.error(`[msg-worker] Telegram send error for conv ${conversationId}:`, (err as Error).message);
+    }
+  } else if (conv.channel === 'email') {
+    try {
+      await sendEmailToConversation(conversationId, agentId, finalResponse);
+      console.log(`[msg-worker] Email reply sent — conv: ${conversationId}`);
+    } catch (err) {
+      console.error(`[msg-worker] Email send error for conv ${conversationId}:`, (err as Error).message);
     }
   } else if (conv.channel === 'web') {
     // Web widget notification via WebSocket (room per session)
