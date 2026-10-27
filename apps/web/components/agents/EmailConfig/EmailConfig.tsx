@@ -213,6 +213,17 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
           </div>
           <p className={styles.fieldHint}>{tm('addressHint')}</p>
 
+          <div className={styles.useCases}>
+            <div className={styles.useCase}>
+              <div className={styles.useCaseTitle}>{tm('useCaseDirectTitle')}</div>
+              <p className={styles.fieldHint}>{tm('useCaseDirectDesc')}</p>
+            </div>
+            <div className={styles.useCase}>
+              <div className={styles.useCaseTitle}>{tm('useCaseFormTitle')}</div>
+              <p className={styles.fieldHint}>{tm('useCaseFormDesc')}</p>
+            </div>
+          </div>
+
           <div className={styles.sectionTitle}>{tm('howTitle')}</div>
           <ol className={styles.steps}>
             <li>{tm('step1')}</li>

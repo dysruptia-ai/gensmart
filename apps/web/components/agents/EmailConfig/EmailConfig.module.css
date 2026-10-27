@@ -122,6 +122,28 @@
   user-select: all;
 }
 
+.useCases {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.useCase {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--color-bg-sidebar);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.useCaseTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
 .steps {
   margin: 0;
   padding-left: 1.25rem;
