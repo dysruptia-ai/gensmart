@@ -46,11 +46,24 @@
   line-height: 1.5;
 }
 
-.wrapper {
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.column {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-  max-width: 560px;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .statusRow {

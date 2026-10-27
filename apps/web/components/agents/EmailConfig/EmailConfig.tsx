@@ -173,131 +173,135 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
   }
 
   return (
-    <div className={styles.wrapper}>
-      {/* Connection status */}
-      <div className={styles.statusRow}>
-        <div className={styles.statusLabel}>
-          <Mail size={16} aria-hidden="true" />
-          {tm('statusLabel')}
+    <div className={styles.layout}>
+      <div className={styles.column}>
+        {/* Connection status */}
+        <div className={styles.statusRow}>
+          <div className={styles.statusLabel}>
+            <Mail size={16} aria-hidden="true" />
+            {tm('statusLabel')}
+          </div>
+          <Badge variant={status.connected ? 'success' : 'neutral'} size="sm">
+            {status.connected ? tm('connected') : tm('notConnected')}
+          </Badge>
         </div>
-        <Badge variant={status.connected ? 'success' : 'neutral'} size="sm">
-          {status.connected ? tm('connected') : tm('notConnected')}
-        </Badge>
-      </div>
 
-      {!status.serverConfigured && (
-        <div className={styles.errorBox} role="alert">{tm('errors.notConfigured')}</div>
-      )}
+        {!status.serverConfigured && (
+          <div className={styles.errorBox} role="alert">{tm('errors.notConfigured')}</div>
+        )}
 
-      {/* Agent address + forwarding instructions */}
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>{tm('addressLabel')}</div>
-        <div className={styles.addressRow}>
-          <code className={styles.address}>{status.inboundAddress}</code>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            icon={copied ? Check : Copy}
-            onClick={handleCopy}
-          >
-            {copied ? tm('copied') : tm('copy')}
-          </Button>
+        {/* Agent address + forwarding instructions */}
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>{tm('addressLabel')}</div>
+          <div className={styles.addressRow}>
+            <code className={styles.address}>{status.inboundAddress}</code>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              icon={copied ? Check : Copy}
+              onClick={handleCopy}
+            >
+              {copied ? tm('copied') : tm('copy')}
+            </Button>
+          </div>
+          <p className={styles.fieldHint}>{tm('addressHint')}</p>
+
+          <div className={styles.sectionTitle}>{tm('howTitle')}</div>
+          <ol className={styles.steps}>
+            <li>{tm('step1')}</li>
+            <li>{tm('step2')}</li>
+            <li>{tm('step3')}</li>
+          </ol>
         </div>
-        <p className={styles.fieldHint}>{tm('addressHint')}</p>
-
-        <div className={styles.sectionTitle}>{tm('howTitle')}</div>
-        <ol className={styles.steps}>
-          <li>{tm('step1')}</li>
-          <li>{tm('step2')}</li>
-          <li>{tm('step3')}</li>
-        </ol>
       </div>
 
       {/* Settings */}
-      <form className={styles.section} onSubmit={handleSave} noValidate>
-        <div className={styles.sectionTitle}>{tm('settingsTitle')}</div>
+      <div className={styles.column}>
+        <form className={styles.section} onSubmit={handleSave} noValidate>
+          <div className={styles.sectionTitle}>{tm('settingsTitle')}</div>
 
-        <Input
-          id={`email-from-name-${agentId}`}
-          label={tm('fromNameLabel')}
-          placeholder={tm('fromNamePlaceholder')}
-          value={replyFromName}
-          onChange={(e) => setReplyFromName(e.target.value)}
-          hint={tm('fromNameHint')}
-          maxLength={60}
-          disabled={saving}
-        />
-
-        <div className={styles.field}>
-          <label className={styles.label} htmlFor={`email-signature-${agentId}`}>{tm('signatureLabel')}</label>
-          <textarea
-            id={`email-signature-${agentId}`}
-            className={styles.textarea}
-            rows={4}
-            value={signature}
-            onChange={(e) => setSignature(e.target.value)}
-            placeholder={tm('signaturePlaceholder')}
-            maxLength={MAX_SIGNATURE}
+          <Input
+            id={`email-from-name-${agentId}`}
+            label={tm('fromNameLabel')}
+            placeholder={tm('fromNamePlaceholder')}
+            value={replyFromName}
+            onChange={(e) => setReplyFromName(e.target.value)}
+            hint={tm('fromNameHint')}
+            maxLength={60}
             disabled={saving}
           />
-          <span className={styles.fieldHint}>{tm('signatureHint')}</span>
-        </div>
 
-        <div className={styles.toggleRow}>
-          <div>
-            <div className={styles.label}>{tm('autoReplyLabel')}</div>
-            <span className={styles.fieldHint}>{tm('autoReplyHint')}</span>
-          </div>
-          <Toggle checked={autoReplyEnabled} onChange={setAutoReplyEnabled} disabled={saving} />
-        </div>
-
-        {autoReplyEnabled && (
           <div className={styles.field}>
-            <label className={styles.label} htmlFor={`email-autoreply-${agentId}`}>{tm('autoReplyTextLabel')}</label>
+            <label className={styles.label} htmlFor={`email-signature-${agentId}`}>{tm('signatureLabel')}</label>
             <textarea
-              id={`email-autoreply-${agentId}`}
+              id={`email-signature-${agentId}`}
               className={styles.textarea}
               rows={4}
-              value={autoReplyText}
-              onChange={(e) => setAutoReplyText(e.target.value)}
-              placeholder={tm('autoReplyTextPlaceholder')}
-              maxLength={MAX_AUTO_REPLY}
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+              placeholder={tm('signaturePlaceholder')}
+              maxLength={MAX_SIGNATURE}
               disabled={saving}
-              aria-invalid={touched && autoReplyMissing}
             />
-            {touched && autoReplyMissing && (
-              <span className={styles.fieldError}>{tm('validation.autoReplyRequired')}</span>
+            <span className={styles.fieldHint}>{tm('signatureHint')}</span>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div>
+              <div className={styles.label}>{tm('autoReplyLabel')}</div>
+              <span className={styles.fieldHint}>{tm('autoReplyHint')}</span>
+            </div>
+            <Toggle checked={autoReplyEnabled} onChange={setAutoReplyEnabled} disabled={saving} />
+          </div>
+
+          {autoReplyEnabled && (
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor={`email-autoreply-${agentId}`}>{tm('autoReplyTextLabel')}</label>
+              <textarea
+                id={`email-autoreply-${agentId}`}
+                className={styles.textarea}
+                rows={4}
+                value={autoReplyText}
+                onChange={(e) => setAutoReplyText(e.target.value)}
+                placeholder={tm('autoReplyTextPlaceholder')}
+                maxLength={MAX_AUTO_REPLY}
+                disabled={saving}
+                aria-invalid={touched && autoReplyMissing}
+              />
+              {touched && autoReplyMissing && (
+                <span className={styles.fieldError}>{tm('validation.autoReplyRequired')}</span>
+              )}
+            </div>
+          )}
+
+          {formError && <div className={styles.errorBox} role="alert">{formError}</div>}
+
+          <div className={styles.actions}>
+            <Button
+              type="submit"
+              size="sm"
+              icon={status.connected ? Save : CheckCircle}
+              loading={saving}
+              disabled={!status.serverConfigured}
+            >
+              {status.connected ? tm('saveButton') : tm('activateButton')}
+            </Button>
+            {status.connected && (
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                icon={Unplug}
+                onClick={handleDisconnect}
+                loading={disconnecting}
+              >
+                {tm('disconnectButton')}
+              </Button>
             )}
           </div>
-        )}
-
-        {formError && <div className={styles.errorBox} role="alert">{formError}</div>}
-
-        <div className={styles.actions}>
-          <Button
-            type="submit"
-            size="sm"
-            icon={status.connected ? Save : CheckCircle}
-            loading={saving}
-            disabled={!status.serverConfigured}
-          >
-            {status.connected ? tm('saveButton') : tm('activateButton')}
-          </Button>
-          {status.connected && (
-            <Button
-              type="button"
-              variant="danger"
-              size="sm"
-              icon={Unplug}
-              onClick={handleDisconnect}
-              loading={disconnecting}
-            >
-              {tm('disconnectButton')}
-            </Button>
-          )}
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }
