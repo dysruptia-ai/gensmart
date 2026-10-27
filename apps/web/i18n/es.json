@@ -547,7 +547,10 @@
         "telegram": "Telegram",
         "telegramDesc": "Conecta un bot de Telegram para responder los mensajes de tus clientes",
         "email": "Email",
-        "emailDesc": "Reenvía tus correos a este agente y deja que responda en el mismo hilo"
+        "emailDesc": "Reenvía tus correos a este agente y deja que responda en el mismo hilo",
+        "tiktok": "TikTok",
+        "tiktokDesc": "Responde mensajes directos de TikTok desde tu cuenta de negocio",
+        "tiktokComingSoon": "Próximamente"
       },
       "versions": {
         "noVersions": "Aún no hay versiones publicadas.",

@@ -540,6 +540,11 @@
   color: var(--color-text-secondary);
 }
 
+.tiktokIcon {
+  flex-shrink: 0;
+  color: #000000;
+}
+
 .channelDesc {
   font-size: var(--font-xs);
   color: var(--color-text-secondary);

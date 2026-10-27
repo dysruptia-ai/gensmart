@@ -547,7 +547,10 @@
         "telegram": "Telegram",
         "telegramDesc": "Connect a Telegram bot to answer messages from your customers",
         "email": "Email",
-        "emailDesc": "Forward your emails to this agent and let it reply in the same thread"
+        "emailDesc": "Forward your emails to this agent and let it reply in the same thread",
+        "tiktok": "TikTok",
+        "tiktokDesc": "Answer TikTok DMs from your business account",
+        "tiktokComingSoon": "Coming soon"
       },
       "versions": {
         "noVersions": "No published versions yet.",

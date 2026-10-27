@@ -25,7 +25,7 @@ import MessengerConfig from '@/components/agents/MessengerConfig/MessengerConfig
 import InstagramConfig from '@/components/agents/InstagramConfig/InstagramConfig';
 import TelegramConfig from '@/components/agents/TelegramConfig/TelegramConfig';
 import EmailConfig from '@/components/agents/EmailConfig/EmailConfig';
-import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaTelegram } from 'react-icons/fa6';
+import { FaWhatsapp, FaFacebookMessenger, FaInstagram, FaTelegram, FaTiktok } from 'react-icons/fa6';
 import HandoffConfigurator from '@/components/agents/HandoffConfigurator/HandoffConfigurator';
 import ConfigVariablesEditor from '@/components/agents/ConfigVariablesEditor';
 import PricingConfigurator from '@/components/agents/PricingConfigurator';
@@ -1027,6 +1027,22 @@ export default function AgentEditorPage() {
                     <EmailConfig agentId={agentId} orgPlan={orgPlan} />
                   </div>
                 )}
+              </div>
+
+              {/* TikTok - Próximamente */}
+              <div className={styles.channelSection}>
+                <div className={styles.channelHeader}>
+                  <div className={styles.channelToggleRow}>
+                    <div className={styles.channelTitleRow}>
+                      <FaTiktok size={24} className={styles.tiktokIcon} aria-hidden="true" />
+                      <div>
+                        <div className={styles.settingsSectionTitle}>{t('agents.editor.channels.tiktok')}</div>
+                        <span className={styles.channelDesc}>{t('agents.editor.channels.tiktokDesc')}</span>
+                      </div>
+                    </div>
+                    <Badge variant="neutral">{t('agents.editor.channels.tiktokComingSoon')}</Badge>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
