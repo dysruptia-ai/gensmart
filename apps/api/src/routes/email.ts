@@ -4,7 +4,7 @@ import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { validate } from '../middleware/validate';
 import { validateUUID } from '../middleware/validateUUID';
-import { getClient, query } from '../config/database';
+import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { env } from '../config/env';
 import { AppError } from '../middleware/errorHandler';
@@ -14,6 +14,8 @@ import {
   detectAutomatedEmail,
   downloadAttachments,
   extractPdfText,
+  fillContactPhone,
+  findOrCreateEmailContact,
   fetchReceivedEmail,
   formatAttachmentNotice,
   isEmailChannelConfigured,
@@ -27,7 +29,7 @@ import {
   verifyResendWebhook,
 } from '../services/email.service';
 import type { EmailConfig, ResendReceivedEvent } from '../services/email.service';
-import { buildReferences } from '../services/email-parsing';
+import { buildReferences, classifyFormFields, detectFormSubmission, extractFormFields } from '../services/email-parsing';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
@@ -44,6 +46,7 @@ const DISCONNECTED_CONFIG: EmailConfig = {
   signature_html: '',
   auto_reply_enabled: false,
   auto_reply_text: '',
+  form_field_separator: 'colon',
 };
 
 // ── Incoming message pipeline ─────────────────────────────────────────────────
@@ -55,42 +58,6 @@ interface EmailAgentRow {
   message_buffer_seconds: number;
   email_config: EmailConfig;
   status: string;
-}
-
-// Serialised per (org, email): contacts.email is not unique, so two simultaneous first emails from one
-// sender could otherwise create two contacts.
-async function findOrCreateContact(agent: EmailAgentRow, address: string, name: string | null): Promise<string> {
-  const db = await getClient();
-  try {
-    await db.query('BEGIN');
-    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`contact-email:${agent.organization_id}:${address}`]);
-    const existing = await db.query<{ id: string }>(
-      `SELECT id FROM contacts WHERE organization_id = $1 AND lower(email) = $2 ORDER BY created_at ASC LIMIT 1`,
-      [agent.organization_id, address]
-    );
-    let contactId = existing.rows[0]?.id;
-    if (contactId) {
-      await db.query(
-        `UPDATE contacts SET agent_id = COALESCE(agent_id, $2), name = COALESCE(name, $3), updated_at = NOW() WHERE id = $1`,
-        [contactId, agent.id, name]
-      );
-    } else {
-      const created = await db.query<{ id: string }>(
-        `INSERT INTO contacts (organization_id, agent_id, name, email, source_channel, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, 'email', NOW(), NOW())
-         RETURNING id`,
-        [agent.organization_id, agent.id, name, address]
-      );
-      contactId = created.rows[0]!.id;
-    }
-    await db.query('COMMIT');
-    return contactId;
-  } catch (err) {
-    await db.query('ROLLBACK').catch(() => undefined);
-    throw err;
-  } finally {
-    db.release();
-  }
 }
 
 async function processEmail(agent: EmailAgentRow, event: ResendReceivedEvent): Promise<void> {
@@ -177,7 +144,33 @@ async function processEmail(agent: EmailAgentRow, event: ResendReceivedEvent): P
   }
   if (!messageText.trim()) messageText = '[Image]';
 
-  const contactId = await findOrCreateContact(agent, sender.address, sender.name);
+  // Website-form notifications arrive from a technical sender (wordpress@site, ...): the lead's own email or
+  // phone inside the body is the identity, otherwise every lead of one site collapses into one contact.
+  // messageText (what the LLM sees) is untouched.
+  const separator = agent.email_config.form_field_separator ?? 'colon';
+  const formFields = detectFormSubmission(received.text, separator) ? extractFormFields(received.text, separator) : null;
+  const classified = formFields ? classifyFormFields(formFields) : null;
+  // A form pointing the agent at its own inbound address would only bounce replies back to us
+  const formEmail = classified?.email && !classified.email.endsWith(`@${env.EMAIL_INBOUND_DOMAIN}`) ? classified.email : null;
+  const effectiveEmail = formEmail ?? sender.address;
+  const effectiveName = classified?.name ?? sender.name;
+  const effectivePhone = !formEmail ? classified?.phone ?? null : null;
+
+  const contactId = await findOrCreateEmailContact(agent, {
+    email: formEmail ?? (effectivePhone ? null : sender.address),
+    phone: effectivePhone,
+    name: effectiveName,
+  });
+  if (classified && Object.keys(classified.custom).length > 0) {
+    await query(
+      `UPDATE contacts SET custom_variables = COALESCE(custom_variables, '{}'::jsonb) || $1::jsonb, updated_at = NOW() WHERE id = $2`,
+      [JSON.stringify(classified.custom), contactId]
+    );
+  }
+  // Email decides the identity, but a phone the form also carried is kept (only if the contact has none yet)
+  if (classified?.phone && formEmail) {
+    await fillContactPhone(contactId, classified.phone);
+  }
 
   const existingConv = await query<{ id: string; status: string; channel_metadata: Record<string, unknown> | null }>(
     `SELECT id, status, channel_metadata FROM conversations
@@ -208,7 +201,7 @@ async function processEmail(agent: EmailAgentRow, event: ResendReceivedEvent): P
   const previousThread = readThread(existingConv.rows[0]?.channel_metadata);
   const thread = nextThread(previousThread, {
     subject,
-    fromAddress: sender.address,
+    fromAddress: effectiveEmail,
     messageId,
     referencesHeader: Object.entries(received.headers).find(([k]) => k.toLowerCase() === 'references')?.[1],
   });
@@ -221,7 +214,7 @@ async function processEmail(agent: EmailAgentRow, event: ResendReceivedEvent): P
         agentId: agent.id,
         agentName: agent.name,
         config: agent.email_config,
-        to: sender.address,
+        to: effectiveEmail,
         subject,
         text: agent.email_config.auto_reply_text.trim(),
         inReplyTo: thread.last_message_id,
@@ -362,6 +355,7 @@ const connectSchema = z.object({
   signature: z.string().max(1000).default(''),
   autoReplyEnabled: z.boolean().default(false),
   autoReplyText: z.string().trim().max(2000).default(''),
+  formFieldSeparator: z.enum(['colon', 'equals', 'both']).default('colon'),
 }).refine((v) => !v.autoReplyEnabled || v.autoReplyText.length > 0, {
   message: 'Auto-reply text is required when auto-reply is enabled',
   path: ['autoReplyText'],
@@ -403,6 +397,7 @@ router.post(
         signature_html: body.signature.trim() ? escapeHtmlWithBreaks(body.signature.trim()) : '',
         auto_reply_enabled: body.autoReplyEnabled,
         auto_reply_text: body.autoReplyText,
+        form_field_separator: body.formFieldSeparator,
       };
 
       await query(`UPDATE agents SET email_config = $1::jsonb, updated_at = NOW() WHERE id = $2`, [JSON.stringify(config), body.agentId]);
@@ -476,6 +471,7 @@ router.get(
         signature: signatureToText(cfg.signature_html ?? ''),
         autoReplyEnabled: !!cfg.auto_reply_enabled,
         autoReplyText: cfg.auto_reply_text ?? '',
+        formFieldSeparator: cfg.form_field_separator ?? 'colon',
         channelEnabled: (agent.channels ?? []).includes('email'),
         serverConfigured: isEmailChannelConfigured(),
       });

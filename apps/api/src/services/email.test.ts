@@ -2,7 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildReferences,
+  classifyFormFields,
   detectAutomatedEmail,
+  detectFormSubmission,
+  extractFormFields,
   extractNewMessage,
   parseAddress,
   replySubject,
@@ -101,4 +104,44 @@ test('Svix signature: valid passes, tampered body and wrong secret fail', async 
   assert.throws(() => verifyResendWebhook(Buffer.from(body + ' '), headers));
   assert.throws(() => verifyResendWebhook(Buffer.from(body), { ...headers, 'svix-signature': 'v1,AAAA' }));
   assert.throws(() => verifyResendWebhook(Buffer.from(body), {}));
+});
+
+const FORM_ES = `Nombre: Juan Pérez
+Correo electrónico: juan@cliente.com
+Teléfono: 3001234567
+Mensaje: Quiero cotizar un sistema de riego para 2 hectáreas`;
+
+test('form detection: "Field: Value" body is classified (accents and spaces in labels)', () => {
+  assert.equal(detectFormSubmission(FORM_ES), true);
+  const classified = classifyFormFields(extractFormFields(FORM_ES));
+  assert.equal(classified.name, 'Juan Pérez');
+  assert.equal(classified.email, 'juan@cliente.com');
+  assert.equal(classified.phone, '3001234567');
+  assert.deepEqual(classified.custom, { Mensaje: 'Quiero cotizar un sistema de riego para 2 hectáreas' });
+});
+
+test('form detection: separator is configurable', () => {
+  const equalsForm = FORM_ES.replace(/: /g, '=');
+  assert.equal(detectFormSubmission(equalsForm, 'colon'), false);
+  assert.equal(detectFormSubmission(equalsForm, 'equals'), true);
+  assert.equal(detectFormSubmission(equalsForm, 'both'), true);
+  assert.equal(detectFormSubmission(FORM_ES, 'equals'), false);
+  assert.equal(extractFormFields(equalsForm, 'equals')['Nombre'], 'Juan Pérez');
+});
+
+test('form detection: a human email with a couple of colons is not a form', () => {
+  const human = `Hola, quisiera saber si tienen disponibilidad para el martes.\nGracias de antemano.\n\nSaludos,\nAna Gómez\nCargo: Gerente\nEmpresa: Acme`;
+  assert.equal(detectFormSubmission(human), false);
+  assert.equal(detectFormSubmission('Just one line: here'), false);
+  assert.equal(detectFormSubmission(''), false);
+});
+
+test('form detection: invalid email value is not used as identity; first occurrence wins; values truncated', () => {
+  const c = classifyFormFields({ Email: 'not-an-email', Nombre: 'Ana', Telefono: '555' });
+  assert.equal(c.email, null);
+  assert.equal(c.custom['Email'], 'not-an-email');
+  assert.equal(c.phone, '555');
+  const long = extractFormFields(`A1: x\nB1: y\nC1: ${'z'.repeat(900)}\nA1: second`);
+  assert.equal(long['A1'], 'x');
+  assert.equal(long['C1']?.length, 500);
 });

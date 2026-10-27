@@ -9,7 +9,7 @@
     "migrate": "dotenv -e ../../.env -- node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations up",
     "migrate:down": "dotenv -e ../../.env -- node-pg-migrate --database-url-var=DATABASE_URL --migration-file-language=sql --migrations-dir=src/db/migrations down",
     "seed": "tsx src/db/seeds/index.ts",
-    "test:email": "tsx --test src/services/email.test.ts",
+    "test:email": "dotenv -e ../../.env -- tsx --test src/services/email.test.ts src/services/email-contact.test.ts",
     "seed:test-users": "tsx src/db/seeds/test-users.seed.ts",
     "stripe:seed": "tsx src/db/seeds/stripe-products.ts",
     "lint": "eslint src",

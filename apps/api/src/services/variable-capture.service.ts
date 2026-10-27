@@ -2,6 +2,9 @@ import crypto from 'crypto';
 import { query } from '../config/database';
 import { ToolDefinition, ToolCall } from './llm.service';
 import type { ExtractedCaptureCall } from '../utils/text';
+import { NAME_FIELD_PATTERNS, EMAIL_FIELD_PATTERNS, PHONE_FIELD_PATTERNS } from './contact-field-patterns';
+
+export { NAME_FIELD_PATTERNS, EMAIL_FIELD_PATTERNS, PHONE_FIELD_PATTERNS };
 
 export interface AgentVariable {
   name: string;
@@ -181,24 +184,9 @@ async function syncVariableToContact(
     // Legacy fallback: check variable name against known patterns
     const nameLower = varName.toLowerCase();
 
-    const namePatterns = [
-      'name', 'nombre', 'full_name', 'fullname', 'user_name', 'username',
-      'first_name', 'customer_name', 'nombre_completo', 'client_name',
-      'contact_name', 'persona', 'nombre_cliente',
-    ];
-    const emailPatterns = [
-      'email', 'correo', 'email_address', 'user_email', 'customer_email',
-      'correo_electronico', 'mail', 'e_mail', 'contact_email', 'client_email',
-    ];
-    const phonePatterns = [
-      'phone', 'telefono', 'whatsapp', 'mobile', 'phone_number', 'user_phone',
-      'celular', 'numero', 'customer_phone', 'tel', 'cell', 'numero_telefono',
-      'contact_phone', 'client_phone', 'movil',
-    ];
-
-    if (namePatterns.includes(nameLower)) targetField = 'name';
-    else if (emailPatterns.includes(nameLower)) targetField = 'email';
-    else if (phonePatterns.includes(nameLower)) targetField = 'phone';
+    if (NAME_FIELD_PATTERNS.includes(nameLower)) targetField = 'name';
+    else if (EMAIL_FIELD_PATTERNS.includes(nameLower)) targetField = 'email';
+    else if (PHONE_FIELD_PATTERNS.includes(nameLower)) targetField = 'phone';
   }
 
   if (!contactId) {

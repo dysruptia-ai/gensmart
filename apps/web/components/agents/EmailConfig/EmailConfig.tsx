@@ -12,6 +12,8 @@ import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import styles from './EmailConfig.module.css';
 
+type FormFieldSeparator = 'colon' | 'equals' | 'both';
+
 interface EmailStatus {
   connected: boolean;
   inboundAddress: string;
@@ -19,6 +21,7 @@ interface EmailStatus {
   signature: string;
   autoReplyEnabled: boolean;
   autoReplyText: string;
+  formFieldSeparator: FormFieldSeparator;
   channelEnabled: boolean;
   serverConfigured: boolean;
 }
@@ -46,6 +49,7 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
   const [signature, setSignature] = useState('');
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
   const [autoReplyText, setAutoReplyText] = useState('');
+  const [formFieldSeparator, setFormFieldSeparator] = useState<FormFieldSeparator>('colon');
   const [touched, setTouched] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const submittingRef = useRef(false);
@@ -62,6 +66,7 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
       setSignature(data.signature);
       setAutoReplyEnabled(data.autoReplyEnabled);
       setAutoReplyText(data.autoReplyText);
+      setFormFieldSeparator(data.formFieldSeparator ?? 'colon');
     } catch {
       // Non-critical — the address is derivable, but without status we cannot show a state
       setStatus(null);
@@ -114,6 +119,7 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
         signature,
         autoReplyEnabled,
         autoReplyText: autoReplyText.trim(),
+        formFieldSeparator,
       });
       success(status?.connected ? tm('toast.saved') : tm('toast.connected'));
       setTouched(false);
@@ -245,6 +251,24 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
               disabled={saving}
             />
             <span className={styles.fieldHint}>{tm('signatureHint')}</span>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor={`email-form-separator-${agentId}`}>
+              {tm('formSeparatorLabel')}
+            </label>
+            <select
+              id={`email-form-separator-${agentId}`}
+              className={styles.select}
+              value={formFieldSeparator}
+              onChange={(e) => setFormFieldSeparator(e.target.value as FormFieldSeparator)}
+              disabled={saving}
+            >
+              <option value="colon">{tm('formSeparatorColon')}</option>
+              <option value="equals">{tm('formSeparatorEquals')}</option>
+              <option value="both">{tm('formSeparatorBoth')}</option>
+            </select>
+            <span className={styles.fieldHint}>{tm('formSeparatorHint')}</span>
           </div>
 
           <div className={styles.toggleRow}>

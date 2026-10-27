@@ -1,4 +1,5 @@
 import EmailReplyParser from 'email-reply-parser';
+import { NAME_FIELD_PATTERNS, EMAIL_FIELD_PATTERNS, PHONE_FIELD_PATTERNS } from './contact-field-patterns';
 
 /**
  * Pure helpers for the email channel (no env, DB or network) so they can be tested on their own.
@@ -122,4 +123,85 @@ export function buildReferences(existing: string[], referencesHeader: string | u
 export function replySubject(subject: string): string {
   const clean = subject.replace(/[\r\n]+/g, ' ').trim() || '(no subject)';
   return /^(re|rv|aw|sv):/i.test(clean) ? clean : `Re: ${clean}`;
+}
+
+// ── Web-form notifications ────────────────────────────────────────────────────
+
+export type FormFieldSeparator = 'colon' | 'equals' | 'both';
+
+const MIN_FORM_FIELDS = 3;
+const FORM_LINE_RATIO = 0.6; // at least 60% of the non-empty lines must match the "Field: Value" shape
+const MAX_FORM_FIELDS = 20;
+const MAX_FIELD_VALUE_LENGTH = 500;
+
+function formFieldLinePattern(separator: FormFieldSeparator): RegExp {
+  const sep = separator === 'colon' ? ':' : separator === 'equals' ? '=' : '[:=]';
+  return new RegExp(`^([A-Za-zÀ-ÿ0-9 _'/-]{2,40})${sep}\\s*(.+)$`);
+}
+
+function nonEmptyLines(text: string): string[] {
+  return text.split('\n').map((l) => l.trim()).filter(Boolean);
+}
+
+/**
+ * Generic heuristic for website form notifications (Contact Form 7, WPForms, Gravity Forms, Elementor... all
+ * default to the same plain-text "Field: Value" repeated). The separator is per agent
+ * (email_config.form_field_separator) because some sites use "=".
+ */
+export function detectFormSubmission(text: string, separator: FormFieldSeparator = 'colon'): boolean {
+  const pattern = formFieldLinePattern(separator);
+  const lines = nonEmptyLines(text);
+  if (lines.length === 0) return false;
+  const matches = lines.filter((l) => pattern.test(l)).length;
+  return matches >= MIN_FORM_FIELDS && matches / lines.length >= FORM_LINE_RATIO;
+}
+
+/** Field→value pairs of a body already detected as a form. Keeps the first occurrence; values are truncated. */
+export function extractFormFields(text: string, separator: FormFieldSeparator = 'colon'): Record<string, string> {
+  const pattern = formFieldLinePattern(separator);
+  const fields: Record<string, string> = {};
+  for (const line of nonEmptyLines(text)) {
+    if (Object.keys(fields).length >= MAX_FORM_FIELDS) break;
+    const match = pattern.exec(line);
+    if (!match) continue;
+    const label = match[1]!.trim();
+    if (label in fields) continue;
+    fields[label] = match[2]!.trim().slice(0, MAX_FIELD_VALUE_LENGTH);
+  }
+  return fields;
+}
+
+export interface ClassifiedFormFields {
+  name: string | null;
+  email: string | null; // validated with parseAddress
+  phone: string | null;
+  custom: Record<string, string>; // everything else, for contacts.custom_variables
+}
+
+/** "Correo electrónico" → "correo_electronico": the shape the shared field-pattern lists use. */
+function normalizeFieldLabel(label: string): string {
+  return label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+export function classifyFormFields(fields: Record<string, string>): ClassifiedFormFields {
+  const result: ClassifiedFormFields = { name: null, email: null, phone: null, custom: {} };
+  for (const [label, value] of Object.entries(fields)) {
+    const key = normalizeFieldLabel(label);
+    const address = EMAIL_FIELD_PATTERNS.includes(key) ? parseAddress(value) : null;
+    if (!result.email && address) {
+      result.email = address.address;
+    } else if (!result.name && NAME_FIELD_PATTERNS.includes(key)) {
+      result.name = value;
+    } else if (!result.phone && PHONE_FIELD_PATTERNS.includes(key)) {
+      result.phone = value;
+    } else {
+      result.custom[label] = value;
+    }
+  }
+  return result;
 }

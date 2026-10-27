@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import { Resend } from 'resend';
 import { Webhook } from 'svix';
 import { env } from '../config/env';
-import { query } from '../config/database';
+import { getClient, query } from '../config/database';
 import { escapeHtmlWithBreaks, sanitizeDisplayName, stripLineBreaks } from '../utils/html';
 import { detectImageMime } from './image-sniff';
 import {
@@ -12,6 +12,7 @@ import {
   htmlToText,
   normalizeMessageId,
   replySubject,
+  type FormFieldSeparator,
 } from './email-parsing';
 
 export { agentInboundAddress, detectAutomatedEmail, resolveAgentId, parseAddress } from './email-parsing';
@@ -173,6 +174,7 @@ export interface EmailConfig {
   signature_html?: string;
   auto_reply_enabled?: boolean;
   auto_reply_text?: string;
+  form_field_separator?: FormFieldSeparator;
 }
 
 /** signature_html is only ever produced by escapeHtmlWithBreaks(plain text); this is its exact inverse. */
@@ -314,4 +316,70 @@ export function formatAttachmentNotice(filenames: string[], skipped: number): st
   if (filenames.length > 0) parts.push(`[Attachments: ${filenames.join(', ')}]`);
   if (skipped > 0) parts.push(`[${skipped} attachment(s) could not be read or have an unsupported type]`);
   return parts.join('\n');
+}
+
+/** Fills contacts.phone only when it is still empty: a stored phone is never overwritten or cleared. */
+export async function fillContactPhone(contactId: string, phone: string): Promise<void> {
+  await query(`UPDATE contacts SET phone = COALESCE(phone, $1), updated_at = NOW() WHERE id = $2`, [phone, contactId]);
+}
+
+export interface ContactIdentity {
+  email: string | null;
+  phone: string | null;
+  name: string | null;
+}
+
+/**
+ * Finds or creates the contact an email belongs to, by email (preferred) or by phone when a web form carried
+ * no usable email. Serialised per (org, identity): contacts.email/phone are not unique, so two simultaneous
+ * first emails from the same person could otherwise create two contacts.
+ */
+export async function findOrCreateEmailContact(
+  agent: { id: string; organization_id: string },
+  identity: ContactIdentity
+): Promise<string> {
+  if (!identity.email && !identity.phone) {
+    throw new Error('Contact identity needs an email or a phone');
+  }
+  const db = await getClient();
+  try {
+    await db.query('BEGIN');
+    const lockKey = identity.email
+      ? `contact-email:${agent.organization_id}:${identity.email}`
+      : `contact-phone:${agent.organization_id}:${identity.phone}`;
+    await db.query('SELECT pg_advisory_xact_lock(hashtext($1))', [lockKey]);
+
+    const existing = identity.email
+      ? await db.query<{ id: string }>(
+          `SELECT id FROM contacts WHERE organization_id = $1 AND lower(email) = $2 ORDER BY created_at ASC LIMIT 1`,
+          [agent.organization_id, identity.email]
+        )
+      : await db.query<{ id: string }>(
+          `SELECT id FROM contacts WHERE organization_id = $1 AND phone = $2 ORDER BY created_at ASC LIMIT 1`,
+          [agent.organization_id, identity.phone]
+        );
+
+    let contactId = existing.rows[0]?.id;
+    if (contactId) {
+      await db.query(
+        `UPDATE contacts SET agent_id = COALESCE(agent_id, $2), name = COALESCE(name, $3), updated_at = NOW() WHERE id = $1`,
+        [contactId, agent.id, identity.name]
+      );
+    } else {
+      const created = await db.query<{ id: string }>(
+        `INSERT INTO contacts (organization_id, agent_id, name, email, phone, source_channel, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, 'email', NOW(), NOW())
+         RETURNING id`,
+        [agent.organization_id, agent.id, identity.name, identity.email, identity.phone]
+      );
+      contactId = created.rows[0]!.id;
+    }
+    await db.query('COMMIT');
+    return contactId;
+  } catch (err) {
+    await db.query('ROLLBACK').catch(() => undefined);
+    throw err;
+  } finally {
+    db.release();
+  }
 }
