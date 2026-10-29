@@ -53,12 +53,19 @@ interface ConversationItem {
 
 interface ConversationsResponse {
   conversations: ConversationItem[];
+  agentCounts: AgentCount[];
   pagination: {
     total: number;
     page: number;
     limit: number;
     totalPages: number;
   };
+}
+
+interface AgentCount {
+  agentId: string;
+  agentName: string;
+  count: number;
 }
 
 interface AgentOption {
@@ -89,13 +96,30 @@ function ConversationsContent() {
   const [statusFilter, setStatusFilter] = useState(initialFilters.status);
   const [channelFilter, setChannelFilter] = useState(initialFilters.channel);
   const [agentFilter, setAgentFilter] = useState(initialFilters.agentId);
+  const [showAll, setShowAll] = useState(initialFilters.range === 'all');
+  const [agentCounts, setAgentCounts] = useState<AgentCount[]>([]);
   const filterQuery = useMemo(
-    () => buildConversationFilterQuery({ search, status: statusFilter, channel: channelFilter, agentId: agentFilter }),
-    [search, statusFilter, channelFilter, agentFilter]
+    () => buildConversationFilterQuery({
+      search,
+      status: statusFilter,
+      channel: channelFilter,
+      agentId: agentFilter,
+      range: showAll ? 'all' : '',
+    }),
+    [search, statusFilter, channelFilter, agentFilter, showAll]
   );
+  // Debounced so typing in the search box doesn't call router.replace on every key
+  const replaceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    router.replace(filterQuery ? `/dashboard/conversations?${filterQuery}` : '/dashboard/conversations', { scroll: false });
+    if (replaceTimerRef.current) clearTimeout(replaceTimerRef.current);
+    replaceTimerRef.current = setTimeout(() => {
+      router.replace(filterQuery ? `/dashboard/conversations?${filterQuery}` : '/dashboard/conversations', { scroll: false });
+    }, 400);
+    return () => {
+      if (replaceTimerRef.current) clearTimeout(replaceTimerRef.current);
+    };
   }, [filterQuery, router]);
+  const countFor = (agentId: string): number => agentCounts.find((c) => c.agentId === agentId)?.count ?? 0;
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [total, setTotal] = useState(0);
   const { on, off } = useWebSocket();
@@ -150,6 +174,7 @@ function ConversationsContent() {
       if (statusFilter) params.set('status', statusFilter);
       if (channelFilter) params.set('channel', channelFilter);
       if (agentFilter) params.set('agentId', agentFilter);
+      if (showAll) params.set('range', 'all');
 
       const data = await api.get<ConversationsResponse>(`/api/conversations?${params}`);
 
@@ -163,12 +188,13 @@ function ConversationsContent() {
 
       setConversations(sorted);
       setTotal(data.pagination.total);
+      setAgentCounts(data.agentCounts ?? []);
     } catch (err) {
       console.error('[conversations] Fetch failed:', err);
     } finally {
       setLoading(false);
     }
-  }, [search, statusFilter, channelFilter, agentFilter]);
+  }, [search, statusFilter, channelFilter, agentFilter, showAll]);
 
   useEffect(() => {
     void fetchConversations();
@@ -316,6 +342,14 @@ function ConversationsContent() {
           />
           <span className={styles.searchHelp}>{t('conversations.searchHelp')}</span>
         </div>
+        <button
+          type="button"
+          className={styles.rangeToggle}
+          aria-pressed={showAll}
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll ? t('conversations.showRecent') : t('conversations.showAll')}
+        </button>
         <div className={styles.filterGroup}>
           <Filter size={14} aria-hidden="true" />
           <select
@@ -348,7 +382,7 @@ function ConversationsContent() {
           >
             <option value="">{t('conversations.allAgents')}</option>
             {agents.map((a) => (
-              <option key={a.id} value={a.id}>{a.name}</option>
+              <option key={a.id} value={a.id}>{a.name} ({countFor(a.id)})</option>
             ))}
           </select>
         </div>
@@ -377,7 +411,7 @@ function ConversationsContent() {
               onClick={() => setAgentFilter(a.id)}
             >
               <Bot size={12} aria-hidden="true" />
-              {a.name}
+              {a.name} ({countFor(a.id)})
             </button>
           ))}
         </div>

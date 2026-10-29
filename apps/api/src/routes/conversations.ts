@@ -17,7 +17,8 @@ const router = Router();
 router.use(requireAuth, orgContext);
 
 // ── GET /api/conversations ───────────────────────────────────────────────────
-// List conversations with filters: agentId, status, channel, search, page, limit
+// List conversations with filters: agentId, status, channel, search, range, page, limit.
+// Only the last 8 days by default (range=all lifts it); agentCounts ignores the agentId filter.
 router.get(
   '/',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -27,6 +28,7 @@ router.get(
         status,
         channel,
         search,
+        range,
         page = '1',
         limit = '20',
       } = req.query as Record<string, string>;
@@ -39,10 +41,6 @@ router.get(
       const params: unknown[] = [req.org!.id];
       let paramIndex = 2;
 
-      if (agentId) {
-        conditions.push(`c.agent_id = $${paramIndex++}`);
-        params.push(agentId);
-      }
       if (status) {
         conditions.push(`c.status = $${paramIndex++}`);
         params.push(status);
@@ -58,17 +56,40 @@ router.get(
         params.push(`%${search}%`);
         paramIndex++;
       }
+      if (range !== 'all') {
+        conditions.push(`COALESCE(c.last_message_at, c.created_at) >= NOW() - interval '8 days'`);
+      }
+
+      // Everything but the agent filter, so the per-agent tabs keep their counts when one is selected
+      const countsWhere = conditions.join(' AND ');
+      const countsParams = [...params];
+
+      if (agentId) {
+        conditions.push(`c.agent_id = $${paramIndex++}`);
+        params.push(agentId);
+      }
 
       const where = conditions.join(' AND ');
 
       // Count total
-      const countResult = await query<{ count: string }>(
-        `SELECT COUNT(*) as count
-         FROM conversations c
-         LEFT JOIN contacts co ON c.contact_id = co.id
-         WHERE ${where}`,
-        params
-      );
+      const [countResult, agentCountsResult] = await Promise.all([
+        query<{ count: string }>(
+          `SELECT COUNT(*) as count
+           FROM conversations c
+           LEFT JOIN contacts co ON c.contact_id = co.id
+           WHERE ${where}`,
+          params
+        ),
+        query<{ agent_id: string; agent_name: string | null; count: string }>(
+          `SELECT c.agent_id, a.name as agent_name, COUNT(*) as count
+           FROM conversations c
+           LEFT JOIN agents a ON c.agent_id = a.id
+           LEFT JOIN contacts co ON c.contact_id = co.id
+           WHERE ${countsWhere}
+           GROUP BY c.agent_id, a.name`,
+          countsParams
+        ),
+      ]);
       const total = parseInt(countResult.rows[0]?.count ?? '0', 10);
 
       // Fetch conversations with contact and last message
@@ -153,6 +174,11 @@ router.get(
                 role: row.last_message_role,
               }
             : null,
+        })),
+        agentCounts: agentCountsResult.rows.map((row) => ({
+          agentId: row.agent_id,
+          agentName: row.agent_name ?? '',
+          count: parseInt(row.count, 10),
         })),
         pagination: {
           total,

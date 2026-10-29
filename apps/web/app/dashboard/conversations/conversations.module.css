@@ -60,6 +60,21 @@
   gap: 0.25rem;
 }
 
+.rangeToggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.rangeToggle:hover {
+  color: var(--color-primary-dark);
+}
+
 .searchHelp {
   font-size: 0.6875rem;
   color: var(--color-text-secondary);

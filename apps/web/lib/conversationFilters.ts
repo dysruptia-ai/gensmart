@@ -3,9 +3,11 @@ export interface ConversationFilters {
   status: string;
   channel: string;
   agentId: string;
+  /** 'all' lifts the default 8-day window; empty keeps it. */
+  range: string;
 }
 
-const FILTER_KEYS: (keyof ConversationFilters)[] = ['search', 'status', 'channel', 'agentId'];
+const FILTER_KEYS: (keyof ConversationFilters)[] = ['search', 'status', 'channel', 'agentId', 'range'];
 
 type ParamsReader = { get(name: string): string | null };
 
@@ -15,6 +17,7 @@ export function readConversationFilters(params: ParamsReader): ConversationFilte
     status: params.get('status') ?? '',
     channel: params.get('channel') ?? '',
     agentId: params.get('agentId') ?? '',
+    range: params.get('range') === 'all' ? 'all' : '',
   };
 }
 

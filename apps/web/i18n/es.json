@@ -1102,6 +1102,8 @@
     "title": "Conversaciones",
     "search": "Buscar conversaciones...",
     "searchHelp": "Busca por nombre, teléfono o correo del contacto",
+    "showAll": "Ver todas (sin límite de 8 días)",
+    "showRecent": "Ver solo los últimos 8 días",
     "backToList": "Volver a conversaciones",
     "closeConversation": "Cerrar conversación",
     "empty": {

@@ -1102,6 +1102,8 @@
     "title": "Conversations",
     "search": "Search conversations...",
     "searchHelp": "Search by contact name, phone or email",
+    "showAll": "Show all (no 8-day limit)",
+    "showRecent": "Show last 8 days only",
     "backToList": "Back to conversations",
     "closeConversation": "Close conversation",
     "empty": {
