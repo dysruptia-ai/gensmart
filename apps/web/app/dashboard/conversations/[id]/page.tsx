@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import React, { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -30,6 +30,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { formatRelativeTime } from '@/lib/formatters';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import { getChannelMeta, type ConversationChannel } from '@/components/conversations/channelMeta';
+import { conversationsListHref, readConversationFilters } from '@/lib/conversationFilters';
 import styles from './chat.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -122,8 +123,9 @@ function ReferralCard({ referral, language }: { referral: Record<string, string>
   );
 }
 
-export default function ConversationDetailPage() {
+function ConversationDetailContent() {
   const { id: conversationId } = useParams<{ id: string }>();
+  const listHref = conversationsListHref(readConversationFilters(useSearchParams()));
   const { user } = useAuth();
   const { t, language } = useTranslation();
   const { error: showError, success: showSuccess } = useToast();
@@ -518,7 +520,7 @@ export default function ConversationDetailPage() {
     return (
       <div className={styles.loadingPage}>
         <p>Conversation not found.</p>
-        <Link href="/dashboard/conversations">Back to conversations</Link>
+        <Link href={listHref}>Back to conversations</Link>
       </div>
     );
   }
@@ -539,7 +541,7 @@ export default function ConversationDetailPage() {
     <div className={styles.page}>
       {/* Back to list */}
       <div className={styles.backBar}>
-        <Link href="/dashboard/conversations" className={styles.backLink}>
+        <Link href={listHref} className={styles.backLink}>
           <ArrowLeft size={16} aria-hidden="true" /> {t('conversations.backToList')}
         </Link>
       </div>
@@ -754,5 +756,13 @@ export default function ConversationDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ConversationDetailPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConversationDetailContent />
+    </Suspense>
   );
 }

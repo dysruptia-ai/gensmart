@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { Suspense, useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   MessageSquare,
   Bot,
@@ -22,6 +23,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatRelativeTime } from '@/lib/formatters';
 import { getChannelMeta, type ConversationChannel } from '@/components/conversations/channelMeta';
+import { buildConversationFilterQuery, readConversationFilters } from '@/lib/conversationFilters';
 import styles from './conversations.module.css';
 
 interface ConversationItem {
@@ -75,14 +77,25 @@ function needsHelp(status: string): boolean {
   return status === 'human_takeover' || status === 'takeover_requested';
 }
 
-export default function ConversationsPage() {
+function ConversationsContent() {
   const { t, language } = useTranslation();
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [channelFilter, setChannelFilter] = useState('');
-  const [agentFilter, setAgentFilter] = useState('');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Filters live in the URL so they survive a refresh and the round trip to a conversation
+  const [initialFilters] = useState(() => readConversationFilters(searchParams));
+  const [search, setSearch] = useState(initialFilters.search);
+  const [statusFilter, setStatusFilter] = useState(initialFilters.status);
+  const [channelFilter, setChannelFilter] = useState(initialFilters.channel);
+  const [agentFilter, setAgentFilter] = useState(initialFilters.agentId);
+  const filterQuery = useMemo(
+    () => buildConversationFilterQuery({ search, status: statusFilter, channel: channelFilter, agentId: agentFilter }),
+    [search, statusFilter, channelFilter, agentFilter]
+  );
+  useEffect(() => {
+    router.replace(filterQuery ? `/dashboard/conversations?${filterQuery}` : '/dashboard/conversations', { scroll: false });
+  }, [filterQuery, router]);
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [total, setTotal] = useState(0);
   const { on, off } = useWebSocket();
@@ -418,7 +431,7 @@ export default function ConversationsPage() {
                   />
                 </div>
                 <Link
-                  href={`/dashboard/conversations/${conv.id}`}
+                  href={`/dashboard/conversations/${conv.id}${filterQuery ? `?${filterQuery}` : ''}`}
                   className={styles.item}
                 >
                   <div className={styles.itemAvatar}>
@@ -533,5 +546,13 @@ export default function ConversationsPage() {
         </div>
       </Modal>
     </div>
+  );
+}
+
+export default function ConversationsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ConversationsContent />
+    </Suspense>
   );
 }
