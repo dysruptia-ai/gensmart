@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   Shield,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -27,6 +28,7 @@ import { Logo } from '@/components/ui/Logo';
 import UpgradeBanner from '@/components/billing/UpgradeBanner';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import WelcomeTour from '@/components/onboarding/WelcomeTour';
+import { ConversationAlertsProvider, useConversationAlerts } from '@/contexts/ConversationAlertsContext';
 import { api } from '@/lib/api';
 import styles from './dashboard.module.css';
 
@@ -46,6 +48,15 @@ interface UsageSummary {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ConversationAlertsProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </ConversationAlertsProvider>
+  );
+}
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
+  const { count: alertCount, hasUrgent, canAskPermission, enableAlerts } = useConversationAlerts();
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
@@ -137,10 +148,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <Icon size={18} aria-hidden="true" />
                 {t(item.labelKey)}
+                {item.path === '/dashboard/conversations' && alertCount > 0 && (
+                  <span
+                    className={[styles.navBadge, hasUrgent ? styles.navBadgeUrgent : ''].filter(Boolean).join(' ')}
+                    aria-label={t('conversations.alerts.badgeLabel', { count: alertCount })}
+                  >
+                    {alertCount > 99 ? '99+' : alertCount}
+                  </span>
+                )}
               </Link>
             );
           })}
         </nav>
+
+        {canAskPermission && (
+          <button type="button" className={styles.alertsPrompt} onClick={() => void enableAlerts()}>
+            <Bell size={14} aria-hidden="true" /> {t('conversations.alerts.enable')}
+          </button>
+        )}
       </aside>
 
       <div className={styles.main}>

@@ -1101,6 +1101,12 @@
   "conversations": {
     "title": "Conversations",
     "search": "Search conversations...",
+    "alerts": {
+      "enable": "Enable conversation notifications",
+      "newMessageTitle": "New customer message",
+      "handoffTitle": "Human help requested",
+      "badgeLabel": "{count} conversations need attention"
+    },
     "searchHelp": "Search by contact name, phone or email",
     "showAll": "Show all (no 8-day limit)",
     "showRecent": "Show last 8 days only",

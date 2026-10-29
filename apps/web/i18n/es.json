@@ -1101,6 +1101,12 @@
   "conversations": {
     "title": "Conversaciones",
     "search": "Buscar conversaciones...",
+    "alerts": {
+      "enable": "Activar notificaciones de conversaciones",
+      "newMessageTitle": "Nuevo mensaje de un cliente",
+      "handoffTitle": "Ayuda humana solicitada",
+      "badgeLabel": "{count} conversaciones requieren atención"
+    },
     "searchHelp": "Busca por nombre, teléfono o correo del contacto",
     "showAll": "Ver todas (sin límite de 8 días)",
     "showRecent": "Ver solo los últimos 8 días",
