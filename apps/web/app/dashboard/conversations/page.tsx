@@ -4,8 +4,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   MessageSquare,
-  Globe,
-  Phone,
+  Bot,
   Filter,
   RefreshCw,
   Trash2,
@@ -22,6 +21,7 @@ import Modal from '@/components/ui/Modal';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatRelativeTime } from '@/lib/formatters';
+import { getChannelMeta, type ConversationChannel } from '@/components/conversations/channelMeta';
 import styles from './conversations.module.css';
 
 interface ConversationItem {
@@ -35,7 +35,7 @@ interface ConversationItem {
     email: string | null;
     avatarUrl: string | null;
   } | null;
-  channel: 'web' | 'whatsapp';
+  channel: ConversationChannel;
   status: 'active' | 'human_takeover' | 'closed';
   takenOverBy: string | null;
   takeoverUserName: string | null;
@@ -63,6 +63,8 @@ interface AgentOption {
   id: string;
   name: string;
 }
+
+const CHANNEL_FILTER_OPTIONS: ConversationChannel[] = ['web', 'whatsapp', 'telegram', 'email', 'instagram', 'facebook'];
 
 function isRecentlyActive(lastMessageAt: string | null): boolean {
   if (!lastMessageAt) return false;
@@ -292,12 +294,15 @@ export default function ConversationsPage() {
 
       {/* Filters */}
       <div className={styles.filters}>
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder={t('conversations.search')}
-          className={styles.searchInput}
-        />
+        <div className={styles.searchWrap}>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder={t('conversations.search')}
+            className={styles.searchInput}
+          />
+          <span className={styles.searchHelp}>{t('conversations.searchHelp')}</span>
+        </div>
         <div className={styles.filterGroup}>
           <Filter size={14} aria-hidden="true" />
           <select
@@ -318,8 +323,9 @@ export default function ConversationsPage() {
             aria-label={t('conversations.allChannels')}
           >
             <option value="">{t('conversations.allChannels')}</option>
-            <option value="web">Web</option>
-            <option value="whatsapp">WhatsApp</option>
+            {CHANNEL_FILTER_OPTIONS.map((ch) => (
+              <option key={ch} value={ch}>{getChannelMeta(ch).label}</option>
+            ))}
           </select>
           <select
             className={styles.select}
@@ -357,6 +363,7 @@ export default function ConversationsPage() {
               title={a.name}
               onClick={() => setAgentFilter(a.id)}
             >
+              <Bot size={12} aria-hidden="true" />
               {a.name}
             </button>
           ))}
@@ -438,17 +445,18 @@ export default function ConversationsPage() {
                     </div>
 
                     <div className={styles.itemMeta}>
-                      <span className={styles.agentLabel}>{conv.agentName}</span>
+                      <span className={styles.agentLabel}>
+                        <Bot size={11} aria-hidden="true" /> {conv.agentName}
+                      </span>
 
-                      {conv.channel === 'web' ? (
-                        <span className={styles.channelBadge} title="Web">
-                          <Globe size={11} aria-hidden="true" /> Web
-                        </span>
-                      ) : (
-                        <span className={`${styles.channelBadge} ${styles.whatsapp}`} title="WhatsApp">
-                          <Phone size={11} aria-hidden="true" /> WhatsApp
-                        </span>
-                      )}
+                      {(() => {
+                        const { icon: ChannelIcon, label } = getChannelMeta(conv.channel);
+                        return (
+                          <span className={`${styles.channelBadge} ${conv.channel === 'whatsapp' ? styles.whatsapp : ''}`} title={label}>
+                            <ChannelIcon size={11} aria-hidden="true" /> {label}
+                          </span>
+                        );
+                      })()}
 
                       <Badge variant={statusCfg.variant} size="sm">
                         {statusCfg.label}

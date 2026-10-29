@@ -1101,6 +1101,9 @@
   "conversations": {
     "title": "Conversaciones",
     "search": "Buscar conversaciones...",
+    "searchHelp": "Busca por nombre, teléfono o correo del contacto",
+    "backToList": "Volver a conversaciones",
+    "closeConversation": "Cerrar conversación",
     "empty": {
       "title": "Sin conversaciones aún",
       "description": "Las conversaciones aparecerán aquí cuando los visitantes hablen con tus agentes"

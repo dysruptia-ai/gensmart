@@ -1101,6 +1101,9 @@
   "conversations": {
     "title": "Conversations",
     "search": "Search conversations...",
+    "searchHelp": "Search by contact name, phone or email",
+    "backToList": "Back to conversations",
+    "closeConversation": "Close conversation",
     "empty": {
       "title": "No conversations yet",
       "description": "Conversations will appear here when visitors chat with your agents"

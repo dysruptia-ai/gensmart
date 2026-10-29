@@ -7,8 +7,8 @@ import {
   ArrowLeft,
   Send,
   X,
-  Globe,
-  Phone,
+  Bot,
+  CheckCircle,
   MoreHorizontal,
   Paperclip,
   Mic,
@@ -29,6 +29,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatRelativeTime } from '@/lib/formatters';
 import { PLAN_LIMITS } from '@gensmart/shared';
+import { getChannelMeta, type ConversationChannel } from '@/components/conversations/channelMeta';
 import styles from './chat.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -64,7 +65,7 @@ interface ConversationDetail {
     funnelStage: string | null;
     customVariables: Record<string, unknown>;
   } | null;
-  channel: 'web' | 'whatsapp';
+  channel: ConversationChannel;
   status: 'active' | 'human_takeover' | 'closed';
   takenOverBy: string | null;
   takeoverUserName: string | null;
@@ -536,10 +537,10 @@ export default function ConversationDetailPage() {
 
   return (
     <div className={styles.page}>
-      {/* Back button (mobile) */}
-      <div className={styles.mobileBack}>
+      {/* Back to list */}
+      <div className={styles.backBar}>
         <Link href="/dashboard/conversations" className={styles.backLink}>
-          <ArrowLeft size={16} aria-hidden="true" /> Conversations
+          <ArrowLeft size={16} aria-hidden="true" /> {t('conversations.backToList')}
         </Link>
       </div>
 
@@ -557,15 +558,14 @@ export default function ConversationDetailPage() {
               <div className={styles.chatHeaderInfo}>
                 <span className={styles.chatName}>{displayName}</span>
                 <div className={styles.chatMeta}>
-                  {conversation.channel === 'web' ? (
-                    <span className={styles.channelTag}>
-                      <Globe size={10} aria-hidden="true" /> Web
-                    </span>
-                  ) : (
-                    <span className={`${styles.channelTag} ${styles.whatsapp}`}>
-                      <Phone size={10} aria-hidden="true" /> WhatsApp
-                    </span>
-                  )}
+                  {(() => {
+                    const { icon: ChannelIcon, label } = getChannelMeta(conversation.channel);
+                    return (
+                      <span className={`${styles.channelTag} ${conversation.channel === 'whatsapp' ? styles.whatsapp : ''}`}>
+                        <ChannelIcon size={10} aria-hidden="true" /> {label}
+                      </span>
+                    );
+                  })()}
                   <Badge
                     variant={STATUS_VARIANT[conversation.status] ?? 'neutral'}
                     size="sm"
@@ -577,19 +577,22 @@ export default function ConversationDetailPage() {
                       <Badge variant="info" size="sm">{t('conversations.handoff.badge')}</Badge>
                     </span>
                   )}
-                  <span className={styles.agentTag}>{conversation.agentName}</span>
+                  <span className={styles.agentTag}>
+                    <Bot size={10} aria-hidden="true" /> {conversation.agentName}
+                  </span>
                 </div>
               </div>
             </div>
             <div className={styles.chatHeaderRight}>
               {conversation.status !== 'closed' && (
                 <button
-                  className={styles.iconBtn}
+                  className={styles.closeConvBtn}
                   onClick={handleCloseConversation}
                   title="Close conversation"
                   aria-label="Close conversation"
                 >
-                  <X size={16} aria-hidden="true" />
+                  <CheckCircle size={16} aria-hidden="true" />
+                  <span>{t('conversations.closeConversation')}</span>
                 </button>
               )}
               <button
