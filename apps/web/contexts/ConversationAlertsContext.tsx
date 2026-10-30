@@ -191,44 +191,50 @@ export function ConversationAlertsProvider({ children }: { children: React.React
   const count = unseen.size + needsHelp.size;
   const hasUrgent = needsHelp.size > 0;
 
-  // Favicon with a counter (best effort: the original icon is restored when nothing is pending)
-  const originalFaviconRef = useRef<string | null>(null);
+  // Favicon with a counter (best effort). Next.js renders several <link rel="icon"> (ico + PNG sizes) and the
+  // browser may show any of them, so every one is redrawn. Each keeps its own original in data-original-href.
   useEffect(() => {
-    const link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]');
-    if (!link) return;
-    originalFaviconRef.current ??= link.href;
-    const originalHref = originalFaviconRef.current;
-    if (count === 0) {
-      link.href = originalHref;
-      return;
-    }
+    const links = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel~="icon"]'));
     let cancelled = false;
-    const img = new Image();
-    img.onload = () => {
-      try {
-        if (cancelled) return;
-        const canvas = document.createElement('canvas');
-        canvas.width = FAVICON_SIZE;
-        canvas.height = FAVICON_SIZE;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        ctx.drawImage(img, 0, 0, FAVICON_SIZE, FAVICON_SIZE);
-        ctx.beginPath();
-        ctx.arc(21, 11, 11, 0, Math.PI * 2);
-        ctx.fillStyle = hasUrgent ? '#EF4444' : '#25D366';
-        ctx.fill();
-        ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 15px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(count > 9 ? '9+' : String(count), 21, 12);
-        link.type = 'image/png';
-        link.href = canvas.toDataURL('image/png');
-      } catch {
-        // Keep the original favicon
+    for (const link of links) {
+      link.dataset['originalHref'] ??= link.href;
+      const originalHref = link.dataset['originalHref'];
+      if (count === 0) {
+        link.href = originalHref;
+        continue;
       }
-    };
-    img.src = originalHref;
+      const img = new Image();
+      img.onload = () => {
+        try {
+          if (cancelled) return;
+          const size = img.naturalWidth || FAVICON_SIZE;
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          ctx.drawImage(img, 0, 0, size, size);
+          const radius = size * 0.34;
+          const cx = size - radius;
+          const cy = radius;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.fillStyle = hasUrgent ? '#EF4444' : '#25D366';
+          ctx.fill();
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `bold ${Math.round(size * 0.47)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(count > 9 ? '9+' : String(count), cx, cy + size * 0.03);
+          const dataUrl = canvas.toDataURL('image/png');
+          link.type = 'image/png';
+          link.href = dataUrl;
+        } catch {
+          // Tainted canvas or unsupported image: leave this icon untouched
+        }
+      };
+      img.src = originalHref;
+    }
     return () => {
       cancelled = true;
     };
