@@ -214,18 +214,29 @@ export function ConversationAlertsProvider({ children }: { children: React.React
           const ctx = canvas.getContext('2d');
           if (!ctx) return;
           ctx.drawImage(img, 0, 0, size, size);
-          const radius = size * 0.34;
-          const cx = size - radius;
-          const cy = radius;
+          // 16px (or smaller) icons get a plain dot: a digit is unreadable there
+          const dotOnly = size <= 16;
+          const margin = Math.max(1, size * 0.05);
+          const ring = Math.max(1, size * 0.06);
+          const radius = size * (dotOnly ? 0.28 : 0.3);
+          const cx = size - margin - ring - radius;
+          const cy = margin + ring + radius;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius + ring, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.fill();
           ctx.beginPath();
           ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-          ctx.fillStyle = hasUrgent ? '#EF4444' : '#25D366';
+          ctx.fillStyle = hasUrgent ? '#EF4444' : '#128C7E';
           ctx.fill();
-          ctx.fillStyle = '#FFFFFF';
-          ctx.font = `bold ${Math.round(size * 0.47)}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(count > 9 ? '9+' : String(count), cx, cy + size * 0.03);
+          if (!dotOnly) {
+            const label = count > 9 ? '9+' : String(count);
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `900 ${Math.round(radius * (label.length > 1 ? 1.15 : 1.4))}px Inter, Arial, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, cx, cy + radius * 0.06);
+          }
           const dataUrl = canvas.toDataURL('image/png');
           link.type = 'image/png';
           link.href = dataUrl;
