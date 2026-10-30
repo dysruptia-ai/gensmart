@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, CheckCircle, Unplug } from 'lucide-react';
+import { PLAN_LIMITS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -38,8 +39,6 @@ interface InstagramConfigProps {
   orgPlan: string;
 }
 
-const FREE_PLAN_PLANS = ['free'];
-
 export default function InstagramConfig({ agentId, orgPlan }: InstagramConfigProps) {
   const { success, error: toastError } = useToast();
   const { t } = useTranslation();
@@ -56,7 +55,8 @@ export default function InstagramConfig({ agentId, orgPlan }: InstagramConfigPro
   const [selectionOptions, setSelectionOptions] = useState<AccountOption[]>([]);
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
 
-  const isFreePlan = FREE_PLAN_PLANS.includes(orgPlan);
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('instagram');
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
   const configId = process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID_INSTAGRAM'];
   const hasSignup = !!fbAppId && !!configId;

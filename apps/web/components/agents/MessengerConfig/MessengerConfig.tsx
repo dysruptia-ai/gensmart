@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, CheckCircle, Unplug } from 'lucide-react';
+import { PLAN_LIMITS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -38,8 +39,6 @@ interface MessengerConfigProps {
   orgPlan: string;
 }
 
-const FREE_PLAN_PLANS = ['free'];
-
 export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigProps) {
   const { success, error: toastError } = useToast();
   const { t } = useTranslation();
@@ -56,7 +55,8 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
   const [selectionOptions, setSelectionOptions] = useState<PageOption[]>([]);
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
 
-  const isFreePlan = FREE_PLAN_PLANS.includes(orgPlan);
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('facebook');
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
   const configId = process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID_MESSENGER'];
   const hasSignup = !!fbAppId && !!configId;

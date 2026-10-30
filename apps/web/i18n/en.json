@@ -999,6 +999,9 @@
         }
       },
       "telegramConfig": {
+        "gateTitle": "Telegram Requires Starter Plan",
+        "gateDesc": "Connect a Telegram bot to deploy this agent on Telegram. Available on Starter, Pro, and Enterprise plans.",
+        "upgrade": "Upgrade Plan",
         "statusLabel": "Telegram status",
         "connected": "Connected",
         "notConnected": "Not Connected",

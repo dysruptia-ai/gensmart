@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Mail, CheckCircle, Unplug, Copy, Check, Save } from 'lucide-react';
+import { PLAN_LIMITS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -31,7 +32,6 @@ interface EmailConfigProps {
   orgPlan: string;
 }
 
-const FREE_PLAN_PLANS = ['free'];
 const MAX_AUTO_REPLY = 2000;
 const MAX_SIGNATURE = 1000;
 
@@ -54,7 +54,8 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const submittingRef = useRef(false);
 
-  const isFreePlan = FREE_PLAN_PLANS.includes(orgPlan);
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('email');
   const autoReplyMissing = autoReplyEnabled && autoReplyText.trim().length === 0;
 
   const loadStatus = useCallback(async () => {

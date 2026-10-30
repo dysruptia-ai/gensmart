@@ -826,6 +826,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('whatsapp')}
                       onChange={(_checked) => toggleChannel('whatsapp')}
+                      disabled={!(planLimits.channels as readonly string[]).includes('whatsapp')}
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -833,6 +834,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('facebook')}
                       onChange={(_checked) => toggleChannel('facebook')}
+                      disabled={!(planLimits.channels as readonly string[]).includes('facebook')}
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -840,6 +842,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('instagram')}
                       onChange={(_checked) => toggleChannel('instagram')}
+                      disabled={!(planLimits.channels as readonly string[]).includes('instagram')}
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -847,6 +850,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('telegram')}
                       onChange={(_checked) => toggleChannel('telegram')}
+                      disabled={!(planLimits.channels as readonly string[]).includes('telegram')}
                     />
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -854,7 +858,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('email')}
                       onChange={(_checked) => toggleChannel('email')}
-                      disabled={orgPlan === 'free'}
+                      disabled={!(planLimits.channels as readonly string[]).includes('email')}
                     />
                   </div>
                 </div>
@@ -921,7 +925,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('whatsapp')}
                       onChange={(_checked) => toggleChannel('whatsapp')}
-                      disabled={orgPlan === 'free'}
+                      disabled={!(planLimits.channels as readonly string[]).includes('whatsapp')}
                     />
                   </div>
                 </div>
@@ -946,7 +950,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('facebook')}
                       onChange={(_checked) => toggleChannel('facebook')}
-                      disabled={orgPlan === 'free'}
+                      disabled={!(planLimits.channels as readonly string[]).includes('facebook')}
                     />
                   </div>
                 </div>
@@ -971,7 +975,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('instagram')}
                       onChange={(_checked) => toggleChannel('instagram')}
-                      disabled={orgPlan === 'free'}
+                      disabled={!(planLimits.channels as readonly string[]).includes('instagram')}
                     />
                   </div>
                 </div>
@@ -982,7 +986,7 @@ export default function AgentEditorPage() {
                 )}
               </div>
 
-              {/* Telegram — no plan gate yet (deliberately available on every plan) */}
+              {/* Telegram */}
               <div className={styles.channelSection}>
                 <div className={styles.channelHeader}>
                   <div className={styles.channelToggleRow}>
@@ -996,12 +1000,15 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('telegram')}
                       onChange={(_checked) => toggleChannel('telegram')}
+                      disabled={!(planLimits.channels as readonly string[]).includes('telegram')}
                     />
                   </div>
                 </div>
-                <div className={styles.channelBody}>
-                  <TelegramConfig agentId={agentId} />
-                </div>
+                {orgPlanLoaded && (
+                  <div className={styles.channelBody}>
+                    <TelegramConfig agentId={agentId} orgPlan={orgPlan} />
+                  </div>
+                )}
               </div>
 
               {/* Email */}
@@ -1018,7 +1025,7 @@ export default function AgentEditorPage() {
                     <Toggle
                       checked={channels.includes('email')}
                       onChange={(_checked) => toggleChannel('email')}
-                      disabled={orgPlan === 'free'}
+                      disabled={!(planLimits.channels as readonly string[]).includes('email')}
                     />
                   </div>
                 </div>

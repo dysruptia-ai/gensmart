@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Unplug } from 'lucide-react';
+import { PLAN_LIMITS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
@@ -27,8 +28,6 @@ interface WhatsAppConfigProps {
   orgPlan: string;
 }
 
-const FREE_PLAN_PLANS = ['free'];
-
 // Manual Setup only helps when auto-discovery failed. Meta policy errors,
 // plan gates or expired codes would fail the same way there.
 const MANUAL_FALLBACK_CODES = new Set(['NO_WABA_SHARED', 'NO_PHONE_FOUND']);
@@ -52,7 +51,8 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
 
-  const isFreePlan = FREE_PLAN_PLANS.includes(orgPlan);
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('whatsapp');
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
   const hasEmbeddedSignup = !!fbAppId;
 

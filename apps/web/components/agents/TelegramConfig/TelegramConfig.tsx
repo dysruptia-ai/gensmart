@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Send, CheckCircle, Unplug, KeyRound } from 'lucide-react';
+import { FaTelegram } from 'react-icons/fa6';
+import { PLAN_LIMITS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
@@ -30,6 +32,7 @@ interface ConnectResponse {
 
 interface TelegramConfigProps {
   agentId: string;
+  orgPlan: string;
 }
 
 // <bot id>:<secret>, e.g. 123456789:AAH... — UX hint only, the backend validates against Telegram.
@@ -44,10 +47,13 @@ const DISCONNECTED_STATUS: TelegramStatus = {
   channelEnabled: false,
 };
 
-export default function TelegramConfig({ agentId }: TelegramConfigProps) {
+export default function TelegramConfig({ agentId, orgPlan }: TelegramConfigProps) {
   const { success, error: toastError } = useToast();
   const { t } = useTranslation();
   const tm = (key: string, values?: Record<string, string | number>) => t('agents.channels.telegramConfig.' + key, values);
+
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('telegram');
 
   const [status, setStatus] = useState<TelegramStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -148,6 +154,29 @@ export default function TelegramConfig({ agentId }: TelegramConfigProps) {
     return (
       <div className={styles.loadingWrapper}>
         <Spinner />
+      </div>
+    );
+  }
+
+  // Free plan gate
+  if (isFreePlan) {
+    return (
+      <div className={styles.gate}>
+        <div className={styles.gateIcon}>
+          <FaTelegram size={28} color="var(--color-text-secondary)" aria-hidden="true" />
+        </div>
+        <div className={styles.gateText}>
+          <div className={styles.gateTitle}>{tm('gateTitle')}</div>
+          <p className={styles.gateDesc}>
+            {tm('gateDesc')}
+          </p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => window.open('/pricing', '_blank')}
+        >
+          {tm('upgrade')}
+        </Button>
       </div>
     );
   }
