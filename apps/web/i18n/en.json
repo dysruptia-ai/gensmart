@@ -1108,7 +1108,10 @@
       "enable": "Enable conversation notifications",
       "newMessageTitle": "New customer message",
       "handoffTitle": "Human help requested",
-      "badgeLabel": "{count} conversations need attention"
+      "badgeLabel": "{count} conversations need attention",
+      "channelRestrictedTitle": "Channel unavailable",
+      "channelRestrictedMessage": "{channel} stopped responding — your current plan doesn't include this channel. Upgrade to {plan} to keep using it.",
+      "channelRestrictedFallbackPlan": "a higher plan"
     },
     "searchHelp": "Search by contact name, phone or email",
     "showAll": "Show all (no 8-day limit)",

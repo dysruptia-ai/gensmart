@@ -1108,7 +1108,10 @@
       "enable": "Activar notificaciones de conversaciones",
       "newMessageTitle": "Nuevo mensaje de un cliente",
       "handoffTitle": "Ayuda humana solicitada",
-      "badgeLabel": "{count} conversaciones requieren atención"
+      "badgeLabel": "{count} conversaciones requieren atención",
+      "channelRestrictedTitle": "Canal no disponible",
+      "channelRestrictedMessage": "{channel} dejó de responder — tu plan actual no incluye este canal. Mejora a {plan} para seguir usándolo.",
+      "channelRestrictedFallbackPlan": "un plan superior"
     },
     "searchHelp": "Busca por nombre, teléfono o correo del contacto",
     "showAll": "Ver todas (sin límite de 8 días)",

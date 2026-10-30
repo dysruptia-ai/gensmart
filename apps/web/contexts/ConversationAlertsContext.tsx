@@ -4,6 +4,8 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { usePathname, useRouter } from 'next/navigation';
 import { useWebSocket, type WebSocketEvents } from '@/hooks/useWebSocket';
 import { useTranslation } from '@/hooks/useTranslation';
+import { useToast } from '@/components/ui/Toast';
+import { getChannelMeta } from '@/components/conversations/channelMeta';
 
 interface ConversationAlertsValue {
   /** Conversations with an unseen customer message plus those asking for a human. */
@@ -40,6 +42,10 @@ function withId(set: Set<string>, id: string): Set<string> {
 type MessageNewPayload = Parameters<WebSocketEvents['message:new']>[0];
 type NotificationPayload = Parameters<WebSocketEvents['notification:new']>[0];
 
+function capitalizePlan(plan: string): string {
+  return plan.charAt(0).toUpperCase() + plan.slice(1);
+}
+
 function customerMessage(data: MessageNewPayload): string | null {
   const fromArray = data.messages?.find((m) => m.role === 'user');
   if (fromArray) return fromArray.content;
@@ -50,6 +56,7 @@ function customerMessage(data: MessageNewPayload): string | null {
 export function ConversationAlertsProvider({ children }: { children: React.ReactNode }) {
   const { on, off } = useWebSocket();
   const { t } = useTranslation();
+  const { warning } = useToast();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -62,8 +69,10 @@ export function ConversationAlertsProvider({ children }: { children: React.React
   const audioRef = useRef<AudioContext | null>(null);
   const tRef = useRef(t);
   const routerRef = useRef(router);
+  const warningRef = useRef(warning);
   tRef.current = t;
   routerRef.current = router;
+  warningRef.current = warning;
 
   useEffect(() => {
     if (typeof Notification !== 'undefined') setPermission(Notification.permission);
@@ -144,13 +153,26 @@ export function ConversationAlertsProvider({ children }: { children: React.React
       }
     };
 
+    const handleChannelRestricted: WebSocketEvents['channel:restricted'] = (data) => {
+      const channelLabel = getChannelMeta(data.channel).label;
+      const planLabel = data.requiredPlan
+        ? capitalizePlan(data.requiredPlan)
+        : tRef.current('conversations.alerts.channelRestrictedFallbackPlan');
+      warningRef.current(
+        tRef.current('conversations.alerts.channelRestrictedTitle'),
+        tRef.current('conversations.alerts.channelRestrictedMessage', { channel: channelLabel, plan: planLabel })
+      );
+    };
+
     on('message:new', handleMessage);
     on('notification:new', handleNotification);
     on('takeover:status', handleTakeover);
+    on('channel:restricted', handleChannelRestricted);
     return () => {
       off('message:new', handleMessage);
       off('notification:new', handleNotification);
       off('takeover:status', handleTakeover);
+      off('channel:restricted', handleChannelRestricted);
     };
   }, [on, off, playSound, showNotification]);
 
