@@ -191,6 +191,12 @@ export interface WebSocketEvents {
     current: number;
     limit: number;
   }) => void;
+  'channel:restricted': (data: {
+    conversationId: string;
+    agentId: string;
+    channel: string;
+    requiredPlan: string | null;
+  }) => void;
   'notification:new': (data: {
     id: string;
     type: string;

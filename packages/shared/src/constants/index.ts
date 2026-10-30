@@ -21,7 +21,7 @@ export const PLAN_LIMITS = {
     agents: 3,
     messagesPerMonth: 1000,
     contacts: 500,
-    channels: ['web', 'whatsapp'] as const,
+    channels: ['web', 'whatsapp', 'email', 'telegram', 'facebook', 'instagram'] as const,
     knowledgeFiles: 5,
     customFunctions: 2,
     mcpServers: 0,
@@ -39,7 +39,7 @@ export const PLAN_LIMITS = {
     agents: 10,
     messagesPerMonth: 5000,
     contacts: 2000,
-    channels: ['web', 'whatsapp'] as const,
+    channels: ['web', 'whatsapp', 'email', 'telegram', 'facebook', 'instagram'] as const,
     knowledgeFiles: 20,
     customFunctions: 10,
     mcpServers: 3,
@@ -57,7 +57,7 @@ export const PLAN_LIMITS = {
     agents: Infinity,
     messagesPerMonth: 25000,
     contacts: Infinity,
-    channels: ['web', 'whatsapp'] as const,
+    channels: ['web', 'whatsapp', 'email', 'telegram', 'facebook', 'instagram'] as const,
     knowledgeFiles: Infinity,
     customFunctions: Infinity,
     mcpServers: Infinity,
@@ -72,6 +72,16 @@ export const PLAN_LIMITS = {
     emailNotificationTools: Infinity,
   },
 } as const;
+
+export function getMinimumPlanForChannel(channel: string): string | null {
+  const planOrder: Array<keyof typeof PLAN_LIMITS> = ['free', 'starter', 'pro', 'enterprise'];
+  for (const plan of planOrder) {
+    if ((PLAN_LIMITS[plan].channels as readonly string[]).includes(channel)) {
+      return plan;
+    }
+  }
+  return null;
+}
 
 export const PRICING = {
   starter: {

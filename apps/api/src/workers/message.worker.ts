@@ -1,7 +1,7 @@
 import { Worker, Job } from 'bullmq';
 import { createBullConnection } from '../config/queues';
 import { query } from '../config/database';
-import { PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
+import { PLAN_LIMITS, injectConfigVariablesDeep, getMinimumPlanForChannel } from '@gensmart/shared';
 import { chat, ChatMessage, ToolDefinition, ToolCall, type ContentPart, supportsVision } from '../services/llm.service';
 import { flushBuffer } from '../services/message-buffer.service';
 import { checkLimit, incrementMessages } from '../services/usage.service';
@@ -266,6 +266,24 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   const org = orgResult.rows[0];
   const plan = (org?.plan ?? 'free') as PlanKey;
   const planLimits = PLAN_LIMITS[plan];
+
+  // Centralized channel gate for all 6 channels — defense in depth, runs before the usage check
+  // so a disallowed channel is rejected even if the org still has message quota left.
+  const channelAllowed = conv.channel === 'web' || (planLimits.channels as readonly string[]).includes(conv.channel);
+  if (!channelAllowed) {
+    console.log(`[msg-worker] Channel '${conv.channel}' not allowed on plan '${plan}' for org ${organizationId} — skipping`);
+    try {
+      getIO().to(`org:${organizationId}`).emit('channel:restricted', {
+        conversationId,
+        agentId,
+        channel: conv.channel,
+        requiredPlan: getMinimumPlanForChannel(conv.channel),
+      });
+    } catch {
+      // WebSocket might not be initialized in test
+    }
+    return;
+  }
 
   // Resolve BYO key for Enterprise
   let byoApiKey: string | undefined;

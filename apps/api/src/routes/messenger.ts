@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { checkChannelAccess } from '../middleware/planLimits';
 import { validateUUID } from '../middleware/validateUUID';
 import { query } from '../config/database';
 import { env } from '../config/env';
@@ -385,17 +386,9 @@ router.post(
   '/embedded-signup-complete',
   requireAuth,
   orgContext,
+  checkChannelAccess('facebook'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // 1. Plan check
-      const orgResult = await query<{ plan: string }>(
-        'SELECT plan FROM organizations WHERE id = $1',
-        [req.org!.id]
-      );
-      if (orgResult.rows[0]?.plan === 'free') {
-        throw new AppError(403, 'Messenger requires Starter plan or higher', 'PLAN_LIMIT');
-      }
-
       const fbAppId = env.FACEBOOK_APP_ID;
       const fbAppSecret = env.FACEBOOK_APP_SECRET;
       if (!fbAppId || !fbAppSecret) {

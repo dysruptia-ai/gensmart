@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../config/database';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { PLAN_LIMITS, getMinimumPlanForChannel } from '@gensmart/shared';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -129,11 +129,14 @@ export function checkChannelAccess(channel: string) {
       const allowedChannels = PLAN_LIMITS[plan]?.channels as readonly string[];
 
       if (!allowedChannels.includes(channel)) {
+        const requiredPlan = getMinimumPlanForChannel(channel);
         res.status(403).json({
           error: {
-            message: `${channel} channel requires Starter plan or above. Upgrade to connect.`,
+            message: requiredPlan
+              ? `${channel} channel requires ${requiredPlan} plan or above. Upgrade to connect.`
+              : `${channel} channel is not available on any plan.`,
             code: 'PLAN_LIMIT_REACHED',
-            requiredPlan: 'starter',
+            requiredPlan,
           },
         });
         return;

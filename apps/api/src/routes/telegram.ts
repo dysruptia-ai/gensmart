@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { validate } from '../middleware/validate';
+import { checkChannelAccess } from '../middleware/planLimits';
 import { validateUUID } from '../middleware/validateUUID';
 import { query } from '../config/database';
 import { env } from '../config/env';
@@ -302,6 +303,7 @@ router.post(
   '/connect',
   requireAuth,
   orgContext,
+  checkChannelAccess('telegram'),
   validate(connectSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

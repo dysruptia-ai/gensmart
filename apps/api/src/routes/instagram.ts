@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { checkChannelAccess } from '../middleware/planLimits';
 import { validateUUID } from '../middleware/validateUUID';
 import { query } from '../config/database';
 import { env } from '../config/env';
@@ -155,16 +156,11 @@ async function processMessagingEvent(instagramId: string, event: InstagramEvent)
     return;
   }
 
-  // Check plan — Free cannot use paid channels (same rule as WhatsApp)
   const orgResult = await query<{ plan: string }>(
     'SELECT plan FROM organizations WHERE id = $1',
     [agent.organization_id]
   );
   const plan = (orgResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
-  if (plan === 'free') {
-    console.log(`[instagram] Org ${agent.organization_id} on free plan — Instagram not available`);
-    return;
-  }
   const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 
   let pageToken: string | null = null;
@@ -392,17 +388,9 @@ router.post(
   '/embedded-signup-complete',
   requireAuth,
   orgContext,
+  checkChannelAccess('instagram'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      // 1. Plan check
-      const orgResult = await query<{ plan: string }>(
-        'SELECT plan FROM organizations WHERE id = $1',
-        [req.org!.id]
-      );
-      if (orgResult.rows[0]?.plan === 'free') {
-        throw new AppError(403, 'Instagram requires Starter plan or higher', 'PLAN_LIMIT');
-      }
-
       const fbAppId = env.FACEBOOK_APP_ID;
       const fbAppSecret = env.FACEBOOK_APP_SECRET;
       if (!fbAppId || !fbAppSecret) {

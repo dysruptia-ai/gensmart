@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { validate } from '../middleware/validate';
+import { checkChannelAccess } from '../middleware/planLimits';
 import { validateUUID } from '../middleware/validateUUID';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
@@ -100,10 +101,6 @@ async function processEmail(agent: EmailAgentRow, event: ResendReceivedEvent): P
 
   const orgResult = await query<{ plan: string }>('SELECT plan FROM organizations WHERE id = $1', [agent.organization_id]);
   const plan = (orgResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
-  if (plan === 'free') {
-    console.log(`[email] Org ${agent.organization_id} on free plan — email channel not available`);
-    return;
-  }
   const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 
   // Attachments: images (vision plans only) and PDFs (text extracted)
@@ -365,16 +362,11 @@ router.post(
   '/connect',
   requireAuth,
   orgContext,
+  checkChannelAccess('email'),
   validate(connectSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const body = req.body as z.infer<typeof connectSchema>;
-
-      // Plan gate: Starter or higher (same rule as Messenger)
-      const orgResult = await query<{ plan: string }>('SELECT plan FROM organizations WHERE id = $1', [req.org!.id]);
-      if ((orgResult.rows[0]?.plan ?? 'free') === 'free') {
-        throw new AppError(403, 'Email requires Starter plan or higher', 'PLAN_LIMIT');
-      }
 
       if (!isEmailChannelConfigured()) {
         throw new AppError(503, 'Email is not configured on this server', 'NOT_CONFIGURED');
