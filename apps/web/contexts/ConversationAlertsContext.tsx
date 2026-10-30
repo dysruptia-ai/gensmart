@@ -103,7 +103,7 @@ export function ConversationAlertsProvider({ children }: { children: React.React
   const showNotification = useCallback((conversationId: string, title: string, body: string) => {
     try {
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
-      const notification = new Notification(title, { body, tag: conversationId });
+      const notification = new Notification(title, { body, tag: conversationId, icon: '/apple-touch-icon.png' });
       notification.onclick = () => {
         window.focus();
         routerRef.current.push(`/dashboard/conversations/${conversationId}`);
