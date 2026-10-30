@@ -26,6 +26,7 @@ import Spinner from '@/components/ui/Spinner';
 import Skeleton from '@/components/ui/Skeleton';
 import { Logo } from '@/components/ui/Logo';
 import UpgradeBanner from '@/components/billing/UpgradeBanner';
+import SuspendedBanner from '@/components/billing/SuspendedBanner';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import WelcomeTour from '@/components/onboarding/WelcomeTour';
 import { ConversationAlertsProvider, useConversationAlerts } from '@/contexts/ConversationAlertsContext';
@@ -258,6 +259,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         )}
 
         <main className={styles.content}>
+          <SuspendedBanner />
           {usageSummary && (
             <UpgradeBanner
               messagesPercent={usageSummary.messages.percent}

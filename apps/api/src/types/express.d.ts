@@ -10,6 +10,7 @@ declare global {
         slug: string;
         plan: string;
         subscription_status: string;
+        is_suspended: boolean;
       };
     }
   }

@@ -59,7 +59,7 @@ const PLAN_BADGE: Record<string, string> = {
   enterprise: 'badgeEnterprise',
 };
 
-const PLANS = ['free', 'starter', 'pro', 'enterprise'] as const;
+const PLANS = ['solo', 'starter', 'pro', 'enterprise'] as const;
 
 export default function AdminOrgDetailPage() {
   const params = useParams();

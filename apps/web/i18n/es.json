@@ -58,7 +58,7 @@
       "pricing": "Precios",
       "blog": "Blog",
       "login": "Iniciar sesión",
-      "getStarted": "Comenzar gratis",
+      "getStarted": "Comenzar",
       "howItWorks": "Cómo funciona"
     },
     "hero": {
@@ -71,7 +71,7 @@
       "leadsMonth": "Leads capturados/mes",
       "uptime": "Disponibilidad",
       "badge": "Ahora con Conexión WhatsApp en 1 Click",
-      "freeForeverHint": "Gratis para siempre · Sin tarjeta de crédito",
+      "freeForeverHint": "Planes desde $20/mes",
       "titleStart": "Crea y Despliega",
       "titleHighlight": "Agentes IA",
       "titleEnd": " en Minutos, No Semanas"
@@ -176,7 +176,7 @@
     },
     "pricing": {
       "title": "Precios simples y transparentes",
-      "subtitle": "Comienza gratis, escala cuando crezcas. Sin costos ocultos.",
+      "subtitle": "Precios simples, escala cuando crezcas. Sin costos ocultos.",
       "monthly": "Mensual",
       "quarterly": "Trimestral",
       "yearly": "Anual",
@@ -209,7 +209,7 @@
       "ctaSecondary": "Agendar una demo",
       "altTitle": "¿Listo para desplegar tu primer agente de IA?",
       "altSubtitle": "Únete a más de {count}+ empresas que ya usan GenSmart para automatizar conversaciones y capturar más leads.",
-      "hint": "Sin tarjeta de crédito · Plan gratuito para siempre"
+      "hint": "Planes desde $20/mes"
     },
     "footer": {
       "product": "Producto",
@@ -1483,9 +1483,13 @@
       "buyAddon": "Comprar mensajes",
       "upgradePlan": "Mejorar plan"
     },
+    "suspendedBanner": {
+      "message": "Tu suscripción está en pausa — tus agentes dejaron de responder nuevos mensajes.",
+      "cta": "Reactivar suscripción"
+    },
     "plans": {
-      "free": {
-        "name": "Gratis",
+      "solo": {
+        "name": "Solo",
         "description": "Perfecto para empezar"
       },
       "starter": {
@@ -1763,7 +1767,7 @@
       "a4": "¡Sí! Los usuarios del plan Enterprise pueden usar sus propias claves API para eliminar todos los límites de mensajes."
     },
     "pageTitle": "Precios simples y transparentes",
-    "pageSubtitle": "Empieza gratis. Actualiza cuando quieras. Sin costos ocultos.",
+    "pageSubtitle": "Precios simples. Actualiza cuando quieras. Sin costos ocultos.",
     "foreverFree": "Gratis para siempre",
     "billedMonthly": "Facturación mensual",
     "billedQuarterly": "facturación trimestral",

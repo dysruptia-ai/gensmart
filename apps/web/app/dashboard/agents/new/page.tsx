@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Bot, Wand2, Loader2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
@@ -26,6 +27,7 @@ interface Agent {
 export default function NewAgentPage() {
   const router = useRouter();
   const { error: toastError, success: toastSuccess } = useToast();
+  const { isSuspended } = useAuth();
   const [method, setMethod] = useState<Method | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -157,7 +159,7 @@ export default function NewAgentPage() {
             <Button
               onClick={handleCreateFromTemplate}
               loading={creating}
-              disabled={!selectedTemplate}
+              disabled={!selectedTemplate || isSuspended}
               icon={creating ? Loader2 : undefined}
             >
               Create from Template
@@ -189,7 +191,7 @@ export default function NewAgentPage() {
               <Button variant="secondary" type="button" onClick={() => setMethod(null)}>
                 Back
               </Button>
-              <Button type="submit" loading={creating} disabled={!name.trim()}>
+              <Button type="submit" loading={creating} disabled={!name.trim() || isSuspended}>
                 Create Agent
               </Button>
             </div>

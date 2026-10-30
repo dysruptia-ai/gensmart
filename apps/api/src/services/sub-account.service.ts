@@ -85,7 +85,7 @@ export async function createSubAccount(
   const slug = slugify(data.name);
   const childOrgResult = await query<OrgRow>(
     `INSERT INTO organizations (id, name, slug, plan, subscription_status, created_at, updated_at)
-     VALUES (gen_random_uuid(), $1, $2, 'free', 'active', NOW(), NOW())
+     VALUES (gen_random_uuid(), $1, $2, 'solo', 'active', NOW(), NOW())
      RETURNING id, name, plan, slug`,
     [data.name, slug]
   );

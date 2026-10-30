@@ -124,7 +124,11 @@ async function request<T>(
   }
 
   if (!res.ok) {
-    throw await parseError(res);
+    const err = await parseError(res);
+    if (res.status === 403 && err.code === 'ORG_SUSPENDED' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('org:suspended'));
+    }
+    throw err;
   }
 
   if (res.status === 204) {

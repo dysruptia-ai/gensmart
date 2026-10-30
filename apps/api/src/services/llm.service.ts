@@ -4,7 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 export const LLM_MODELS = {
   openai: {
     'gpt-4o': { name: 'GPT-4o', plans: ['pro', 'enterprise'] },
-    'gpt-4o-mini': { name: 'GPT-4o Mini', plans: ['free', 'starter', 'pro', 'enterprise'] },
+    'gpt-4o-mini': { name: 'GPT-4o Mini', plans: ['solo', 'starter', 'pro', 'enterprise'] },
   },
   anthropic: {
     'claude-sonnet-5': { name: 'Claude Sonnet 5', plans: ['pro', 'enterprise'] },

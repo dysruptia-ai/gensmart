@@ -55,7 +55,7 @@ export default function InstagramConfig({ agentId, orgPlan }: InstagramConfigPro
   const [selectionOptions, setSelectionOptions] = useState<AccountOption[]>([]);
   const [pendingSessionId, setPendingSessionId] = useState<string | null>(null);
 
-  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'solo') as keyof typeof PLAN_LIMITS;
   const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('instagram');
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
   const configId = process.env['NEXT_PUBLIC_FACEBOOK_CONFIG_ID_INSTAGRAM'];

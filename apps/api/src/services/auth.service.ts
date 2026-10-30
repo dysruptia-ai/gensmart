@@ -20,6 +20,7 @@ import {
 } from '../config/email';
 import { AppError } from '../middleware/errorHandler';
 import { pickSessionMembership } from './access-rules';
+import { getSettingValue } from './platform-settings.service';
 import {
   ATTEMPT_LIMITS,
   buildAttemptKey,
@@ -40,6 +41,8 @@ export interface AuthTokens {
     role: string;
     orgId: string;
     orgName: string;
+    orgIsSuspended: boolean;
+    orgTrialEndsAt: string | null;
     totpEnabled: boolean;
     language: string;
     onboardingCompleted: boolean;
@@ -75,6 +78,8 @@ interface UserRow {
 interface OrgRow {
   id: string;
   name: string;
+  is_suspended: boolean;
+  trial_ends_at: string | null;
 }
 
 interface RefreshTokenRow {
@@ -97,6 +102,19 @@ interface BackupCodeRow {
  * to answer as known ones.
  */
 const DUMMY_PASSWORD_HASH = '$2a$12$YLq4uYJCenDMzoRwIB2mv.Sl67J5yF68oLfQs3TA2eQawtz2rdVuK';
+
+/** Falls back to this if the admin setting is missing (should not happen — seeded by migration 065). */
+const DEFAULT_TRIAL_DURATION_DAYS = 15;
+
+async function getTrialDurationDays(): Promise<number> {
+  try {
+    const raw = await getSettingValue('trial_duration_days');
+    const parsed = parseInt(raw, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TRIAL_DURATION_DAYS;
+  } catch {
+    return DEFAULT_TRIAL_DURATION_DAYS;
+  }
+}
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -173,6 +191,8 @@ async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> 
       role: user.role,
       orgId: user.organization_id,
       orgName: org.name,
+      orgIsSuspended: org.is_suspended,
+      orgTrialEndsAt: org.trial_ends_at,
       totpEnabled: user.totp_enabled,
       language: user.language ?? 'en',
       onboardingCompleted: user.onboarding_completed ?? false,
@@ -238,17 +258,28 @@ export async function register(input: {
 
   const passwordHash = await bcrypt.hash(input.password, 12);
   const client = await getClient();
-  let promoApplied = false;
 
   try {
     await client.query('BEGIN');
 
+    // Checked before the org INSERT so a default trial can be set in the same statement when no
+    // (valid) promo code was given — the promo's own trial, if any, is still applied later on email
+    // verification (consumeEmailVerificationToken), re-validated at that point.
+    let promoApplied = false;
+    if (input.promoCode) {
+      promoApplied = (await findValidPromo(client, input.promoCode)) !== null;
+      // If code is invalid, silently ignore — user still registers with the default trial below
+    }
+    const trialEndsAt = promoApplied
+      ? null
+      : new Date(Date.now() + (await getTrialDurationDays()) * 24 * 60 * 60 * 1000);
+
     const orgSlug = slugify(input.organizationName);
     const orgResult = await client.query<OrgRow>(
-      `INSERT INTO organizations (id, name, slug, plan, subscription_status, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, 'free', 'active', NOW(), NOW())
+      `INSERT INTO organizations (id, name, slug, plan, subscription_status, trial_ends_at, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, 'solo', 'active', $3, NOW(), NOW())
        RETURNING id, name`,
-      [input.organizationName, orgSlug]
+      [input.organizationName, orgSlug, trialEndsAt?.toISOString() ?? null]
     );
     const org = orgResult.rows[0];
 
@@ -266,13 +297,6 @@ export async function register(input: {
        ON CONFLICT (user_id, organization_id) DO NOTHING`,
       [user.id, org.id]
     );
-
-    // Promo code: only checked here. It is applied when the email is verified (consumeEmailVerificationToken),
-    // so an account that never confirms cannot consume a code's limited uses.
-    if (input.promoCode) {
-      promoApplied = (await findValidPromo(client, input.promoCode)) !== null;
-      // If code is invalid, silently ignore — user still registers on Free plan
-    }
 
     await client.query('COMMIT');
 
@@ -371,7 +395,7 @@ export async function login(input: {
   const membership = await resolveSessionMembership(user);
   const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
   const orgResult = await query<OrgRow>(
-    'SELECT id, name FROM organizations WHERE id = $1',
+    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
     [sessionUser.organization_id]
   );
   const org = orgResult.rows[0];
@@ -453,7 +477,7 @@ export async function verify2FA(input: {
   }
   const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
   const orgResult = await query<OrgRow>(
-    'SELECT id, name FROM organizations WHERE id = $1',
+    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
     [sessionUser.organization_id]
   );
   const org = orgResult.rows[0];
@@ -561,7 +585,7 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
   }
 
   const orgResult = await query<OrgRow>(
-    'SELECT id, name FROM organizations WHERE id = $1',
+    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
     [payload.orgId]
   );
   const org = orgResult.rows[0];
@@ -619,7 +643,9 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
     user = updated.rows[0];
 
     // Apply the promo code chosen at registration, re-validated now: it may have expired or been
-    // exhausted by others since. If so the account is still verified and simply stays on Free.
+    // exhausted by others since. If so the account is still verified and simply stays on the
+    // default trial already set at registration.
+    let promoTrialApplied = false;
     if (row.promo_code && user) {
       const promo = await findValidPromo(client, row.promo_code);
       if (promo) {
@@ -638,8 +664,22 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
              WHERE id = $4`,
             [promo.plan, trialEndsAt.toISOString(), promo.id, user.organization_id]
           );
+          promoTrialApplied = true;
         }
       }
+    }
+
+    // Safety net for the race window between registration and verification: a promo code that was
+    // valid at registration (so register() skipped the default trial) can expire or be exhausted by
+    // the time the email is confirmed. If so, trial_ends_at is still NULL here — fall back to the
+    // same default trial register() would have set had no promo code been given at all.
+    if (!promoTrialApplied && user) {
+      const trialEndsAt = new Date(Date.now() + (await getTrialDurationDays()) * 24 * 60 * 60 * 1000);
+      await client.query(
+        `UPDATE organizations SET trial_ends_at = $1, updated_at = NOW()
+         WHERE id = $2 AND trial_ends_at IS NULL`,
+        [trialEndsAt.toISOString(), user.organization_id]
+      );
     }
 
     await client.query('COMMIT');
@@ -990,7 +1030,7 @@ export async function consumeOrgAccessToken(token: string): Promise<AuthTokens |
   if (!user) throw new AppError(404, 'User not found', 'USER_NOT_FOUND');
 
   const orgResult = await query<OrgRow>(
-    'SELECT id, name FROM organizations WHERE id = $1',
+    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
     [tokenRow.organization_id]
   );
   const org = orgResult.rows[0];

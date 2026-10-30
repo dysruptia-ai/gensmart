@@ -80,8 +80,8 @@ async function processTelegramMessage(agent: TelegramAgentRow, msg: TelegramInco
     'SELECT plan FROM organizations WHERE id = $1',
     [agent.organization_id]
   );
-  const plan = (orgResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
-  const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  const plan = (orgResult.rows[0]?.plan ?? 'solo') as keyof typeof PLAN_LIMITS;
+  const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.solo;
 
   let botToken: string | null = null;
   try {

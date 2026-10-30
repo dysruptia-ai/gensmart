@@ -195,7 +195,6 @@ router.get(
         welcome_message: resolvedWelcomeMessage,
         bubble_text: (webCfg['bubble_text'] as string) ?? 'Chat with us',
         position: (webCfg['position'] as string) ?? 'bottom-right',
-        show_branding: agent.plan === 'free',
       };
 
       // Cache for 5 minutes
@@ -451,8 +450,8 @@ router.post(
         'SELECT plan FROM organizations WHERE id = $1',
         [agentResult.rows[0]?.organization_id ?? conv.organization_id]
       );
-      const widgetPlan = (orgPlanResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
-      const widgetPlanLimits = PLAN_LIMITS[widgetPlan] ?? PLAN_LIMITS.free;
+      const widgetPlan = (orgPlanResult.rows[0]?.plan ?? 'solo') as keyof typeof PLAN_LIMITS;
+      const widgetPlanLimits = PLAN_LIMITS[widgetPlan] ?? PLAN_LIMITS.solo;
 
       // Push to message buffer — image, voice transcription, or text (with plan gating)
       if (hasImage && !widgetPlanLimits.imageVision) {

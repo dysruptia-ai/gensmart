@@ -6,7 +6,7 @@ import Button from '@/components/ui/Button';
 import { useTranslation } from '@/hooks/useTranslation';
 import styles from './PlanUpgradeModal.module.css';
 
-type PlanName = 'starter' | 'pro' | 'enterprise';
+type PlanName = 'solo' | 'starter' | 'pro' | 'enterprise';
 type Interval = 'monthly' | 'quarterly' | 'yearly';
 
 interface Props {
@@ -24,6 +24,20 @@ const PLANS: Array<{
   monthlyEquiv: Record<Interval, string>;
   features: string[];
 }> = [
+  {
+    key: 'solo',
+    name: 'Solo',
+    prices: { monthly: '$20', quarterly: '$54.00', yearly: '$192.00' },
+    monthlyEquiv: { monthly: '$20/mo', quarterly: '$18.00/mo', yearly: '$16.00/mo' },
+    features: [
+      '1 agent',
+      '200 messages/month',
+      'Unlimited contacts',
+      'Web + WhatsApp',
+      '1 knowledge file',
+      'Community support',
+    ],
+  },
   {
     key: 'starter',
     name: 'Starter',

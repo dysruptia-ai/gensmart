@@ -6,6 +6,7 @@ import {
   Globe, Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText, Mail,
 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { PLAN_LIMITS, type HandoffConfig } from '@gensmart/shared';
 import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
@@ -126,6 +127,7 @@ export default function AgentEditorPage() {
   const pathname = usePathname();
   const { success, error: toastError } = useToast();
   const { t, language } = useTranslation();
+  const { isSuspended } = useAuth();
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const previewBottomRef = useRef<HTMLDivElement>(null);
   const previewInputRef = useRef<HTMLInputElement>(null);
@@ -149,7 +151,7 @@ export default function AgentEditorPage() {
   const [publishBlockedKeys, setPublishBlockedKeys] = useState<string[] | null>(null);
 
   // Plan state
-  const [orgPlan, setOrgPlan] = useState<PlanKey>('free');
+  const [orgPlan, setOrgPlan] = useState<PlanKey>('solo');
   const [orgPlanLoaded, setOrgPlanLoaded] = useState(false);
 
   // Preview state — previewPending counts concurrent in-flight requests
@@ -597,7 +599,7 @@ export default function AgentEditorPage() {
           {t(`agents.editor.status.${agent.status}`)}
         </Badge>
         <div className={styles.headerActions}>
-          <Button variant="secondary" size="sm" icon={Save} onClick={handleSave} loading={saving}>
+          <Button variant="secondary" size="sm" icon={Save} onClick={handleSave} loading={saving} disabled={isSuspended}>
             {t('agents.editor.save')}
           </Button>
           <Button
@@ -609,7 +611,7 @@ export default function AgentEditorPage() {
           >
             {t('agents.editor.preview')}
           </Button>
-          <Button size="sm" icon={Rocket} onClick={() => setShowPublishModal(true)} data-tour="publish-btn">
+          <Button size="sm" icon={Rocket} onClick={() => setShowPublishModal(true)} data-tour="publish-btn" disabled={isSuspended}>
             {t('agents.editor.publish')}
           </Button>
         </div>

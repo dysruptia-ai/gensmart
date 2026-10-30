@@ -110,7 +110,7 @@ export default function BillingPage() {
     }
   }
 
-  async function handleUpgrade(plan: 'starter' | 'pro' | 'enterprise', interval: 'monthly' | 'quarterly' | 'yearly') {
+  async function handleUpgrade(plan: 'solo' | 'starter' | 'pro' | 'enterprise', interval: 'monthly' | 'quarterly' | 'yearly') {
     setUpgradeLoading(true);
     try {
       const result = await api.post<{ url?: string; success?: boolean }>('/api/billing/create-checkout', { plan, interval });
@@ -141,7 +141,7 @@ export default function BillingPage() {
     }
   }
 
-  const currentPlan = subscription?.plan ?? 'free';
+  const currentPlan = subscription?.plan ?? 'solo';
 
   return (
     <div className={styles.page}>

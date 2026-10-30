@@ -335,7 +335,7 @@ async function prepareHandoffConfig(orgId: string, storedRaw: unknown, partialRa
 
   if (partial.enabled === true) {
     const org = await query<{ plan: string }>('SELECT plan FROM organizations WHERE id = $1', [orgId]);
-    if ((org.rows[0]?.plan ?? 'free') === 'free') {
+    if ((org.rows[0]?.plan ?? 'solo') === 'solo') {
       throw new AppError(403, 'Human handoff requires Starter plan or higher', 'PLAN_LIMIT');
     }
   }

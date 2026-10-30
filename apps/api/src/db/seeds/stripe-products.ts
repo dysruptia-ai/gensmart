@@ -23,6 +23,7 @@ interface PlanPrices {
 }
 
 interface PriceMap {
+  solo: PlanPrices;
   starter: PlanPrices;
   pro: PlanPrices;
   enterprise: PlanPrices;
@@ -100,11 +101,40 @@ async function main(): Promise<void> {
   }
 
   const priceMap: PriceMap = {
+    solo: { monthly: '', quarterly: '', yearly: '' },
     starter: { monthly: '', quarterly: '', yearly: '' },
     pro: { monthly: '', quarterly: '', yearly: '' },
     enterprise: { monthly: '', quarterly: '', yearly: '' },
     addons: { messages_500: '', messages_2000: '', messages_5000: '' },
   };
+
+  // ── Solo Plan ────────────────────────────────────────────────────────────
+  console.log('\n📦 Solo Plan ($20/mo)');
+  const soloProduct = await getOrCreateProduct('GenSmart Solo', { plan: 'solo' });
+
+  const soloMonthly = await getOrCreatePrice(
+    soloProduct.id, 2000, 'usd',
+    { interval: 'month', interval_count: 1 },
+    { plan: 'solo', interval: 'monthly' },
+    'Solo Monthly'
+  );
+  priceMap.solo.monthly = soloMonthly.id;
+
+  const soloQuarterly = await getOrCreatePrice(
+    soloProduct.id, 5400, 'usd',
+    { interval: 'month', interval_count: 3 },
+    { plan: 'solo', interval: 'quarterly' },
+    'Solo Quarterly (10% off)'
+  );
+  priceMap.solo.quarterly = soloQuarterly.id;
+
+  const soloYearly = await getOrCreatePrice(
+    soloProduct.id, 19200, 'usd',
+    { interval: 'year', interval_count: 1 },
+    { plan: 'solo', interval: 'yearly' },
+    'Solo Yearly (20% off)'
+  );
+  priceMap.solo.yearly = soloYearly.id;
 
   // ── Starter Plan ─────────────────────────────────────────────────────────
   console.log('\n📦 Starter Plan ($29/mo)');
@@ -217,6 +247,9 @@ async function main(): Promise<void> {
 
   // ── Summary ────────────────────────────────────────────────────────────────
   console.log('\n✅ Done! Add these to your .env file:\n');
+  console.log(`STRIPE_PRICE_SOLO_MONTHLY=${priceMap.solo.monthly}`);
+  console.log(`STRIPE_PRICE_SOLO_QUARTERLY=${priceMap.solo.quarterly}`);
+  console.log(`STRIPE_PRICE_SOLO_YEARLY=${priceMap.solo.yearly}`);
   console.log(`STRIPE_PRICE_STARTER_MONTHLY=${priceMap.starter.monthly}`);
   console.log(`STRIPE_PRICE_STARTER_QUARTERLY=${priceMap.starter.quarterly}`);
   console.log(`STRIPE_PRICE_STARTER_YEARLY=${priceMap.starter.yearly}`);
@@ -235,6 +268,9 @@ async function main(): Promise<void> {
   if (fs.existsSync(envPath)) {
     let envContent = fs.readFileSync(envPath, 'utf-8');
     const updates: Record<string, string> = {
+      STRIPE_PRICE_SOLO_MONTHLY: priceMap.solo.monthly,
+      STRIPE_PRICE_SOLO_QUARTERLY: priceMap.solo.quarterly,
+      STRIPE_PRICE_SOLO_YEARLY: priceMap.solo.yearly,
       STRIPE_PRICE_STARTER_MONTHLY: priceMap.starter.monthly,
       STRIPE_PRICE_STARTER_QUARTERLY: priceMap.starter.quarterly,
       STRIPE_PRICE_STARTER_YEARLY: priceMap.starter.yearly,

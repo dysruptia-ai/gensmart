@@ -4,10 +4,11 @@ import { env } from '../config/env';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
+import { createNotification } from './notification.service';
 
 // ── Price ID resolution ───────────────────────────────────────────────────────
 
-type PlanName = 'starter' | 'pro' | 'enterprise';
+type PlanName = 'solo' | 'starter' | 'pro' | 'enterprise';
 type Interval = 'monthly' | 'quarterly' | 'yearly';
 type AddonKey = 'messages_500' | 'messages_2000' | 'messages_5000';
 
@@ -259,6 +260,13 @@ export async function updateOrgSubscription(params: {
   periodStart: Date | null;
   periodEnd: Date | null;
 }): Promise<void> {
+  // Only a healthy status means the org actually has a working, paid relationship with us again —
+  // 'past_due' / 'unpaid' / 'incomplete' / 'incomplete_expired' / 'paused' must NOT clear suspension,
+  // or a subscription.updated webhook for a still-broken subscription could un-suspend an org that
+  // should stay blocked.
+  const HEALTHY_STATUSES = new Set(['active', 'trialing']);
+  const clearsSuspension = HEALTHY_STATUSES.has(params.status);
+
   await query(
     `UPDATE organizations
      SET plan = $1,
@@ -266,6 +274,7 @@ export async function updateOrgSubscription(params: {
          subscription_status = $3,
          current_period_start = $4,
          current_period_end = $5,
+         is_suspended = CASE WHEN $7 THEN false ELSE is_suspended END,
          updated_at = NOW()
      WHERE id = $6`,
     [
@@ -275,18 +284,27 @@ export async function updateOrgSubscription(params: {
       params.periodStart?.toISOString() ?? null,
       params.periodEnd?.toISOString() ?? null,
       params.orgId,
+      clearsSuspension,
     ]
   );
+  if (clearsSuspension) {
+    try { getIO().to(`org:${params.orgId}`).emit('org:reactivated', {}); } catch { /* ignore */ }
+  }
 }
 
-export async function downgradeOrgToFree(orgId: string): Promise<void> {
+/**
+ * Suspends the org on subscription cancellation. Unlike the old "downgrade to free" behavior,
+ * `plan` is left untouched — there is no free tier to fall back to, and preserving `plan` is what
+ * lets a later resubscribe (via updateOrgSubscription) restore exactly what the org was paying for.
+ */
+export async function suspendOrgOnCancellation(orgId: string): Promise<void> {
   await query(
     `UPDATE organizations
-     SET plan = 'free',
-         stripe_subscription_id = NULL,
+     SET stripe_subscription_id = NULL,
          subscription_status = 'canceled',
          current_period_start = NULL,
          current_period_end = NULL,
+         is_suspended = true,
          updated_at = NOW()
      WHERE id = $1`,
     [orgId]
@@ -383,10 +401,23 @@ export async function handleWebhookEvent(event: Stripe.Event): Promise<void> {
       const sub = event.data.object as Stripe.Subscription;
       const orgId = sub.metadata?.['orgId'];
       if (!orgId) return;
-      await downgradeOrgToFree(orgId);
+      await suspendOrgOnCancellation(orgId);
       await saveBillingEvent(orgId, event.id, event.type, null, { reason: 'subscription_deleted' });
-      console.log(`[webhook] Subscription deleted — org ${orgId} downgraded to free`);
-      try { getIO().to(`org:${orgId}`).emit('billing:subscription_updated', { plan: 'free', status: 'canceled' }); } catch { /* ignore */ }
+      console.log(`[webhook] Subscription deleted — org ${orgId} suspended`);
+      try { getIO().to(`org:${orgId}`).emit('billing:subscription_updated', { status: 'canceled' }); } catch { /* ignore */ }
+      try { getIO().to(`org:${orgId}`).emit('org:suspended', { reason: 'subscription_cancelled' }); } catch { /* ignore */ }
+      try {
+        await createNotification({
+          organizationId: orgId,
+          type: 'org_suspended',
+          title: 'Subscription Paused',
+          message: 'Your subscription was cancelled. Reactivate it to resume service.',
+          data: { reason: 'subscription_cancelled' },
+          sendEmail: true,
+        });
+      } catch (err) {
+        console.error(`[webhook] Failed to notify org ${orgId} of suspension:`, err);
+      }
       break;
     }
 

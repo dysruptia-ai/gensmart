@@ -33,7 +33,7 @@ const ROLE_VARIANTS: Record<string, RoleVariant> = {
 };
 
 export default function TeamSettingsPage() {
-  const { user } = useAuth();
+  const { user, isSuspended } = useAuth();
   const { success, error: toastError } = useToast();
   const { t } = useTranslation();
   const [members, setMembers] = useState<Member[]>([]);
@@ -109,7 +109,7 @@ export default function TeamSettingsPage() {
           <p className={styles.pageDesc}>{t('settings.team.description')}</p>
         </div>
         {isOwner && (
-          <Button icon={UserPlus} onClick={() => setInviteOpen(true)} size="sm">
+          <Button icon={UserPlus} onClick={() => setInviteOpen(true)} size="sm" disabled={isSuspended}>
             {t('settings.team.inviteMember')}
           </Button>
         )}
@@ -195,7 +195,7 @@ export default function TeamSettingsPage() {
           </div>
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
             <Button variant="secondary" type="button" onClick={() => setInviteOpen(false)}>{t('common.cancel')}</Button>
-            <Button type="submit" loading={inviting} icon={UserPlus}>{t('settings.team.sendInvite')}</Button>
+            <Button type="submit" loading={inviting} icon={UserPlus} disabled={isSuspended}>{t('settings.team.sendInvite')}</Button>
           </div>
         </form>
       </Modal>
@@ -212,7 +212,7 @@ export default function TeamSettingsPage() {
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
           <Button variant="secondary" onClick={() => setConfirmRemove(null)}>{t('common.cancel')}</Button>
-          <Button variant="danger" loading={removing} icon={Trash2} onClick={() => confirmRemove && handleRemove(confirmRemove)}>
+          <Button variant="danger" loading={removing} icon={Trash2} disabled={isSuspended} onClick={() => confirmRemove && handleRemove(confirmRemove)}>
             {t('common.delete')}
           </Button>
         </div>

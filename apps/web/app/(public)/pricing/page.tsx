@@ -11,12 +11,12 @@ type BillingCycle = 'monthly' | 'quarterly' | 'yearly';
 
 const PLANS = [
   {
-    id: 'free',
-    name: 'Free',
-    monthlyPrice: 0,
+    id: 'solo',
+    name: 'Solo',
+    monthlyPrice: 20,
     highlight: false,
-    ctaKey: 'pricing.getStarted' as const,
-    href: '/register',
+    ctaKey: 'pricing.startFreeTrial' as const,
+    href: '/register?plan=solo',
   },
   {
     id: 'starter',
@@ -59,8 +59,8 @@ const FEATURE_GROUPS: FeatureGroup[] = [
     groupKey: 'core',
     rows: [
       { label: 'AI Agents', values: ['1', '3', '10', 'Unlimited'] },
-      { label: 'Messages / month', values: ['50', '1,000', '5,000', '25,000'] },
-      { label: 'Contacts', values: ['25', '500', '2,000', 'Unlimited'] },
+      { label: 'Messages / month', values: ['200', '1,000', '5,000', '25,000'] },
+      { label: 'Contacts', values: ['Unlimited', '500', '2,000', 'Unlimited'] },
       { label: 'Support', values: ['Community', 'Email', 'Priority', 'Dedicated'] },
     ],
   },
@@ -68,7 +68,7 @@ const FEATURE_GROUPS: FeatureGroup[] = [
     groupKey: 'channels',
     rows: [
       { label: 'Web widget', values: [true, true, true, true] },
-      { label: 'WhatsApp Business', values: [false, true, true, true] },
+      { label: 'WhatsApp Business', values: [true, true, true, true] },
       { label: 'Voice messages', values: [false, true, true, true] },
       { label: 'Image analysis', values: [false, false, true, true] },
     ],
@@ -123,7 +123,6 @@ export default function PricingPage() {
   const [contactOpen, setContactOpen] = useState(false);
 
   function getDisplayPrice(monthly: number) {
-    if (monthly === 0) return { price: '0', note: t('pricing.foreverFree') };
     if (cycle === 'quarterly') {
       const d = Math.round(monthly * 0.9);
       return { price: String(d), note: `$${d * 3} ${t('pricing.billedQuarterly')}` };

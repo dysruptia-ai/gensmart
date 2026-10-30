@@ -22,7 +22,7 @@ router.use(requireAuth, orgContext);
 // ── Schemas ────────────────────────────────────────────────────────────────
 
 const createCheckoutSchema = z.object({
-  plan: z.enum(['starter', 'pro', 'enterprise']),
+  plan: z.enum(['solo', 'starter', 'pro', 'enterprise']),
   interval: z.enum(['monthly', 'quarterly', 'yearly']),
   successUrl: z.string().url().optional(),
   cancelUrl: z.string().url().optional(),

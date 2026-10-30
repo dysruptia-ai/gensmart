@@ -337,7 +337,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
   // Plan limits
   const planKey = (orgPlan as keyof typeof PLAN_LIMITS) in PLAN_LIMITS
     ? (orgPlan as keyof typeof PLAN_LIMITS)
-    : 'free';
+    : 'solo';
   const limits = PLAN_LIMITS[planKey];
   const cfLimit = limits.customFunctions as number;
   const mcpLimit = limits.mcpServers as number;
@@ -1906,7 +1906,7 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
                 const isCustomFn = cat.type === 'custom_function';
                 const isMcp = cat.type === 'mcp';
                 const isEmailNotif = cat.type === 'email_notification';
-                // Only apply plan restrictions after orgPlan has loaded (avoids flash on 'free' default)
+                // Only apply plan restrictions after orgPlan has loaded (avoids flash on 'solo' default)
                 const planNeedsUpgrade = orgPlanLoaded && (
                   (isCustomFn && customFnNeedsUpgrade) ||
                   (isMcp && mcpNeedsUpgrade) ||

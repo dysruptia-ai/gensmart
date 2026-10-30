@@ -9,7 +9,7 @@ import React, {
   useRef,
 } from 'react';
 import { api, setAccessToken, ApiError } from '@/lib/api';
-import { disconnectSharedSocket } from '@/hooks/useWebSocket';
+import { disconnectSharedSocket, useWebSocket, type WebSocketEvents } from '@/hooks/useWebSocket';
 
 export interface AuthUser {
   id: string;
@@ -18,6 +18,8 @@ export interface AuthUser {
   role: string;
   orgId: string;
   orgName: string;
+  orgIsSuspended: boolean;
+  orgTrialEndsAt: string | null;
   totpEnabled: boolean;
   language: string;
   onboardingCompleted: boolean;
@@ -40,6 +42,8 @@ interface AuthContextValue {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** Convenience alias for user?.orgIsSuspended ?? false — gates mutation buttons across the dashboard. */
+  isSuspended: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
   verify2FA: (tempToken: string, code: string) => Promise<void>;
   register: (email: string, password: string, name: string, organizationName: string, turnstileToken: string, promoCode?: string) => Promise<RegisterResult>;
@@ -65,6 +69,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { on, off } = useWebSocket();
+
+  // Flips orgIsSuspended immediately on the real-time event, instead of waiting for the next
+  // silent refresh — the cron/Stripe webhook notify every open tab of the affected org.
+  useEffect(() => {
+    const handleSuspended: WebSocketEvents['org:suspended'] = () => {
+      setUser((prev) => (prev ? { ...prev, orgIsSuspended: true } : prev));
+    };
+    const handleReactivated: WebSocketEvents['org:reactivated'] = () => {
+      setUser((prev) => (prev ? { ...prev, orgIsSuspended: false } : prev));
+    };
+    on('org:suspended', handleSuspended);
+    on('org:reactivated', handleReactivated);
+    // Also triggered by lib/api.ts on a 403 ORG_SUSPENDED response, in case the WS event is
+    // delayed or the socket is disconnected.
+    const handleDomEvent = () => handleSuspended({ reason: 'api_403' });
+    window.addEventListener('org:suspended', handleDomEvent);
+    return () => {
+      off('org:suspended', handleSuspended);
+      off('org:reactivated', handleReactivated);
+      window.removeEventListener('org:suspended', handleDomEvent);
+    };
+  }, [on, off]);
 
   const scheduleRefresh = useCallback(() => {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
@@ -188,6 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        isSuspended: user?.orgIsSuspended ?? false,
         login,
         verify2FA,
         register,

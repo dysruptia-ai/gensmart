@@ -393,7 +393,7 @@ export async function checkContactLimit(
   plan: string
 ): Promise<{ allowed: boolean; current: number; limit: number }> {
   const planKey = plan as PlanKey;
-  const limits = PLAN_LIMITS[planKey] ?? PLAN_LIMITS.free;
+  const limits = PLAN_LIMITS[planKey] ?? PLAN_LIMITS.solo;
   const contactLimit = limits.contacts as number;
 
   const result = await query<{ count: string }>(

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Bot } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import Button from '@/components/ui/Button';
 import SearchInput from '@/components/ui/SearchInput';
@@ -37,6 +38,7 @@ interface AgentsResponse {
 export default function AgentsPage() {
   const router = useRouter();
   const { success, error: toastError } = useToast();
+  const { isSuspended } = useAuth();
   const { t } = useTranslation();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [total, setTotal] = useState(0);
@@ -44,7 +46,7 @@ export default function AgentsPage() {
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Agent | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [orgPlan, setOrgPlan] = useState<string>('free');
+  const [orgPlan, setOrgPlan] = useState<string>('solo');
 
   const loadAgents = useCallback(async (q?: string) => {
     setLoading(true);
@@ -98,7 +100,7 @@ export default function AgentsPage() {
   }
 
   type PlanKey = keyof typeof PLAN_LIMITS;
-  const planKey = (orgPlan as PlanKey) in PLAN_LIMITS ? (orgPlan as PlanKey) : 'free';
+  const planKey = (orgPlan as PlanKey) in PLAN_LIMITS ? (orgPlan as PlanKey) : 'solo';
   const rawLimit = PLAN_LIMITS[planKey].agents;
   const agentLimit = rawLimit === Infinity ? null : (rawLimit as number);
 
@@ -109,7 +111,7 @@ export default function AgentsPage() {
           <h1 className={styles.pageTitle}>{t('agents.title')}</h1>
           <p className={styles.pageDesc}>{t('agents.pageDescription')}</p>
         </div>
-        <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')} data-tour="new-agent-btn">
+        <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')} data-tour="new-agent-btn" disabled={isSuspended}>
           {t('agents.newAgent')}
         </Button>
       </div>
@@ -144,7 +146,7 @@ export default function AgentsPage() {
           title={t('agents.empty.title')}
           description={search ? t('agents.searchEmpty') : t('agents.empty.description')}
           action={!search ? (
-            <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')}>
+            <Button icon={Plus} onClick={() => router.push('/dashboard/agents/new')} disabled={isSuspended}>
               {t('agents.empty.cta')}
             </Button>
           ) : undefined}
@@ -176,6 +178,7 @@ export default function AgentsPage() {
           <Button
             variant="danger"
             loading={deleting}
+            disabled={isSuspended}
             onClick={() => deleteTarget && handleDelete(deleteTarget)}
           >
             {t('agents.card.deleteTitle')}

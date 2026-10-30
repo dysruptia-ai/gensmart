@@ -2,13 +2,14 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { requireActiveSubscription } from '../middleware/suspension';
 import { validate } from '../middleware/validate';
 import { query } from '../config/database';
 import { updateContactStage } from '../services/contact.service';
 import { AppError } from '../middleware/errorHandler';
 
 const router = Router();
-router.use(requireAuth, orgContext);
+router.use(requireAuth, orgContext, requireActiveSubscription());
 
 const moveSchema = z.object({
   contactId: z.string().uuid(),

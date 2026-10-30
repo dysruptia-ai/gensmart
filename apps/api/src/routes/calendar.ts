@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { requireActiveSubscription } from '../middleware/suspension';
 import { validate } from '../middleware/validate';
 import { AppError } from '../middleware/errorHandler';
 import {
@@ -64,7 +65,7 @@ const appointmentUpdateSchema = z.object({
 // ── Calendar Router (mounted at /api/calendars) ───────────────────────────────
 
 export const calendarRouter = Router();
-calendarRouter.use(requireAuth, orgContext);
+calendarRouter.use(requireAuth, orgContext, requireActiveSubscription());
 
 calendarRouter.get('/', async (req: Request, res: Response) => {
   const orgId = req.org!.id;
@@ -114,7 +115,7 @@ calendarRouter.delete('/:id', async (req: Request, res: Response) => {
 // ── Appointment Router (mounted at /api/appointments) ────────────────────────
 
 export const appointmentRouter = Router();
-appointmentRouter.use(requireAuth, orgContext);
+appointmentRouter.use(requireAuth, orgContext, requireActiveSubscription());
 
 // IMPORTANT: specific paths before param paths
 appointmentRouter.get('/available-slots', async (req: Request, res: Response) => {

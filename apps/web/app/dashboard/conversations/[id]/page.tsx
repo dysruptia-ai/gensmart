@@ -137,7 +137,7 @@ function ConversationDetailContent() {
   const [sendLoading, setSendLoading] = useState(false);
   const [takeoverLoading, setTakeoverLoading] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const [orgPlan, setOrgPlan] = useState<string>('free');
+  const [orgPlan, setOrgPlan] = useState<string>('solo');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -180,7 +180,7 @@ function ConversationDetailContent() {
   const fetchOrgPlan = useCallback(async () => {
     try {
       const data = await api.get<OrgData>('/api/organization');
-      setOrgPlan(data.plan ?? 'free');
+      setOrgPlan(data.plan ?? 'solo');
     } catch {
       // ignore
     }

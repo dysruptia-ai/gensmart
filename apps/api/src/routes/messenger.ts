@@ -150,17 +150,12 @@ async function processMessagingEvent(pageId: string, event: MessengerEvent): Pro
     return;
   }
 
-  // Check plan — Free cannot use paid channels (same rule as WhatsApp)
   const orgResult = await query<{ plan: string }>(
     'SELECT plan FROM organizations WHERE id = $1',
     [agent.organization_id]
   );
-  const plan = (orgResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
-  if (plan === 'free') {
-    console.log(`[messenger] Org ${agent.organization_id} on free plan — Messenger not available`);
-    return;
-  }
-  const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  const plan = (orgResult.rows[0]?.plan ?? 'solo') as keyof typeof PLAN_LIMITS;
+  const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.solo;
 
   let pageToken: string | null = null;
   try {

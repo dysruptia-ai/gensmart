@@ -146,6 +146,7 @@ interface MessageRow {
 
 interface OrgRow {
   plan: string;
+  is_suspended: boolean;
   byo_openai_key_encrypted: string | null;
   byo_anthropic_key_encrypted: string | null;
 }
@@ -260,12 +261,24 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // Step 4: Fetch org plan and check usage limit
   const orgResult = await query<OrgRow>(
-    'SELECT plan, byo_openai_key_encrypted, byo_anthropic_key_encrypted FROM organizations WHERE id = $1',
+    'SELECT plan, is_suspended, byo_openai_key_encrypted, byo_anthropic_key_encrypted FROM organizations WHERE id = $1',
     [organizationId]
   );
   const org = orgResult.rows[0];
-  const plan = (org?.plan ?? 'free') as PlanKey;
+  const plan = (org?.plan ?? 'solo') as PlanKey;
   const planLimits = PLAN_LIMITS[plan];
+
+  // Suspension is a stronger gate than channel/usage limits — a suspended org is blocked outright,
+  // regardless of which channel or how much quota remains.
+  if (org?.is_suspended) {
+    console.log(`[msg-worker] Org ${organizationId} is suspended — skipping message`);
+    try {
+      getIO().to(`org:${organizationId}`).emit('org:suspended', { reason: 'active_check' });
+    } catch {
+      // WebSocket might not be initialized in test
+    }
+    return;
+  }
 
   // Centralized channel gate for all 6 channels — defense in depth, runs before the usage check
   // so a disallowed channel is rejected even if the org still has message quota left.
@@ -421,7 +434,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     (conv.channel === 'whatsapp' || conv.channel === 'web' || conv.channel === 'facebook') &&
     handoffConfig.enabled &&
     handoffConfig.contacts.length > 0 &&
-    plan !== 'free'
+    plan !== 'solo'
   ) {
     llmTools.push(requestHumanHandoffToolDef);
     let handoffContactName: string | null = null;

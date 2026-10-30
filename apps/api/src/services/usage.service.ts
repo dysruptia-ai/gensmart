@@ -21,7 +21,7 @@ async function getOrgPlan(orgId: string): Promise<string> {
     `SELECT plan FROM organizations WHERE id = $1`,
     [orgId]
   );
-  return result.rows[0]?.plan ?? 'free';
+  return result.rows[0]?.plan ?? 'solo';
 }
 
 export async function incrementMessages(orgId: string): Promise<number> {

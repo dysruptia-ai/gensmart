@@ -241,18 +241,13 @@ router.post(
         return;
       }
 
-      // Check plan — Free cannot use WhatsApp
       const orgResult = await query<{ plan: string }>(
         'SELECT plan FROM organizations WHERE id = $1',
         [agent.organization_id]
       );
-      const plan = (orgResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
-      if (plan === 'free') {
-        console.log(`[whatsapp] Org ${agent.organization_id} on free plan — WhatsApp not available`);
-        return;
-      }
+      const plan = (orgResult.rows[0]?.plan ?? 'solo') as keyof typeof PLAN_LIMITS;
 
-      const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+      const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.solo;
 
       // Download image if this is an image message (gate by plan)
       let imageBufferItem: BufferItem | null = null;

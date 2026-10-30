@@ -100,8 +100,8 @@ async function processEmail(agent: EmailAgentRow, event: ResendReceivedEvent): P
   }
 
   const orgResult = await query<{ plan: string }>('SELECT plan FROM organizations WHERE id = $1', [agent.organization_id]);
-  const plan = (orgResult.rows[0]?.plan ?? 'free') as keyof typeof PLAN_LIMITS;
-  const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
+  const plan = (orgResult.rows[0]?.plan ?? 'solo') as keyof typeof PLAN_LIMITS;
+  const planLimits = PLAN_LIMITS[plan] ?? PLAN_LIMITS.solo;
 
   // Attachments: images (vision plans only) and PDFs (text extracted)
   let messageText = received.text;

@@ -100,7 +100,7 @@ function isIntInRange(value: string, min: number, max: number): boolean {
 export default function HandoffConfigurator({ agentId, orgPlan, initialConfig, onSaved }: HandoffConfiguratorProps) {
   const { t, language } = useTranslation();
   const { success, error: toastError } = useToast();
-  const isFreePlan = orgPlan === 'free';
+  const isFreePlan = orgPlan === 'solo';
 
   const [form, setForm] = useState<FormState>(() => toForm(initialConfig));
   const [baseline, setBaseline] = useState<string>(() => JSON.stringify(toPayload(toForm(initialConfig))));

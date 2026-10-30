@@ -158,6 +158,15 @@ const EMAIL_STRINGS = {
       body: 'Upgrade your plan or purchase add-on messages to continue processing conversations.',
       cta: 'Upgrade Plan',
     },
+    orgSuspended: {
+      subject: 'Your GenSmart subscription is paused',
+      heading: 'Subscription Paused',
+      greeting: (name: string) => `Hi ${name}, your organization's access to GenSmart has been paused.`,
+      reasonTrialExpired: 'Your trial period has ended.',
+      reasonCancelled: 'Your subscription was cancelled.',
+      body: 'Your agents have stopped responding to new messages. Reactivate your subscription to resume service — your plan and configuration are preserved.',
+      cta: 'Reactivate Subscription',
+    },
   },
   es: {
     highScoreLead: {
@@ -175,6 +184,15 @@ const EMAIL_STRINGS = {
       percent: '100% del límite de tu plan usado',
       body: 'Actualiza tu plan o compra mensajes adicionales para seguir procesando conversaciones.',
       cta: 'Actualizar plan',
+    },
+    orgSuspended: {
+      subject: 'Tu suscripción de GenSmart está en pausa',
+      heading: 'Suscripción en pausa',
+      greeting: (name: string) => `Hola ${name}, el acceso de tu organización a GenSmart ha sido pausado.`,
+      reasonTrialExpired: 'Tu período de prueba ha terminado.',
+      reasonCancelled: 'Tu suscripción fue cancelada.',
+      body: 'Tus agentes dejaron de responder nuevos mensajes. Reactiva tu suscripción para reanudar el servicio — tu plan y configuración se conservan.',
+      cta: 'Reactivar suscripción',
     },
   },
 };
@@ -243,6 +261,28 @@ async function sendNotificationEmail(
           </div>
           <p style="color: #6B7280; margin-bottom: 16px;">${s.body}</p>
           <a href="${upgradeUrl}" style="display: inline-block; background: #25D366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">${s.cta}</a>
+          <p style="color: #6B7280; font-size: 12px; margin-top: 24px;">GenSmart — AI Conversational Agents Platform</p>
+        </div>
+      `,
+    });
+  } else if (type === 'org_suspended') {
+    const reason = data['reason'] as string | undefined;
+    const billingUrl = `${frontendUrl}/dashboard/billing`;
+    const s = strings.orgSuspended;
+    const reasonText = reason === 'trial_expired' ? s.reasonTrialExpired : s.reasonCancelled;
+
+    await sendEmail({
+      to: user.email,
+      subject: s.subject,
+      html: `
+        <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; padding: 24px; border-radius: 12px;">
+          <h1 style="color: #EF4444; font-size: 22px; margin-bottom: 8px;">${s.heading}</h1>
+          <p style="color: #6B7280; margin-bottom: 8px;">${s.greeting(escapeHtml(user.name))}</p>
+          <p style="color: #6B7280; margin-bottom: 24px;">${reasonText}</p>
+          <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+            <p style="color: #1A1A1A; margin: 0;">${s.body}</p>
+          </div>
+          <a href="${billingUrl}" style="display: inline-block; background: #25D366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">${s.cta}</a>
           <p style="color: #6B7280; font-size: 12px; margin-top: 24px;">GenSmart — AI Conversational Agents Platform</p>
         </div>
       `,

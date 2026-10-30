@@ -22,7 +22,7 @@ interface SubAccount {
 }
 
 export default function SubAccountsPage() {
-  const { user } = useAuth();
+  const { user, isSuspended } = useAuth();
   const { success, error: toastError } = useToast();
   const { t } = useTranslation();
   const [subAccounts, setSubAccounts] = useState<SubAccount[]>([]);
@@ -105,7 +105,7 @@ export default function SubAccountsPage() {
           <p className={styles.pageDesc}>{t('settings.subAccounts.description')}</p>
         </div>
         {isOwner && (
-          <Button icon={Plus} onClick={() => setCreateOpen(true)} size="sm">
+          <Button icon={Plus} onClick={() => setCreateOpen(true)} size="sm" disabled={isSuspended}>
             {t('settings.subAccounts.create')}
           </Button>
         )}
@@ -180,7 +180,7 @@ export default function SubAccountsPage() {
           />
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
             <Button variant="secondary" type="button" onClick={() => setCreateOpen(false)}>{t('common.cancel')}</Button>
-            <Button type="submit" loading={creating} icon={Plus}>{t('common.create')}</Button>
+            <Button type="submit" loading={creating} icon={Plus} disabled={isSuspended}>{t('common.create')}</Button>
           </div>
         </form>
       </Modal>
@@ -203,7 +203,7 @@ export default function SubAccountsPage() {
         </p>
         <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
           <Button variant="secondary" onClick={() => setConfirmRemove(null)}>{t('common.cancel')}</Button>
-          <Button variant="danger" loading={removing} icon={Trash2} onClick={() => confirmRemove && handleRemove(confirmRemove)}>
+          <Button variant="danger" loading={removing} icon={Trash2} disabled={isSuspended} onClick={() => confirmRemove && handleRemove(confirmRemove)}>
             {t('common.delete')}
           </Button>
         </div>

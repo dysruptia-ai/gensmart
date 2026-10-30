@@ -24,6 +24,7 @@ interface Props {
 }
 
 const PLAN_PRICES: Record<string, Record<string, string>> = {
+  solo: { month: '$20/mo', year: '$192/yr', quarter: '$54/qtr' },
   starter: { month: '$29/mo', year: '$278/yr', quarter: '$78/qtr' },
   pro: { month: '$79/mo', year: '$758/yr', quarter: '$213/qtr' },
   enterprise: { month: '$199/mo', year: '$1,910/yr', quarter: '$537/qtr' },
@@ -31,10 +32,11 @@ const PLAN_PRICES: Record<string, Record<string, string>> = {
 
 function getPlanBadgeClass(plan: string): string {
   switch (plan) {
+    case 'solo': return styles.badgeStarter;
     case 'starter': return styles.badgeStarter;
     case 'pro': return styles.badgePro;
     case 'enterprise': return styles.badgeEnterprise;
-    default: return styles.badgeFree;
+    default: return styles.badgeStarter;
   }
 }
 
@@ -48,10 +50,9 @@ function getStatusIcon(status: string, cancelAtPeriodEnd: boolean) {
 export default function CurrentPlan({ subscription, loading, onManage, onChangePlan, isManaging }: Props) {
   const { t, language } = useTranslation();
 
-  const plan = subscription?.plan ?? 'free';
-  const isFree = plan === 'free';
+  const plan = subscription?.plan ?? 'solo';
 
-  const priceStr = !isFree && subscription?.interval
+  const priceStr = subscription?.interval
     ? PLAN_PRICES[plan]?.[subscription.interval] ?? ''
     : '';
 
@@ -82,27 +83,25 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
             fontWeight: 600,
             textTransform: 'capitalize',
           }}>
-            {isFree ? t('billing.currentPlan.freeForever') : plan}
+            {plan}
           </span>
         </div>
 
         <div className={styles.actions}>
-          {!isFree && (
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={onManage}
-              loading={isManaging}
-            >
-              {t('billing.currentPlan.manageSubscription')}
-            </Button>
-          )}
           <Button
-            variant={isFree ? 'primary' : 'secondary'}
+            variant="secondary"
+            size="sm"
+            onClick={onManage}
+            loading={isManaging}
+          >
+            {t('billing.currentPlan.manageSubscription')}
+          </Button>
+          <Button
+            variant="secondary"
             size="sm"
             onClick={onChangePlan}
           >
-            {isFree ? t('billing.currentPlan.upgradePlan') : t('billing.currentPlan.changePlan')}
+            {t('billing.currentPlan.changePlan')}
           </Button>
         </div>
       </div>
@@ -115,7 +114,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
               <span>{priceStr}</span>
             </div>
           )}
-          {subscription?.currentPeriodEnd && !isFree && (
+          {subscription?.currentPeriodEnd && (
             <div className={styles.metaRow}>
               <Calendar size={13} className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined} />
               <span className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined}>
@@ -123,7 +122,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
               </span>
             </div>
           )}
-          {!isFree && subscription && (
+          {subscription && (
             <div className={styles.metaRow}>
               {getStatusIcon(subscription.status, subscription.cancelAtPeriodEnd)}
               <span className={
@@ -134,12 +133,6 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
               }>
                 {getStatusText(subscription.status, subscription.cancelAtPeriodEnd)}
               </span>
-            </div>
-          )}
-          {isFree && (
-            <div className={styles.metaRow}>
-              <CheckCircle2 size={13} className={styles.statusFree} />
-              <span>{t('billing.currentPlan.freeForeverNote')}</span>
             </div>
           )}
         </div>

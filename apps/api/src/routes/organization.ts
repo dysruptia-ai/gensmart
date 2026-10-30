@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { requireActiveSubscription } from '../middleware/suspension';
 import { requireRole } from '../middleware/requireRole';
 import { validate } from '../middleware/validate';
 import { query } from '../config/database';
@@ -16,7 +17,7 @@ type PlanKey = keyof typeof PLAN_LIMITS;
 const router = Router();
 
 // All org routes require auth
-router.use(requireAuth, orgContext);
+router.use(requireAuth, orgContext, requireActiveSubscription());
 
 const updateOrgSchema = z.object({
   name: z.string().min(2).max(255).optional(),
@@ -129,7 +130,7 @@ router.delete(
 // ── BYO API Keys (Enterprise only) ──
 router.get('/api-keys', requireRole('owner', 'admin'), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const plan = (req.org?.plan ?? 'free') as PlanKey;
+    const plan = (req.org?.plan ?? 'solo') as PlanKey;
     if (!PLAN_LIMITS[plan]?.byoApiKey) {
       throw new AppError(403, 'BYO API Keys require Enterprise plan', 'PLAN_LIMIT_REACHED');
     }
@@ -171,7 +172,7 @@ router.put(
   validate(apiKeysSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       if (!PLAN_LIMITS[plan]?.byoApiKey) {
         throw new AppError(403, 'BYO API Keys require Enterprise plan', 'PLAN_LIMIT_REACHED');
       }
@@ -217,7 +218,7 @@ router.post(
   requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       if (!PLAN_LIMITS[plan]?.byoApiKey) {
         throw new AppError(403, 'BYO API Keys require Enterprise plan', 'PLAN_LIMIT_REACHED');
       }

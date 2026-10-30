@@ -47,7 +47,7 @@ const selectStyle: React.CSSProperties = {
 
 export default function GeneralSettingsPage() {
   const router = useRouter();
-  const { refreshUser, updateOnboarding } = useAuth();
+  const { refreshUser, updateOnboarding, isSuspended } = useAuth();
   const { language: ctxLanguage, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const { success, error: toastError } = useToast();
@@ -172,7 +172,7 @@ export default function GeneralSettingsPage() {
         </section>
 
         <div className={styles.formActions}>
-          <Button type="submit" loading={saving}>
+          <Button type="submit" loading={saving} disabled={isSuspended}>
             {t('settings.general.save')}
           </Button>
         </div>

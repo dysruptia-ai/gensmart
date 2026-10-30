@@ -9,7 +9,7 @@ type PlanKey = keyof typeof PLAN_LIMITS;
 export function checkAgentLimit() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       const limit = PLAN_LIMITS[plan]?.agents ?? 1;
 
       if (limit === Infinity) {
@@ -47,7 +47,7 @@ export function checkAgentLimit() {
 export function checkContactLimit() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       const limit = PLAN_LIMITS[plan]?.contacts ?? 25;
 
       if (limit === Infinity) {
@@ -85,7 +85,7 @@ export function checkContactLimit() {
 export function checkKnowledgeLimit() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       const limit = PLAN_LIMITS[plan]?.knowledgeFiles ?? 1;
 
       if (limit === Infinity) {
@@ -125,7 +125,7 @@ export function checkKnowledgeLimit() {
 export function checkChannelAccess(channel: string) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       const allowedChannels = PLAN_LIMITS[plan]?.channels as readonly string[];
 
       if (!allowedChannels.includes(channel)) {
@@ -154,7 +154,7 @@ export function checkChannelAccess(channel: string) {
 export function checkHumanTakeover() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       const allowed = PLAN_LIMITS[plan]?.humanTakeover ?? false;
 
       if (!allowed) {
@@ -180,7 +180,7 @@ export function checkHumanTakeover() {
 export function checkByoKeyAccess() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       const allowed = PLAN_LIMITS[plan]?.byoApiKey ?? false;
 
       if (!allowed) {
@@ -206,7 +206,7 @@ export function checkByoKeyAccess() {
 export function checkSubAccountLimit() {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'free') as PlanKey;
+      const plan = (req.org?.plan ?? 'solo') as PlanKey;
       const limit = PLAN_LIMITS[plan]?.subAccounts ?? 0;
 
       if (limit === 0) {

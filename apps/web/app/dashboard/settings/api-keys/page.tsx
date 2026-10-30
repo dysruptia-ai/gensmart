@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Key, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
@@ -17,6 +18,7 @@ interface ApiKeysData {
 
 export default function ApiKeysPage() {
   const { success, error: toastError } = useToast();
+  const { isSuspended } = useAuth();
   const [data, setData] = useState<ApiKeysData | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -165,6 +167,7 @@ export default function ApiKeysPage() {
                   type="button"
                   variant="secondary"
                   size="sm"
+                  disabled={isSuspended}
                   onClick={() => handleRemoveKey('openai')}
                 >
                   Remove Key
@@ -217,6 +220,7 @@ export default function ApiKeysPage() {
                   type="button"
                   variant="secondary"
                   size="sm"
+                  disabled={isSuspended}
                   onClick={() => handleRemoveKey('anthropic')}
                 >
                   Remove Key
@@ -227,7 +231,7 @@ export default function ApiKeysPage() {
         </section>
 
         <div className={styles.formActions}>
-          <Button type="submit" loading={saving}>
+          <Button type="submit" loading={saving} disabled={isSuspended}>
             Save API Keys
           </Button>
         </div>

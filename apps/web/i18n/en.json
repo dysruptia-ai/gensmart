@@ -58,7 +58,7 @@
       "pricing": "Pricing",
       "blog": "Blog",
       "login": "Log in",
-      "getStarted": "Get Started Free",
+      "getStarted": "Get Started",
       "howItWorks": "How It Works"
     },
     "hero": {
@@ -71,7 +71,7 @@
       "leadsMonth": "Leads captured/mo",
       "uptime": "Uptime",
       "badge": "Now with One-Click WhatsApp Connect",
-      "freeForeverHint": "Free forever · No credit card required",
+      "freeForeverHint": "Plans starting at $20/month",
       "titleStart": "Create & Deploy",
       "titleHighlight": "AI Agents",
       "titleEnd": " in Minutes, Not Weeks"
@@ -176,7 +176,7 @@
     },
     "pricing": {
       "title": "Simple, transparent pricing",
-      "subtitle": "Start free, scale as you grow. No hidden fees.",
+      "subtitle": "Simple pricing, scale as you grow. No hidden fees.",
       "monthly": "Monthly",
       "quarterly": "Quarterly",
       "yearly": "Yearly",
@@ -209,7 +209,7 @@
       "ctaSecondary": "Schedule a Demo",
       "altTitle": "Ready to Deploy Your First AI Agent?",
       "altSubtitle": "Join {count}+ businesses already using GenSmart to automate conversations and capture more leads.",
-      "hint": "No credit card required · Free forever plan"
+      "hint": "Plans starting at $20/month"
     },
     "footer": {
       "product": "Product",
@@ -1483,9 +1483,13 @@
       "buyAddon": "Buy Add-on",
       "upgradePlan": "Upgrade Plan"
     },
+    "suspendedBanner": {
+      "message": "Your subscription is paused — your agents have stopped responding to new messages.",
+      "cta": "Reactivate Subscription"
+    },
     "plans": {
-      "free": {
-        "name": "Free",
+      "solo": {
+        "name": "Solo",
         "description": "Perfect for getting started"
       },
       "starter": {
@@ -1763,7 +1767,7 @@
       "a4": "Yes! Enterprise plan users can bring their own API keys to remove all message limits."
     },
     "pageTitle": "Simple, Transparent Pricing",
-    "pageSubtitle": "Start free. Upgrade when you're ready. No hidden fees.",
+    "pageSubtitle": "Simple pricing. Upgrade when you're ready. No hidden fees.",
     "foreverFree": "Forever free",
     "billedMonthly": "Billed monthly",
     "billedQuarterly": "billed quarterly",

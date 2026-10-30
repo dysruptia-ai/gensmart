@@ -9,6 +9,7 @@ import { assertSafeUrl } from '../services/safe-url';
 import fs from 'fs';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
+import { requireActiveSubscription } from '../middleware/suspension';
 import { validate } from '../middleware/validate';
 import { validateUUID } from '../middleware/validateUUID';
 import { checkAgentLimit, checkKnowledgeLimit } from '../middleware/planLimits';
@@ -39,7 +40,7 @@ import { randomUUID } from 'crypto';
 
 const router = Router();
 
-router.use(requireAuth, orgContext);
+router.use(requireAuth, orgContext, requireActiveSubscription());
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -1562,7 +1563,7 @@ router.post(
       // request_human_handoff is simulated in preview (no send, no Redis, no notifications)
       const previewHandoff = agentResult.handoffConfig;
       const previewHandoffActive =
-        previewHandoff.enabled && previewHandoff.contacts.length > 0 && req.org!.plan !== 'free';
+        previewHandoff.enabled && previewHandoff.contacts.length > 0 && req.org!.plan !== 'solo';
       if (previewHandoffActive) {
         llmTools.push(requestHumanHandoffToolDef);
         // Preview has no real conversation or contact, so the customer's name is unknown.

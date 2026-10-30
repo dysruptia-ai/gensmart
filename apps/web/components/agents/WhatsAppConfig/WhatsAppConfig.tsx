@@ -51,7 +51,7 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
 
-  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'solo') as keyof typeof PLAN_LIMITS;
   const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('whatsapp');
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
   const hasEmbeddedSignup = !!fbAppId;

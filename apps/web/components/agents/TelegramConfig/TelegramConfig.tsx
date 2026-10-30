@@ -52,7 +52,7 @@ export default function TelegramConfig({ agentId, orgPlan }: TelegramConfigProps
   const { t } = useTranslation();
   const tm = (key: string, values?: Record<string, string | number>) => t('agents.channels.telegramConfig.' + key, values);
 
-  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'solo') as keyof typeof PLAN_LIMITS;
   const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('telegram');
 
   const [status, setStatus] = useState<TelegramStatus | null>(null);

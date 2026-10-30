@@ -8,6 +8,7 @@ interface OrgRow {
   slug: string;
   plan: string;
   subscription_status: string;
+  is_suspended: boolean;
 }
 
 interface OrgMembershipRow extends OrgRow {
@@ -25,7 +26,7 @@ export async function orgContext(req: Request, res: Response, next: NextFunction
     // One query: the organization, the user's membership in it and, for a sub-account, the user's
     // membership in the parent. The token only says which organization was asked for.
     const result = await query<OrgMembershipRow>(
-      `SELECT o.id, o.name, o.slug, o.plan, o.subscription_status,
+      `SELECT o.id, o.name, o.slug, o.plan, o.subscription_status, o.is_suspended,
               (SELECT uo.role FROM user_organizations uo
                 WHERE uo.user_id = $2 AND uo.organization_id = o.id) AS member_role,
               (SELECT po.role FROM sub_accounts sa
@@ -58,6 +59,7 @@ export async function orgContext(req: Request, res: Response, next: NextFunction
       slug: row.slug,
       plan: row.plan,
       subscription_status: row.subscription_status,
+      is_suspended: row.is_suspended,
     };
     next();
   } catch (err) {

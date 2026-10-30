@@ -54,7 +54,7 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const submittingRef = useRef(false);
 
-  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'free') as keyof typeof PLAN_LIMITS;
+  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'solo') as keyof typeof PLAN_LIMITS;
   const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('email');
   const autoReplyMissing = autoReplyEnabled && autoReplyText.trim().length === 0;
 

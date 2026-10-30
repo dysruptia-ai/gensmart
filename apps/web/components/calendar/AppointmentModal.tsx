@@ -7,6 +7,7 @@ import Input from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
 import { api } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import styles from './AppointmentModal.module.css';
 import type { Appointment } from './CalendarView';
 
@@ -70,6 +71,7 @@ export default function AppointmentModal({
 }: Props) {
   const toast = useToast();
   const { t } = useTranslation();
+  const { isSuspended } = useAuth();
   const isEditing = Boolean(appointment);
 
   const [title, setTitle] = useState('');
@@ -313,6 +315,7 @@ export default function AppointmentModal({
               size="sm"
               onClick={handleCancel}
               loading={saving}
+              disabled={isSuspended}
             >
               {t('calendar.appointment.cancelButton')}
             </Button>
@@ -322,7 +325,7 @@ export default function AppointmentModal({
           <Button variant="ghost" onClick={onClose} disabled={saving}>
             {t('common.close')}
           </Button>
-          <Button variant="primary" onClick={handleSave} loading={saving}>
+          <Button variant="primary" onClick={handleSave} loading={saving} disabled={isSuspended}>
             {isEditing ? t('calendar.appointment.saveChanges') : t('calendar.appointment.bookAppointment')}
           </Button>
         </div>

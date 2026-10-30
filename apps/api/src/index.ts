@@ -19,7 +19,8 @@ import { env } from './config/env';
 import router from './routes/index';
 import { handleWebhookEvent } from './services/stripe.service';
 import { errorHandler } from './middleware/errorHandler';
-import { initWebSocket } from './config/websocket';
+import { initWebSocket, getIO } from './config/websocket';
+import { createNotification } from './services/notification.service';
 import { startMessageWorker } from './workers/message.worker';
 import { startRagWorker } from './workers/rag.worker';
 import { startScrapingWorker } from './workers/scraping.worker';
@@ -301,19 +302,40 @@ startReminderWorker();
 startExportWorker();
 startMcpWebhookWorker();
 
-// Trial expiration check — runs every hour
+// Trial expiration check — runs every hour. Suspends the org (is_suspended = true) instead of
+// downgrading its plan: there is no free tier to fall back to, and `plan`/`subscription_status` are
+// left untouched so reactivation restores exactly what the org was paying for.
 import { query as dbQuery } from './config/database';
 async function expireTrials(): Promise<void> {
   try {
     const result = await dbQuery<{ id: string; name: string }>(
       `UPDATE organizations
-       SET plan = 'free', trial_ends_at = NULL, updated_at = NOW()
-       WHERE trial_ends_at IS NOT NULL AND trial_ends_at < NOW()
+       SET is_suspended = true, trial_ends_at = NULL, updated_at = NOW()
+       WHERE trial_ends_at IS NOT NULL AND trial_ends_at < NOW() AND is_suspended = false
        RETURNING id, name`
     );
     if (result.rows.length > 0) {
-      console.log(`[trial-cron] Downgraded ${result.rows.length} expired trials:`,
+      console.log(`[trial-cron] Suspended ${result.rows.length} orgs with expired trials:`,
         result.rows.map(r => r.name).join(', '));
+      for (const org of result.rows) {
+        try {
+          getIO().to(`org:${org.id}`).emit('org:suspended', { reason: 'trial_expired' });
+        } catch {
+          // WebSocket might not be initialized in tests
+        }
+        try {
+          await createNotification({
+            organizationId: org.id,
+            type: 'org_suspended',
+            title: 'Subscription Paused',
+            message: 'Your trial period has ended. Reactivate your subscription to resume service.',
+            data: { reason: 'trial_expired' },
+            sendEmail: true,
+          });
+        } catch (err) {
+          console.error(`[trial-cron] Failed to notify org ${org.id}:`, err);
+        }
+      }
     }
   } catch (err) {
     console.error('[trial-cron] Error checking expired trials:', err);

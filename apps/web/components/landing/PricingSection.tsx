@@ -12,11 +12,11 @@ type BillingCycle = 'monthly' | 'yearly';
 
 const PLANS = [
   {
-    key: 'free',
-    monthlyPrice: 0,
-    features: ['1 AI Agent', '50 messages/mo', '25 contacts', 'Web channel only', '1 knowledge file', 'Community support'],
-    ctaKey: 'landing.pricing.startFree',
-    href: '/register?code=GENSMART-LAUNCH',
+    key: 'solo',
+    monthlyPrice: 20,
+    features: ['1 AI Agent', '200 messages/mo', 'Unlimited contacts', 'WhatsApp + Web', '1 knowledge file', 'Community support'],
+    ctaKey: 'landing.pricing.getStarted',
+    href: '/register?plan=solo&code=GENSMART-LAUNCH',
     popular: false,
   },
   {

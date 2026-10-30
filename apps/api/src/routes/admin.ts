@@ -292,7 +292,7 @@ router.get(
 
 // PUT /api/admin/organizations/:id/plan — Change org plan manually
 const changePlanSchema = z.object({
-  plan: z.enum(['free', 'starter', 'pro', 'enterprise']),
+  plan: z.enum(['solo', 'starter', 'pro', 'enterprise']),
 });
 
 router.put(

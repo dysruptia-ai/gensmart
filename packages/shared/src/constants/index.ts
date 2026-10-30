@@ -1,9 +1,10 @@
 export const PLAN_LIMITS = {
-  free: {
+  solo: {
     agents: 1,
-    messagesPerMonth: 50,
-    contacts: 25,
-    channels: ['web'] as const,
+    messagesPerMonth: 200,
+    // No hard cap — informational display of an approximate value is a separate, pending copy task.
+    contacts: Infinity,
+    channels: ['web', 'whatsapp'] as const,
     knowledgeFiles: 1,
     customFunctions: 0,
     mcpServers: 0,
@@ -74,7 +75,7 @@ export const PLAN_LIMITS = {
 } as const;
 
 export function getMinimumPlanForChannel(channel: string): string | null {
-  const planOrder: Array<keyof typeof PLAN_LIMITS> = ['free', 'starter', 'pro', 'enterprise'];
+  const planOrder: Array<keyof typeof PLAN_LIMITS> = ['solo', 'starter', 'pro', 'enterprise'];
   for (const plan of planOrder) {
     if ((PLAN_LIMITS[plan].channels as readonly string[]).includes(channel)) {
       return plan;
@@ -84,6 +85,13 @@ export function getMinimumPlanForChannel(channel: string): string | null {
 }
 
 export const PRICING = {
+  solo: {
+    monthly: 20,
+    quarterly: 54.00,   // 10% off
+    yearly: 192.00,     // 20% off
+    quarterlyDiscount: 0.10,
+    yearlyDiscount: 0.20,
+  },
   starter: {
     monthly: 29,
     quarterly: 78.30,   // 10% off
