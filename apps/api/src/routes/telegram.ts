@@ -254,15 +254,17 @@ router.post('/webhook', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const secretHash = crypto.createHash('sha256').update(secret).digest('hex');
+
   let agent: TelegramAgentRow | undefined;
   try {
     const result = await query<TelegramAgentRow>(
       `SELECT id, organization_id, message_buffer_seconds, telegram_config, status
        FROM agents
-       WHERE (telegram_config->>'webhook_secret_token') = $1
+       WHERE (telegram_config->>'webhook_secret_token_hash') = $1
          AND (telegram_config->>'connected')::boolean = true
        LIMIT 1`,
-      [secret]
+      [secretHash]
     );
     agent = result.rows[0];
   } catch (err) {
@@ -343,6 +345,7 @@ router.post(
       // 4. Save first (the unique index settles any race), then register the webhook. Doing it the other
       //    way round would let a losing request overwrite the winner's webhook secret on Telegram.
       const webhookSecret = crypto.randomBytes(32).toString('hex');
+      const webhookSecretHash = crypto.createHash('sha256').update(webhookSecret).digest('hex');
       const previousConfig = agent.telegram_config;
       try {
         await query(
@@ -352,7 +355,8 @@ router.post(
               bot_id: bot.id,
               bot_username: bot.username,
               bot_token_encrypted: encryptBotToken(botToken),
-              webhook_secret_token: webhookSecret,
+              webhook_secret_token: null,
+              webhook_secret_token_hash: webhookSecretHash,
               connected: true,
               connected_at: new Date().toISOString(),
             }),
