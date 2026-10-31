@@ -682,6 +682,48 @@ router.put(
       const toolId = String(req.params['toolId']);
       const agentId = String(req.params['id']);
 
+      // Re-validate plan on reactivation: the creation-time gate in POST /:id/tools
+      // doesn't apply here because the tool row already exists (e.g. created under a
+      // higher plan, then the org downgraded to Solo). Only gates turning a
+      // custom_function/mcp/email_notification tool ON — disabling is never blocked.
+      const willBeEnabled = req.body.isEnabled === true
+        || (req.body.isEnabled === undefined && req.body.config !== undefined);
+      if (willBeEnabled) {
+        const existingForPlanCheck = await query<{ type: string; is_enabled: boolean }>(
+          'SELECT type, is_enabled FROM agent_tools WHERE id = $1 AND agent_id = $2',
+          [toolId, agentId]
+        );
+        const existingType = existingForPlanCheck.rows[0]?.type;
+        const existingEnabled = existingForPlanCheck.rows[0]?.is_enabled;
+        const touchingEnabledState = req.body.isEnabled === true || existingEnabled === true;
+        if (touchingEnabledState && existingType) {
+          const plan = req.org!.plan as PlanKey;
+          const planLimits = PLAN_LIMITS[plan] as Record<string, number | boolean | readonly string[]>;
+
+          if (existingType === 'custom_function' && (planLimits['customFunctions'] as number ?? 0) === 0) {
+            res.status(403).json({
+              error: { message: 'Custom functions are not available in your plan. Upgrade to Starter or above.', code: 'PLAN_LIMIT_REACHED' },
+            });
+            return;
+          }
+          if (existingType === 'mcp' && (planLimits['mcpServers'] as number ?? 0) === 0) {
+            res.status(403).json({
+              error: { message: 'MCP servers are not available in your plan. Upgrade to Pro or above.', code: 'PLAN_LIMIT_REACHED' },
+            });
+            return;
+          }
+          if (existingType === 'email_notification' && (planLimits['emailNotificationTools'] as number ?? 0) === 0) {
+            res.status(403).json({
+              error: {
+                message: 'Email notification tools are not available in your plan. Upgrade to Starter or above.',
+                code: 'PLAN_LIMIT_REACHED',
+              },
+            });
+            return;
+          }
+        }
+      }
+
       // For MCP tools with a config update: re-encrypt headers, preserve any
       // header whose plain value is '' (UI sends empty when user didn't re-type
       // an existing encrypted value), and preserve the existing webhook secret.
