@@ -28,7 +28,10 @@ function LoginForm() {
   const [resendLoading, setResendLoading] = useState(false);
   const [resendSent, setResendSent] = useState(false);
 
-  const from = searchParams.get('from') ?? '/dashboard';
+  const rawFrom = searchParams.get('from');
+  // Only accept an internal relative path — never an absolute URL, protocol-relative
+  // ("//evil.com") or backslash-prefixed path, which browsers still treat as a host.
+  const from = rawFrom && /^\/(?!\/|\\)[^\s]*$/.test(rawFrom) ? rawFrom : '/dashboard';
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
