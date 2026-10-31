@@ -1,7 +1,7 @@
 import { Worker, Job } from 'bullmq';
 import { createBullConnection } from '../config/queues';
 import { query } from '../config/database';
-import { PLAN_LIMITS, injectConfigVariablesDeep, getMinimumPlanForChannel } from '@gensmart/shared';
+import { PLAN_LIMITS, injectConfigVariablesDeep, getMinimumPlanForChannel, getMinimumPlanForTool } from '@gensmart/shared';
 import { chat, ChatMessage, ToolDefinition, ToolCall, type ContentPart, supportsVision } from '../services/llm.service';
 import { flushBuffer } from '../services/message-buffer.service';
 import { checkLimit, incrementMessages } from '../services/usage.service';
@@ -347,7 +347,39 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     'SELECT id, type, name, description, config, is_enabled FROM agent_tools WHERE agent_id = $1 AND is_enabled = true',
     [agentId]
   );
-  const agentTools = toolsResult.rows;
+  // Re-validate plan at runtime — a tool enabled under a higher plan keeps existing after a
+  // downgrade (B.3: we never auto-disable on plan change), so filter it out of this execution
+  // instead. Unlike the channel gate above, this must NOT abort the message: the agent still
+  // responds, just without that tool offered to the LLM.
+  const TOOL_TYPE_LIMIT_FIELD: Record<string, string> = {
+    custom_function: 'customFunctions',
+    mcp: 'mcpServers',
+    email_notification: 'emailNotificationTools',
+  };
+  const restrictedToolTypes = new Set<string>();
+  const agentTools = toolsResult.rows.filter((tool) => {
+    const limitField = TOOL_TYPE_LIMIT_FIELD[tool.type];
+    if (!limitField) return true;
+    const limit = (planLimits as Record<string, number | boolean | readonly string[]>)[limitField] as number;
+    if (limit === 0) {
+      restrictedToolTypes.add(tool.type);
+      return false;
+    }
+    return true;
+  });
+  for (const toolType of restrictedToolTypes) {
+    console.log(`[msg-worker] Tool type '${toolType}' not allowed on plan '${plan}' for org ${organizationId} — filtering out`);
+    try {
+      getIO().to(`org:${organizationId}`).emit('tool:restricted', {
+        conversationId,
+        agentId,
+        toolType,
+        requiredPlan: getMinimumPlanForTool(toolType as 'custom_function' | 'mcp' | 'email_notification'),
+      });
+    } catch {
+      // WebSocket might not be initialized in test
+    }
+  }
 
   // Step 7: Build context
   const contextWindowMessages = Math.min(

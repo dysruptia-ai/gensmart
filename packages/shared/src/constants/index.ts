@@ -84,6 +84,24 @@ export function getMinimumPlanForChannel(channel: string): string | null {
   return null;
 }
 
+const TOOL_TYPE_LIMIT_FIELD = {
+  custom_function: 'customFunctions',
+  mcp: 'mcpServers',
+  email_notification: 'emailNotificationTools',
+} as const;
+
+export function getMinimumPlanForTool(toolType: keyof typeof TOOL_TYPE_LIMIT_FIELD): string | null {
+  const planOrder: Array<keyof typeof PLAN_LIMITS> = ['solo', 'starter', 'pro', 'enterprise'];
+  const field = TOOL_TYPE_LIMIT_FIELD[toolType];
+  for (const plan of planOrder) {
+    const limit = (PLAN_LIMITS[plan] as Record<string, number | boolean | readonly string[]>)[field] as number;
+    if (limit > 0) {
+      return plan;
+    }
+  }
+  return null;
+}
+
 export const PRICING = {
   solo: {
     monthly: 20,

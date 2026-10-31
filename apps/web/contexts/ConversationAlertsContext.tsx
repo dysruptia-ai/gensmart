@@ -164,15 +164,28 @@ export function ConversationAlertsProvider({ children }: { children: React.React
       );
     };
 
+    const handleToolRestricted: WebSocketEvents['tool:restricted'] = (data) => {
+      const toolLabel = tRef.current(`conversations.alerts.toolType.${data.toolType}`);
+      const planLabel = data.requiredPlan
+        ? capitalizePlan(data.requiredPlan)
+        : tRef.current('conversations.alerts.channelRestrictedFallbackPlan');
+      warningRef.current(
+        tRef.current('conversations.alerts.toolRestrictedTitle'),
+        tRef.current('conversations.alerts.toolRestrictedMessage', { tool: toolLabel, plan: planLabel })
+      );
+    };
+
     on('message:new', handleMessage);
     on('notification:new', handleNotification);
     on('takeover:status', handleTakeover);
     on('channel:restricted', handleChannelRestricted);
+    on('tool:restricted', handleToolRestricted);
     return () => {
       off('message:new', handleMessage);
       off('notification:new', handleNotification);
       off('takeover:status', handleTakeover);
       off('channel:restricted', handleChannelRestricted);
+      off('tool:restricted', handleToolRestricted);
     };
   }, [on, off, playSound, showNotification]);
 

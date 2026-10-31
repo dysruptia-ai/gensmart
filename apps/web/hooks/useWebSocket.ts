@@ -197,6 +197,12 @@ export interface WebSocketEvents {
     channel: string;
     requiredPlan: string | null;
   }) => void;
+  'tool:restricted': (data: {
+    conversationId: string;
+    agentId: string;
+    toolType: string;
+    requiredPlan: string | null;
+  }) => void;
   'org:suspended': (data: { reason: string }) => void;
   'org:reactivated': (data: Record<string, never>) => void;
   'notification:new': (data: {

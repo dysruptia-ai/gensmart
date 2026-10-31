@@ -1111,7 +1111,14 @@
       "badgeLabel": "{count} conversations need attention",
       "channelRestrictedTitle": "Channel unavailable",
       "channelRestrictedMessage": "{channel} stopped responding — your current plan doesn't include this channel. Upgrade to {plan} to keep using it.",
-      "channelRestrictedFallbackPlan": "a higher plan"
+      "channelRestrictedFallbackPlan": "a higher plan",
+      "toolRestrictedTitle": "Tool unavailable",
+      "toolRestrictedMessage": "{tool} is no longer available — your current plan doesn't include it. Upgrade to {plan} to keep using it.",
+      "toolType": {
+        "custom_function": "A custom function",
+        "mcp": "An MCP server",
+        "email_notification": "An email notification tool"
+      }
     },
     "searchHelp": "Search by contact name, phone or email",
     "showAll": "Show all (no 8-day limit)",
