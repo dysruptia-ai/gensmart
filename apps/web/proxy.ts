@@ -25,7 +25,7 @@ export function proxy(req: NextRequest): NextResponse {
   if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
   if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return NextResponse.next();
 
-  if (pathname.startsWith('/dashboard')) {
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
     const refreshToken = req.cookies.get('refresh_token');
     if (!refreshToken) {
       const loginUrl = new URL('/login', req.url);

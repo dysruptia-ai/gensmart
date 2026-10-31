@@ -162,6 +162,30 @@ router.post(
   }
 );
 
+// Read-only session check: used by the web app's Node-runtime /admin layout to gate the
+// panel server-side. Deliberately does NOT call authService.refreshToken — that rotates and
+// marks the token used, which would desync the browser's cookie (never updated by this
+// server-to-server call) from the backend's record and trip reuse detection on the next
+// real refresh, logging the user out.
+router.get(
+  '/session-check',
+  sessionCookieLimiter,
+  trustedOrigin,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const refreshToken = req.cookies?.['refresh_token'] as string | undefined;
+      if (!refreshToken) {
+        res.status(401).json({ error: { message: 'No refresh token', code: 'NO_REFRESH_TOKEN' } });
+        return;
+      }
+      const user = await authService.verifySession(refreshToken);
+      res.json({ user: { isSuperAdmin: user.isSuperAdmin } });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 router.post(
   '/logout',
   sessionCookieLimiter,

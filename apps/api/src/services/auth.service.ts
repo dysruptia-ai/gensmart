@@ -524,6 +524,48 @@ async function rejectUsedRefreshToken(tokenId: string, userId: string): Promise<
   throw new AppError(401, 'Refresh token reuse detected. Please log in again.', 'TOKEN_REUSE');
 }
 
+/**
+ * Read-only counterpart to refreshToken(): verifies the refresh token's signature and that its
+ * stored record is unused/unexpired, but never rotates or marks it used. Used by server-side
+ * route gating (e.g. the /admin layout) where the caller cannot propagate a rotated Set-Cookie
+ * back to the browser.
+ */
+export async function verifySession(currentRefreshToken: string): Promise<{ isSuperAdmin: boolean }> {
+  const tokenHash = hashToken(currentRefreshToken);
+
+  const tokenResult = await query<RefreshTokenRow>(
+    `SELECT id, user_id, token_hash, expires_at, used
+     FROM refresh_tokens
+     WHERE token_hash = $1`,
+    [tokenHash]
+  );
+  const storedToken = tokenResult.rows[0];
+  if (!storedToken || storedToken.used || new Date(storedToken.expires_at) < new Date()) {
+    throw new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+  }
+
+  let payload: { userId: string };
+  try {
+    payload = verifyRefreshToken(currentRefreshToken);
+  } catch {
+    throw new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+  }
+  if (payload.userId !== storedToken.user_id) {
+    throw new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+  }
+
+  const userResult = await query<{ is_super_admin: boolean }>(
+    'SELECT is_super_admin FROM users WHERE id = $1',
+    [storedToken.user_id]
+  );
+  const user = userResult.rows[0];
+  if (!user) {
+    throw new AppError(401, 'User not found', 'USER_NOT_FOUND');
+  }
+
+  return { isSuperAdmin: user.is_super_admin || false };
+}
+
 export async function refreshToken(currentRefreshToken: string): Promise<AuthTokens> {
   const tokenHash = hashToken(currentRefreshToken);
 
