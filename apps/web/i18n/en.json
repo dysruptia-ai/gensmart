@@ -845,9 +845,6 @@
       "whatsappStatus": "WhatsApp Status",
       "requiresStarter": "WhatsApp requires Starter plan or higher",
       "whatsappConfig": {
-        "gateTitle": "WhatsApp Requires Starter Plan",
-        "gateDesc": "Connect your WhatsApp Business account to deploy this agent on WhatsApp. Available on Starter, Pro, and Enterprise plans.",
-        "upgrade": "Upgrade Plan",
         "notConnected": "Not Connected",
         "metaCostNotice": "From the 1,000th service message per month, Meta charges your WhatsApp Business account directly — this is a cost from Meta to your business, not a GenSmart fee. We add no markup or commission on top.",
         "phoneNumberIdInfo": "Phone Number ID",

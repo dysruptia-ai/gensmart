@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MessageSquare, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Unplug, Info } from 'lucide-react';
-import { PLAN_LIMITS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
@@ -25,14 +24,13 @@ interface WhatsAppStatus {
 
 interface WhatsAppConfigProps {
   agentId: string;
-  orgPlan: string;
 }
 
 // Manual Setup only helps when auto-discovery failed. Meta policy errors,
 // plan gates or expired codes would fail the same way there.
 const MANUAL_FALLBACK_CODES = new Set(['NO_WABA_SHARED', 'NO_PHONE_FOUND']);
 
-export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps) {
+export default function WhatsAppConfig({ agentId }: WhatsAppConfigProps) {
   const { success, error: toastError } = useToast();
   const { t } = useTranslation();
   const tw = (key: string, values?: Record<string, string | number>) => t('agents.channels.whatsappConfig.' + key, values);
@@ -51,8 +49,6 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [copiedToken, setCopiedToken] = useState(false);
 
-  const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'solo') as keyof typeof PLAN_LIMITS;
-  const isFreePlan = !(PLAN_LIMITS[planKey].channels as readonly string[]).includes('whatsapp');
   const fbAppId = process.env['NEXT_PUBLIC_FACEBOOK_APP_ID'];
   const hasEmbeddedSignup = !!fbAppId;
 
@@ -370,29 +366,6 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
     return (
       <div className={styles.loadingWrapper}>
         <Spinner />
-      </div>
-    );
-  }
-
-  // Free plan gate
-  if (isFreePlan) {
-    return (
-      <div className={styles.gate}>
-        <div className={styles.gateIcon}>
-          <MessageSquare size={28} color="var(--color-text-secondary)" aria-hidden="true" />
-        </div>
-        <div className={styles.gateText}>
-          <div className={styles.gateTitle}>{tw('gateTitle')}</div>
-          <p className={styles.gateDesc}>
-            {tw('gateDesc')}
-          </p>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => window.open('/pricing', '_blank')}
-        >
-          {tw('upgrade')}
-        </Button>
       </div>
     );
   }

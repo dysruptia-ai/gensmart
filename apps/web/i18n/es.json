@@ -845,9 +845,6 @@
       "whatsappStatus": "Estado de WhatsApp",
       "requiresStarter": "WhatsApp requiere plan Starter o superior",
       "whatsappConfig": {
-        "gateTitle": "WhatsApp requiere el plan Starter",
-        "gateDesc": "Conecta tu cuenta de WhatsApp Business para desplegar este agente en WhatsApp. Disponible en los planes Starter, Pro y Enterprise.",
-        "upgrade": "Mejorar plan",
         "notConnected": "No conectado",
         "metaCostNotice": "A partir del mensaje de servicio 1.000 del mes, Meta cobra directamente a tu cuenta de WhatsApp Business — es un costo de Meta hacia tu negocio, no un cargo de GenSmart. No se agrega ningún markup ni comisión de nuestra parte.",
         "phoneNumberIdInfo": "ID del número de teléfono",

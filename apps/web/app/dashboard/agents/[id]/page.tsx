@@ -933,7 +933,7 @@ export default function AgentEditorPage() {
                 </div>
                 {orgPlanLoaded && (
                   <div className={styles.channelBody}>
-                    <WhatsAppConfig agentId={agentId} orgPlan={orgPlan} />
+                    <WhatsAppConfig agentId={agentId} />
                   </div>
                 )}
               </div>
