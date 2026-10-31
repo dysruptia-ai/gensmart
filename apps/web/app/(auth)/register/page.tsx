@@ -43,9 +43,13 @@ function useValidateForm() {
   };
 }
 
+const SELF_SERVICE_PLANS = new Set(['solo', 'starter', 'pro']);
+
 function RegisterForm() {
   const searchParams = useSearchParams();
   const codeFromUrl = searchParams.get('code') || '';
+  const planFromUrl = searchParams.get('plan') || '';
+  const plan = SELF_SERVICE_PLANS.has(planFromUrl) ? planFromUrl : undefined;
   const { register } = useAuth();
   const { t } = useTranslation();
   const validateForm = useValidateForm();
@@ -94,7 +98,15 @@ function RegisterForm() {
     setError('');
     setLoading(true);
     try {
-      const result = await register(email, password, name, orgName, turnstileToken, promoCode || undefined);
+      const result = await register({
+        email,
+        password,
+        name,
+        organizationName: orgName,
+        turnstileToken,
+        promoCode: promoCode || undefined,
+        plan,
+      });
       setPromoApplied(result.promoApplied);
       setRegisteredEmail(result.email);
     } catch (err) {

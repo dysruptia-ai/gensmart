@@ -241,12 +241,24 @@ export interface RegisterResult {
   promoApplied: boolean;
 }
 
+/**
+ * Plans a user can grant themselves at registration. Enterprise is excluded on purpose — it's only
+ * ever reachable through the "Contact sales" mailto on pricing, never a /register link, and self-
+ * service signup must not be able to hand out an Enterprise trial by crafting the URL.
+ */
+const SELF_SERVICE_PLANS = new Set(['solo', 'starter', 'pro']);
+
+function resolveRegistrationPlan(requested: string | undefined): string {
+  return requested && SELF_SERVICE_PLANS.has(requested) ? requested : 'solo';
+}
+
 export async function register(input: {
   email: string;
   password: string;
   name: string;
   organizationName: string;
   promoCode?: string;
+  plan?: string;
 }): Promise<RegisterResult> {
   const existing = await query<{ id: string }>(
     'SELECT id FROM users WHERE email = $1',
@@ -273,13 +285,14 @@ export async function register(input: {
     const trialEndsAt = promoApplied
       ? null
       : new Date(Date.now() + (await getTrialDurationDays()) * 24 * 60 * 60 * 1000);
+    const plan = resolveRegistrationPlan(input.plan);
 
     const orgSlug = slugify(input.organizationName);
     const orgResult = await client.query<OrgRow>(
       `INSERT INTO organizations (id, name, slug, plan, subscription_status, trial_ends_at, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, 'solo', 'active', $3, NOW(), NOW())
+       VALUES (gen_random_uuid(), $1, $2, $3, 'active', $4, NOW(), NOW())
        RETURNING id, name`,
-      [input.organizationName, orgSlug, trialEndsAt?.toISOString() ?? null]
+      [input.organizationName, orgSlug, plan, trialEndsAt?.toISOString() ?? null]
     );
     const org = orgResult.rows[0];
 
