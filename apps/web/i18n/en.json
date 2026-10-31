@@ -843,7 +843,6 @@
       "whatsappConnected": "Connected",
       "whatsappDisconnect": "Disconnect",
       "whatsappStatus": "WhatsApp Status",
-      "requiresStarter": "WhatsApp requires Starter plan or higher",
       "whatsappConfig": {
         "notConnected": "Not Connected",
         "metaCostNotice": "From the 1,000th service message per month, Meta charges your WhatsApp Business account directly — this is a cost from Meta to your business, not a GenSmart fee. We add no markup or commission on top.",
