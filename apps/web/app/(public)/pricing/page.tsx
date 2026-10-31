@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Check, Minus } from 'lucide-react';
+import { Check, Minus, Info } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import ContactSalesModal from '@/components/landing/ContactSalesModal/ContactSalesModal';
 import styles from './pricing.module.css';
@@ -260,6 +260,10 @@ export default function PricingPage() {
               </tbody>
             </table>
           </div>
+          <p className={styles.tableFootnote}>
+            <Info size={14} aria-hidden="true" />
+            {t('pricing.whatsappMetaNote')}
+          </p>
         </div>
       </section>
 

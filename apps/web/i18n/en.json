@@ -1747,6 +1747,7 @@
     "contactSales": "Contact Sales",
     "mostPopular": "Most Popular",
     "compareFeatures": "Compare all features",
+    "whatsappMetaNote": "From 1,000 messages/month on WhatsApp, Meta charges your account directly — this is not a GenSmart fee.",
     "features": {
       "agents": "{count} agent | {count} agents",
       "messages": "{count} messages/month",
