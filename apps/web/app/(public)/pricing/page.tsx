@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Check, Minus, Info } from 'lucide-react';
+import { PLAN_LIMITS } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
 import ContactSalesModal from '@/components/landing/ContactSalesModal/ContactSalesModal';
 import styles from './pricing.module.css';
@@ -50,8 +51,37 @@ interface FeatureGroup {
   groupKey: string;
   rows: {
     label: string;
+    /** When set, overrides `label` via t() — new rows go through i18n; the pre-existing
+     * hardcoded-English rows in this table are left as-is (preexisting, out of scope). */
+    labelKey?: string;
     values: [FeatureValue, FeatureValue, FeatureValue, FeatureValue];
   }[];
+}
+
+// Keeps the channels row data-driven off PLAN_LIMITS instead of a hand-typed boolean array,
+// so this table can't silently drift from the real per-plan channel list again.
+const PLAN_IDS = ['solo', 'starter', 'pro', 'enterprise'] as const;
+
+function planChannelValues(channel: string): [boolean, boolean, boolean, boolean] {
+  return PLAN_IDS.map((id) =>
+    (PLAN_LIMITS[id].channels as readonly string[]).includes(channel)
+  ) as [boolean, boolean, boolean, boolean];
+}
+
+const CHANNEL_ROWS: { channel: string; label: string; labelKey?: string }[] = [
+  { channel: 'web', label: 'Web widget' },
+  { channel: 'whatsapp', label: 'WhatsApp Business' },
+  { channel: 'email', label: 'Email', labelKey: 'pricing.rows.email' },
+  { channel: 'telegram', label: 'Telegram', labelKey: 'pricing.rows.telegram' },
+  { channel: 'facebook', label: 'Messenger', labelKey: 'pricing.rows.messenger' },
+  { channel: 'instagram', label: 'Instagram', labelKey: 'pricing.rows.instagram' },
+];
+
+function emailNotificationToolsValue(id: typeof PLAN_IDS[number]): FeatureValue {
+  const limit = PLAN_LIMITS[id].emailNotificationTools;
+  if (limit === 0) return false;
+  if (limit === Infinity) return 'Unlimited';
+  return String(limit);
 }
 
 const FEATURE_GROUPS: FeatureGroup[] = [
@@ -67,8 +97,11 @@ const FEATURE_GROUPS: FeatureGroup[] = [
   {
     groupKey: 'channels',
     rows: [
-      { label: 'Web widget', values: [true, true, true, true] },
-      { label: 'WhatsApp Business', values: [true, true, true, true] },
+      ...CHANNEL_ROWS.map((c) => ({
+        label: c.label,
+        labelKey: c.labelKey,
+        values: planChannelValues(c.channel),
+      })),
       { label: 'Voice messages', values: [false, true, true, true] },
       { label: 'Image analysis', values: [false, false, true, true] },
     ],
@@ -88,6 +121,11 @@ const FEATURE_GROUPS: FeatureGroup[] = [
       { label: 'Knowledge base files', values: ['1', '5', '20', 'Unlimited'] },
       { label: 'Custom functions', values: [false, '2', '10', 'Unlimited'] },
       { label: 'MCP servers', values: [false, false, '3', 'Unlimited'] },
+      {
+        label: 'Email notification tools',
+        labelKey: 'pricing.rows.emailNotificationTools',
+        values: PLAN_IDS.map(emailNotificationToolsValue) as [FeatureValue, FeatureValue, FeatureValue, FeatureValue],
+      },
       { label: 'Sub-accounts', values: [false, false, '5', 'Unlimited'] },
       { label: 'Human takeover', values: [false, true, true, true] },
     ],
@@ -244,7 +282,7 @@ export default function PricingPage() {
                     </tr>
                     {group.rows.map((row) => (
                       <tr key={row.label} className={styles.featureRow}>
-                        <td className={styles.featureLabel}>{row.label}</td>
+                        <td className={styles.featureLabel}>{row.labelKey ? t(row.labelKey) : row.label}</td>
                         {row.values.map((v, i) => (
                           <td
                             key={i}

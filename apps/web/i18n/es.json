@@ -1746,6 +1746,13 @@
     "mostPopular": "Más popular",
     "compareFeatures": "Comparar todas las funcionalidades",
     "whatsappMetaNote": "A partir de 1.000 mensajes/mes en WhatsApp, Meta cobra directo a tu cuenta — no es un cargo de GenSmart.",
+    "rows": {
+      "email": "Email",
+      "telegram": "Telegram",
+      "messenger": "Messenger",
+      "instagram": "Instagram",
+      "emailNotificationTools": "Herramientas de notificación por email"
+    },
     "features": {
       "agents": "{count} agente | {count} agentes",
       "messages": "{count} mensajes/mes",
