@@ -2,8 +2,7 @@ export const PLAN_LIMITS = {
   solo: {
     agents: 1,
     messagesPerMonth: 200,
-    // No hard cap — informational display of an approximate value is a separate, pending copy task.
-    contacts: Infinity,
+    contacts: 150,
     channels: ['web', 'whatsapp'] as const,
     knowledgeFiles: 1,
     customFunctions: 0,

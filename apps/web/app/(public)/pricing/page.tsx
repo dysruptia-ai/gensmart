@@ -84,13 +84,24 @@ function emailNotificationToolsValue(id: typeof PLAN_IDS[number]): FeatureValue 
   return String(limit);
 }
 
+function contactsValue(id: typeof PLAN_IDS[number]): FeatureValue {
+  const limit = PLAN_LIMITS[id].contacts;
+  if (limit === Infinity) return 'Unlimited';
+  // Comma-formatted, matching the other large numbers already hardcoded in this table
+  // (e.g. 'Messages / month': '1,000', '25,000').
+  return limit.toLocaleString('en-US');
+}
+
 const FEATURE_GROUPS: FeatureGroup[] = [
   {
     groupKey: 'core',
     rows: [
       { label: 'AI Agents', values: ['1', '3', '10', 'Unlimited'] },
       { label: 'Messages / month', values: ['200', '1,000', '5,000', '25,000'] },
-      { label: 'Contacts', values: ['Unlimited', '500', '2,000', 'Unlimited'] },
+      {
+        label: 'Contacts',
+        values: PLAN_IDS.map(contactsValue) as [FeatureValue, FeatureValue, FeatureValue, FeatureValue],
+      },
       { label: 'Support', values: ['Community', 'Email', 'Priority', 'Dedicated'] },
     ],
   },
