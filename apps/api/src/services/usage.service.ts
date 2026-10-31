@@ -11,6 +11,12 @@ function getMonthKey(orgId: string): string {
   return `usage:${orgId}:${yearMonth}:messages`;
 }
 
+function getWhatsAppMonthKey(orgId: string): string {
+  const now = new Date();
+  const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return `usage:${orgId}:${yearMonth}:whatsapp_messages`;
+}
+
 function getMonthSuffix(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -40,6 +46,47 @@ export async function incrementMessages(orgId: string): Promise<number> {
     console.error('[usage] Failed to check usage thresholds:', err)
   );
   return count;
+}
+
+// Independent of PLAN_LIMITS.messagesPerMonth — this tracks the Meta-side cost threshold on
+// WhatsApp service conversations, which applies regardless of GenSmart plan/LLM provider (even
+// BYO-key Enterprise orgs pay Meta for WhatsApp, so this counts every WhatsApp message — see
+// message.worker.ts, which calls this without the hasByoKey guard used for incrementMessages()).
+const WHATSAPP_META_THRESHOLD = 800;
+
+export async function incrementWhatsAppMessages(orgId: string): Promise<number> {
+  const key = getWhatsAppMonthKey(orgId);
+  const count = await redis.incr(key);
+  if (count === 1) {
+    await redis.expire(key, 35 * 24 * 60 * 60);
+  }
+  checkWhatsAppMetaThreshold(orgId, count).catch((err) =>
+    console.error('[usage] Failed to check WhatsApp Meta threshold:', err)
+  );
+  return count;
+}
+
+export async function getWhatsAppMessageCount(orgId: string): Promise<number> {
+  const key = getWhatsAppMonthKey(orgId);
+  const count = await redis.get(key);
+  return count ? parseInt(count, 10) : 0;
+}
+
+async function checkWhatsAppMetaThreshold(orgId: string, newCount: number): Promise<void> {
+  if (newCount < WHATSAPP_META_THRESHOLD) return;
+  const monthSuffix = getMonthSuffix();
+  const notifKey = `notif:whatsapp_meta_800:${orgId}:${monthSuffix}`;
+  const already = await redis.get(notifKey);
+  if (already) return;
+  await redis.set(notifKey, '1', 'EX', 35 * 86400);
+  await createNotification({
+    organizationId: orgId,
+    type: 'whatsapp_meta_cost_threshold',
+    title: 'Aviso de costo de Meta en WhatsApp',
+    message: 'A partir del mensaje de servicio 1.000 del mes, Meta cobra directamente a tu cuenta de WhatsApp Business — es un costo de Meta hacia tu negocio, no un cargo de GenSmart. No se agrega ningún markup ni comisión de nuestra parte.',
+    data: { used: newCount, threshold: WHATSAPP_META_THRESHOLD },
+    sendEmail: false,
+  });
 }
 
 async function checkUsageThresholds(orgId: string, newCount: number): Promise<void> {

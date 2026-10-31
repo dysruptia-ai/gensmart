@@ -4,7 +4,7 @@ import { query } from '../config/database';
 import { PLAN_LIMITS, injectConfigVariablesDeep, getMinimumPlanForChannel, getMinimumPlanForTool } from '@gensmart/shared';
 import { chat, ChatMessage, ToolDefinition, ToolCall, type ContentPart, supportsVision } from '../services/llm.service';
 import { flushBuffer } from '../services/message-buffer.service';
-import { checkLimit, incrementMessages } from '../services/usage.service';
+import { checkLimit, incrementMessages, incrementWhatsAppMessages } from '../services/usage.service';
 import {
   buildVariableCaptureInstructions,
   captureVariableToolDef,
@@ -988,6 +988,13 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // Step 12: Increment usage counter (skip for Enterprise BYO key users)
   if (!hasByoKey) {
     await incrementMessages(organizationId);
+  }
+
+  // WhatsApp-specific Meta cost counter — independent of GenSmart's plan quota, and NOT
+  // skipped for BYO key orgs: Meta charges per WhatsApp service message regardless of which
+  // LLM provider/key the agent uses.
+  if (conv.channel === 'whatsapp') {
+    await incrementWhatsAppMessages(organizationId);
   }
 
   // Step 13: Emit WebSocket events
