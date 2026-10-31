@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { MessageSquare, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Unplug } from 'lucide-react';
+import { MessageSquare, CheckCircle, AlertCircle, ExternalLink, Copy, Check, Unplug, Info } from 'lucide-react';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import Input from '@/components/ui/Input';
@@ -408,6 +408,11 @@ export default function WhatsAppConfig({ agentId, orgPlan }: WhatsAppConfigProps
         <Badge variant={status?.connected ? 'success' : 'neutral'} size="sm">
           {status?.connected ? t('agents.channels.whatsappConnected') : tw('notConnected')}
         </Badge>
+      </div>
+
+      <div className={styles.metaCostNotice}>
+        <Info size={14} aria-hidden="true" />
+        <span>{tw('metaCostNotice')}</span>
       </div>
 
       {status?.connected && status.phoneNumberId && (
