@@ -28,7 +28,7 @@ GenSmart is a no-code AI agent builder designed for small and medium businesses 
 
 ## Plans
 
-- Free (forever): 1 agent, 50 messages/month, web only, text only — $0/mo
+- Solo: 1 agent, 200 messages/month, web + WhatsApp — $20/mo
 - Starter: 3 agents, 1,000 messages/month, WhatsApp + web, voice messages — $29/mo
 - Pro: 10 agents, 5,000 messages/month, all AI models, voice + image analysis — $79/mo
 - Enterprise: Unlimited agents, 25,000 messages/month, BYO API key, voice + image analysis — $199/mo
