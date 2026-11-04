@@ -389,10 +389,13 @@ export async function exportContactsCSV(
 }
 
 export async function checkContactLimit(
-  orgId: string,
-  plan: string
+  orgId: string
 ): Promise<{ allowed: boolean; current: number; limit: number }> {
-  const planKey = plan as PlanKey;
+  const planResult = await query<{ plan: string }>(
+    'SELECT plan FROM organizations WHERE id = $1',
+    [orgId]
+  );
+  const planKey = (planResult.rows[0]?.plan ?? 'solo') as PlanKey;
   const limits = PLAN_LIMITS[planKey] ?? PLAN_LIMITS.solo;
   const contactLimit = limits.contacts as number;
 

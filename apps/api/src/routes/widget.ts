@@ -14,6 +14,8 @@ import { recordCartState } from '../services/get-cart-widget.service';
 import { sanitizeWidgetMessageMetadata } from '../services/widget-metadata.service';
 import { clampString, decodedHead, isBase64, isUuid } from '../services/widget-input';
 import { detectImageMime } from '../services/image-sniff';
+import { checkContactLimit } from '../services/contact.service';
+import { notifyContactLimitReached } from '../services/usage.service';
 
 const router = Router();
 
@@ -263,6 +265,15 @@ router.post(
         ]
       );
       const contactId = contactResult.rows[0]!.id;
+      checkContactLimit(agent.organization_id)
+        .then((res) => {
+          if (!res.allowed) {
+            notifyContactLimitReached(agent.organization_id, res.current, res.limit).catch((err) =>
+              console.error('[contacts] Failed to notify over-limit:', err)
+            );
+          }
+        })
+        .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
 
       // Create conversation
       const convResult = await query<{ id: string }>(
@@ -399,6 +410,15 @@ router.post(
           [ag.organization_id, ag.id]
         );
         const newContactId = contactRes.rows[0]!.id;
+        checkContactLimit(ag.organization_id)
+          .then((res) => {
+            if (!res.allowed) {
+              notifyContactLimitReached(ag.organization_id, res.current, res.limit).catch((err) =>
+                console.error('[contacts] Failed to notify over-limit:', err)
+              );
+            }
+          })
+          .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
 
         const convRes = await query<{ id: string }>(
           `INSERT INTO conversations (organization_id, agent_id, contact_id, channel, status,

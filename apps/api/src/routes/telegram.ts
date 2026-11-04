@@ -28,6 +28,8 @@ import type { TelegramIncomingMessage } from '../services/telegram.service';
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
+import { checkContactLimit } from '../services/contact.service';
+import { notifyContactLimitReached } from '../services/usage.service';
 
 const router = Router();
 
@@ -136,17 +138,28 @@ async function processTelegramMessage(agent: TelegramAgentRow, msg: TelegramInco
   }
 
   // Find or create contact by chat_id (upsert: concurrent first messages cannot create duplicates)
-  const contactResult = await query<{ id: string }>(
+  const contactResult = await query<{ id: string; inserted: boolean }>(
     `INSERT INTO contacts (organization_id, agent_id, name, telegram_chat_id, source_channel, created_at, updated_at)
      VALUES ($1, $2, $3, $4, 'telegram', NOW(), NOW())
      ON CONFLICT (organization_id, telegram_chat_id) WHERE telegram_chat_id IS NOT NULL
      DO UPDATE SET agent_id = COALESCE(contacts.agent_id, EXCLUDED.agent_id),
                    name = COALESCE(contacts.name, EXCLUDED.name),
                    updated_at = NOW()
-     RETURNING id`,
+     RETURNING id, (xmax = 0) AS inserted`,
     [agent.organization_id, agent.id, msg.contactName, chatId]
   );
   const contactId = contactResult.rows[0]!.id;
+  if (contactResult.rows[0]!.inserted === true) {
+    checkContactLimit(agent.organization_id)
+      .then((res) => {
+        if (!res.allowed) {
+          notifyContactLimitReached(agent.organization_id, res.current, res.limit).catch((err) =>
+            console.error('[contacts] Failed to notify over-limit:', err)
+          );
+        }
+      })
+      .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
+  }
 
   // Find or create active conversation
   const existingConv = await query<{ id: string; status: string }>(

@@ -3,6 +3,8 @@ import { query } from '../config/database';
 import { ToolDefinition, ToolCall } from './llm.service';
 import type { ExtractedCaptureCall } from '../utils/text';
 import { NAME_FIELD_PATTERNS, EMAIL_FIELD_PATTERNS, PHONE_FIELD_PATTERNS } from './contact-field-patterns';
+import { checkContactLimit } from './contact.service';
+import { notifyContactLimitReached } from './usage.service';
 
 export { NAME_FIELD_PATTERNS, EMAIL_FIELD_PATTERNS, PHONE_FIELD_PATTERNS };
 
@@ -209,6 +211,15 @@ async function syncVariableToContact(
       ]
     );
     const newContactId = result.rows[0]?.id;
+    checkContactLimit(orgId)
+      .then((res) => {
+        if (!res.allowed) {
+          notifyContactLimitReached(orgId, res.current, res.limit).catch((err) =>
+            console.error('[contacts] Failed to notify over-limit:', err)
+          );
+        }
+      })
+      .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
     if (newContactId) {
       await query(
         'UPDATE conversations SET contact_id = $1 WHERE id = $2',

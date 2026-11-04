@@ -5,6 +5,8 @@ import { env } from '../config/env';
 import { getClient, query } from '../config/database';
 import { escapeHtmlWithBreaks, sanitizeDisplayName, stripLineBreaks } from '../utils/html';
 import { detectImageMime } from './image-sniff';
+import { checkContactLimit } from './contact.service';
+import { notifyContactLimitReached } from './usage.service';
 import {
   agentInboundAddress,
   buildReferences,
@@ -360,6 +362,7 @@ export async function findOrCreateEmailContact(
         );
 
     let contactId = existing.rows[0]?.id;
+    let createdNew = false;
     if (contactId) {
       await db.query(
         `UPDATE contacts SET agent_id = COALESCE(agent_id, $2), name = COALESCE(name, $3), updated_at = NOW() WHERE id = $1`,
@@ -373,8 +376,20 @@ export async function findOrCreateEmailContact(
         [agent.organization_id, agent.id, identity.name, identity.email, identity.phone]
       );
       contactId = created.rows[0]!.id;
+      createdNew = true;
     }
     await db.query('COMMIT');
+    if (createdNew) {
+      checkContactLimit(agent.organization_id)
+        .then((res) => {
+          if (!res.allowed) {
+            notifyContactLimitReached(agent.organization_id, res.current, res.limit).catch((err) =>
+              console.error('[contacts] Failed to notify over-limit:', err)
+            );
+          }
+        })
+        .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
+    }
     return contactId;
   } catch (err) {
     await db.query('ROLLBACK').catch(() => undefined);

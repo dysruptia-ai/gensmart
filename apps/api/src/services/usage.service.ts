@@ -175,3 +175,18 @@ async function flushToDb(orgId: string, count: number): Promise<void> {
     // usage_logs table might not have the exact schema yet — ignore safely
   });
 }
+
+export async function notifyContactLimitReached(orgId: string, current: number, limit: number): Promise<void> {
+  const notifKey = `notif:contacts_over_limit:${orgId}`;
+  const already = await redis.get(notifKey);
+  if (already) return;
+  await redis.set(notifKey, '1', 'EX', 30 * 86400);
+  await createNotification({
+    organizationId: orgId,
+    type: 'contact_limit_reached',
+    title: 'Límite de contactos alcanzado',
+    message: `Tu organización superó el límite de ${limit} contactos de tu plan actual (tenés ${current}). Los contactos nuevos se siguen creando con normalidad — considerá subir de plan si esto es permanente.`,
+    data: { used: current, limit },
+    sendEmail: false,
+  });
+}

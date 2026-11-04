@@ -25,6 +25,8 @@ import { createSignupSession, loadSignupSession, deleteSignupSession } from '../
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
+import { checkContactLimit } from '../services/contact.service';
+import { notifyContactLimitReached } from '../services/usage.service';
 
 const router = Router();
 
@@ -210,15 +212,26 @@ async function processMessagingEvent(pageId: string, event: MessengerEvent): Pro
   }
 
   // Find or create contact by PSID (upsert: concurrent first messages cannot create duplicates)
-  const contactResult = await query<{ id: string }>(
+  const contactResult = await query<{ id: string; inserted: boolean }>(
     `INSERT INTO contacts (organization_id, agent_id, facebook_psid, source_channel, created_at, updated_at)
      VALUES ($1, $2, $3, 'facebook', NOW(), NOW())
      ON CONFLICT (organization_id, facebook_psid) WHERE facebook_psid IS NOT NULL
      DO UPDATE SET agent_id = COALESCE(contacts.agent_id, EXCLUDED.agent_id), updated_at = NOW()
-     RETURNING id`,
+     RETURNING id, (xmax = 0) AS inserted`,
     [agent.organization_id, agent.id, psid]
   );
   const contactId = contactResult.rows[0]!.id;
+  if (contactResult.rows[0]!.inserted === true) {
+    checkContactLimit(agent.organization_id)
+      .then((res) => {
+        if (!res.allowed) {
+          notifyContactLimitReached(agent.organization_id, res.current, res.limit).catch((err) =>
+            console.error('[contacts] Failed to notify over-limit:', err)
+          );
+        }
+      })
+      .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
+  }
 
   // Find or create active conversation
   const existingConv = await query<{ id: string; status: string }>(

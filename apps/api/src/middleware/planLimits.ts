@@ -42,44 +42,6 @@ export function checkAgentLimit() {
   };
 }
 
-// ── Contact limit ─────────────────────────────────────────────────────────────
-
-export function checkContactLimit() {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const plan = (req.org?.plan ?? 'solo') as PlanKey;
-      const limit = PLAN_LIMITS[plan]?.contacts ?? 25;
-
-      if (limit === Infinity) {
-        next();
-        return;
-      }
-
-      const result = await query<{ count: string }>(
-        'SELECT COUNT(*) as count FROM contacts WHERE organization_id = $1',
-        [req.user!.orgId]
-      );
-      const current = parseInt(result.rows[0]?.count ?? '0', 10);
-
-      if (current >= limit) {
-        res.status(403).json({
-          error: {
-            message: `Contact limit reached (${limit}). Upgrade your plan to add more contacts.`,
-            code: 'PLAN_LIMIT_REACHED',
-            limit,
-            current,
-          },
-        });
-        return;
-      }
-
-      next();
-    } catch (err) {
-      next(err);
-    }
-  };
-}
-
 // ── Knowledge file limit ───────────────────────────────────────────────────────
 
 export function checkKnowledgeLimit() {

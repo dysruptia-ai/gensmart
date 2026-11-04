@@ -22,6 +22,8 @@ import { createSignupSession, loadSignupSession, deleteSignupSession } from '../
 import { pushToBuffer } from '../services/message-buffer.service';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
+import { checkContactLimit } from '../services/contact.service';
+import { notifyContactLimitReached } from '../services/usage.service';
 import { findPhoneInPages, safeEqual, tokensForWaba } from '../services/waba-phones';
 
 const router = Router();
@@ -331,6 +333,15 @@ router.post(
           [agent.organization_id, agent.id, fromPhone]
         );
         contactId = newContact.rows[0]!.id;
+        checkContactLimit(agent.organization_id)
+          .then((res) => {
+            if (!res.allowed) {
+              notifyContactLimitReached(agent.organization_id, res.current, res.limit).catch((err) =>
+                console.error('[contacts] Failed to notify over-limit:', err)
+              );
+            }
+          })
+          .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
       }
 
       // Find or create active conversation
