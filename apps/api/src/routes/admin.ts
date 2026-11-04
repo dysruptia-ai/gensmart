@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate';
 import { query } from '../config/database';
 import * as platformSettings from '../services/platform-settings.service';
 import * as mcpProviders from '../services/mcp-providers.service';
+import { assertNoSubAccounts, performAccountDeletion } from '../services/account-deletion.service';
 
 const router = Router();
 
@@ -306,6 +307,45 @@ router.put(
         [req.body.plan, orgId]
       );
       res.json({ message: `Plan updated to ${req.body.plan as string}` });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// DELETE /api/admin/organizations/:id — Permanently delete an organization (super admin cleanup tool)
+const deleteOrgSchema = z.object({
+  confirmName: z.string().min(1).max(255),
+});
+
+router.delete(
+  '/organizations/:id',
+  validate(deleteOrgSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const orgId = String(req.params['id']);
+      const { confirmName } = req.body as z.infer<typeof deleteOrgSchema>;
+
+      const orgResult = await query<{ name: string }>(
+        'SELECT name FROM organizations WHERE id = $1',
+        [orgId]
+      );
+      const org = orgResult.rows[0];
+      if (!org) {
+        res.status(404).json({ error: { message: 'Organization not found', code: 'NOT_FOUND' } });
+        return;
+      }
+
+      if (confirmName.trim().toLowerCase() !== org.name.trim().toLowerCase()) {
+        res.status(400).json({
+          error: { message: 'Organization name does not match', code: 'CONFIRMATION_REQUIRED' },
+        });
+        return;
+      }
+
+      await assertNoSubAccounts(orgId);
+      await performAccountDeletion(orgId);
+      res.json({ deleted: true });
     } catch (err) {
       next(err);
     }

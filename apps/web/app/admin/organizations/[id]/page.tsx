@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { ArrowLeft, Users, Bot, CreditCard, ShieldOff } from 'lucide-react';
-import { api } from '@/lib/api';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Users, Bot, CreditCard, ShieldOff, Trash2 } from 'lucide-react';
+import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
 import styles from '../../admin.module.css';
 
@@ -64,12 +65,16 @@ const PLANS = ['solo', 'starter', 'pro', 'enterprise'] as const;
 export default function AdminOrgDetailPage() {
   const params = useParams();
   const orgId = params.id as string;
+  const router = useRouter();
   const toast = useToast();
   const [data, setData] = useState<OrgDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [changingPlan, setChangingPlan] = useState(false);
   const [reset2FAModal, setReset2FAModal] = useState<OrgUser | null>(null);
   const [resetting2FA, setResetting2FA] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   const loadOrg = useCallback(async () => {
     try {
@@ -114,6 +119,29 @@ export default function AdminOrgDetailPage() {
     }
   }
 
+  function closeDeleteModal() {
+    if (deleting) return;
+    setDeleteModalOpen(false);
+    setDeleteConfirmText('');
+  }
+
+  async function handleDeleteOrg() {
+    if (!data) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/api/admin/organizations/${orgId}`, { confirmName: deleteConfirmText });
+      toast.success(`Organization "${data.organization.name}" deleted`);
+      router.push('/admin/organizations');
+    } catch (err) {
+      if (err instanceof ApiError && err.code === 'HAS_SUB_ACCOUNTS') {
+        toast.error('Esta organización tiene sub-cuentas, quitalas primero');
+      } else {
+        toast.error('Failed to delete organization');
+      }
+      setDeleting(false);
+    }
+  }
+
   if (loading || !data) {
     return (
       <div className={styles.loadingScreen}>
@@ -154,6 +182,9 @@ export default function AdminOrgDetailPage() {
               <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
             ))}
           </select>
+          <Button variant="danger" size="sm" icon={Trash2} onClick={() => setDeleteModalOpen(true)}>
+            Delete organization
+          </Button>
         </div>
       </div>
 
@@ -278,6 +309,35 @@ export default function AdminOrgDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Organization Modal */}
+      <Modal isOpen={deleteModalOpen} onClose={closeDeleteModal} title="Delete organization" size="sm">
+        <p style={{ marginBottom: '1rem', color: 'var(--color-text-secondary)', fontSize: 'var(--font-sm)' }}>
+          This permanently deletes <strong>{org.name}</strong> and all its data (agents, conversations,
+          contacts, files). This action cannot be undone.
+        </p>
+        <Input
+          label={`Type "${org.name}" to confirm`}
+          value={deleteConfirmText}
+          onChange={(e) => setDeleteConfirmText(e.target.value)}
+          placeholder={org.name}
+        />
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+          <Button variant="secondary" size="sm" onClick={closeDeleteModal} disabled={deleting}>
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            size="sm"
+            icon={Trash2}
+            loading={deleting}
+            disabled={deleteConfirmText.trim().toLowerCase() !== org.name.trim().toLowerCase()}
+            onClick={handleDeleteOrg}
+          >
+            Delete permanently
+          </Button>
+        </div>
+      </Modal>
 
       {/* Reset 2FA Confirmation Modal */}
       <Modal
