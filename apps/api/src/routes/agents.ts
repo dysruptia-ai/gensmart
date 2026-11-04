@@ -2134,13 +2134,11 @@ router.post(
             totalTokens += retryResponse.usage.totalTokens;
           } else {
             console.warn(`[agents.preview] Retry also returned minimal response (length=${retryResponse.content.length})`);
-            finalResponse = agentResult.llmProvider === 'anthropic'
-              ? 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?'
-              : 'Sorry, I could not process your message. Could you please repeat it?';
+            finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
           }
         } catch (retryErr) {
           console.error('[agents.preview] Retry for minimal response failed:', (retryErr as Error).message);
-          finalResponse = 'Sorry, I could not process your message. Could you please repeat it?';
+          finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
         }
       }
 

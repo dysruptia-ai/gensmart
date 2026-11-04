@@ -120,7 +120,7 @@ const FEATURE_GROUPS: FeatureGroup[] = [
   {
     groupKey: 'ai',
     rows: [
-      { label: 'LLM Models', labelKey: 'pricing.rows.llmModels', values: ['GPT-4o-mini', 'GPT-4o-mini + Haiku', 'All models', 'All models'] },
+      { label: 'LLM Models', labelKey: 'pricing.rows.llmModels', values: ['GPT-4o-mini + GLM-4.6 + DeepSeek', 'GPT-4o-mini + Haiku + GLM-4.6 + DeepSeek', 'All models', 'All models'] },
       { label: 'Context window', labelKey: 'pricing.rows.contextWindow', values: ['10 msgs', '15 msgs', '25 msgs', '50 msgs'] },
       { label: 'Max tokens / response', labelKey: 'pricing.rows.maxTokensResponse', values: ['512', '1,024', '2,048', '4,096'] },
       { label: 'BYO API Key', labelKey: 'pricing.rows.byoApiKey', values: [false, false, false, true] },

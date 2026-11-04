@@ -34,7 +34,7 @@ export const agentCreateSchema = z.object({
   name: z.string().min(1, 'Name is required').max(255),
   description: z.string().max(1000).optional(),
   systemPrompt: z.string().min(1, 'System prompt is required'),
-  llmProvider: z.enum(['openai', 'anthropic']),
+  llmProvider: z.enum(['openai', 'anthropic', 'openrouter']),
   llmModel: z.string().min(1),
   temperature: z.number().min(0).max(2).default(0.7),
   maxTokens: z.number().int().min(1).max(8192).default(1024),

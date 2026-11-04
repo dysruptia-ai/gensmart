@@ -106,11 +106,14 @@ const ALL_MODELS: { provider: string; value: string; label: string }[] = [
   { provider: 'openai', value: 'gpt-4o', label: 'GPT-4o' },
   { provider: 'anthropic', value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku' },
   { provider: 'anthropic', value: 'claude-sonnet-5', label: 'Claude Sonnet 5' },
+  { provider: 'openrouter', value: 'z-ai/glm-4.6', label: 'GLM-4.6' },
+  { provider: 'openrouter', value: 'deepseek/deepseek-v3.2', label: 'DeepSeek V3.2' },
 ];
 
 const LLM_PROVIDERS = [
   { value: 'openai', label: 'OpenAI' },
   { value: 'anthropic', label: 'Anthropic' },
+  { value: 'openrouter', label: 'OpenRouter' },
 ];
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'neutral'> = {
@@ -701,7 +704,7 @@ export default function AgentEditorPage() {
                       const firstAllowed = ALL_MODELS.find(
                         (m) => m.provider === p && allowedModels.includes(m.value)
                       );
-                      setLlmModel(firstAllowed?.value ?? (p === 'anthropic' ? 'claude-haiku-4-5-20251001' : 'gpt-4o-mini'));
+                      setLlmModel(firstAllowed?.value ?? (p === 'anthropic' ? 'claude-haiku-4-5-20251001' : p === 'openrouter' ? 'z-ai/glm-4.6' : 'gpt-4o-mini'));
                       setIsDirty(true);
                     }}
                   >
@@ -734,7 +737,7 @@ export default function AgentEditorPage() {
                   </select>
                   {filteredModels.length === 0 && (
                     <span className={styles.fieldHint} style={{ color: 'var(--color-danger)' }}>
-                      {t('agents.editor.settings.upgradeModel', { provider: llmProvider === 'anthropic' ? 'Anthropic' : 'OpenAI GPT-4o' })}
+                      {t('agents.editor.settings.upgradeModel', { provider: llmProvider === 'anthropic' ? 'Anthropic' : llmProvider === 'openrouter' ? 'OpenRouter' : 'OpenAI GPT-4o' })}
                     </span>
                   )}
                 </div>
