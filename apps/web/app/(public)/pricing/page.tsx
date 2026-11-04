@@ -51,8 +51,7 @@ interface FeatureGroup {
   groupKey: string;
   rows: {
     label: string;
-    /** When set, overrides `label` via t() — new rows go through i18n; the pre-existing
-     * hardcoded-English rows in this table are left as-is (preexisting, out of scope). */
+    /** Overrides `label` via t(); `label` stays as fallback. */
     labelKey?: string;
     values: [FeatureValue, FeatureValue, FeatureValue, FeatureValue];
   }[];
@@ -69,8 +68,8 @@ function planChannelValues(channel: string): [boolean, boolean, boolean, boolean
 }
 
 const CHANNEL_ROWS: { channel: string; label: string; labelKey?: string }[] = [
-  { channel: 'web', label: 'Web widget' },
-  { channel: 'whatsapp', label: 'WhatsApp Business' },
+  { channel: 'web', label: 'Web widget', labelKey: 'pricing.rows.web' },
+  { channel: 'whatsapp', label: 'WhatsApp Business', labelKey: 'pricing.rows.whatsapp' },
   { channel: 'email', label: 'Email', labelKey: 'pricing.rows.email' },
   { channel: 'telegram', label: 'Telegram', labelKey: 'pricing.rows.telegram' },
   { channel: 'facebook', label: 'Messenger', labelKey: 'pricing.rows.messenger' },
@@ -96,13 +95,14 @@ const FEATURE_GROUPS: FeatureGroup[] = [
   {
     groupKey: 'core',
     rows: [
-      { label: 'AI Agents', values: ['1', '3', '10', 'Unlimited'] },
-      { label: 'Messages / month', values: ['200', '1,000', '5,000', '25,000'] },
+      { label: 'AI Agents', labelKey: 'pricing.rows.aiAgents', values: ['1', '3', '10', 'Unlimited'] },
+      { label: 'Messages / month', labelKey: 'pricing.rows.messagesPerMonth', values: ['200', '1,000', '5,000', '25,000'] },
       {
         label: 'Contacts',
+        labelKey: 'pricing.rows.contacts',
         values: PLAN_IDS.map(contactsValue) as [FeatureValue, FeatureValue, FeatureValue, FeatureValue],
       },
-      { label: 'Support', values: ['Community', 'Email', 'Priority', 'Dedicated'] },
+      { label: 'Support', labelKey: 'pricing.rows.support', values: ['Community', 'Email', 'Priority', 'Dedicated'] },
     ],
   },
   {
@@ -113,40 +113,40 @@ const FEATURE_GROUPS: FeatureGroup[] = [
         labelKey: c.labelKey,
         values: planChannelValues(c.channel),
       })),
-      { label: 'Voice messages', values: [false, true, true, true] },
-      { label: 'Image analysis', values: [false, false, true, true] },
+      { label: 'Voice messages', labelKey: 'pricing.rows.voiceMessages', values: [false, true, true, true] },
+      { label: 'Image analysis', labelKey: 'pricing.rows.imageAnalysis', values: [false, false, true, true] },
     ],
   },
   {
     groupKey: 'ai',
     rows: [
-      { label: 'LLM Models', values: ['GPT-4o-mini', 'GPT-4o-mini + Haiku', 'All models', 'All models'] },
-      { label: 'Context window', values: ['10 msgs', '15 msgs', '25 msgs', '50 msgs'] },
-      { label: 'Max tokens / response', values: ['512', '1,024', '2,048', '4,096'] },
-      { label: 'BYO API Key', values: [false, false, false, true] },
+      { label: 'LLM Models', labelKey: 'pricing.rows.llmModels', values: ['GPT-4o-mini', 'GPT-4o-mini + Haiku', 'All models', 'All models'] },
+      { label: 'Context window', labelKey: 'pricing.rows.contextWindow', values: ['10 msgs', '15 msgs', '25 msgs', '50 msgs'] },
+      { label: 'Max tokens / response', labelKey: 'pricing.rows.maxTokensResponse', values: ['512', '1,024', '2,048', '4,096'] },
+      { label: 'BYO API Key', labelKey: 'pricing.rows.byoApiKey', values: [false, false, false, true] },
     ],
   },
   {
     groupKey: 'crmAdvanced',
     rows: [
-      { label: 'Knowledge base files', values: ['1', '5', '20', 'Unlimited'] },
-      { label: 'Custom functions', values: [false, '2', '10', 'Unlimited'] },
-      { label: 'MCP servers', values: [false, false, '3', 'Unlimited'] },
+      { label: 'Knowledge base files', labelKey: 'pricing.rows.knowledgeBaseFiles', values: ['1', '5', '20', 'Unlimited'] },
+      { label: 'Custom functions', labelKey: 'pricing.rows.customFunctions', values: [false, '2', '10', 'Unlimited'] },
+      { label: 'MCP servers', labelKey: 'pricing.rows.mcpServers', values: [false, false, '3', 'Unlimited'] },
       {
         label: 'Email notification tools',
         labelKey: 'pricing.rows.emailNotificationTools',
         values: PLAN_IDS.map(emailNotificationToolsValue) as [FeatureValue, FeatureValue, FeatureValue, FeatureValue],
       },
-      { label: 'Sub-accounts', values: [false, false, '5', 'Unlimited'] },
-      { label: 'Human takeover', values: [false, true, true, true] },
+      { label: 'Sub-accounts', labelKey: 'pricing.rows.subAccounts', values: [false, false, '5', 'Unlimited'] },
+      { label: 'Human takeover', labelKey: 'pricing.rows.humanTakeover', values: [false, true, true, true] },
     ],
   },
 ];
 
 const ADD_ONS = [
-  { messages: '500 messages', price: '$10' },
-  { messages: '2,000 messages', price: '$30' },
-  { messages: '5,000 messages', price: '$60' },
+  { count: 500, price: '$10' },
+  { count: 2000, price: '$30' },
+  { count: 5000, price: '$60' },
 ];
 
 function CellValue({ value }: { value: FeatureValue }) {
@@ -323,8 +323,8 @@ export default function PricingPage() {
           <p className={styles.sectionSubtitle}>{t('pricing.addons.subtitle')}</p>
           <div className={styles.addonsGrid}>
             {ADD_ONS.map((addon) => (
-              <div key={addon.messages} className={styles.addonCard}>
-                <span className={styles.addonMessages}>{addon.messages}</span>
+              <div key={addon.count} className={styles.addonCard}>
+                <span className={styles.addonMessages}>{t('pricing.addons.messagesCount', { count: addon.count.toLocaleString('en-US') })}</span>
                 <span className={styles.addonPrice}>{addon.price}</span>
                 <span className={styles.addonPeriod}>{t('pricing.addons.oneTime')}</span>
               </div>

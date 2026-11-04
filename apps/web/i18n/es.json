@@ -1750,23 +1750,24 @@
       "telegram": "Telegram",
       "messenger": "Messenger",
       "instagram": "Instagram",
-      "emailNotificationTools": "Herramientas de notificación por email"
-    },
-    "features": {
-      "agents": "{count} agente | {count} agentes",
-      "messages": "{count} mensajes/mes",
-      "contacts": "{count} contactos",
-      "webChannel": "Widget de chat web",
-      "whatsappChannel": "WhatsApp Business",
-      "knowledgeFiles": "{count} archivo de conocimiento | {count} archivos de conocimiento",
+      "emailNotificationTools": "Herramientas de notificación por email",
+      "aiAgents": "Agentes de IA",
+      "messagesPerMonth": "Mensajes / mes",
+      "contacts": "Contactos",
+      "support": "Soporte",
+      "web": "Widget web",
+      "whatsapp": "WhatsApp Business",
+      "voiceMessages": "Mensajes de voz",
+      "imageAnalysis": "Análisis de imágenes",
+      "llmModels": "Modelos de IA",
+      "contextWindow": "Ventana de contexto",
+      "maxTokensResponse": "Tokens máx. / respuesta",
+      "byoApiKey": "Clave API propia",
+      "knowledgeBaseFiles": "Archivos de base de conocimiento",
       "customFunctions": "Funciones personalizadas",
       "mcpServers": "Servidores MCP",
       "subAccounts": "Sub-cuentas",
-      "humanTakeover": "Control humano",
-      "allModels": "Todos los modelos de IA",
-      "byoKey": "Clave API propia (mensajes ilimitados)",
-      "prioritySupport": "Soporte prioritario",
-      "dedicatedSupport": "Soporte dedicado"
+      "humanTakeover": "Control humano"
     },
     "faq": {
       "q1": "¿Puedo cambiar mi plan en cualquier momento?",
@@ -1790,7 +1791,8 @@
     "addons": {
       "title": "¿Necesitas más mensajes?",
       "subtitle": "Compra paquetes de mensajes adicionales cuando los necesites. No acumulables, expiran al final del mes.",
-      "oneTime": "pago único"
+      "oneTime": "pago único",
+      "messagesCount": "{count} mensajes"
     },
     "faqSection": {
       "title": "Preguntas frecuentes",

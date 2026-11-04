@@ -1750,23 +1750,24 @@
       "telegram": "Telegram",
       "messenger": "Messenger",
       "instagram": "Instagram",
-      "emailNotificationTools": "Email notification tools"
-    },
-    "features": {
-      "agents": "{count} agent | {count} agents",
-      "messages": "{count} messages/month",
-      "contacts": "{count} contacts",
-      "webChannel": "Web chat widget",
-      "whatsappChannel": "WhatsApp Business",
-      "knowledgeFiles": "{count} knowledge file | {count} knowledge files",
+      "emailNotificationTools": "Email notification tools",
+      "aiAgents": "AI Agents",
+      "messagesPerMonth": "Messages / month",
+      "contacts": "Contacts",
+      "support": "Support",
+      "web": "Web widget",
+      "whatsapp": "WhatsApp Business",
+      "voiceMessages": "Voice messages",
+      "imageAnalysis": "Image analysis",
+      "llmModels": "LLM Models",
+      "contextWindow": "Context window",
+      "maxTokensResponse": "Max tokens / response",
+      "byoApiKey": "BYO API Key",
+      "knowledgeBaseFiles": "Knowledge base files",
       "customFunctions": "Custom functions",
       "mcpServers": "MCP servers",
       "subAccounts": "Sub-accounts",
-      "humanTakeover": "Human takeover",
-      "allModels": "All AI models",
-      "byoKey": "BYO API Key (unlimited messages)",
-      "prioritySupport": "Priority support",
-      "dedicatedSupport": "Dedicated support"
+      "humanTakeover": "Human takeover"
     },
     "faq": {
       "q1": "Can I change my plan at any time?",
@@ -1790,7 +1791,8 @@
     "addons": {
       "title": "Need More Messages?",
       "subtitle": "Purchase one-time message packs when you need them. Non-cumulative, expires at month end.",
-      "oneTime": "one-time"
+      "oneTime": "one-time",
+      "messagesCount": "{count} messages"
     },
     "faqSection": {
       "title": "Common Questions",
