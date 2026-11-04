@@ -1107,7 +1107,7 @@ export async function previewAgent(
   ];
 
   const response = await chat({
-    provider: agent.llm_provider as 'openai' | 'anthropic',
+    provider: agent.llm_provider as 'openai' | 'anthropic' | 'openrouter',
     model: agent.llm_model,
     system: systemPrompt,
     messages,

@@ -12,6 +12,10 @@ export const LLM_MODELS = {
     // Legacy — mantener para retrocompatibilidad con agentes existentes que aún no migraron
     'claude-sonnet-4-20250514': { name: 'Claude Sonnet 4 (deprecated)', plans: ['pro', 'enterprise'] },
   },
+  openrouter: {
+    'z-ai/glm-4.6': { name: 'GLM-4.6', plans: ['solo', 'starter', 'pro', 'enterprise'] },
+    'deepseek/deepseek-v3.2': { name: 'DeepSeek V3.2', plans: ['solo', 'starter', 'pro', 'enterprise'] },
+  },
 } as const;
 
 // ── Vision / Multimodal types ─────────────────────────────────────────────────
@@ -88,7 +92,7 @@ export interface ToolCall {
 }
 
 export interface ChatParams {
-  provider: 'openai' | 'anthropic';
+  provider: 'openai' | 'anthropic' | 'openrouter';
   model: string;
   messages: ChatMessage[];
   tools?: ToolDefinition[];
@@ -111,6 +115,13 @@ export interface ChatResponse {
 
 function getOpenAIClient(byoKey?: string): OpenAI {
   return new OpenAI({ apiKey: byoKey ?? process.env['OPENAI_API_KEY'] });
+}
+
+function getOpenRouterClient(byoKey?: string): OpenAI {
+  return new OpenAI({
+    apiKey: byoKey ?? process.env['OPENROUTER_API_KEY'],
+    baseURL: 'https://openrouter.ai/api/v1',
+  });
 }
 
 function getAnthropicClient(byoKey?: string): Anthropic {
@@ -140,12 +151,22 @@ export async function chat(params: ChatParams): Promise<ChatResponse> {
   if (params.provider === 'anthropic') {
     return chatAnthropic(params);
   }
+  if (params.provider === 'openrouter') {
+    return chatOpenRouter(params);
+  }
   return chatOpenAI(params);
 }
 
-async function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
-  const client = getOpenAIClient(params.byoApiKey);
+function chatOpenAI(params: ChatParams): Promise<ChatResponse> {
+  return chatOpenAICompatible(params, getOpenAIClient(params.byoApiKey));
+}
 
+function chatOpenRouter(params: ChatParams): Promise<ChatResponse> {
+  return chatOpenAICompatible(params, getOpenRouterClient(params.byoApiKey));
+}
+
+/** Shared implementation for OpenAI-compatible APIs (OpenAI direct, OpenRouter). */
+async function chatOpenAICompatible(params: ChatParams, client: OpenAI): Promise<ChatResponse> {
   const messages: OpenAI.ChatCompletionMessageParam[] = [];
 
   if (params.system) {

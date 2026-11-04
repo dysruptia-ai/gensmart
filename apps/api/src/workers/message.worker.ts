@@ -714,7 +714,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   let resolvedByoKey: string | undefined;
   if (plan === 'enterprise') {
     const { decrypt: decryptKey } = await import('../config/encryption');
-    const provider = agent.llm_provider as 'openai' | 'anthropic';
+    const provider = agent.llm_provider as 'openai' | 'anthropic' | 'openrouter';
     if (provider === 'openai' && org?.byo_openai_key_encrypted) {
       try { resolvedByoKey = decryptKey(org.byo_openai_key_encrypted); } catch { /* invalid key */ }
     } else if (provider === 'anthropic' && org?.byo_anthropic_key_encrypted) {
@@ -768,7 +768,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       iterationCount++;
 
       const response = await chat({
-        provider: agent.llm_provider as 'openai' | 'anthropic',
+        provider: agent.llm_provider as 'openai' | 'anthropic' | 'openrouter',
         model: agent.llm_model,
         system: fullSystemPrompt,
         messages: currentMessages,
@@ -882,7 +882,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     // Retry once
     try {
       const retryResponse = await chat({
-        provider: agent.llm_provider as 'openai' | 'anthropic',
+        provider: agent.llm_provider as 'openai' | 'anthropic' | 'openrouter',
         model: agent.llm_model,
         system: fullSystemPrompt,
         messages,
@@ -911,7 +911,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     console.warn(`[shipping-guard] Corrected invented shipping cost in conversation ${conversationId}`);
     try {
       finalResponse = await correctShippingHallucination(
-        agent.llm_provider as 'openai' | 'anthropic',
+        agent.llm_provider as 'openai' | 'anthropic' | 'openrouter',
         agent.llm_model,
         currentMessages,
         finalResponse
@@ -931,7 +931,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     console.warn(`[msg-worker] Minimal LLM response detected (length=${finalResponse.length}) — retrying`);
     try {
       const retryResponse = await chat({
-        provider: agent.llm_provider as 'openai' | 'anthropic',
+        provider: agent.llm_provider as 'openai' | 'anthropic' | 'openrouter',
         model: agent.llm_model,
         system: fullSystemPrompt,
         messages,

@@ -1837,7 +1837,7 @@ router.post(
       try {
       for (let i = 0; i < maxIter; i++) {
         const response = await chat({
-          provider: agentResult.llmProvider as 'openai' | 'anthropic',
+          provider: agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
           model: agentResult.llmModel,
           system: fullSystemPrompt,
           messages: currentMessages,
@@ -2080,7 +2080,7 @@ router.post(
         console.error('[agents.preview] LLM failed in loop, retrying:', (err as Error).message);
         try {
           const retryResponse = await chat({
-            provider: agentResult.llmProvider as 'openai' | 'anthropic',
+            provider: agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
             model: agentResult.llmModel,
             system: fullSystemPrompt,
             messages,
@@ -2102,7 +2102,7 @@ router.post(
         console.warn(`[shipping-guard] Corrected invented shipping cost in preview for agent ${agentId}`);
         try {
           finalResponse = await correctShippingHallucination(
-            agentResult.llmProvider as 'openai' | 'anthropic',
+            agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
             agentResult.llmModel,
             currentMessages,
             finalResponse
@@ -2122,7 +2122,7 @@ router.post(
         console.warn(`[agents.preview] Minimal LLM response detected (length=${finalResponse.length}) — retrying`);
         try {
           const retryResponse = await chat({
-            provider: agentResult.llmProvider as 'openai' | 'anthropic',
+            provider: agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
             model: agentResult.llmModel,
             system: fullSystemPrompt,
             messages,

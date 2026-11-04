@@ -32,7 +32,7 @@ export function mentionsShippingCost(text: string): boolean {
  * turn where check_shipping_zones returned zones: [].
  */
 export async function correctShippingHallucination(
-  provider: 'openai' | 'anthropic',
+  provider: 'openai' | 'anthropic' | 'openrouter',
   model: string,
   currentMessages: ChatMessage[],
   offendingResponse: string
