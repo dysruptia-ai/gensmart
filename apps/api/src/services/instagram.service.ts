@@ -329,7 +329,7 @@ export async function exchangeForLongLivedToken(
 
 export async function subscribePageToApp(pageId: string, pageAccessToken: string): Promise<boolean> {
   const res = await fetch(
-    `${META_BASE_URL}/${encodeURIComponent(pageId)}/subscribed_apps?subscribed_fields=messages`,
+    `${META_BASE_URL}/${encodeURIComponent(pageId)}/subscribed_apps?subscribed_fields=messages,messaging_postbacks`,
     { method: 'POST', headers: { Authorization: `Bearer ${pageAccessToken}` } }
   );
   if (!res.ok) {
