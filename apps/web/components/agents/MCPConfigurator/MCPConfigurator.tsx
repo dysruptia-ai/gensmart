@@ -273,7 +273,7 @@ export default function MCPConfigurator({
     setOauthError(null);
     try {
       const data = await api.post<{ authorizeUrl: string }>(
-        `/agents/${agentId}/tools/mcp/tiendanube/connect-session`,
+        `/api/agents/${agentId}/tools/mcp/tiendanube/connect-session`,
         {}
       );
       // Full-page redirect: Tiendanube does not support a popup flow.
