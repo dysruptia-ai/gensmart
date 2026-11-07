@@ -521,27 +521,54 @@ export default function MCPConfigurator({
           {t('agents.tools.mcp.provider.backToProviders')}
         </button>
 
-        {profile.requires_oauth_connect && (
+        {profile.requires_oauth_connect && toolId && (
           <div className={styles.fieldGroup}>
-            <span className={styles.helpText}>{t('agents.tools.mcp.provider.oauthConnectHint')}</span>
-            <div>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={handleOauthConnect}
-                disabled={oauthConnecting}
-              >
-                {oauthConnecting ? (
-                  <>
-                    <Spinner size="sm" />
-                    <span>{t('agents.tools.mcp.provider.oauthConnecting')}</span>
-                  </>
-                ) : (
-                  t('agents.tools.mcp.provider.oauthConnectButton', { name: profile.name })
-                )}
-              </Button>
-            </div>
-            {oauthError && <span className={styles.statusError}>{oauthError}</span>}
+          <div className={styles.statusOk}>
+            <Check size={14} />
+            <span>{t('agents.tools.mcp.provider.oauthConnectedStatus', { name: profile.name })}</span>
+          </div>
+          <div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleOauthConnect}
+              disabled={oauthConnecting}
+            >
+              {oauthConnecting ? (
+                <>
+                  <Spinner size="sm" />
+                  <span>{t('agents.tools.mcp.provider.oauthConnecting')}</span>
+                </>
+              ) : (
+                t('agents.tools.mcp.provider.oauthReconnectButton')
+              )}
+            </Button>
+          </div>
+          {oauthError && <span className={styles.statusError}>{oauthError}</span>}
+          </div>
+        )}
+
+        {profile.requires_oauth_connect && !toolId && (
+          <div className={styles.fieldGroup}>
+          <span className={styles.helpText}>{t('agents.tools.mcp.provider.oauthConnectHint')}</span>
+          <div>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleOauthConnect}
+              disabled={oauthConnecting}
+            >
+              {oauthConnecting ? (
+                <>
+                  <Spinner size="sm" />
+                  <span>{t('agents.tools.mcp.provider.oauthConnecting')}</span>
+                </>
+              ) : (
+                t('agents.tools.mcp.provider.oauthConnectButton', { name: profile.name })
+              )}
+            </Button>
+          </div>
+          {oauthError && <span className={styles.statusError}>{oauthError}</span>}
           </div>
         )}
 

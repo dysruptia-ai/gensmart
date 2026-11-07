@@ -806,7 +806,9 @@
           "oauthConnectHint": "Tiendanube will open so you can authorize GenSmart to access your store. You will come back here when you finish.",
           "oauthConnectButton": "Connect with my {name} store",
           "oauthConnecting": "Redirecting...",
-          "oauthConnectFailed": "Could not start the connection. Try again."
+          "oauthConnectFailed": "Could not start the connection. Try again.",
+          "oauthConnectedStatus": "Connected to your {name} store",
+          "oauthReconnectButton": "Reconnect"
         }
       }
     },
