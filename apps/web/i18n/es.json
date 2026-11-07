@@ -802,7 +802,11 @@
           "resolvingProvider": "Detectando proveedor...",
           "requiredHeaderMissing": "{label} es requerido",
           "minLengthError": "{label} debe tener al menos {min} caracteres",
-          "backToProviders": "Volver a proveedores"
+          "backToProviders": "Volver a proveedores",
+          "oauthConnectHint": "Se abrirá Tiendanube para que autorices a GenSmart a acceder a tu tienda. Volverás aquí al terminar.",
+          "oauthConnectButton": "Conectar con mi tienda {name}",
+          "oauthConnecting": "Redirigiendo...",
+          "oauthConnectFailed": "No se pudo iniciar la conexión. Inténtalo de nuevo."
         }
       }
     },

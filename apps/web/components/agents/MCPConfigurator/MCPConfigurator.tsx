@@ -72,6 +72,8 @@ export interface MCPProviderProfile {
     min_length?: number;
   }>;
   supported_events: string[];
+  /** When true, show an OAuth connect button instead of the headers form. */
+  requires_oauth_connect?: boolean;
 }
 
 interface MCPConfiguratorProps {
@@ -95,6 +97,8 @@ export default function MCPConfigurator({
   const { t, language } = useTranslation();
 
   const [testing, setTesting] = useState(false);
+  const [oauthConnecting, setOauthConnecting] = useState(false);
+  const [oauthError, setOauthError] = useState<string | null>(null);
   // Whether we have live data from the MCP server (vs. only saved names)
   const [liveTested, setLiveTested] = useState(false);
   const [availableTools, setAvailableTools] = useState<MCPToolInfo[]>([]);
@@ -263,6 +267,22 @@ export default function MCPConfigurator({
     onChange({ headers: next });
   }
   const [revealedGuided, setRevealedGuided] = useState<Record<string, boolean>>({});
+
+  async function handleOauthConnect() {
+    setOauthConnecting(true);
+    setOauthError(null);
+    try {
+      const data = await api.post<{ authorizeUrl: string }>(
+        `/agents/${agentId}/tools/mcp/tiendanube/connect-session`,
+        {}
+      );
+      // Full-page redirect: Tiendanube does not support a popup flow.
+      window.location.href = data.authorizeUrl;
+    } catch (err) {
+      setOauthError(err instanceof ApiError ? err.message : t('agents.tools.mcp.provider.oauthConnectFailed'));
+      setOauthConnecting(false);
+    }
+  }
 
   async function handleTestConnection() {
     if (!config.server_url.trim()) return;
@@ -501,6 +521,31 @@ export default function MCPConfigurator({
           {t('agents.tools.mcp.provider.backToProviders')}
         </button>
 
+        {profile.requires_oauth_connect && (
+          <div className={styles.fieldGroup}>
+            <span className={styles.helpText}>{t('agents.tools.mcp.provider.oauthConnectHint')}</span>
+            <div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleOauthConnect}
+                disabled={oauthConnecting}
+              >
+                {oauthConnecting ? (
+                  <>
+                    <Spinner size="sm" />
+                    <span>{t('agents.tools.mcp.provider.oauthConnecting')}</span>
+                  </>
+                ) : (
+                  t('agents.tools.mcp.provider.oauthConnectButton', { name: profile.name })
+                )}
+              </Button>
+            </div>
+            {oauthError && <span className={styles.statusError}>{oauthError}</span>}
+          </div>
+        )}
+
+        {!profile.requires_oauth_connect && (<>
         {/* URL field readonly */}
         <div className={styles.fieldGroup}>
           <label className={styles.label}>{t('agents.tools.mcp.serverUrl')}</label>
@@ -773,6 +818,7 @@ export default function MCPConfigurator({
           <Wrench size={12} />
           <span>{t('agents.tools.mcp.provider.advancedModeLink')}</span>
         </button>
+        </>)}
       </div>
     );
   }
