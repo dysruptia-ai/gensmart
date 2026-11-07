@@ -25,6 +25,7 @@ import * as platformSettings from './platform-settings.service';
 import * as mcpProviders from './mcp-providers.service';
 import { serverUrlMatchesProfile } from './mcp-provider-url';
 import { connectAndListTools } from './mcp-client.service';
+import { consumeConnectSession } from './tiendanube-connect-session.service';
 
 const WOOCOMMERCE_TEMPLATE_NAME = 'WooCommerce Store Assistant';
 const TIENDANUBE_PROVIDER_ID = 'tiendanube';
@@ -95,9 +96,14 @@ async function ensureWebChannel(agentId: string): Promise<void> {
 async function refreshStoreIdAndEnsureDiscovery(
   organizationId: string,
   agentId: string,
-  storeId: string
+  storeId: string,
+  // The App Store reinstall path grants plan 'pro' (billing_source='tiendanube').
+  // The attach path serves existing GenSmart orgs and must NOT change their plan.
+  options: { upgradePlan: boolean } = { upgradePlan: true }
 ): Promise<void> {
-  await query(`UPDATE organizations SET plan = 'pro' WHERE id = $1`, [organizationId]);
+  if (options.upgradePlan) {
+    await query(`UPDATE organizations SET plan = 'pro' WHERE id = $1`, [organizationId]);
+  }
 
   await ensureWebChannel(agentId);
 
@@ -490,4 +496,50 @@ export async function verifyInternalProvisioningSecret(providedKey: string | und
   } catch {
     return false;
   }
+}
+
+export interface AttachTiendanubeStoreResult {
+  agentId: string;
+  organizationId: string;
+}
+
+/**
+ * Connect flow started from the agent editor (see
+ * tiendanube-connect-session.service.ts): the OAuth `state` resolves to the
+ * org + agent that originated it. Unlike provisionTiendanubeStore(), no
+ * Organization is created and the org's plan is left untouched.
+ */
+export async function attachTiendanubeStoreToAgent(
+  storeId: string,
+  state: string
+): Promise<AttachTiendanubeStoreResult> {
+  const session = await consumeConnectSession(state);
+  if (!session) {
+    throw new AppError(400, 'Connection session expired or invalid. Start the connection again from GenSmart.', 'CONNECT_SESSION_EXPIRED');
+  }
+  const { organizationId, agentId } = session;
+
+  // Re-check ownership: the agent may have been deleted during the OAuth round-trip.
+  const owned = await query<{ id: string }>(
+    `SELECT id FROM agents WHERE id = $1 AND organization_id = $2`,
+    [agentId, organizationId]
+  );
+  if (!owned.rows[0]) {
+    throw new AppError(404, 'Agent not found', 'AGENT_NOT_FOUND');
+  }
+
+  await ensureWebChannel(agentId);
+
+  // Avoid duplicating the tool on double-click / retry / previous connection.
+  const existingToolResult = await query<{ id: string }>(
+    `SELECT id FROM agent_tools WHERE agent_id = $1 AND type = 'mcp' AND config->>'providerId' = $2`,
+    [agentId, TIENDANUBE_PROVIDER_ID]
+  );
+  if (existingToolResult.rows[0]) {
+    await refreshStoreIdAndEnsureDiscovery(organizationId, agentId, storeId, { upgradePlan: false });
+  } else {
+    await connectTiendanubeMcp(organizationId, agentId, storeId);
+  }
+
+  return { agentId, organizationId };
 }
