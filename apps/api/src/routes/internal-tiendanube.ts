@@ -22,6 +22,7 @@ import { validate } from '../middleware/validate';
 import { rateLimiter } from '../middleware/rateLimiter';
 import {
   provisionTiendanubeStore,
+  attachTiendanubeStoreToAgent,
   toggleTiendanubeTool,
   markTiendanubeCustomer,
   verifyInternalProvisioningSecret,
@@ -30,6 +31,7 @@ import {
 const router = Router();
 
 const provisionLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'tiendanube-provision' });
+const attachLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'tiendanube-attach' });
 const toggleToolLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'tiendanube-toggle-tool' });
 const markCustomerLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 30, keyPrefix: 'tiendanube-mark-customer' });
 
@@ -38,6 +40,11 @@ const provisionSchema = z.object({
   storeName: z.string().min(1).max(255),
   email: z.string().email(),
   contactName: z.string().min(1).max(255),
+});
+
+const attachSchema = z.object({
+  storeId: z.string().min(1),
+  state: z.string().min(1),
 });
 
 const toggleToolSchema = z.object({
@@ -69,6 +76,30 @@ router.post(
       }
 
       const result = await provisionTiendanubeStore(req.body);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Called by tiendanube-mcp when the OAuth callback carries `state` (connection
+// started from an existing agent's editor). Distinct from /provision: no new
+// Organization — the MCP tool is attached to the agent that originated the session.
+router.post(
+  '/attach',
+  attachLimiter,
+  validate(attachSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const providedKey = req.headers['x-mcp-api-key'] as string | undefined;
+      const isValid = await verifyInternalProvisioningSecret(providedKey);
+      if (!isValid) {
+        res.status(401).json({ error: { message: 'Invalid or missing X-MCP-API-Key', code: 'UNAUTHORIZED' } });
+        return;
+      }
+
+      const result = await attachTiendanubeStoreToAgent(req.body.storeId, req.body.state);
       res.status(200).json(result);
     } catch (err) {
       next(err);

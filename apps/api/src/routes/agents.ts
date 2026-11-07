@@ -28,6 +28,7 @@ import {
   type EncryptedHeader,
 } from '../services/mcp-headers.service';
 import * as mcpProviders from '../services/mcp-providers.service';
+import { createConnectSession } from '../services/tiendanube-connect-session.service';
 import { encrypt, decrypt } from '../config/encryption';
 import {
   buildEmailNotificationToolDef,
@@ -646,6 +647,28 @@ router.get(
     try {
       const profiles = await mcpProviders.listActiveProfiles();
       res.json({ providers: profiles.map(mcpProviders.toPublicProfile) });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/agents/:id/tools/mcp/tiendanube/connect-session
+// Starts the OAuth connect flow: short-lived Redis session bound to this agent,
+// returns the Tiendanube authorize URL. See tiendanube-connect-session.service.ts.
+router.post(
+  '/:id/tools/mcp/tiendanube/connect-session',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      // Throws 404 if the agent does not belong to this org.
+      await agentService.getAgentById(req.org!.id, agentId);
+      const sessionId = await createConnectSession({ organizationId: req.org!.id, agentId });
+      const appId = process.env['TIENDANUBE_APP_ID'] ?? '42435';
+      res.status(200).json({
+        authorizeUrl: `https://www.tiendanube.com/apps/${appId}/authorize?state=${sessionId}`,
+      });
     } catch (err) {
       next(err);
     }

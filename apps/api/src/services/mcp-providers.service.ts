@@ -76,6 +76,8 @@ export interface MCPProviderProfile {
   auto_injected_headers: AutoInjectedHeader[];
   user_configurable_headers: UserConfigurableHeader[];
   supported_events: string[];
+  /** UI shows an OAuth connect button instead of the headers form. See migration 068. */
+  requires_oauth_connect: boolean;
   /** Optional E2E auth health-check. See migration 039. */
   health_check_tool: HealthCheckTool | null;
   is_active: boolean;
@@ -99,6 +101,7 @@ interface ProfileRow {
   auto_injected_headers: AutoInjectedHeader[] | string;
   user_configurable_headers: UserConfigurableHeader[] | string;
   supported_events: string[] | string;
+  requires_oauth_connect: boolean | null;
   health_check_tool: HealthCheckTool | string | null;
   is_active: boolean;
   created_at: string;
@@ -149,6 +152,7 @@ function rowToProfile(row: ProfileRow): MCPProviderProfile {
     auto_injected_headers: parseJsonField<AutoInjectedHeader>(row.auto_injected_headers, []),
     user_configurable_headers: parseJsonField<UserConfigurableHeader>(row.user_configurable_headers, []),
     supported_events: parseJsonField<string>(row.supported_events, []),
+    requires_oauth_connect: row.requires_oauth_connect === true,
     health_check_tool: parseHealthCheckTool(row.health_check_tool),
     is_active: row.is_active,
     created_at: row.created_at,
@@ -425,6 +429,7 @@ export function toPublicProfile(profile: MCPProviderProfile): {
   default_transport: MCPTransport;
   user_configurable_headers: UserConfigurableHeader[];
   supported_events: string[];
+  requires_oauth_connect: boolean;
 } {
   return {
     id: profile.id,
@@ -435,5 +440,6 @@ export function toPublicProfile(profile: MCPProviderProfile): {
     default_transport: profile.default_transport,
     user_configurable_headers: profile.user_configurable_headers,
     supported_events: profile.supported_events,
+    requires_oauth_connect: profile.requires_oauth_connect,
   };
 }
