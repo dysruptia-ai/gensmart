@@ -1,0 +1,89 @@
+.root {
+  /* Marca */
+  --gs-brand: #22c55e;
+  --gs-brand-bright: #3ddc84;
+  --gs-brand-soft: #7af0ad;
+  --gs-brand-deep: #0f7a3d;
+  --gs-brand-ink: #04170c;
+  --gs-brand-tint: rgba(61, 220, 132, 0.12);
+  --gs-brand-line: rgba(61, 220, 132, 0.3);
+
+  /* Tinta (oscuros) */
+  --gs-ink-950: #070a0e;
+  --gs-ink-900: #0c1014;
+  --gs-ink-800: #151b21;
+  --gs-ink-700: #1f272e;
+  --gs-ink-600: #27312f;
+  --gs-ink-300: #9aa6a2;
+  --gs-ink-200: #c3ccc8;
+  --gs-ink-100: #f0f4f2;
+
+  /* Superficies oscuras */
+  --gs-ground: #0c1014;
+  --gs-panel: #151b21;
+  --gs-panel-2: #1e262d;
+  --gs-panel-line: rgba(240, 244, 242, 0.09);
+
+  /* Superficies claras */
+  --gs-light-bg: #f4f6f5;
+  --gs-light-raised: #ffffff;
+  --gs-light-sunken: #e8ecea;
+  --gs-light-ink: #0b1210;
+  --gs-light-soft: #4a5753;
+  --gs-light-line: #dde3e0;
+
+  /* Tipografía */
+  --gs-font-sans: var(--font-geist), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --gs-font-display: var(--font-sora), system-ui, sans-serif;
+  --gs-fs-sm: 16px;
+  --gs-fs-base: 19px;
+  --gs-fs-lead: 24px;
+  --gs-fs-h3: 24px;
+  --gs-fs-h2: clamp(1.75rem, 1.1rem + 2.6vw, 3rem);
+  --gs-fs-h1: clamp(2.6rem, 1.2rem + 5vw, 5.375rem);
+  --gs-ls-h1: -0.04em;
+  --gs-ls-h2: -0.035em;
+
+  /* Espaciado */
+  --gs-sp-1: 4px;
+  --gs-sp-2: 8px;
+  --gs-sp-3: 12px;
+  --gs-sp-4: 16px;
+  --gs-sp-5: clamp(18px, 1.2vw + 12px, 24px);
+  --gs-sp-6: clamp(24px, 2vw + 14px, 40px);
+  --gs-sp-7: clamp(40px, 4vw + 16px, 72px);
+
+  /* Ritmo vertical de secciones */
+  --gs-y-xs: clamp(24px, 2.4vw + 10px, 40px);
+  --gs-y-s: clamp(40px, 4vw + 12px, 64px);
+  --gs-y-m: clamp(56px, 5.5vw + 16px, 92px);
+  --gs-y-l: clamp(72px, 7vw + 18px, 120px);
+
+  /* Forma */
+  --gs-r-xs: 6px;
+  --gs-r-sm: 10px;
+  --gs-r-md: 14px;
+  --gs-r-lg: 20px;
+  --gs-r-xl: 28px;
+  --gs-r-pill: 999px;
+
+  /* Layout */
+  --gs-maxw: 1200px;
+  --gs-maxw-narrow: 820px;
+  --gs-gutter: clamp(16px, 4vw, 32px);
+  --gs-header-h: 78px;
+
+  /* Movimiento */
+  --gs-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --gs-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --gs-t-fast: 0.18s;
+
+  /* Base */
+  min-height: 100vh;
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+  font-family: var(--gs-font-sans);
+  font-size: var(--gs-fs-base);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}

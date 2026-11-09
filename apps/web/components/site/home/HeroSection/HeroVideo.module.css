@@ -1,0 +1,60 @@
+.wrap {
+  --hv-btn-bg: rgba(5, 7, 10, 0.62);
+  --hv-btn-bg-hover: rgba(5, 7, 10, 0.8);
+  --hv-btn-line: rgba(240, 244, 242, 0.18);
+
+  margin-top: var(--gs-sp-7);
+}
+
+.frame {
+  position: relative;
+  border-radius: var(--gs-r-lg);
+  overflow: hidden;
+  border: 1px solid var(--gs-panel-line);
+  background: var(--gs-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 244, 242, 0.055),
+    0 40px 90px -40px rgba(0, 0, 0, 0.9);
+  container-type: inline-size;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.video::cue {
+  font-size: 0.9em;
+}
+
+.sound {
+  position: absolute;
+  top: clamp(10px, 1.8cqw, 16px);
+  right: clamp(10px, 1.8cqw, 16px);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55em;
+  padding: 0.5em 0.9em;
+  border-radius: 999px;
+  border: 1px solid var(--hv-btn-line);
+  background: var(--hv-btn-bg);
+  backdrop-filter: blur(8px);
+  color: var(--gs-ink-100);
+  font: 700 clamp(9px, 2cqw, 12px) / 1 var(--gs-font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sound:hover {
+  background: var(--hv-btn-bg-hover);
+  border-color: var(--gs-brand-bright);
+}
+
+.sound:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}

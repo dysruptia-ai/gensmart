@@ -1,0 +1,42 @@
+section.integrations {
+  padding-top: calc(var(--gs-y-m) * 0.62);
+  padding-bottom: var(--gs-y-m);
+}
+
+.grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.item {
+  flex: 0 0 calc((100% - 5 * 12px) / 6);
+  min-width: 0;
+  display: flex;
+}
+
+.tile {
+  width: 100%;
+}
+
+.cta {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+@media (max-width: 1020px) {
+  .item {
+    flex-basis: calc((100% - 3 * 12px) / 4);
+  }
+}
+
+@media (max-width: 640px) {
+  .item {
+    flex-basis: calc((100% - 12px) / 2);
+  }
+}

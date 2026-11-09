@@ -1,0 +1,149 @@
+.hero {
+  position: relative;
+  overflow: clip;
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+  text-align: center;
+  padding-top: clamp(56px, 6vw, 86px);
+  padding-bottom: clamp(72px, 8vw, 115px);
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding-inline: var(--gs-gutter);
+}
+
+.title {
+  margin: 0 0 24px;
+  font-family: var(--gs-font-display);
+  font-weight: 700;
+  font-size: var(--gs-fs-h1);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.accent {
+  color: var(--gs-brand-bright);
+}
+
+.lead {
+  margin: 24px auto 0;
+  max-width: 42em;
+  font-size: clamp(1.0625rem, 1rem + 0.4vw, 1.3rem);
+  line-height: 1.5;
+  color: var(--gs-ink-200);
+}
+
+.actions {
+  /* Tokens que SiteButton espera de una Section */
+  --gs-fg: var(--gs-ink-100);
+  --gs-bg-raised: var(--gs-panel);
+  --gs-line-strong: rgba(240, 244, 242, 0.16);
+  --gs-btn-bg: var(--gs-brand-bright);
+  --gs-btn-fg: var(--gs-brand-ink);
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 40px;
+}
+
+/* Réplica del SiteButton ghost lg para el ancla #como */
+.ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 30px;
+  border-radius: var(--gs-r-sm);
+  border: 1px solid var(--gs-line-strong);
+  background: transparent;
+  color: var(--gs-fg);
+  font: 600 19px/1 var(--gs-font-sans);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background-color var(--gs-t-fast) var(--gs-ease);
+}
+
+.ghost:hover {
+  background: var(--gs-bg-raised);
+  text-decoration: none;
+}
+
+.ghost:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.channels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+  margin: 42px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.channel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px 9px 12px;
+  border-radius: var(--gs-r-pill);
+  background: rgba(240, 244, 242, 0.055);
+  border: 1px solid var(--gs-panel-line);
+  font: 700 16px/1.55 var(--gs-font-sans);
+  letter-spacing: -0.03em;
+  color: var(--gs-ink-100);
+}
+
+.channelLogo {
+  width: 19px;
+  height: 19px;
+  object-fit: contain;
+}
+
+.channelIcon {
+  color: var(--gs-brand-bright);
+}
+
+.soon {
+  margin-left: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(240, 244, 242, 0.08);
+  border: 1px solid var(--gs-panel-line);
+  color: var(--gs-ink-300);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .channels {
+    gap: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .action {
+    width: min(100%, 340px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost {
+    transition: none;
+  }
+}

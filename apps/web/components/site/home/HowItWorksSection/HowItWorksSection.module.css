@@ -1,0 +1,12 @@
+section.how {
+  padding-top: calc(var(--gs-y-m) * 0.62);
+  padding-bottom: var(--gs-y-m);
+  scroll-margin-top: calc(var(--gs-header-h) + 16px);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 40px;
+}

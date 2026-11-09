@@ -1,0 +1,12 @@
+.reveal[data-reveal='hidden'] {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.reveal[data-reveal='shown'] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 550ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 550ms cubic-bezier(0.16, 1, 0.3, 1);
+}

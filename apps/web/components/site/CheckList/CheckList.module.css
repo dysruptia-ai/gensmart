@@ -1,0 +1,36 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.item {
+  display: flex;
+  gap: 10px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--gs-fg-soft);
+}
+
+.bullet {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+  display: grid;
+  place-items: center;
+}
+
+.md .item {
+  font-size: 19px;
+  line-height: 1.55;
+}
+
+.md .bullet {
+  margin-top: 6px;
+}

@@ -1,0 +1,32 @@
+.backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.backdrop::before,
+.backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.backdrop::before {
+  background-image: radial-gradient(rgba(240, 244, 242, 0.3) 1.15px, transparent 1.35px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(135% 92% at 50% 0%, #000, transparent 86%);
+}
+
+.backdrop::after {
+  background-image:
+    radial-gradient(62% 42% at 50% 78%, rgba(37, 211, 102, 0.26), transparent 66%),
+    radial-gradient(38% 26% at 22% 62%, rgba(18, 140, 126, 0.2), transparent 70%),
+    radial-gradient(34% 24% at 80% 58%, rgba(122, 240, 173, 0.14), transparent 72%);
+}
+
+/* Variantes: hoy iguales; aquí se diferenciarían */
+.hero,
+.cta {
+  opacity: 1;
+}

@@ -1,0 +1,27 @@
+.bubble {
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 10px 14px;
+  max-width: 82%;
+  width: fit-content;
+}
+
+.in {
+  align-self: flex-start;
+  background: var(--gs-panel-2);
+  color: var(--gs-ink-100);
+  border-radius: 16px 16px 16px 5px;
+}
+
+.in.onGround {
+  background: var(--gs-panel);
+}
+
+.out {
+  align-self: flex-end;
+  margin-left: auto;
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+  font-weight: 500;
+  border-radius: 16px 16px 5px 16px;
+}

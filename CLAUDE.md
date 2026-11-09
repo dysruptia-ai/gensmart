@@ -79,6 +79,12 @@ gensmart/
 - Git commit al final de cada sub-fase
 - Si algo falla, arreglar antes de continuar
 
+## Sitio público (refactor 2026)
+- El sitio público usa los tokens `--gs-*` de `components/site/SiteRoot`, con las fuentes Sora (títulos) y Geist (texto).
+- El dashboard sigue con `--color-*` e Inter hasta que llegue su diseño.
+- El diseño de referencia está en `design/web/` y no se edita.
+- Los enlaces del sitio público se resuelven siempre con `SiteLink` y `lib/site-links.ts` (`href: null` = enlace pendiente, no navega).
+
 ## Qué NO hacer
 - NO usar NextAuth, Passport, ni auth de terceros
 - NO usar Tailwind, styled-components, ni CSS-in-JS

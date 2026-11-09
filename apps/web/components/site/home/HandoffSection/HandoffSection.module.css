@@ -1,0 +1,239 @@
+section.handoff {
+  padding-top: calc(var(--gs-y-l) * 0.62);
+  padding-bottom: var(--gs-y-l);
+}
+
+.row {
+  display: grid;
+  gap: 72px;
+  align-items: center;
+}
+
+.rowOne {
+  grid-template-columns: minmax(0, 1.17fr) minmax(0, 1fr);
+}
+
+.cardOne {
+  order: -1;
+}
+
+.rowTwo {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.17fr);
+  margin-top: var(--gs-y-m);
+}
+
+.h3 {
+  margin: 0;
+  font-family: var(--gs-font-display);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.text {
+  margin: 16px 0 0;
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--gs-fg-soft);
+}
+
+.checks {
+  margin-top: 24px;
+}
+
+.btn {
+  display: inline-flex;
+  margin-top: 24px;
+}
+
+/* ---------- Tarjeta de chat ---------- */
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border-radius: var(--gs-r-lg);
+  background: var(--gs-ground);
+  border: 1px solid var(--gs-panel-line);
+}
+
+.chatHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(244, 250, 246, 0.12);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--gs-fg-soft);
+}
+
+.headDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gs-brand);
+  box-shadow: 0 0 0 5px rgba(34, 197, 94, 0.13);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.chip {
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: rgba(244, 250, 246, 0.07);
+  border: 1px solid rgba(244, 250, 246, 0.1);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--gs-ink-100);
+}
+
+.chipOn {
+  color: var(--gs-brand-bright);
+}
+
+/* ---------- Tarjeta de traspaso ---------- */
+.hoff {
+  border-radius: var(--gs-r-lg);
+  overflow: hidden;
+  background: var(--gs-panel);
+  border: 1px solid var(--gs-panel-line);
+}
+
+.hoffTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--gs-panel-2);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gs-ink-200);
+}
+
+.topDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gs-brand-bright);
+}
+
+.hoffBody {
+  padding: 24px;
+}
+
+.summary {
+  margin: 0 0 24px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--gs-ink-100);
+}
+
+.rows {
+  margin: 0;
+  display: grid;
+  gap: 1px;
+  background: rgba(240, 244, 242, 0.07);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rows > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--gs-panel);
+}
+
+.rows dt {
+  font-size: 16px;
+  color: var(--gs-ink-300);
+  margin: 0;
+}
+
+.rows dd {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gs-ink-100);
+  margin: 0;
+  text-align: right;
+}
+
+.hoffFoot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--gs-panel-2);
+}
+
+.avatar {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+  font: 700 12px var(--gs-font-sans);
+}
+
+.who {
+  display: grid;
+  line-height: 1.25;
+  font-size: 16px;
+  color: var(--gs-ink-300);
+}
+
+.who b {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gs-ink-100);
+}
+
+.tag {
+  margin-left: auto;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gs-brand-ink);
+  background: var(--gs-brand-bright);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .cardOne {
+    order: 0;
+  }
+
+  .rowTwo {
+    margin-top: 64px;
+  }
+}
+
+@media (max-width: 400px) {
+  .hoffFoot {
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+}

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Handjet } from 'next/font/google';
+import { Inter, Handjet, Sora, Geist } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
@@ -15,6 +15,20 @@ const handjet = Handjet({
   subsets: ['latin'],
   weight: ['700'],
   variable: '--font-logo',
+});
+
+const sora = Sora({
+  subsets: ['latin'],
+  weight: ['600', '700'],
+  display: 'swap',
+  variable: '--font-sora',
+});
+
+const geist = Geist({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-geist',
 });
 
 export const metadata: Metadata = {
@@ -94,7 +108,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${handjet.variable}`}>
+    <html lang="en" className={`${inter.variable} ${handjet.variable} ${sora.variable} ${geist.variable}`}>
       <body>
         <script
           type="application/ld+json"

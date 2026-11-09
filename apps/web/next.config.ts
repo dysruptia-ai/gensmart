@@ -9,7 +9,8 @@ const BASE_CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://api.gensmart.co wss://api.gensmart.co https://challenges.cloudflare.com https://connect.facebook.net",
-  "frame-src https://challenges.cloudflare.com https://www.facebook.com",
+  // 'self': el widget del sitio (public/widget.js) abre /widget/:agentId en un iframe del mismo origen
+  "frame-src 'self' https://challenges.cloudflare.com https://www.facebook.com",
   "frame-ancestors 'self'",
   "object-src 'none'",
   "base-uri 'self'",

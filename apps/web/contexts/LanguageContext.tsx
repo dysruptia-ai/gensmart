@@ -15,6 +15,8 @@ export type SupportedLanguage = 'en' | 'es';
 interface LanguageContextValue {
   language: SupportedLanguage;
   setLanguage: (lang: SupportedLanguage) => void;
+  /** false hasta que el efecto aplica el idioma real tras la hidratación */
+  isLanguageResolved: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -48,6 +50,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Real language is applied in useEffect after hydration completes.
   const [language, setLanguageState] = useState<SupportedLanguage>('en');
   const [hydrated, setHydrated] = useState(false);
+  const [isLanguageResolved, setIsLanguageResolved] = useState(false);
 
   // Mark as hydrated after first client render
   useEffect(() => {
@@ -62,6 +65,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (typeof window !== 'undefined') {
       localStorage.setItem(LS_KEY, lang);
     }
+    setIsLanguageResolved(true);
   }, [hydrated, user]);
 
   const setLanguage = useCallback(
@@ -81,7 +85,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage }}>
+    <LanguageContext.Provider value={{ language, setLanguage, isLanguageResolved }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -1,0 +1,9 @@
+.container {
+  max-width: var(--gs-maxw);
+  margin-inline: auto;
+  padding-inline: var(--gs-gutter);
+}
+
+.narrow {
+  max-width: var(--gs-maxw-narrow);
+}

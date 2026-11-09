@@ -1,0 +1,49 @@
+/* element + clase: gana a .rhythm-* de Section sin depender del orden del CSS */
+section.platform {
+  padding-top: calc(var(--gs-y-l) * 0.62);
+  padding-bottom: var(--gs-y-l);
+}
+
+.block {
+  display: grid;
+  gap: clamp(24px, 3vw, 44px);
+}
+
+.copy {
+  display: grid;
+  grid-template-columns: minmax(0, 0.62fr) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 56px);
+  align-items: start;
+}
+
+.h3 {
+  margin: 0;
+  font-family: var(--gs-font-display);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.lead {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.5;
+  color: var(--gs-fg-soft);
+}
+
+.checks {
+  margin-top: 24px;
+}
+
+@media (max-width: 860px) {
+  .copy {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .lead {
+    font-size: 19px;
+  }
+}

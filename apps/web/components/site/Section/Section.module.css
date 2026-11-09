@@ -1,0 +1,45 @@
+.section {
+  position: relative;
+  overflow: clip;
+  background: var(--gs-bg);
+  color: var(--gs-fg);
+}
+
+/*
+ * dark, alt y light comparten tokens a propósito: en el diseño final del home
+ * (medido en el render real) todas las secciones usan el mismo fondo oscuro, aunque el
+ * HTML de referencia les ponga surface-dark / surface-alt / surface-light.
+ * Si el diseño las diferencia más adelante, solo hay que cambiar este bloque.
+ */
+.dark,
+.alt,
+.light {
+  --gs-bg: var(--gs-ground);
+  --gs-bg-raised: var(--gs-panel);
+  --gs-bg-sunken: var(--gs-panel-2);
+  --gs-fg: var(--gs-ink-100);
+  --gs-fg-soft: var(--gs-ink-300);
+  --gs-line: var(--gs-panel-line);
+  --gs-line-strong: rgba(240, 244, 242, 0.16);
+  --gs-link: var(--gs-brand-bright);
+  --gs-btn-bg: var(--gs-brand-bright);
+  --gs-btn-fg: var(--gs-brand-ink);
+}
+
+.brand {
+  --gs-bg: var(--gs-brand-bright);
+  --gs-bg-raised: #35cd79;
+  --gs-bg-sunken: var(--gs-brand);
+  --gs-fg: var(--gs-brand-ink);
+  --gs-fg-soft: #0a3a1e;
+  --gs-line: rgba(4, 23, 12, 0.22);
+  --gs-line-strong: rgba(4, 23, 12, 0.45);
+  --gs-link: var(--gs-brand-ink);
+  --gs-btn-bg: var(--gs-ink-950);
+  --gs-btn-fg: var(--gs-ink-100);
+}
+
+.rhythm-xs { padding-block: var(--gs-y-xs); }
+.rhythm-s { padding-block: var(--gs-y-s); }
+.rhythm-m { padding-block: var(--gs-y-m); }
+.rhythm-l { padding-block: var(--gs-y-l); }
