@@ -4,7 +4,7 @@
   --logo-gen-dark: #ffffff;
   --logo-gen-light: #1a1a1a;
 
-  font-family: var(--font-logo), monospace;
+  font-family: var(--font-site-logo), monospace;
   font-weight: 700;
   font-size: 1em;
   letter-spacing: -0.02em;

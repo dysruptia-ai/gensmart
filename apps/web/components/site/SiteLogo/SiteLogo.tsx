@@ -3,6 +3,7 @@
 import { useTranslation } from '@/hooks/useTranslation';
 import type { SiteLinkKey } from '@/lib/site-links';
 import SiteLink from '../SiteLink';
+import { handjetLogo } from './fonts';
 import styles from './SiteLogo.module.css';
 
 interface SiteLogoProps {
@@ -25,7 +26,7 @@ export default function SiteLogo({
   className,
 }: SiteLogoProps) {
   const { t } = useTranslation();
-  const classes = [styles.logo, tone === 'onLight' ? styles.onLight : styles.onDark, className]
+  const classes = [handjetLogo.variable, styles.logo, tone === 'onLight' ? styles.onLight : styles.onDark, className]
     .filter(Boolean)
     .join(' ');
   const gen = variant === 'mark' ? 'G' : 'Gen';
