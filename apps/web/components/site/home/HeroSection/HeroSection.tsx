@@ -42,10 +42,9 @@ export default function HeroSection() {
           <SiteButton to="register" size="lg" className={styles.action}>
             {t('site.home.hero.cta')}
           </SiteButton>
-          {/* El ancla #como la tendrá una sección posterior */}
-          <a href="#como" className={`${styles.action} ${styles.ghost}`}>
+          <SiteButton anchor="#como" variant="ghost" size="lg" className={styles.action}>
             {t('site.home.hero.secondary')}
-          </a>
+          </SiteButton>
         </div>
 
         <ul className={styles.channels} aria-label={t('site.home.hero.channelsLabel')}>

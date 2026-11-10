@@ -53,44 +53,6 @@
   margin-top: 40px;
 }
 
-/* Réplica del SiteButton ghost lg para el ancla #como */
-.ghost {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 30px;
-  border-radius: var(--gs-r-sm);
-  border: 1px solid var(--gs-line-strong);
-  background: transparent;
-  color: var(--gs-fg);
-  font: 600 19px/1 var(--gs-font-sans);
-  white-space: nowrap;
-  text-decoration: none;
-  transition:
-    background-color var(--gs-t-fast) var(--gs-ease),
-    border-color var(--gs-t-fast) var(--gs-ease),
-    transform var(--gs-t-fast) var(--gs-ease);
-}
-
-.ghost:hover,
-.ghost:focus-visible {
-  background: rgba(240, 244, 242, 0.08);
-  border-color: var(--gs-ink-300);
-  text-decoration: none;
-}
-
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .ghost:hover,
-  .ghost:focus-visible {
-    transform: translateY(-1px);
-  }
-}
-
-.ghost:focus-visible {
-  outline: 2px solid var(--gs-brand-bright);
-  outline-offset: 2px;
-}
-
 .channels {
   display: flex;
   flex-wrap: wrap;
@@ -159,11 +121,5 @@
 
   .action {
     width: min(100%, 340px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ghost {
-    transition: none;
   }
 }

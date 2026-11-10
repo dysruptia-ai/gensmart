@@ -3,12 +3,30 @@ import type { AnchorHTMLAttributes, MouseEvent } from 'react';
 import styles from './SiteLink.module.css';
 import { SITE_LINKS, type SiteLinkKey } from '@/lib/site-links';
 
-interface SiteLinkProps
-  extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
-  to: SiteLinkKey;
-}
+/** Destino: una clave de SITE_LINKS o un ancla dentro de la misma página (nunca ambos). */
+export type SiteLinkTarget =
+  | { to: SiteLinkKey; anchor?: never }
+  | { anchor: `#${string}`; to?: never };
 
-export default function SiteLink({ to, className, children, onClick, ...rest }: SiteLinkProps) {
+export type SiteLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> &
+  SiteLinkTarget;
+
+export default function SiteLink({
+  to,
+  anchor,
+  className,
+  children,
+  onClick,
+  ...rest
+}: SiteLinkProps) {
+  if (anchor !== undefined) {
+    return (
+      <a {...rest} className={className} href={anchor} onClick={onClick}>
+        {children}
+      </a>
+    );
+  }
+
   const target = SITE_LINKS[to];
 
   if (target.href === null) {
