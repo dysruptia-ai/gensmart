@@ -13,6 +13,13 @@
     box-shadow var(--gs-t-fast) var(--gs-ease);
 }
 
+.button,
+.button:hover,
+.button:focus-visible,
+.button:active {
+  text-decoration: none;
+}
+
 .button:focus-visible {
   outline: 2px solid var(--gs-brand-bright);
   outline-offset: 2px;

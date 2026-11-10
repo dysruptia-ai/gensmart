@@ -11,6 +11,12 @@
   text-decoration: none;
 }
 
+.skip,
+.skip:hover,
+.skip:focus {
+  text-decoration: none;
+}
+
 .skip:focus {
   top: 12px;
 }
