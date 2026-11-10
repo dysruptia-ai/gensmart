@@ -8,7 +8,8 @@
   --announce-tag-bg: rgba(14, 17, 22, 0.86);
   --announce-tag-fg: #f2f7ef;
   --announce-link-line: rgba(14, 17, 22, 0.68);
-  --announce-link-hover: rgba(14, 17, 22, 0.08);
+  --announce-link-hover: rgba(14, 17, 22, 0.1);
+  --announce-link-hover-line: #0e1116;
 
   background: linear-gradient(90deg, var(--announce-from) 0%, var(--announce-mid) 58%, var(--announce-to) 100%);
   color: var(--announce-ink);
@@ -50,11 +51,15 @@
   border-radius: var(--gs-r-pill);
   padding: 6px 16px;
   text-decoration: none;
-  transition: background-color var(--gs-t-fast) var(--gs-ease);
+  transition:
+    background-color var(--gs-t-fast) var(--gs-ease),
+    border-color var(--gs-t-fast) var(--gs-ease);
 }
 
-.link:hover {
+.link:hover,
+.link:focus-visible {
   background: var(--announce-link-hover);
+  border-color: var(--announce-link-hover-line);
 }
 
 .link:focus-visible {

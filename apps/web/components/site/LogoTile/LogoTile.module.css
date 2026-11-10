@@ -9,6 +9,9 @@
   opacity: 0.9;
   font-weight: 700;
   white-space: nowrap;
+  transition:
+    opacity var(--gs-t-fast) var(--gs-ease),
+    transform var(--gs-t-fast) var(--gs-ease);
 }
 
 /* Mega menú */
@@ -58,6 +61,17 @@
 
 .mark {
   object-fit: contain;
+}
+
+/* Solo la rejilla de integraciones (prop interactive) */
+.interactive:hover {
+  opacity: 1;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .interactive:hover {
+    transform: translateY(-1px);
+  }
 }
 
 @media (max-width: 640px) {

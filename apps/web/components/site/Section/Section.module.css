@@ -36,6 +36,7 @@
   --gs-line-strong: rgba(4, 23, 12, 0.45);
   --gs-link: var(--gs-brand-ink);
   --gs-btn-bg: var(--gs-ink-950);
+  --gs-btn-bg-hover: color-mix(in oklab, var(--gs-ink-950) 88%, white);
   --gs-btn-fg: var(--gs-ink-100);
 }
 

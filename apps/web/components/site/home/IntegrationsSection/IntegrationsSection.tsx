@@ -42,7 +42,7 @@ export default function IntegrationsSection() {
             const logo = BRAND_LOGOS[name];
             return logo ? (
               <li key={name} className={styles.item}>
-                <LogoTile logo={logo} size="md" className={styles.tile} />
+                <LogoTile logo={logo} size="md" interactive className={styles.tile} />
               </li>
             ) : null;
           })}

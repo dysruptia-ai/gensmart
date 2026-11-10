@@ -46,6 +46,23 @@
   place-items: center;
   color: var(--gs-ink-100);
   text-decoration: none;
+  transition:
+    background-color var(--gs-t-fast) var(--gs-ease),
+    color var(--gs-t-fast) var(--gs-ease),
+    transform var(--gs-t-fast) var(--gs-ease);
+}
+
+.social:hover,
+.social:focus-visible {
+  background: var(--gs-brand);
+  color: var(--gs-brand-ink);
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .social:hover,
+  .social:focus-visible {
+    transform: translateY(-2px);
+  }
 }
 
 .colTitle {

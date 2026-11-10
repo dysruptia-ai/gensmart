@@ -9,6 +9,7 @@
   transition:
     background-color var(--gs-t-fast) var(--gs-ease),
     transform var(--gs-t-fast) var(--gs-ease),
+    border-color var(--gs-t-fast) var(--gs-ease),
     box-shadow var(--gs-t-fast) var(--gs-ease);
 }
 
@@ -28,7 +29,7 @@
 }
 
 .primary:hover {
-  background: color-mix(in oklab, var(--gs-btn-bg, var(--gs-brand-bright)) 88%, white);
+  background: var(--gs-btn-bg-hover, var(--gs-brand-soft));
 }
 
 .primary:active {
@@ -43,10 +44,13 @@
   padding: 13px 22px;
   border-radius: var(--gs-r-sm);
   border: 1px solid var(--gs-line-strong);
+  --ghost-hover-bg: rgba(240, 244, 242, 0.08);
 }
 
-.ghost:hover {
-  background: var(--gs-bg-raised);
+.ghost:hover,
+.ghost:focus-visible {
+  background: var(--ghost-hover-bg);
+  border-color: var(--gs-fg-soft, var(--gs-ink-300));
 }
 
 .sm {
@@ -57,6 +61,19 @@
   padding: 16px 30px;
   font-size: 19px;
   line-height: 1;
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .primary:hover,
+  .primary:focus-visible,
+  .ghost:hover,
+  .ghost:focus-visible {
+    transform: translateY(-1px);
+  }
+
+  .primary:active {
+    transform: translateY(1px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

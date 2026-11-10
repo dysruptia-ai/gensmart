@@ -72,7 +72,7 @@
 .trigger:focus-visible,
 .triggerOpen {
   opacity: 1;
-  background: rgba(240, 244, 242, 0.06);
+  background: var(--gs-panel-line);
 }
 
 .trigger:focus-visible {
@@ -145,7 +145,7 @@
 
 .dropLink:hover,
 .dropLink:focus-visible {
-  background: rgba(240, 244, 242, 0.06);
+  background: var(--gs-panel-line);
 }
 
 .dropLink:focus-visible {
