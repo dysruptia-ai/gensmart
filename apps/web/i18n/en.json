@@ -1751,7 +1751,8 @@
       "closeMenu": "Close menu",
       "language": "Language",
       "mainNav": "Main navigation",
-      "mobileNav": "Mobile menu"
+      "mobileNav": "Mobile menu",
+      "logoHome": "GenSmart home"
     },
     "announce": {
       "region": "Offer",

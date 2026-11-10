@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,6 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation';
 import Container from '../Container';
 import LogoTile from '../LogoTile';
 import SiteButton from '../SiteButton';
+import SiteLogo from '../SiteLogo';
 import SiteLink from '../SiteLink';
 import {
   INDUSTRY_ITEMS,
@@ -287,17 +287,7 @@ export default function SiteHeader() {
     <>
       <header ref={headerRef} className={styles.header} onKeyDown={trapFocus}>
         <Container className={styles.inner}>
-          <SiteLink to="home" className={styles.logo} aria-label={t('site.a11y.home')}>
-            <Image
-              src="/site/img/logo-gensmart-inv.svg"
-              alt="GenSmart"
-              width={170}
-              height={47}
-              priority
-              unoptimized
-              className={styles.logoImg}
-            />
-          </SiteLink>
+          <SiteLogo className={styles.logo} />
 
           <nav
             ref={navRef}

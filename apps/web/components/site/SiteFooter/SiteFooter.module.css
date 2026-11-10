@@ -21,13 +21,7 @@
 }
 
 .logo {
-  display: inline-flex;
-  border-radius: var(--gs-r-xs);
-}
-
-.logoImg {
-  height: 30px;
-  width: auto;
+  font-size: 28px; /* ancho ≈ 87 px, igual a la imagen anterior */
 }
 
 .description {
@@ -81,8 +75,7 @@
 }
 
 .link:focus-visible,
-.social:focus-visible,
-.logo:focus-visible {
+.social:focus-visible {
   outline: 2px solid var(--gs-brand-bright);
   outline-offset: 2px;
 }

@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import SiteLogo from '../../SiteLogo';
 import { AnthropicLogo, OpenAILogo, OpenRouterLogo } from './AiProviderLogos';
 import styles from './ChannelMap.module.css';
 
@@ -283,14 +284,7 @@ export default function ChannelMap() {
 
         <div className={styles.core}>
           <span ref={hubRef} className={styles.node}>
-            <Image
-              src="/site/img/logo-gensmart-inv.svg"
-              alt="GenSmart"
-              width={170}
-              height={47}
-              unoptimized
-              className={styles.hubLogo}
-            />
+            <SiteLogo to={null} className={styles.nodeLogo} />
             <span className={styles.hubText}>{t('site.home.platform.map.hub')}</span>
             <span className={styles.engine}>
               <b className={styles.srOnly}>{t('site.home.platform.map.runsOn')}</b>

@@ -1,7 +1,6 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import Image from 'next/image';
 import { Facebook, Instagram, Youtube } from 'lucide-react';
 // Excepción documentada: lucide-react no incluye el logo de TikTok.
 // Se usa react-icons/fa6 (el mismo paquete que ya usa el proyecto para logos de marca).
@@ -10,6 +9,7 @@ import type { SiteLinkKey } from '@/lib/site-links';
 import { useTranslation } from '@/hooks/useTranslation';
 import Container from '../Container';
 import SiteLink from '../SiteLink';
+import SiteLogo from '../SiteLogo';
 import styles from './SiteFooter.module.css';
 
 interface FooterColumn {
@@ -89,16 +89,7 @@ export default function SiteFooter() {
       <Container>
         <div className={styles.grid}>
           <div className={styles.brand}>
-            <SiteLink to="home" className={styles.logo} aria-label={t('site.a11y.home')}>
-              <Image
-                src="/site/img/logo-gensmart-inv.svg"
-                alt="GenSmart"
-                width={170}
-                height={47}
-                unoptimized
-                className={styles.logoImg}
-              />
-            </SiteLink>
+            <SiteLogo className={styles.logo} />
             <p className={styles.description}>{t('site.footer.description')}</p>
             <div className={styles.socials}>
               {SOCIALS.map((s) => (

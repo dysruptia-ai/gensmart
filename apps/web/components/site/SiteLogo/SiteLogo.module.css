@@ -1,0 +1,39 @@
+.logo {
+  /* Verde de la marca del logo; distinto de --gs-brand-bright de la interfaz */
+  --logo-green: #25d366;
+  --logo-gen-dark: #ffffff;
+  --logo-gen-light: #1a1a1a;
+
+  font-family: var(--font-logo), monospace;
+  font-weight: 700;
+  font-size: 1em;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: baseline;
+  text-decoration: none;
+  user-select: none;
+}
+
+.logo:hover {
+  text-decoration: none;
+}
+
+.logo:focus-visible {
+  outline: 2px solid var(--logo-green);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.gen {
+  color: var(--logo-gen-dark);
+}
+
+.onLight .gen {
+  color: var(--logo-gen-light);
+}
+
+.smart {
+  color: var(--logo-green);
+}

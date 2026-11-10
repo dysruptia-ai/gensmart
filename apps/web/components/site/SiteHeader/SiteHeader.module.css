@@ -24,19 +24,8 @@
 }
 
 .logo {
-  display: inline-flex;
   flex-shrink: 0;
-  border-radius: var(--gs-r-xs);
-}
-
-.logo:focus-visible {
-  outline: 2px solid var(--gs-brand-bright);
-  outline-offset: 4px;
-}
-
-.logoImg {
-  height: 34px;
-  width: auto;
+  font-size: 32px; /* ancho ≈ 99 px, igual a la imagen anterior */
 }
 
 /* ---------- Nav desktop ---------- */
