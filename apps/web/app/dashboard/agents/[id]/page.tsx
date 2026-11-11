@@ -473,6 +473,7 @@ export default function AgentEditorPage() {
     // 3. Fire API call — does NOT block the input
     api.post<{
       message: string;
+      intermediateMessages?: string[];
       metadata?: {
         tokensUsed?: number;
         latencyMs?: number;
@@ -485,6 +486,8 @@ export default function AgentEditorPage() {
       .then((data) => {
         setPreviewMessages((prev) => [
           ...prev,
+          // Text the agent wrote before running its tools (arrives first, like in WhatsApp).
+          ...(data.intermediateMessages ?? []).map((text) => ({ role: 'assistant' as const, content: text })),
           { role: 'assistant', content: data.message, metadata: data.metadata },
         ]);
       })
