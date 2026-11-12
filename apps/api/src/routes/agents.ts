@@ -1,5 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import type { ChatMessage } from '../services/llm.service';
+import type { ChatMessage, ToolCall } from '../services/llm.service';
+import {
+  runToolLoop,
+  buildHistory,
+  buildCapturedValuesBlock,
+  MAX_TOOL_ITERATIONS,
+  type TraceIteration,
+} from '../services/tool-loop.service';
 import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
@@ -1571,8 +1578,14 @@ router.post(
 
       // Load stored history
       const rawHistory = await redis.get(previewKey);
-      const history: { role: 'user' | 'assistant'; content: string }[] =
-        rawHistory ? (JSON.parse(rawHistory) as { role: 'user' | 'assistant'; content: string }[]) : [];
+      const history: Array<{ role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown> }> =
+        rawHistory
+          ? (JSON.parse(rawHistory) as Array<{ role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown> }>)
+          : [];
+      // Captured variables persist across preview turns (parity with conversations.captured_variables).
+      const previewVarsKey = `preview-vars:${agentId}:${req.user!.userId}`;
+      const rawVars = await redis.get(previewVarsKey);
+      const capturedVars: Record<string, string> = rawVars ? (JSON.parse(rawVars) as Record<string, string>) : {};
 
       // Build system prompt
       // Day 21: inject {{config.X}} placeholders BEFORE appending variable
@@ -1591,6 +1604,11 @@ router.post(
       const rawPrompt = systemPrompt ?? agentResult.systemPrompt ?? '';
       let fullSystemPrompt = await injectConfig(agentId, rawPrompt);
       if (variableInstructions) fullSystemPrompt += '\n\n' + variableInstructions;
+      const capturedValuesBlock = buildCapturedValuesBlock(
+        capturedVars,
+        (variables as Array<{ name: string }>).map((v) => v.name)
+      );
+      if (capturedValuesBlock) fullSystemPrompt += '\n\n' + capturedValuesBlock;
 
       // RAG context
       const hasRAG = await hasKnowledgeBase(agentId);
@@ -1833,66 +1851,40 @@ router.post(
 
       // LLM call
       const startTime = Date.now();
-      const capturedVars: Record<string, string> = {};
       const toolsCalledLog: string[] = [];
       const previewMedia: Array<{ type: string; url: string; caption?: string; valid: boolean; error?: string }> = [];
       let finalResponse = '';
       let totalTokens = 0;
 
+      const previewContextWindow = Math.min(
+        agentResult.contextWindowMessages,
+        (PLAN_LIMITS[req.org!.plan as PlanKey]?.contextWindowMessages ?? agentResult.contextWindowMessages)
+      );
       const messages: ChatMessage[] = [
-        ...history.map((h: { role: string; content: string }) => ({
-          role: h.role as 'user' | 'assistant',
-          content: h.content,
-        })),
+        ...buildHistory(history, previewContextWindow),
         { role: 'user' as const, content: message.trim() },
       ];
 
-      const currentMessages = [...messages];
+      let currentMessages = [...messages];
+      const deliveredIntermediates: string[] = [];
+      let toolTrace: TraceIteration[] = [];
       let sawEmptyShippingZones = false;
       // 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
       // varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
       // cortaban dejando un texto interino como respuesta final. Mantener en sync
       // con `MAX_TOOL_ITERATIONS` en workers/message.worker.ts.
-      const maxIter = 8;
+      const maxIter = MAX_TOOL_ITERATIONS;
       const planLimits = PLAN_LIMITS[req.org!.plan as PlanKey];
       const effectiveMaxTokens = Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512);
 
-      try {
-      for (let i = 0; i < maxIter; i++) {
-        const response = await chat({
-          provider: agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
-          model: agentResult.llmModel,
-          system: fullSystemPrompt,
-          messages: currentMessages,
-          tools: llmTools.length > 0 ? llmTools : undefined,
-          temperature: agentResult.temperature,
-          maxTokens: effectiveMaxTokens,
-        });
-
-        totalTokens += response.usage.totalTokens;
-
-        if (!response.toolCalls?.length) {
-          const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
-
-          // Preview: recover leaked captures into capturedVars (no DB writes in preview).
-          for (const ec of extractedCaptures) {
-            capturedVars[ec.variableName] = ec.variableValue;
-            toolsCalledLog.push(`capture_variable[recovered]`);
-          }
-
-          finalResponse = cleaned;
-          break;
-        }
-
-        const previewToolResults: Array<{ toolCallId: string; content: string }> = [];
-
-        for (const tc of response.toolCalls) {
-          toolsCalledLog.push(tc.name);
+      // Preview executor: same contract as the worker's executeTool (always a string).
+      const executePreviewTool = async (tc: ToolCall): Promise<string> => {
+        toolsCalledLog.push(tc.name);
           if (tc.name === 'capture_variable') {
             const name = String(tc.arguments['variable_name'] ?? '');
             const val = String(tc.arguments['variable_value'] ?? '');
             capturedVars[name] = val;
-            previewToolResults.push({ toolCallId: tc.id, content: `Variable '${name}' captured: ${val}` });
+            return `Variable '${name}' captured: ${val}`;
           } else if (tc.name === 'check_availability') {
             const { getAvailableSlots, resolveCalendarIds, pickAllowedCalendarId } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
@@ -1916,7 +1908,7 @@ router.post(
                 slotResult = `Could not check availability for ${date}.`;
               }
             }
-            previewToolResults.push({ toolCallId: tc.id, content: slotResult });
+            return slotResult;
           } else if (tc.name === 'book_appointment') {
             const { createAppointment } = await import('../services/appointment.service');
             const { localTimeToUTC, resolveCalendarIds, pickAllowedCalendarId } = await import('../services/calendar.service');
@@ -1956,13 +1948,10 @@ router.post(
                 bookResult = `Could not book appointment: ${(err as Error).message}`;
               }
             }
-            previewToolResults.push({ toolCallId: tc.id, content: bookResult });
+            return bookResult;
           } else if (tc.name === 'request_human_handoff') {
             // Simulated: nothing is sent, stored or notified.
-            previewToolResults.push({
-              toolCallId: tc.id,
-              content: '[Preview] The handoff button would be sent. The customer must TAP the button to start the chat with the team; nobody will contact them on their own. Write ONE short sentence in the customer\'s language reminding them to tap the button from the previous message; do not say where the button is (never above or below). Do not promise a callback or that someone will reach out, do not repeat the link, and do not offer the handoff again.',
-            });
+            return '[Preview] The handoff button would be sent. The customer must TAP the button to start the chat with the team; nobody will contact them on their own. Write ONE short sentence in the customer\'s language reminding them to tap the button from the previous message; do not say where the button is (never above or below). Do not promise a callback or that someone will reach out, do not repeat the link, and do not offer the handoff again.';
           } else if (tc.name === 'send_media') {
             // In preview mode: validate URL but do NOT actually send to WhatsApp/widget.
             const mediaType = String(tc.arguments['type'] ?? 'image');
@@ -2003,7 +1992,7 @@ router.post(
               error: mediaError,
             });
 
-            previewToolResults.push({ toolCallId: tc.id, content: previewResult });
+            return previewResult;
           } else if (tc.name.startsWith('mcp_') && mcpToolMap[tc.name]) {
             // MCP tool — executes against the real server (e.g. create_order
             // creates a real Mastershop order). Acceptable in preview because
@@ -2011,15 +2000,12 @@ router.post(
             const { serverUrl, originalToolName, transport, extraHeaders } = mcpToolMap[tc.name];
             try {
               const result = await executeMCPTool(serverUrl, originalToolName, tc.arguments, transport, extraHeaders);
-              previewToolResults.push({ toolCallId: tc.id, content: result.content });
               if (isEmptyShippingZonesResult(tc.name, result.content)) {
                 sawEmptyShippingZones = true;
               }
+              return result.content;
             } catch (err) {
-              previewToolResults.push({
-                toolCallId: tc.id,
-                content: `MCP tool execution failed: ${(err as Error).message}`,
-              });
+              return `MCP tool execution failed: ${(err as Error).message}`;
             }
           } else {
             // Check if this is an email_notification tool
@@ -2045,15 +2031,9 @@ router.post(
               }
 
               if (missingParams.length > 0) {
-                previewToolResults.push({
-                  toolCallId: tc.id,
-                  content: `[Preview] Missing required parameters: ${missingParams.join(', ')}`,
-                });
+                return `[Preview] Missing required parameters: ${missingParams.join(', ')}`;
               } else {
-                previewToolResults.push({
-                  toolCallId: tc.id,
-                  content: `[Preview] Email notification would be sent to ${cfg.recipientEmail}. Subject: "${cfg.subject}". Parameters captured: ${JSON.stringify(tc.arguments)}`,
-                });
+                return `[Preview] Email notification would be sent to ${cfg.recipientEmail}. Subject: "${cfg.subject}". Parameters captured: ${JSON.stringify(tc.arguments)}`;
               }
             } else {
               const toolDef = toolsResult.rows.find(
@@ -2071,32 +2051,49 @@ router.post(
                   resolvedConfig as unknown as Parameters<typeof executeCustomFunction>[0],
                   tc.arguments
                 );
-                previewToolResults.push({ toolCallId: tc.id, content: result });
+                return result;
               }
             }
           }
-        }
+        return `Unknown tool: ${tc.name}`;
+      };
 
-        // Append structured assistant + tool result messages (Anthropic-compatible)
-        currentMessages.push({
-          role: 'assistant' as const,
-          content: response.content || '',
-          toolCalls: response.toolCalls,
-        });
-        currentMessages.push({
-          role: 'user' as const,
-          content: '',
-          toolResults: previewToolResults,
-        });
-
-        if (response.content.trim()) {
-          const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
-          for (const ec of extractedCaptures) {
+      try {
+      const loop = await runToolLoop({
+        messages,
+        maxIterations: maxIter,
+        callLLM: (msgs) =>
+          chat({
+            provider: agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
+            model: agentResult.llmModel,
+            system: fullSystemPrompt,
+            messages: msgs,
+            tools: llmTools.length > 0 ? llmTools : undefined,
+            temperature: agentResult.temperature,
+            maxTokens: effectiveMaxTokens,
+          }),
+        executeTool: executePreviewTool,
+        // Preview: delivered in the response (before the media/final), no channel to send to.
+        onIntermediateText: async (text) => {
+          deliveredIntermediates.push(text);
+        },
+        // Preview: recover leaked captures into capturedVars (no DB writes in preview).
+        onLeakedCaptures: async (captures) => {
+          for (const ec of captures) {
             capturedVars[ec.variableName] = ec.variableValue;
             toolsCalledLog.push(`capture_variable[recovered]`);
           }
-          finalResponse = cleaned;
-        }
+        },
+      });
+      finalResponse = loop.finalResponse;
+      totalTokens = loop.totalTokens;
+      currentMessages = loop.messages;
+      toolTrace = loop.trace;
+      if (
+        finalResponse.replace(/[\s\p{P}]/gu, '').length < 5 &&
+        deliveredIntermediates.length > 0
+      ) {
+        finalResponse = deliveredIntermediates.pop()!;
       }
       } catch (err) {
         // Retry once without tools — replica worker pattern (hotfix #57-60)
@@ -2169,14 +2166,27 @@ router.post(
       const updatedHistory = [
         ...history,
         { role: 'user' as const, content: message.trim() },
-        { role: 'assistant' as const, content: finalResponse },
+        // Same shape as the worker: intermediate rows (text sent before tools) + final row with toolTrace.
+        ...deliveredIntermediates.map((text) => ({
+          role: 'assistant' as const,
+          content: text,
+          metadata: { intermediate: true } as Record<string, unknown>,
+        })),
+        {
+          role: 'assistant' as const,
+          content: finalResponse,
+          metadata: (toolTrace.length > 0 ? { toolTrace } : undefined) as Record<string, unknown> | undefined,
+        },
       ];
       await redis.set(previewKey, JSON.stringify(updatedHistory), 'EX', TTL);
+      await redis.set(previewVarsKey, JSON.stringify(capturedVars), 'EX', TTL);
 
       const latencyMs = Date.now() - startTime;
 
       res.json({
         message: finalResponse,
+        // Text the model wrote before running tools; shown before the media/final message.
+        intermediateMessages: deliveredIntermediates,
         metadata: {
           tokensUsed: totalTokens,
           toolsCalled: toolsCalledLog,
@@ -2207,6 +2217,7 @@ router.post(
       await Promise.all([
         redis.del(previewKey).catch(() => {}),
         redis.del(previewSessionKey).catch(() => {}),
+        redis.del(`preview-vars:${agentId}:${req.user!.userId}`).catch(() => {}),
       ]);
       res.json({ message: 'Preview history cleared' });
     } catch (err) {
