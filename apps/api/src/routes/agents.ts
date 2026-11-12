@@ -2180,6 +2180,10 @@ router.post(
       ];
       await redis.set(previewKey, JSON.stringify(updatedHistory), 'EX', TTL);
       await redis.set(previewVarsKey, JSON.stringify(capturedVars), 'EX', TTL);
+      // The MCP session id must live exactly as long as the history: renew it every turn
+      // (it used to expire 30 min after creation while the history stayed alive, so the MCP
+      // cart was lost mid-conversation). set (not expire) so it is recreated if it lapsed mid-turn.
+      await redis.set(previewSessionKey, previewSessionId, 'EX', TTL);
 
       const latencyMs = Date.now() - startTime;
 

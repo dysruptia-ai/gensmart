@@ -11,6 +11,7 @@
     "seed": "tsx src/db/seeds/index.ts",
     "test:loop": "tsx --test src/services/tool-loop.service.test.ts",
     "test:mcp-webhook": "tsx --test src/services/mcp-conversation.service.test.ts",
+    "test:preview": "tsx --test src/services/preview-session-ttl.test.ts",
     "sync-agent-prompt": "tsx src/db/seeds/sync-agent-prompt.ts",
     "test:email": "dotenv -e ../../.env -- tsx --test src/services/email.test.ts src/services/email-contact.test.ts",
     "seed:test-users": "tsx src/db/seeds/test-users.seed.ts",
