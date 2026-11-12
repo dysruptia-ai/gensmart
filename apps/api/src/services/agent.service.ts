@@ -606,14 +606,22 @@ export async function createFromTemplate(orgId: string, plan: string, templateId
     : [];
   const initialValues = initialConfigVariableValues(templateSchema);
 
+  // agents.web_config defaults to English texts (migration 007). Spanish templates
+  // start with Spanish widget texts; everything else in web_config is untouched.
+  const spanishWebTexts =
+    template.language === 'es'
+      ? { welcome_message: '¡Hola! ¿En qué te puedo ayudar?', bubble_text: 'Chatea con nosotros' }
+      : {};
+
   const updated = await query<AgentRow>(
     `UPDATE agents
      SET template_id = $1,
          config_variables_values = $2::jsonb,
+         web_config = COALESCE(web_config, '{}'::jsonb) || $5::jsonb,
          updated_at = NOW()
      WHERE id = $3 AND organization_id = $4
      RETURNING *`,
-    [template.id, JSON.stringify(initialValues), agent.id, orgId]
+    [template.id, JSON.stringify(initialValues), agent.id, orgId, JSON.stringify(spanishWebTexts)]
   );
   return updated.rows[0] ? formatAgent(updated.rows[0]) : agent;
 }
