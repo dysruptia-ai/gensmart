@@ -16,8 +16,9 @@
  *      responds 200 inside the MCP's 5s SLO (INTEGRATION.md §9.2).
  *   4. Worker processes (this module):
  *        a. `findConversationForOrder` resolves the originating
- *           conversation (captured_variables.externalOrderId → most
- *           recent active conversation in the last 24h as fallback).
+ *           conversation by EXACT match on
+ *           captured_variables.externalOrderId. No fallback: if there is no
+ *           match nobody is notified (see mcp-conversation.service.ts).
  *        b. `formatNotification` produces a customer-facing Spanish
  *           message per event type (docs/INTEGRATION.md §6).
  *        c. `notifyClient` persists the message in the `messages` table
@@ -39,6 +40,11 @@ import { createBullConnection } from '../config/queues';
 import { query } from '../config/database';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
 import { getIO } from '../config/websocket';
+import {
+  findConversationForOrder,
+  formatNoConversationLog,
+  type ConversationRow,
+} from '../services/mcp-conversation.service';
 
 type McpEvent =
   | 'order.created'
@@ -85,13 +91,6 @@ interface CanonicalOrder {
   }>;
   alerts: Array<{ name: string }>;
   total: number;
-}
-
-interface ConversationRow {
-  id: string;
-  channel: string;
-  channel_metadata: Record<string, unknown>;
-  organization_id: string;
 }
 
 function formatCurrencyCOP(n: number): string {
@@ -157,49 +156,6 @@ function formatNotification(event: McpEvent, order: CanonicalOrder): string {
     default:
       return `Actualización de tu pedido #${(order as CanonicalOrder).idOrder}.`;
   }
-}
-
-/**
- * Find the conversation that originated this order.
- *
- * Strategy:
- *   1. Match externalOrderId against captured_variables.externalOrderId.
- *   2. Fallback: most recent `active` conversation for this agent in the last
- *      24h. Best-effort — if the agent had multiple parallel conversations,
- *      the wrong one may receive the notification.
- *
- * TODO post-MVP: introduce a dedicated `mcp_orders` table linking
- * (agent_id, externalOrderId) → conversation_id at create_order time so we
- * never rely on heuristics.
- */
-async function findConversationForOrder(
-  agentId: string,
-  externalOrderId: string | null,
-): Promise<ConversationRow | null> {
-  if (externalOrderId) {
-    const byVar = await query<ConversationRow>(
-      `SELECT id, channel, channel_metadata, organization_id
-       FROM conversations
-       WHERE agent_id = $1
-         AND captured_variables->>'externalOrderId' = $2
-       ORDER BY updated_at DESC
-       LIMIT 1`,
-      [agentId, externalOrderId]
-    );
-    if (byVar.rows.length > 0) return byVar.rows[0]!;
-  }
-
-  const fallback = await query<ConversationRow>(
-    `SELECT id, channel, channel_metadata, organization_id
-     FROM conversations
-     WHERE agent_id = $1
-       AND status = 'active'
-       AND updated_at > NOW() - INTERVAL '24 hours'
-     ORDER BY updated_at DESC
-     LIMIT 1`,
-    [agentId]
-  );
-  return fallback.rows[0] ?? null;
 }
 
 /**
@@ -282,12 +238,9 @@ export function startMcpWebhookWorker(): Worker<McpWebhookJobData> {
 
       const conversation = await findConversationForOrder(agentId, order.externalOrderId);
       if (!conversation) {
-        // Successful job (delivery already ACKed); nothing to notify because
-        // we can't link the order to a conversation. Log so it shows up in
-        // metrics if this becomes common.
-        console.warn(
-          `[mcp-webhook-worker] No conversation found for order ${order.idOrder} (agent ${agentId})`
-        );
+        // Delivery was already ACKed and is marked processed: no retry, no
+        // notification. Never guess a conversation (could be another customer).
+        console.warn(formatNoConversationLog(agentId, event, order.idOrder, deliveryId));
         return;
       }
 
