@@ -137,6 +137,8 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), asyn
 //
 // Registered inline BEFORE express.json() so express.raw() preserves the body
 // bytes for signature verification. Same pattern as the Stripe webhook above.
+const KNOWN_MCP_SOURCES = new Set(['mastershop-mcp', 'venndelo-mcp']);
+
 const VALID_MCP_EVENTS = new Set([
   'order.created',
   'order.status_changed',
@@ -160,7 +162,7 @@ app.post('/api/webhooks/mcp', express.raw({ type: 'application/json' }), async (
       return;
     }
 
-    if (source && source !== 'mastershop-mcp') {
+    if (source && !KNOWN_MCP_SOURCES.has(source)) {
       // Don't reject — keep room for additional MCP providers in the future,
       // but log so unexpected sources are visible.
       console.warn(`[mcp-webhook] Unknown source: ${source}`);
