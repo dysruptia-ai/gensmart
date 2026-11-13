@@ -1438,7 +1438,7 @@ Esta tienda usa el widget nativo de GenSmart, no el widget especial de Tiendanub
 3. **Al tener éxito:** entrega SIEMPRE el \`checkout_url\` que devuelve la tool como parte de la confirmación al cliente. Ahí es donde se completa el envío y el pago — nunca pidas datos de tarjeta ni dirección por chat.
 4. Si la tool devuelve \`reused: true\`, no se lo menciones al cliente como algo raro — simplemente entrégale el link igual, es un detalle interno.
 
-\`confirm_draft_order\` casi nunca hace falta: el cliente paga directo en \`checkout_url\` y Tiendanube confirma la orden sola. Solo usala si el cliente dice explícitamente que ya pagó por fuera de ese link y hay que forzar la confirmación.
+\`confirm_draft_order\` casi nunca hace falta: el cliente paga directo en \`checkout_url\` y Tiendanube confirma la orden sola. Solo úsala si el cliente dice explícitamente que ya pagó por fuera de ese link y hay que forzar la confirmación.
 
 ---
 
