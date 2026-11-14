@@ -808,7 +808,16 @@
           "oauthConnecting": "Redirecting...",
           "oauthConnectFailed": "Could not start the connection. Try again.",
           "oauthConnectedStatus": "Connected to your {name} store",
-          "oauthReconnectButton": "Reconnect"
+          "oauthReconnectButton": "Reconnect",
+          "mcpOauthHint": "{name} will open so you can authorize GenSmart to access your account. You will come back here when you finish.",
+          "mcpOauthConnectButton": "Connect my {name} account",
+          "mcpOauthConnected": "Connected to your {name} account",
+          "mcpOauthNeedsReconnect": "Your {name} connection expired. Reconnect to keep using it.",
+          "mcpOauthToastConnected": "{name} connected successfully.",
+          "mcpOauthToastDenied": "You did not authorize the connection to {name}.",
+          "mcpOauthToastExpired": "The connection session expired. Try connecting again.",
+          "mcpOauthToastError": "Could not connect {name}. Try again.",
+          "mcpOauthGenericProvider": "the provider"
         }
       }
     },

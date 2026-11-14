@@ -22,6 +22,10 @@ import { validateUUID } from '../middleware/validateUUID';
 import { checkAgentLimit, checkKnowledgeLimit } from '../middleware/planLimits';
 import * as agentService from '../services/agent.service';
 import { serverUrlMatchesProfile } from '../services/mcp-provider-url';
+import * as mcpOAuth from '../services/mcp-oauth.service';
+import { rateLimiter } from '../middleware/rateLimiter';
+import type { StoredOAuth } from '../services/mcp-oauth.core';
+import { env } from '../config/env';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
@@ -36,7 +40,7 @@ import {
 } from '../services/mcp-headers.service';
 import * as mcpProviders from '../services/mcp-providers.service';
 import { createConnectSession } from '../services/tiendanube-connect-session.service';
-import { encrypt, decrypt } from '../config/encryption';
+import { encrypt } from '../config/encryption';
 import {
   buildEmailNotificationToolDef,
   type EmailNotificationToolConfig,
@@ -380,7 +384,7 @@ router.post(
         // rotated centrally.
         if (validated.providerId) {
           const profile = await mcpProviders.findProfileById(validated.providerId);
-          if (!profile || !profile.is_active) {
+          if (!profile || !profile.is_active || !mcpProviders.isProfileVisibleToOrg(profile, req.org!.id)) {
             res.status(400).json({
               error: { message: `Unknown or inactive MCP provider: ${validated.providerId}`, code: 'INVALID_PROVIDER' },
             });
@@ -521,7 +525,7 @@ router.post(
       let profileAutoHeaders: Record<string, string> = {};
       if (providerId) {
         profile = await mcpProviders.findProfileById(providerId);
-        if (profile && profile.is_active) {
+        if (profile && profile.is_active && mcpProviders.isProfileVisibleToOrg(profile, req.org!.id)) {
           if (!serverUrlMatchesProfile(profile, server_url)) {
             res.status(400).json({
               success: false,
@@ -540,17 +544,58 @@ router.post(
       // Test isn't tied to a real conversation/tool, so we use a fresh session
       // UUID and an ephemeral webhook secret. Real secrets are persisted only
       // on tool creation. System headers always win the merge.
-      const systemAutoHeaders: Record<string, string> = {
-        'X-Agent-ID': String(req.params['id']),
-        'X-Session-ID': randomUUID(),
-        'X-Webhook-Secret': generateWebhookSecret(),
-      };
+      // OAuth providers without webhook events (e.g. Dropi) get none of them (same policy as buildMcpToolHeaders).
+      const systemAutoHeaders: Record<string, string> = mcpOAuth.profileOmitsGenSmartHeaders(profile)
+        ? {}
+        : {
+            'X-Agent-ID': String(req.params['id']),
+            'X-Session-ID': randomUUID(),
+            'X-Webhook-Secret': generateWebhookSecret(),
+          };
 
-      const extraHeaders = {
+      const extraHeaders: Record<string, string> = {
         ...profileAutoHeaders,
         ...userExtraHeaders,
         ...systemAutoHeaders,
       };
+
+      // OAuth providers: the Bearer of the saved connection is the final layer (wins over everything).
+      let oauthSessionId: string | null = null;
+      if (profile && profile.oauth_config) {
+        let oauthState: Partial<{ status: string }> | null = null;
+        if (toolId && /^[0-9a-f-]{36}$/i.test(toolId)) {
+          const r = await query<{ oauth: { status?: string } | null; provider_id: string | null }>(
+            `SELECT config->'oauth' AS oauth, config->>'providerId' AS provider_id
+               FROM agent_tools WHERE id = $1 AND agent_id = $2`,
+            [toolId, String(req.params['id'])]
+          );
+          // The tool must belong to the provider in the body: never send its tokens to another provider.
+          const row = r.rows[0];
+          oauthState = row && row.provider_id === profile.id ? row.oauth ?? null : null;
+        }
+        if (!oauthState) {
+          res.json({ success: false, errorCode: 'AUTH_FAILED', error: 'Connect your account first', providerName: profile.name });
+          return;
+        }
+        try {
+          const tok = await mcpOAuth.getValidAccessTokenWithSession({
+            toolId: String(toolId),
+            agentId: String(req.params['id']),
+            providerId: profile.id,
+          });
+          oauthSessionId = tok.sessionId;
+          extraHeaders['Authorization'] = `Bearer ${tok.accessToken}`;
+        } catch (err) {
+          const reconnect = err instanceof mcpOAuth.McpOAuthReconnectRequiredError;
+          res.json({
+            success: false,
+            errorCode: 'AUTH_FAILED',
+            error: reconnect ? 'The connection expired; reconnect your account' : 'Could not refresh the connection; try again',
+            providerName: profile.name,
+          });
+          return;
+        }
+      }
 
       // Step 1: MCP handshake (tools/list). A failure here means we couldn't
       // even reach the MCP — return a handshake-specific error.
@@ -597,6 +642,9 @@ router.post(
             extraHeaders
           );
           if (result.isError) {
+            if (profile.oauth_config && toolId && mcpOAuth.isRevokedToolResult(result.content)) {
+              await mcpOAuth.markNeedsReconnect(String(toolId), String(req.params['id']), oauthSessionId).catch(() => {});
+            }
             console.error(
               `[agents] MCP test-connection health-check tool "${hc.name}" returned error:`,
               result.content
@@ -650,9 +698,12 @@ router.post(
 router.get(
   '/:id/tools/mcp/providers',
   validateUUID('id'),
-  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const profiles = await mcpProviders.listActiveProfiles();
+      // Beta gating is applied per org here: the cached active list is global.
+      const profiles = (await mcpProviders.listActiveProfiles()).filter((p) =>
+        mcpProviders.isProfileVisibleToOrg(p, req.org!.id)
+      );
       res.json({ providers: profiles.map(mcpProviders.toPublicProfile) });
     } catch (err) {
       next(err);
@@ -682,6 +733,78 @@ router.post(
   }
 );
 
+// POST /api/agents/:id/tools/mcp/:providerId/oauth/start
+// Starts the MCP OAuth 2.1 (PKCE) flow for providers with oauth_config (e.g. Dropi). Returns the
+// authorize URL; the provider redirects back to GET /api/oauth/:providerId/callback.
+router.post(
+  '/:id/tools/mcp/:providerId/oauth/start',
+  validateUUID('id'),
+  rateLimiter({ windowSeconds: 60, maxRequests: 20, keyPrefix: 'mcp-oauth-start', keyFn: (req) => req.org?.id ?? null }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const providerId = String(req.params['providerId']);
+      // Throws 404 if the agent does not belong to this org.
+      await agentService.getAgentById(req.org!.id, agentId);
+      const profile = await mcpOAuth.findOAuthProfileForOrg(providerId, req.org!.id);
+      if (!profile) {
+        res.status(404).json({ error: { message: 'Provider not found', code: 'PROVIDER_NOT_FOUND' } });
+        return;
+      }
+      const authorizeUrl = await mcpOAuth.startAuthorization({
+        organizationId: req.org!.id,
+        agentId,
+        userId: req.user!.userId,
+        profile,
+        redirectUri: `${env.API_URL}/api/oauth/${encodeURIComponent(profile.id)}/callback`,
+      });
+      res.status(200).json({ authorizeUrl });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/agents/:id/tools/mcp/:providerId/oauth/complete
+// Step 2 of the OAuth flow (authenticated). The public callback only parks {state, code} in a
+// single-use ticket; here the code is exchanged ONLY if the state was started by this same user,
+// org, agent and provider. Errors are generic on purpose.
+const oauthCompleteSchema = z.object({ ticket: z.string().regex(/^[a-f0-9]{48}$/) });
+router.post(
+  '/:id/tools/mcp/:providerId/oauth/complete',
+  validateUUID('id'),
+  rateLimiter({ windowSeconds: 60, maxRequests: 20, keyPrefix: 'mcp-oauth-complete', keyFn: (req) => req.org?.id ?? null }),
+  validate(oauthCompleteSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const providerId = String(req.params['providerId']);
+      try {
+        const done = await mcpOAuth.completeAuthorizationWithTicket({
+          ticket: (req.body as { ticket: string }).ticket,
+          organizationId: req.org!.id,
+          agentId,
+          providerId,
+          userId: req.user!.userId,
+        });
+        res.status(200).json({ success: true, toolId: done.toolId });
+      } catch (err) {
+        if (err instanceof mcpOAuth.McpOAuthForbiddenError) {
+          res.status(403).json({ error: { message: 'Not allowed', code: 'FORBIDDEN' } });
+        } else if (err instanceof mcpOAuth.McpOAuthStateError) {
+          res.status(400).json({ error: { message: 'Connection session expired', code: 'CONNECT_SESSION_EXPIRED' } });
+        } else if (err instanceof mcpOAuth.McpOAuthCompletionError) {
+          res.status(502).json({ error: { message: 'Could not complete the connection', code: err.reason.toUpperCase() } });
+        } else {
+          throw err;
+        }
+      }
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // GET /api/agents/:id/tools/mcp/resolve-profile?url=...
 // Returns the matching provider profile for a pasted URL (or { profile: null }).
 router.get(
@@ -694,7 +817,8 @@ router.get(
         res.status(400).json({ error: { message: 'Invalid url parameter', code: 'INVALID_URL' } });
         return;
       }
-      const profile = await mcpProviders.findProfileByUrl(url);
+      const found = await mcpProviders.findProfileByUrl(url);
+      const profile = found && mcpProviders.isProfileVisibleToOrg(found, req.org!.id) ? found : null;
       res.json({ profile: profile ? mcpProviders.toPublicProfile(profile) : null });
     } catch (err) {
       next(err);
@@ -775,7 +899,15 @@ router.put(
 
           if (effectiveProviderId) {
             const profile = await mcpProviders.findProfileById(effectiveProviderId);
-            if (!profile || !profile.is_active) {
+            // Beta gating (allowed_org_ids) only when the request SETS a provider other than the stored
+            // one: an org removed from a beta keeps editing/using the tools it already created
+            // (product decision; usage in worker/preview/refresh is not gated either).
+            const settingNewProvider = !!validated.providerId && validated.providerId !== existingCfg.providerId;
+            if (
+              !profile ||
+              !profile.is_active ||
+              (settingNewProvider && !mcpProviders.isProfileVisibleToOrg(profile, req.org!.id))
+            ) {
               res.status(400).json({
                 error: { message: `Unknown or inactive MCP provider: ${effectiveProviderId}`, code: 'INVALID_PROVIDER' },
               });
@@ -826,6 +958,7 @@ router.put(
             // Preserve secret — rotation is explicit via /regenerate-webhook-secret
             webhookSecret_encrypted: existingCfg.webhookSecret_encrypted,
             ...(effectiveProviderId ? { providerId: effectiveProviderId } : {}),
+            // config.oauth is not handled here: agentService.updateTool always keeps the DB's copy.
           };
         }
       }
@@ -879,14 +1012,12 @@ router.post(
       }
 
       const newSecret = generateWebhookSecret();
-      const newConfig = {
-        ...existing.rows[0].config,
-        webhookSecret_encrypted: encrypt(newSecret),
-      };
-
+      // Atomic single-key update: never rewrites the whole config (config.oauth may be rotated concurrently).
       await query(
-        'UPDATE agent_tools SET config = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3',
-        [JSON.stringify(newConfig), toolId, agentId]
+        `UPDATE agent_tools
+            SET config = jsonb_set(config, '{webhookSecret_encrypted}', to_jsonb($1::text), true), updated_at = NOW()
+          WHERE id = $2 AND agent_id = $3`,
+        [encrypt(newSecret), toolId, agentId]
       );
 
       // Invalidate MCP tool cache so the worker picks up the new secret on next call
@@ -1737,6 +1868,7 @@ router.post(
         originalToolName: string;
         transport: 'sse' | 'streamable-http';
         extraHeaders: Record<string, string>;
+        oauth: mcpOAuth.McpOAuthContext | null;
       }> = {};
       const MCP_TOOLS_CACHE_TTL = 3600;
 
@@ -1753,6 +1885,7 @@ router.post(
           headers?: EncryptedHeader[];
           webhookSecret_encrypted?: string;
           providerId?: string;
+          oauth?: Partial<StoredOAuth>;
         };
 
         const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
@@ -1762,35 +1895,24 @@ router.post(
 
         if (!serverUrl || selectedTools.length === 0) continue;
 
-        // Same 3-layer merge as message.worker.ts (profile → user → system).
-        let profileAutoHeaders: Record<string, string> = {};
-        if (cfg.providerId) {
-          try {
-            const profile = await mcpProviders.findProfileById(cfg.providerId);
-            if (profile && profile.is_active) {
-              if (serverUrlMatchesProfile(profile, serverUrl)) {
-                profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
-              } else {
-                console.error(`[preview] Tool ${tool.id} server_url does not match provider ${cfg.providerId}; provider headers not sent`);
-              }
-            }
-          } catch (err) {
-            console.error(`[preview] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);
-          }
+        // Same 3-layer merge as message.worker.ts (profile → user → system) + OAuth Bearer as final layer.
+        let built: mcpOAuth.BuiltMcpHeaders;
+        try {
+          built = await mcpOAuth.buildMcpToolHeaders({
+            logPrefix: '[preview]',
+            toolId: tool.id,
+            agentId,
+            sessionId: previewSessionId,
+            serverUrl,
+            cfg,
+          });
+        } catch (err) {
+          console.error(`[preview] Failed to build MCP headers for tool ${tool.id}:`, (err as Error).message);
+          continue;
         }
-        const userHeaders = decryptHeaders(cfg.headers);
-        const autoHeaders: Record<string, string> = {
-          'X-Agent-ID': agentId,
-          'X-Session-ID': previewSessionId,
-        };
-        if (cfg.webhookSecret_encrypted) {
-          try {
-            autoHeaders['X-Webhook-Secret'] = decrypt(cfg.webhookSecret_encrypted);
-          } catch (err) {
-            console.error(`[preview] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
-          }
-        }
-        const allHeaders = { ...profileAutoHeaders, ...userHeaders, ...autoHeaders };
+        if (built.needsReconnect) continue;
+        const allHeaders = built.headers;
+        const toolOAuth = built.oauth;
 
         try {
           const cacheKey = `mcp:tools:${tool.id}`;
@@ -1819,6 +1941,7 @@ router.post(
               originalToolName: toolDef.name,
               transport: mcpTransport,
               extraHeaders: allHeaders,
+              oauth: toolOAuth,
             };
           }
         } catch (err) {
@@ -1997,9 +2120,9 @@ router.post(
             // MCP tool — executes against the real server (e.g. create_order
             // creates a real Mastershop order). Acceptable in preview because
             // the user is testing E2E. Reset clears the session/cart.
-            const { serverUrl, originalToolName, transport, extraHeaders } = mcpToolMap[tc.name];
+            const { serverUrl, originalToolName, transport, extraHeaders, oauth: mcpOauthCtx } = mcpToolMap[tc.name];
             try {
-              const result = await executeMCPTool(serverUrl, originalToolName, tc.arguments, transport, extraHeaders);
+              const result = await mcpOAuth.executeMCPToolWithOAuth(serverUrl, originalToolName, tc.arguments, transport, extraHeaders, mcpOauthCtx);
               if (isEmptyShippingZonesResult(tc.name, result.content)) {
                 sawEmptyShippingZones = true;
               }

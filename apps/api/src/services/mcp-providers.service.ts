@@ -64,6 +64,20 @@ export interface HealthCheckTool {
   params: Record<string, unknown>;
 }
 
+/**
+ * OAuth 2.1 (PKCE, public client) settings for MCP servers that authenticate
+ * with a per-customer Bearer token instead of API keys (e.g. Dropi). See 070.
+ * `client_id_ref` uses the same `platform_setting:` / `fixed:` syntax as value_ref.
+ */
+export interface MCPOAuthConfig {
+  authorization_endpoint: string;
+  token_endpoint: string;
+  revocation_endpoint?: string;
+  client_id_ref: string;
+  scope: string;
+  resource?: string;
+}
+
 export interface MCPProviderProfile {
   id: string;
   name: string;
@@ -80,6 +94,15 @@ export interface MCPProviderProfile {
   requires_oauth_connect: boolean;
   /** Optional E2E auth health-check. See migration 039. */
   health_check_tool: HealthCheckTool | null;
+  /** MCP OAuth config; null for providers authenticating with headers. See migration 070. */
+  oauth_config: MCPOAuthConfig | null;
+  /** null = visible to every org; array of org UUIDs = beta gating. See migration 070. */
+  allowed_org_ids: string[] | null;
+  /**
+   * Tools selected on the FIRST OAuth connection (∩ tools discovered). null = all discovered
+   * (behaviour of every pre-existing profile). See migration 070. Not exposed by toPublicProfile.
+   */
+  default_selected_tools: string[] | null;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -103,6 +126,9 @@ interface ProfileRow {
   supported_events: string[] | string;
   requires_oauth_connect: boolean | null;
   health_check_tool: HealthCheckTool | string | null;
+  oauth_config?: MCPOAuthConfig | string | null;
+  allowed_org_ids?: string[] | string | null;
+  default_selected_tools?: string[] | string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -139,6 +165,53 @@ function parseJsonField<T>(field: T[] | string | null | undefined, fallback: T[]
   }
 }
 
+function parseOAuthConfig(field: MCPOAuthConfig | string | null | undefined): MCPOAuthConfig | null {
+  if (field == null) return null;
+  let obj: Partial<MCPOAuthConfig> | null = null;
+  if (typeof field === 'object') obj = field;
+  else {
+    try { obj = JSON.parse(field) as Partial<MCPOAuthConfig>; } catch { return null; }
+  }
+  if (!obj || !obj.authorization_endpoint || !obj.token_endpoint || !obj.client_id_ref || !obj.scope) return null;
+  return {
+    authorization_endpoint: obj.authorization_endpoint,
+    token_endpoint: obj.token_endpoint,
+    revocation_endpoint: obj.revocation_endpoint,
+    client_id_ref: obj.client_id_ref,
+    scope: obj.scope,
+    resource: obj.resource,
+  };
+}
+
+function parseDefaultSelectedTools(field: string[] | string | null | undefined): string[] | null {
+  if (field == null) return null;
+  if (Array.isArray(field)) return field.filter((v) => typeof v === 'string');
+  try {
+    const parsed: unknown = JSON.parse(field);
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
+  } catch {
+    // Malformed value: fail closed (select nothing) rather than enabling every tool.
+    return [];
+  }
+}
+
+function parseAllowedOrgIds(field: string[] | string | null | undefined): string[] | null {
+  if (field == null) return null;
+  if (Array.isArray(field)) return field.filter((v) => typeof v === 'string');
+  try {
+    const parsed = JSON.parse(field);
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : null;
+  } catch {
+    // Malformed value: fail closed (hidden) rather than open.
+    return [];
+  }
+}
+
+/** Beta gating: null allowed_org_ids = everyone; otherwise only the listed orgs. */
+export function isProfileVisibleToOrg(profile: Pick<MCPProviderProfile, 'allowed_org_ids'>, orgId: string): boolean {
+  return profile.allowed_org_ids == null || profile.allowed_org_ids.includes(orgId);
+}
+
 function rowToProfile(row: ProfileRow): MCPProviderProfile {
   return {
     id: row.id,
@@ -154,6 +227,9 @@ function rowToProfile(row: ProfileRow): MCPProviderProfile {
     supported_events: parseJsonField<string>(row.supported_events, []),
     requires_oauth_connect: row.requires_oauth_connect === true,
     health_check_tool: parseHealthCheckTool(row.health_check_tool),
+    oauth_config: parseOAuthConfig(row.oauth_config),
+    allowed_org_ids: parseAllowedOrgIds(row.allowed_org_ids),
+    default_selected_tools: parseDefaultSelectedTools(row.default_selected_tools),
     is_active: row.is_active,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -276,37 +352,43 @@ export async function findProfileByUrl(url: string): Promise<MCPProviderProfile 
  * but the upstream MCP will probably reject it. Unknown `value_ref` prefixes
  * are dropped.
  */
+/**
+ * Resolve a `value_ref` ("platform_setting:key" | "fixed:literal"). Returns
+ * null for malformed/unknown refs; '' (with warning) for empty/unreadable settings.
+ */
+export async function resolveValueRef(ref: string, context: string): Promise<string | null> {
+  const colonIdx = ref.indexOf(':');
+  if (colonIdx === -1) {
+    console.error(`[mcp-providers] ${context} has malformed value_ref: ${ref}`);
+    return null;
+  }
+  const prefix = ref.slice(0, colonIdx);
+  const rest = ref.slice(colonIdx + 1);
+
+  if (prefix === 'platform_setting') {
+    try {
+      const value = await getSettingValue(rest);
+      if (!value) {
+        console.warn(`[mcp-providers] Platform setting "${rest}" is empty (${context})`);
+        return '';
+      }
+      return value;
+    } catch (err) {
+      console.error(`[mcp-providers] Failed to read platform setting "${rest}":`, (err as Error).message);
+      return '';
+    }
+  }
+  if (prefix === 'fixed') return rest;
+  console.error(`[mcp-providers] Unknown value_ref prefix "${prefix}" (${context})`);
+  return null;
+}
+
 export async function resolveAutoHeaders(profile: MCPProviderProfile): Promise<Record<string, string>> {
   const out: Record<string, string> = {};
   for (const h of profile.auto_injected_headers) {
     if (!h?.key || !h?.value_ref) continue;
-    const ref = h.value_ref;
-    const colonIdx = ref.indexOf(':');
-    if (colonIdx === -1) {
-      console.error(`[mcp-providers] Header "${h.key}" in profile ${profile.id} has malformed value_ref: ${ref}`);
-      continue;
-    }
-    const prefix = ref.slice(0, colonIdx);
-    const rest = ref.slice(colonIdx + 1);
-
-    if (prefix === 'platform_setting') {
-      try {
-        const value = await getSettingValue(rest);
-        if (!value) {
-          console.warn(`[mcp-providers] Platform setting "${rest}" is empty (profile ${profile.id}, header ${h.key})`);
-          out[h.key] = '';
-        } else {
-          out[h.key] = value;
-        }
-      } catch (err) {
-        console.error(`[mcp-providers] Failed to read platform setting "${rest}":`, (err as Error).message);
-        out[h.key] = '';
-      }
-    } else if (prefix === 'fixed') {
-      out[h.key] = rest;
-    } else {
-      console.error(`[mcp-providers] Unknown value_ref prefix "${prefix}" for header "${h.key}" in profile ${profile.id}`);
-    }
+    const value = await resolveValueRef(h.value_ref, `profile ${profile.id}, header ${h.key}`);
+    if (value !== null) out[h.key] = value;
   }
   return out;
 }
@@ -418,7 +500,7 @@ export async function invalidateCache(id?: string): Promise<void> {
 
 /**
  * Strip sensitive fields (auto_injected_headers, match_url_pattern,
- * match_strategy) before exposing to non-admin callers / frontend.
+ * match_strategy, oauth_config, allowed_org_ids) before exposing to non-admin callers / frontend.
  */
 export function toPublicProfile(profile: MCPProviderProfile): {
   id: string;
@@ -430,6 +512,7 @@ export function toPublicProfile(profile: MCPProviderProfile): {
   user_configurable_headers: UserConfigurableHeader[];
   supported_events: string[];
   requires_oauth_connect: boolean;
+  uses_mcp_oauth: boolean;
 } {
   return {
     id: profile.id,
@@ -441,5 +524,6 @@ export function toPublicProfile(profile: MCPProviderProfile): {
     user_configurable_headers: profile.user_configurable_headers,
     supported_events: profile.supported_events,
     requires_oauth_connect: profile.requires_oauth_connect,
+    uses_mcp_oauth: profile.oauth_config != null,
   };
 }

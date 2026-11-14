@@ -11,6 +11,7 @@ import {
   buildRequestBody,
 } from './custom-function-auth';
 import { safeFetch, UnsafeUrlError } from './safe-url';
+import { revokeToolOAuthBeforeDelete } from './mcp-oauth-revoke.service';
 import { loadAgentConfigForDeepInject } from './agent-config.service';
 import {
   protectCustomFunctionConfig,
@@ -92,9 +93,23 @@ interface ToolRow {
 }
 
 /** Credentials of custom_function tools never leave the API: they are returned masked. */
-function clientToolConfig(type: string, config: ToolRow['config']): ToolRow['config'] {
-  if (type !== 'custom_function' || typeof config !== 'object' || config === null) return config;
-  return maskCustomFunctionConfig(config as Record<string, unknown>) as ToolRow['config'];
+export function clientToolConfig(type: string, config: ToolRow['config']): ToolRow['config'] {
+  if (typeof config !== 'object' || config === null) return config;
+  if (type === 'custom_function') {
+    return maskCustomFunctionConfig(config as Record<string, unknown>) as ToolRow['config'];
+  }
+  return stripOAuthFromConfig(config);
+}
+
+/**
+ * MCP OAuth tokens (`config.oauth.*_encrypted`) never go to the frontend: the block is removed and
+ * only `oauth_status` ('connected' | 'needs_reconnect') is exposed.
+ */
+export function stripOAuthFromConfig<T extends Record<string, unknown>>(config: T): T {
+  if (!('oauth' in config)) return config;
+  const { oauth, ...rest } = config as Record<string, unknown> & { oauth?: { status?: unknown } };
+  const status = oauth && typeof oauth === 'object' && oauth.status === 'needs_reconnect' ? 'needs_reconnect' : 'connected';
+  return { ...rest, oauth_status: status } as unknown as T;
 }
 
 function formatTool(row: ToolRow) {
@@ -495,7 +510,15 @@ export async function publishAgent(orgId: string, agentId: string, userId: strin
         agent.max_tokens,
         agent.context_window_messages,
         JSON.stringify(agent.variables ?? []),
-        JSON.stringify(toolsResult.rows),
+        // OAuth sessions are never snapshotted: the stored refresh token would be stale after rotation.
+        JSON.stringify(
+          toolsResult.rows.map((t) => {
+            if (typeof t.config !== 'object' || t.config === null || !('oauth' in t.config)) return t;
+            const { oauth: _omit, ...rest } = t.config as Record<string, unknown>;
+            void _omit;
+            return { ...t, config: rest };
+          })
+        ),
         userId,
       ]
     );
@@ -533,9 +556,13 @@ export async function getVersions(orgId: string, agentId: string) {
     tools: Array.isArray(version.tools)
       ? version.tools.map((tool) => {
           const t = tool as { type?: unknown; config?: unknown };
-          return t && t.type === 'custom_function' && typeof t.config === 'object' && t.config !== null
-            ? { ...t, config: maskCustomFunctionConfig(t.config as Record<string, unknown>) }
-            : tool;
+          if (t && t.type === 'custom_function' && typeof t.config === 'object' && t.config !== null) {
+            return { ...t, config: maskCustomFunctionConfig(t.config as Record<string, unknown>) };
+          }
+          if (t && typeof t.config === 'object' && t.config !== null) {
+            return { ...t, config: stripOAuthFromConfig(t.config as Record<string, unknown>) };
+          }
+          return tool;
         })
       : version.tools,
   }));
@@ -909,7 +936,15 @@ export async function updateTool(
   }
   if (configToStore !== undefined) {
     params.push(JSON.stringify(configToStore));
-    setClauses.push(`config = $${params.length}`);
+    const n = params.length;
+    // `config.oauth` is written ONLY by the MCP OAuth service. Any `oauth` in the incoming object is
+    // ignored and the one stored in the DB AT THIS MOMENT is kept (a stale copy would restore an
+    // already-rotated refresh token and make the provider revoke the session).
+    setClauses.push(
+      `config = CASE WHEN config ? 'oauth'
+                     THEN ($${n}::jsonb - 'oauth') || jsonb_build_object('oauth', config->'oauth')
+                     ELSE ($${n}::jsonb - 'oauth') END`
+    );
   }
   if (data.isEnabled !== undefined) {
     params.push(data.isEnabled);
@@ -933,6 +968,9 @@ export async function updateTool(
 
 export async function deleteTool(orgId: string, agentId: string, toolId: string) {
   await verifyAgentOwnership(orgId, agentId);
+  // MCP OAuth tools: best-effort revocation of the provider session before the row (and its tokens)
+  // disappears. Never throws; bounded by a 10 s timeout. Agent/account deletion: documented debt.
+  await revokeToolOAuthBeforeDelete(toolId, agentId);
   await query('DELETE FROM agent_tools WHERE id = $1 AND agent_id = $2', [toolId, agentId]);
 }
 
@@ -960,10 +998,19 @@ export async function duplicateAgent(orgId: string, agentId: string, plan: strin
     [agentId]
   );
   for (const tool of sourceTools.rows) {
+    // MCP OAuth sessions are NOT cloned: the refresh token rotates and reusing it from a second tool
+    // would make the provider revoke the original session. The copy must be reconnected (disabled).
+    const hasOAuth = typeof tool.config === 'object' && tool.config !== null && 'oauth' in tool.config;
+    const { oauth: _omit, ...configWithoutOAuth } = (tool.config ?? {}) as Record<string, unknown>;
+    void _omit;
     await query(
       `INSERT INTO agent_tools (agent_id, type, name, description, config, is_enabled, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())`,
-      [newAgent.id, tool.type, tool.name, tool.description, JSON.stringify(tool.config), tool.is_enabled]
+      [
+        newAgent.id, tool.type, tool.name, tool.description,
+        JSON.stringify(hasOAuth ? configWithoutOAuth : tool.config),
+        hasOAuth ? false : tool.is_enabled,
+      ]
     );
   }
 
