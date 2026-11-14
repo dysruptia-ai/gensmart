@@ -74,6 +74,8 @@ export interface MCPProviderProfile {
   supported_events: string[];
   /** When true, show an OAuth connect button instead of the headers form. */
   requires_oauth_connect?: boolean;
+  /** True when the connect flow is the generic MCP OAuth 2.1 (e.g. Dropi), false/undefined for Tiendanube. */
+  uses_mcp_oauth?: boolean;
 }
 
 interface MCPConfiguratorProps {
@@ -84,6 +86,8 @@ interface MCPConfiguratorProps {
   onChange: (patch: Partial<MCPConfig>) => void;
   onConnectionError?: (msg: string) => void;
   onSecretRegenerated?: (newSecret: string) => void;
+  /** Connection state of an OAuth tool (never contains tokens). */
+  oauthStatus?: 'connected' | 'needs_reconnect';
 }
 
 export default function MCPConfigurator({
@@ -93,6 +97,7 @@ export default function MCPConfigurator({
   onChange,
   onConnectionError,
   onSecretRegenerated,
+  oauthStatus,
 }: MCPConfiguratorProps) {
   const { t, language } = useTranslation();
 
@@ -272,11 +277,11 @@ export default function MCPConfigurator({
     setOauthConnecting(true);
     setOauthError(null);
     try {
-      const data = await api.post<{ authorizeUrl: string }>(
-        `/api/agents/${agentId}/tools/mcp/tiendanube/connect-session`,
-        {}
-      );
-      // Full-page redirect: Tiendanube does not support a popup flow.
+      const connectPath = detectedProvider?.uses_mcp_oauth
+        ? `/api/agents/${agentId}/tools/mcp/${encodeURIComponent(detectedProvider.id)}/oauth/start`
+        : `/api/agents/${agentId}/tools/mcp/tiendanube/connect-session`;
+      const data = await api.post<{ authorizeUrl: string }>(connectPath, {});
+      // Full-page redirect: neither Tiendanube nor MCP OAuth providers use a popup flow.
       window.location.href = data.authorizeUrl;
     } catch (err) {
       setOauthError(err instanceof ApiError ? err.message : t('agents.tools.mcp.provider.oauthConnectFailed'));
@@ -525,7 +530,17 @@ export default function MCPConfigurator({
           <div className={styles.fieldGroup}>
           <div className={styles.statusOk}>
             <Check size={14} />
-            <span>{t('agents.tools.mcp.provider.oauthConnectedStatus', { name: profile.name })}</span>
+            {profile.uses_mcp_oauth && oauthStatus === 'needs_reconnect' ? (
+              <span className={styles.statusError}>
+                {t('agents.tools.mcp.provider.mcpOauthNeedsReconnect', { name: profile.name })}
+              </span>
+            ) : (
+              <span>
+                {profile.uses_mcp_oauth
+                  ? t('agents.tools.mcp.provider.mcpOauthConnected', { name: profile.name })
+                  : t('agents.tools.mcp.provider.oauthConnectedStatus', { name: profile.name })}
+              </span>
+            )}
           </div>
           <div>
             <Button
@@ -550,7 +565,11 @@ export default function MCPConfigurator({
 
         {profile.requires_oauth_connect && !toolId && (
           <div className={styles.fieldGroup}>
-          <span className={styles.helpText}>{t('agents.tools.mcp.provider.oauthConnectHint')}</span>
+          <span className={styles.helpText}>
+            {profile.uses_mcp_oauth
+              ? t('agents.tools.mcp.provider.mcpOauthHint', { name: profile.name })
+              : t('agents.tools.mcp.provider.oauthConnectHint')}
+          </span>
           <div>
             <Button
               variant="primary"
@@ -564,7 +583,9 @@ export default function MCPConfigurator({
                   <span>{t('agents.tools.mcp.provider.oauthConnecting')}</span>
                 </>
               ) : (
-                t('agents.tools.mcp.provider.oauthConnectButton', { name: profile.name })
+                profile.uses_mcp_oauth
+                  ? t('agents.tools.mcp.provider.mcpOauthConnectButton', { name: profile.name })
+                  : t('agents.tools.mcp.provider.oauthConnectButton', { name: profile.name })
               )}
             </Button>
           </div>

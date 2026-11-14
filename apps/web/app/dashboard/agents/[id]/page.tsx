@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter, useParams, usePathname } from 'next/navigation';
+import { useRouter, useParams, usePathname, useSearchParams } from 'next/navigation';
 import {
   Globe, Save, Upload, Check, RotateCcw, AlertCircle, Rocket, Play, Camera, SendHorizonal, Trash2, Wrench, Eye, FileText, Mail,
 } from 'lucide-react';
@@ -128,6 +128,7 @@ export default function AgentEditorPage() {
 
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { success, error: toastError } = useToast();
   const { t, language } = useTranslation();
   const { isSuspended } = useAuth();
@@ -218,6 +219,27 @@ export default function AgentEditorPage() {
       setLoading(false);
     }
   }, [agentId, toastError, router]);
+
+  // Result of the MCP OAuth flow (callback redirects here with ?mcp_oauth=connected|error). Toast once, then clean the URL.
+  const mcpOauthResult = searchParams.get('mcp_oauth');
+  const mcpOauthProvider = searchParams.get('provider');
+  const mcpOauthReason = searchParams.get('reason');
+  useEffect(() => {
+    if (mcpOauthResult !== 'connected' && mcpOauthResult !== 'error') return;
+    const name = mcpOauthProvider === 'dropi' ? 'Dropi' : (mcpOauthProvider ?? '');
+    if (mcpOauthResult === 'connected') {
+      success(t('agents.tools.mcp.provider.mcpOauthToastConnected', { name }));
+    } else {
+      const key = mcpOauthReason === 'access_denied'
+        ? 'mcpOauthToastDenied'
+        : mcpOauthReason === 'session_expired'
+          ? 'mcpOauthToastExpired'
+          : 'mcpOauthToastError';
+      toastError(t(`agents.tools.mcp.provider.${key}`, { name }));
+    }
+    router.replace(pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per OAuth result
+  }, [mcpOauthResult]);
 
   const loadVersions = useCallback(async () => {
     try {
