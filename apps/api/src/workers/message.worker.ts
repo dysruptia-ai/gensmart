@@ -25,6 +25,16 @@ import { revealCustomFunctionConfig } from '../services/secret-fields';
 import { connectAndListTools, sanitizeName } from '../services/mcp-client.service';
 import * as mcpOAuth from '../services/mcp-oauth.service';
 import type { StoredOAuth } from '../services/mcp-oauth.core';
+import {
+  buildDropiSalesContext,
+  dropiSalesToolDefinitions,
+  executeDropiSalesTool,
+  isDropiSalesToolName,
+  mcpToolExposure,
+  requiresSelectedTools,
+  type DropiSalesBinding,
+} from '../services/dropi-sales/tools';
+import type { DropiSalesContext } from '../services/dropi-sales/service';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
@@ -586,6 +596,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // MCP tools — load definitions (with Redis cache) and add to llmTools
   const mcpToolMap: Record<string, MCPToolMapping> = {};
+  // Dropi with a valid OAuth connection: sales tools instead of the raw Dropi tools (services/dropi-sales).
+  let dropiBinding: DropiSalesBinding | null = null;
 
   for (const tool of agentTools) {
     if (tool.type !== 'mcp' || !tool.is_enabled) continue;
@@ -608,7 +620,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     const selectedTools = cfg.selected_tools ?? [];
     const mcpTransport = (cfg.transport === 'streamable-http' ? 'streamable-http' : 'sse') as 'sse' | 'streamable-http';
 
-    if (!serverUrl || selectedTools.length === 0) continue;
+    if (!serverUrl || (selectedTools.length === 0 && requiresSelectedTools(cfg))) continue;
 
     // Effective headers in 3 layers (left → right wins): profile auto-injected → user → system
     // (X-Agent-ID, X-Session-ID, X-Webhook-Secret), plus the MCP OAuth Bearer as the FINAL layer.
@@ -630,6 +642,16 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     }
     if (built.needsReconnect) continue;
     const allHeaders = built.headers;
+
+    // Dropi: never the raw tools; the sales tools when the OAuth connection is valid.
+    const exposure = mcpToolExposure(cfg, built);
+    if (exposure !== 'raw') {
+      if (exposure === 'dropi_sales' && built.oauth && !dropiBinding) {
+        dropiBinding = { toolId: tool.id, serverUrl, transport: mcpTransport, headers: allHeaders, oauth: built.oauth };
+        llmTools.push(...dropiSalesToolDefinitions);
+      }
+      continue;
+    }
 
     const cacheKey = `mcp:tools:${tool.id}`;
 
@@ -680,6 +702,27 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       // Graceful degradation: log but continue without MCP tools
       console.error(`[msg-worker] Failed to load MCP tools for tool ${tool.id}:`, (err as Error).message);
     }
+  }
+
+  let dropiSales: DropiSalesContext | null = null;
+  if (dropiBinding) {
+    // Confirmation rule turn counter: user messages already saved + the one being processed
+    // (it is saved after the tool loop, in saveMessages).
+    const turns = await query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n FROM messages WHERE conversation_id = $1 AND role = 'user'`,
+      [conversationId]
+    );
+    dropiSales = buildDropiSalesContext({
+      binding: dropiBinding,
+      execute: mcpOAuth.executeMCPToolWithOAuth,
+      agentId,
+      organizationId,
+      scopeId: conversationId,
+      conversationId,
+      contactId: conv.contact_id,
+      channel: conv.channel,
+      currentUserTurn: Number(turns.rows[0]?.n ?? 0) + 1,
+    });
   }
 
   // Add scheduling instructions if a scheduling tool is enabled
@@ -767,7 +810,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     );
     for (const tc of extractedCapturesToToolCalls(captures)) {
       // Side effects only; results are not fed back to the LLM.
-      await executeTool(tc, agentTools, variables, conversationId, organizationId, agentId, mcpToolMap);
+      await executeTool(tc, agentTools, variables, conversationId, organizationId, agentId, mcpToolMap, dropiSales);
       toolsCalledLog.push(`${tc.name}(${JSON.stringify(tc.arguments)})[recovered]`);
     }
   };
@@ -795,7 +838,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           conversationId,
           organizationId,
           agentId,
-          mcpToolMap
+          mcpToolMap,
+          dropiSales
         );
         toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
         if (isEmptyShippingZonesResult(toolCall.name, result)) {
@@ -1142,15 +1186,18 @@ async function executeTool(
   conversationId: string,
   organizationId: string,
   agentId: string,
-  mcpToolMap: Record<string, MCPToolMapping> = {}
+  mcpToolMap: Record<string, MCPToolMapping> = {},
+  dropiSales: DropiSalesContext | null = null
 ): Promise<string> {
   const { name, arguments: args } = toolCall;
 
+  // Dropi sales tools: prices, carrier, confirmation and order ownership are enforced server side.
+  if (dropiSales && isDropiSalesToolName(name)) {
+    return executeDropiSalesTool(name, args, dropiSales);
+  }
+
   // MCP tools (prefixed with mcp_)
   if (name.startsWith('mcp_') && mcpToolMap[name]) {
-    // TODO(dropi-template): server-side controls for Dropi create_order (explicit buyer confirmation)
-    // and get_order/list_orders (only the current buyer's own orders) before the template enables them.
-    // Today only default_selected_tools (migration 070) keeps them off on the first connection.
     const { serverUrl, originalToolName, transport, extraHeaders, oauth } = mcpToolMap[name];
     const result = await mcpOAuth.executeMCPToolWithOAuth(serverUrl, originalToolName, args, transport, extraHeaders, oauth);
     return result.content;

@@ -25,6 +25,15 @@ import { serverUrlMatchesProfile } from '../services/mcp-provider-url';
 import * as mcpOAuth from '../services/mcp-oauth.service';
 import { rateLimiter } from '../middleware/rateLimiter';
 import type { StoredOAuth } from '../services/mcp-oauth.core';
+import {
+  buildDropiSalesContext,
+  dropiSalesToolDefinitions,
+  executeDropiSalesTool,
+  isDropiSalesToolName,
+  mcpToolExposure,
+  requiresSelectedTools,
+  type DropiSalesBinding,
+} from '../services/dropi-sales/tools';
 import { env } from '../config/env';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
@@ -1871,6 +1880,8 @@ router.post(
         oauth: mcpOAuth.McpOAuthContext | null;
       }> = {};
       const MCP_TOOLS_CACHE_TTL = 3600;
+      // Dropi with a valid OAuth connection: sales tools instead of the raw ones (same rule as the worker).
+      let dropiBinding: DropiSalesBinding | null = null;
 
       for (const tool of toolsResult.rows) {
         if (tool.type !== 'mcp' || !tool.is_enabled) continue;
@@ -1893,7 +1904,7 @@ router.post(
         const selectedTools = cfg.selected_tools ?? [];
         const mcpTransport = (cfg.transport === 'streamable-http' ? 'streamable-http' : 'sse') as 'sse' | 'streamable-http';
 
-        if (!serverUrl || selectedTools.length === 0) continue;
+        if (!serverUrl || (selectedTools.length === 0 && requiresSelectedTools(cfg))) continue;
 
         // Same 3-layer merge as message.worker.ts (profile → user → system) + OAuth Bearer as final layer.
         let built: mcpOAuth.BuiltMcpHeaders;
@@ -1913,6 +1924,15 @@ router.post(
         if (built.needsReconnect) continue;
         const allHeaders = built.headers;
         const toolOAuth = built.oauth;
+
+        const exposure = mcpToolExposure(cfg, built);
+        if (exposure !== 'raw') {
+          if (exposure === 'dropi_sales' && toolOAuth && !dropiBinding) {
+            dropiBinding = { toolId: tool.id, serverUrl, transport: mcpTransport, headers: allHeaders, oauth: toolOAuth };
+            llmTools.push(...dropiSalesToolDefinitions);
+          }
+          continue;
+        }
 
         try {
           const cacheKey = `mcp:tools:${tool.id}`;
@@ -2000,9 +2020,30 @@ router.post(
       const planLimits = PLAN_LIMITS[req.org!.plan as PlanKey];
       const effectiveMaxTokens = Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512);
 
+      // Dropi sales tools in preview create REAL Dropi orders (same as Mastershop's create_order in
+      // preview): the user is testing end to end. There is no conversations row, so the scope is the
+      // preview session (reset clears it) and orders are recorded with conversation_id/contact_id NULL.
+      const dropiSales = dropiBinding
+        ? buildDropiSalesContext({
+            binding: dropiBinding,
+            execute: mcpOAuth.executeMCPToolWithOAuth,
+            agentId,
+            organizationId: req.org!.id,
+            scopeId: previewSessionId,
+            conversationId: null,
+            contactId: null,
+            channel: 'preview',
+            // Confirmation rule: user turns already in the preview history + the one being processed.
+            currentUserTurn: history.filter((h) => h.role === 'user').length + 1,
+          })
+        : null;
+
       // Preview executor: same contract as the worker's executeTool (always a string).
       const executePreviewTool = async (tc: ToolCall): Promise<string> => {
         toolsCalledLog.push(tc.name);
+          if (dropiSales && isDropiSalesToolName(tc.name)) {
+            return executeDropiSalesTool(tc.name, tc.arguments, dropiSales);
+          }
           if (tc.name === 'capture_variable') {
             const name = String(tc.arguments['variable_name'] ?? '');
             const val = String(tc.arguments['variable_value'] ?? '');
