@@ -11,6 +11,7 @@ import {
   buildRequestBody,
 } from './custom-function-auth';
 import { safeFetch, UnsafeUrlError } from './safe-url';
+import { revokeToolOAuthBeforeDelete } from './mcp-oauth-revoke.service';
 import { loadAgentConfigForDeepInject } from './agent-config.service';
 import {
   protectCustomFunctionConfig,
@@ -967,6 +968,9 @@ export async function updateTool(
 
 export async function deleteTool(orgId: string, agentId: string, toolId: string) {
   await verifyAgentOwnership(orgId, agentId);
+  // MCP OAuth tools: best-effort revocation of the provider session before the row (and its tokens)
+  // disappears. Never throws; bounded by a 10 s timeout. Agent/account deletion: documented debt.
+  await revokeToolOAuthBeforeDelete(toolId, agentId);
   await query('DELETE FROM agent_tools WHERE id = $1 AND agent_id = $2', [toolId, agentId]);
 }
 

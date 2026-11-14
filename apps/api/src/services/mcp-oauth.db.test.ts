@@ -10,6 +10,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { query } from '../config/database';
 import { updateTool } from './agent.service';
+import { mergeOAuth } from './mcp-oauth.service';
 
 const enabled = process.env['MCP_OAUTH_DB_TEST'] === '1';
 
@@ -60,6 +61,56 @@ test('updateTool keeps the rotated oauth block even when given a stale one', { s
     const p2 = await query<{ config: Record<string, unknown> }>('SELECT config FROM agent_tools WHERE id = $1', [plain.rows[0]!.id]);
     assert.equal('oauth' in p2.rows[0]!.config, false);
     assert.equal(p2.rows[0]!.config['server_url'], 'u2');
+  } finally {
+    await query('DELETE FROM agent_tools WHERE agent_id IN (SELECT id FROM agents WHERE organization_id = $1)', [orgId]);
+    await query('DELETE FROM agents WHERE organization_id = $1', [orgId]);
+    await query('DELETE FROM organizations WHERE id = $1', [orgId]);
+  }
+});
+
+test('mergeOAuth only writes on the same session_id (legacy NULL matches NULL only)', { skip: !enabled }, async () => {
+  const org = await query<{ id: string }>(
+    `INSERT INTO organizations (name, slug) VALUES ('oauth-db-test', 'oauth-db-test-' || gen_random_uuid()) RETURNING id`
+  );
+  const orgId = org.rows[0]!.id;
+  try {
+    const agent = await query<{ id: string }>(
+      `INSERT INTO agents (organization_id, name, system_prompt, llm_provider, llm_model)
+       VALUES ($1, 'a', 'p', 'openai', 'gpt-4o-mini') RETURNING id`,
+      [orgId]
+    );
+    const agentId = agent.rows[0]!.id;
+    const insert = async (oauth: Record<string, string> | null) => {
+      const cfg: Record<string, unknown> = { server_url: 'https://mcp.example/mcp', ...(oauth ? { oauth } : {}) };
+      const r = await query<{ id: string }>(
+        `INSERT INTO agent_tools (agent_id, type, name, config) VALUES ($1, 'mcp', 't', $2::jsonb) RETURNING id`,
+        [agentId, JSON.stringify(cfg)]
+      );
+      return r.rows[0]!.id;
+    };
+    const read = async (id: string) =>
+      (await query<{ config: { oauth?: Record<string, string> } }>('SELECT config FROM agent_tools WHERE id = $1', [id])).rows[0]!.config;
+
+    // Reconnected to B: a late write of session A is ignored
+    const b = await insert({ refresh_token_encrypted: 'RB', status: 'connected', session_id: 'B' });
+    assert.equal(await mergeOAuth(b, agentId, { refresh_token_encrypted: 'RA2', status: 'connected' }, 'A'), false);
+    assert.equal(await mergeOAuth(b, agentId, { status: 'needs_reconnect' }, null), false, 'legacy writer does not hit a new session');
+    assert.equal((await read(b)).oauth?.['refresh_token_encrypted'], 'RB');
+    assert.equal((await read(b)).oauth?.['status'], 'connected');
+    // Same session: applied, other oauth keys kept
+    assert.equal(await mergeOAuth(b, agentId, { refresh_token_encrypted: 'RB2' }, 'B'), true);
+    assert.equal((await read(b)).oauth?.['refresh_token_encrypted'], 'RB2');
+    assert.equal((await read(b)).oauth?.['session_id'], 'B');
+
+    // Legacy block (no session_id) matches a legacy writer
+    const legacy = await insert({ refresh_token_encrypted: 'R1', status: 'connected' });
+    assert.equal(await mergeOAuth(legacy, agentId, { refresh_token_encrypted: 'R2' }, null), true);
+    assert.equal((await read(legacy)).oauth?.['refresh_token_encrypted'], 'R2');
+
+    // No oauth block: nothing is created
+    const plain = await insert(null);
+    assert.equal(await mergeOAuth(plain, agentId, { status: 'needs_reconnect' }, null), false);
+    assert.equal('oauth' in (await read(plain)), false);
   } finally {
     await query('DELETE FROM agent_tools WHERE agent_id IN (SELECT id FROM agents WHERE organization_id = $1)', [orgId]);
     await query('DELETE FROM agents WHERE organization_id = $1', [orgId]);

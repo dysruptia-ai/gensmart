@@ -237,7 +237,13 @@ export default function AgentEditorPage() {
     mcpOauthHandledRef.current = handledId;
 
     const providerId = mcpOauthProvider ?? '';
-    const name = providerId === 'dropi' ? 'Dropi' : providerId;
+    const validProvider = /^[a-z0-9_-]{1,50}$/.test(providerId);
+    // Never echo arbitrary URL text in a toast: unknown/invalid providers get a generic name.
+    const name = providerId === 'dropi'
+      ? 'Dropi'
+      : validProvider
+        ? providerId
+        : t('agents.tools.mcp.provider.mcpOauthGenericProvider');
     router.replace(pathname); // never keep the ticket in the URL
 
     if (mcpOauthResult === 'error') {
@@ -249,7 +255,7 @@ export default function AgentEditorPage() {
       toastError(t(`agents.tools.mcp.provider.${key}`, { name }));
       return;
     }
-    if (!mcpOauthTicket || !/^[a-z0-9_-]{1,50}$/.test(providerId)) {
+    if (!mcpOauthTicket || !validProvider) {
       toastError(t('agents.tools.mcp.provider.mcpOauthToastError', { name }));
       return;
     }

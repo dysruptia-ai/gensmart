@@ -814,9 +814,10 @@
           "mcpOauthConnected": "Connected to your {name} account",
           "mcpOauthNeedsReconnect": "Your {name} connection expired. Reconnect to keep using it.",
           "mcpOauthToastConnected": "{name} connected successfully.",
-          "mcpOauthToastDenied": "You did not authorize the {name} connection.",
+          "mcpOauthToastDenied": "You did not authorize the connection to {name}.",
           "mcpOauthToastExpired": "The connection session expired. Try connecting again.",
-          "mcpOauthToastError": "Could not connect {name}. Try again."
+          "mcpOauthToastError": "Could not connect {name}. Try again.",
+          "mcpOauthGenericProvider": "the provider"
         }
       }
     },

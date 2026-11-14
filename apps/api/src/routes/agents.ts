@@ -544,11 +544,14 @@ router.post(
       // Test isn't tied to a real conversation/tool, so we use a fresh session
       // UUID and an ephemeral webhook secret. Real secrets are persisted only
       // on tool creation. System headers always win the merge.
-      const systemAutoHeaders: Record<string, string> = {
-        'X-Agent-ID': String(req.params['id']),
-        'X-Session-ID': randomUUID(),
-        'X-Webhook-Secret': generateWebhookSecret(),
-      };
+      // OAuth providers without webhook events (e.g. Dropi) get none of them (same policy as buildMcpToolHeaders).
+      const systemAutoHeaders: Record<string, string> = mcpOAuth.profileOmitsGenSmartHeaders(profile)
+        ? {}
+        : {
+            'X-Agent-ID': String(req.params['id']),
+            'X-Session-ID': randomUUID(),
+            'X-Webhook-Secret': generateWebhookSecret(),
+          };
 
       const extraHeaders: Record<string, string> = {
         ...profileAutoHeaders,
@@ -557,25 +560,31 @@ router.post(
       };
 
       // OAuth providers: the Bearer of the saved connection is the final layer (wins over everything).
+      let oauthSessionId: string | null = null;
       if (profile && profile.oauth_config) {
         let oauthState: Partial<{ status: string }> | null = null;
         if (toolId && /^[0-9a-f-]{36}$/i.test(toolId)) {
-          const r = await query<{ oauth: { status?: string } | null }>(
-            `SELECT config->'oauth' AS oauth FROM agent_tools WHERE id = $1 AND agent_id = $2`,
+          const r = await query<{ oauth: { status?: string } | null; provider_id: string | null }>(
+            `SELECT config->'oauth' AS oauth, config->>'providerId' AS provider_id
+               FROM agent_tools WHERE id = $1 AND agent_id = $2`,
             [toolId, String(req.params['id'])]
           );
-          oauthState = r.rows[0]?.oauth ?? null;
+          // The tool must belong to the provider in the body: never send its tokens to another provider.
+          const row = r.rows[0];
+          oauthState = row && row.provider_id === profile.id ? row.oauth ?? null : null;
         }
         if (!oauthState) {
           res.json({ success: false, errorCode: 'AUTH_FAILED', error: 'Connect your account first', providerName: profile.name });
           return;
         }
         try {
-          extraHeaders['Authorization'] = `Bearer ${await mcpOAuth.getValidAccessToken({
+          const tok = await mcpOAuth.getValidAccessTokenWithSession({
             toolId: String(toolId),
             agentId: String(req.params['id']),
             providerId: profile.id,
-          })}`;
+          });
+          oauthSessionId = tok.sessionId;
+          extraHeaders['Authorization'] = `Bearer ${tok.accessToken}`;
         } catch (err) {
           const reconnect = err instanceof mcpOAuth.McpOAuthReconnectRequiredError;
           res.json({
@@ -634,7 +643,7 @@ router.post(
           );
           if (result.isError) {
             if (profile.oauth_config && toolId && mcpOAuth.isRevokedToolResult(result.content)) {
-              await mcpOAuth.markNeedsReconnect(String(toolId), String(req.params['id'])).catch(() => {});
+              await mcpOAuth.markNeedsReconnect(String(toolId), String(req.params['id']), oauthSessionId).catch(() => {});
             }
             console.error(
               `[agents] MCP test-connection health-check tool "${hc.name}" returned error:`,
@@ -890,7 +899,15 @@ router.put(
 
           if (effectiveProviderId) {
             const profile = await mcpProviders.findProfileById(effectiveProviderId);
-            if (!profile || !profile.is_active) {
+            // Beta gating (allowed_org_ids) only when the request SETS a provider other than the stored
+            // one: an org removed from a beta keeps editing/using the tools it already created
+            // (product decision; usage in worker/preview/refresh is not gated either).
+            const settingNewProvider = !!validated.providerId && validated.providerId !== existingCfg.providerId;
+            if (
+              !profile ||
+              !profile.is_active ||
+              (settingNewProvider && !mcpProviders.isProfileVisibleToOrg(profile, req.org!.id))
+            ) {
               res.status(400).json({
                 error: { message: `Unknown or inactive MCP provider: ${effectiveProviderId}`, code: 'INVALID_PROVIDER' },
               });

@@ -816,7 +816,8 @@
           "mcpOauthToastConnected": "{name} conectado correctamente.",
           "mcpOauthToastDenied": "No autorizaste la conexión con {name}.",
           "mcpOauthToastExpired": "La sesión de conexión expiró. Intenta conectar de nuevo.",
-          "mcpOauthToastError": "No se pudo conectar {name}. Intenta de nuevo."
+          "mcpOauthToastError": "No se pudo conectar {name}. Intenta de nuevo.",
+          "mcpOauthGenericProvider": "el proveedor"
         }
       }
     },

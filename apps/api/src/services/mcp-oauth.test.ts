@@ -19,6 +19,13 @@ import {
   claimTicket,
   peekState,
   McpOAuthForbiddenError,
+  markNeedsReconnectCore,
+  withRefreshLockCore,
+  selectedToolsAfterConnect,
+  buildStoredOAuth,
+  jwtSubject,
+  revokePreviousIfAccountChangedCore,
+  REFRESH_LOCK_PREFIX,
   REFRESH_LOCK_TTL_MS,
   LOCK_WAIT_MAX_MS,
   TICKET_KEY_PREFIX,
@@ -61,7 +68,12 @@ function fakeWorld(opts: { tokenResponses?: Array<HttpPostResult | Error>; start
       delIfEquals: async (k, v) => { if (kv.get(k) === v) kv.delete(k); },
     },
     loadOAuth: async () => (row ? { ...row } : null),
-    mergeOAuth: async (_t, _a, patch) => { row = { ...(row as StoredOAuth), ...patch }; },
+    // Same contract as the SQL: only when the stored session_id equals the expected one (null = legacy).
+    mergeOAuth: async (_t, _a, patch, sessionId) => {
+      if (!row || (row.session_id ?? null) !== sessionId) return false;
+      row = { ...row, ...patch };
+      return true;
+    },
     postForm: async (url, form) => {
       tokenCalls.push({ url, form });
       await new Promise((r) => setTimeout(r, 20)); // simulate latency so concurrency is real
@@ -79,7 +91,12 @@ function fakeWorld(opts: { tokenResponses?: Array<HttpPostResult | Error>; start
     randomUUID: () => crypto.randomUUID(),
     log: { info: () => {}, warn: () => {}, error: () => {} },
   };
-  return { deps, kv, tokenCalls, getRow: () => row, advance: (ms: number) => { clock += ms; } };
+  return {
+    deps, kv, tokenCalls,
+    getRow: () => row,
+    setRow: (r: StoredOAuth) => { row = r; },
+    advance: (ms: number) => { clock += ms; },
+  };
 }
 
 const tokenInput = { toolId: 't1', agentId: 'a1', getEndpoints: async () => ENDPOINTS };
@@ -215,7 +232,7 @@ function execDeps(results: Array<{ content: string; isError: boolean }>, tokenFn
     marked: () => reconnectMarked,
     deps: {
       execute: async (h: Record<string, string>) => { calls.push(h); return results.shift()!; },
-      getToken: tokenFn ?? (async () => 'fresh'),
+      getToken: async () => ({ accessToken: tokenFn ? await tokenFn() : 'fresh', sessionId: 's1' }),
       markNeedsReconnect: async () => { reconnectMarked += 1; },
       providerName: 'Dropi',
       log: { info: () => {}, warn: () => {}, error: () => {} },
@@ -228,7 +245,7 @@ test('execute: HTTP 401 → one forced refresh and exactly one retry', async () 
     { content: 'MCP tool execution failed: MCP server returned HTTP 401: x', isError: true },
     { content: 'ok', isError: false },
   ]);
-  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer stale' });
+  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer stale' }, 's1');
   assert.equal(r.content, 'ok');
   assert.equal(e.calls.length, 2);
   assert.equal(e.calls[1]!['Authorization'], 'Bearer fresh');
@@ -239,21 +256,21 @@ test('execute: second 401 is returned as is (no loop)', async () => {
     { content: 'HTTP 401', isError: true },
     { content: 'HTTP 401', isError: true },
   ]);
-  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer stale' });
+  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer stale' }, 's1');
   assert.equal(e.calls.length, 2);
   assert.equal(r.isError, true);
 });
 
 test('execute: revoked session → needs_reconnect + neutral Spanish message (no technical detail)', async () => {
   const e = execDeps([{ content: 'sesión MCP no válida (token has been revoked): reconecta', isError: true }]);
-  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' });
+  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' }, 's1');
   assert.equal(r.content, oauthUnavailableMessage('Dropi'));
   assert.equal(e.marked(), 1);
 });
 
 test('execute: reconnect-required during 401 refresh → needs_reconnect + neutral message', async () => {
   const e = execDeps([{ content: 'HTTP 401', isError: true }], async () => { throw new McpOAuthReconnectRequiredError(); });
-  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' });
+  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' }, 's1');
   assert.equal(r.content, oauthUnavailableMessage('Dropi'));
   assert.equal(e.marked(), 1);
 });
@@ -266,7 +283,7 @@ const profile: MCPProviderProfile = {
   auto_injected_headers: [], user_configurable_headers: [], supported_events: [],
   requires_oauth_connect: true, health_check_tool: null, is_active: true,
   oauth_config: { authorization_endpoint: 'a', token_endpoint: 't', client_id_ref: 'platform_setting:x', scope: 'mcp' },
-  allowed_org_ids: ['org-1'],
+  allowed_org_ids: ['org-1'], default_selected_tools: null,
 };
 
 test('toPublicProfile hides oauth_config/allowed_org_ids and exposes uses_mcp_oauth', () => {
@@ -304,7 +321,7 @@ test('neutral message names the provider and makes no promises', () => {
 
 test('revocation text in a SUCCESSFUL result does not disconnect the tool', async () => {
   const e = execDeps([{ content: 'Producto: "Guía token has been revoked"', isError: false }]);
-  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' });
+  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' }, 's1');
   assert.equal(r.isError, false);
   assert.equal(r.content.includes('revoked'), true);
   assert.equal(e.marked(), 0);
@@ -376,4 +393,197 @@ for (const [label, over] of [
 test('malformed ticket is rejected', async () => {
   const w = fakeWorld();
   await assert.rejects(() => claimTicket(w.deps, claimInput('nope')), McpOAuthStateError);
+});
+
+// ── Audit fixes (prompt 04) ──────────────────────────────────────────────────
+
+const DROPI_TOOLS = [
+  'create_order', 'get_order', 'list_orders', 'list_statuses', 'list_products', 'list_categories',
+  'quote_shipping', 'search_cities', 'list_departments', 'list_carriers', 'get_customer_fingerprint_profile',
+];
+const DROPI_DEFAULTS = ['list_products', 'list_categories', 'quote_shipping', 'search_cities', 'list_departments', 'list_carriers', 'list_statuses'];
+
+test('H-01: first connection with default_selected_tools stores the intersection (no PII / order tools)', () => {
+  const sel = selectedToolsAfterConnect({ isReconnect: false, discovered: DROPI_TOOLS, profileDefaults: [...DROPI_DEFAULTS, 'not_on_server'] });
+  assert.deepEqual([...(sel ?? [])].sort(), [...DROPI_DEFAULTS].sort());
+  for (const t of ['create_order', 'get_order', 'list_orders', 'get_customer_fingerprint_profile']) {
+    assert.equal(sel!.includes(t), false, `${t} must not be selected by default`);
+  }
+  assert.equal(sel!.includes('not_on_server'), false);
+});
+
+test('H-01: profile without default_selected_tools (NULL) selects every discovered tool', () => {
+  assert.deepEqual(selectedToolsAfterConnect({ isReconnect: false, discovered: DROPI_TOOLS, profileDefaults: null }), DROPI_TOOLS);
+});
+
+test('H-01: reconnection leaves the stored selection untouched', () => {
+  assert.equal(selectedToolsAfterConnect({ isReconnect: true, discovered: DROPI_TOOLS, profileDefaults: DROPI_DEFAULTS }), null);
+  assert.equal(selectedToolsAfterConnect({ isReconnect: true, discovered: DROPI_TOOLS, profileDefaults: null }), null);
+});
+
+test('H-02: every connection gets a new session_id', () => {
+  const w = fakeWorld();
+  const t = { accessToken: 'a', refreshToken: 'r', expiresIn: 3600 };
+  const a = buildStoredOAuth(w.deps, t);
+  const b = buildStoredOAuth(w.deps, t);
+  assert.match(a.session_id ?? '', /^[0-9a-f-]{36}$/);
+  assert.notEqual(a.session_id, b.session_id);
+});
+
+function sessionB(): StoredOAuth {
+  return {
+    access_token_encrypted: 'enc(access-B)',
+    refresh_token_encrypted: 'enc(refresh-B)',
+    expires_at: new Date(1_700_000_000_000 + 3600_000).toISOString(),
+    status: 'connected',
+    connected_at: 'x',
+    updated_at: 'x',
+    session_id: 'B',
+  };
+}
+
+test('H-02: a refresh of session A finishing after a reconnection to B does not overwrite B', async () => {
+  const w = fakeWorld({ start: { session_id: 'A' } });
+  const orig = w.deps.postForm;
+  // While A's refresh is in flight (e.g. its lock expired), the tool is reconnected to session B.
+  w.deps.postForm = async (url, form) => { const r = await orig(url, form); w.setRow(sessionB()); return r; };
+  await assert.rejects(() => getValidAccessTokenCore(w.deps, tokenInput), McpOAuthTransientError);
+  assert.deepEqual(w.getRow(), sessionB(), 'session B intact: A tokens discarded, never returned');
+  assert.equal(w.kv.size, 0, 'lock released');
+});
+
+test('H-02: markNeedsReconnect for session A does not mark session B', async () => {
+  const w = fakeWorld();
+  w.setRow(sessionB());
+  await markNeedsReconnectCore(w.deps, 't1', 'a1', 'A');
+  assert.equal(w.getRow()!.status, 'connected');
+  await markNeedsReconnectCore(w.deps, 't1', 'a1', 'B');
+  assert.equal(w.getRow()!.status, 'needs_reconnect');
+});
+
+test('H-02: legacy blocks without session_id are treated as matching', async () => {
+  const w = fakeWorld(); // no session_id
+  assert.equal(await getValidAccessTokenCore(w.deps, tokenInput), 'access-1');
+  assert.equal(w.getRow()!.refresh_token_encrypted, 'enc(refresh-2)');
+  await markNeedsReconnectCore(w.deps, 't1', 'a1', null);
+  assert.equal(w.getRow()!.status, 'needs_reconnect');
+});
+
+test('H-02: reconnection waits for an in-flight refresh holding the same lock', async () => {
+  const w = fakeWorld({ start: { session_id: 'A' } });
+  const order: string[] = [];
+  const orig = w.deps.postForm;
+  w.deps.postForm = async (url, form) => { order.push('refresh:start'); const r = await orig(url, form); order.push('refresh:end'); return r; };
+  const refresh = getValidAccessTokenCore(w.deps, tokenInput);
+  await new Promise((r) => setTimeout(r, 5)); // refresh holds the lock now
+  const reconnect = withRefreshLockCore(w.deps, 't1', async () => { order.push('reconnect'); w.setRow(sessionB()); });
+  await Promise.all([refresh, reconnect]);
+  assert.deepEqual(order, ['refresh:start', 'refresh:end', 'reconnect']);
+  assert.equal(w.getRow()!.session_id, 'B');
+  assert.equal(w.kv.size, 0);
+});
+
+test('H-02: reconnection lock wait is bounded (generic transient error, fn not run)', async () => {
+  const w = fakeWorld();
+  w.kv.set(REFRESH_LOCK_PREFIX + 't1', 'someone-else');
+  let ran = false;
+  await assert.rejects(() => withRefreshLockCore(w.deps, 't1', async () => { ran = true; }), McpOAuthTransientError);
+  assert.equal(ran, false);
+  assert.equal(w.kv.get(REFRESH_LOCK_PREFIX + 't1'), 'someone-else', 'foreign lock not released');
+});
+
+test('H-06: unreadable 2xx refresh → needs_reconnect (no blind replay later); network error stays transient', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 200, body: null }] });
+  await assert.rejects(() => getValidAccessTokenCore(w.deps, tokenInput), McpOAuthReconnectRequiredError);
+  assert.equal(w.getRow()!.status, 'needs_reconnect');
+  await assert.rejects(() => getValidAccessTokenCore(w.deps, tokenInput), McpOAuthReconnectRequiredError);
+  assert.equal(w.tokenCalls.length, 1, 'the consumed refresh token is never sent again');
+
+  const w2 = fakeWorld({ tokenResponses: [{ status: 200, body: { access_token: 'x' } }] }); // no refresh_token
+  await assert.rejects(() => getValidAccessTokenCore(w2.deps, tokenInput), McpOAuthReconnectRequiredError);
+
+  const w3 = fakeWorld({ tokenResponses: [new Error('ETIMEDOUT')] });
+  await assert.rejects(() => getValidAccessTokenCore(w3.deps, tokenInput), McpOAuthTransientError);
+  assert.equal(w3.getRow()!.status, 'connected');
+});
+
+test('H-02: execute wrapper marks the session of the token actually used', async () => {
+  const marked: Array<string | null> = [];
+  const r = await executeWithOAuthCore(
+    {
+      execute: async (h) => (h['Authorization'] === 'Bearer stale'
+        ? { content: 'HTTP 401', isError: true }
+        : { content: 'sesión MCP no válida (token has been revoked)', isError: true }),
+      getToken: async () => ({ accessToken: 'fresh', sessionId: 'B' }),
+      markNeedsReconnect: async (sid) => { marked.push(sid); },
+      providerName: 'Dropi',
+      log: { info: () => {}, warn: () => {}, error: () => {} },
+    },
+    { Authorization: 'Bearer stale' },
+    'A'
+  );
+  assert.equal(r.content, oauthUnavailableMessage('Dropi'));
+  assert.deepEqual(marked, ['B']);
+});
+
+// ── Prompt 05: revoke on reconnection only when the account changed ──────────
+
+const b64u = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+const jwt = (payload: unknown) => `${b64u({ alg: 'RS256', typ: 'JWT' })}.${b64u(payload)}.signature`;
+
+test('jwtSubject: valid JWT → sub; malformed or without sub → null (never throws)', () => {
+  assert.equal(jwtSubject(jwt({ sub: '12345', user_name: 'x', country_code: 'CO', white_brand_id: 1 })), '12345');
+  for (const bad of ['', 'not-a-jwt', 'a.b', 'a.%%%.c', `${b64u({})}.${Buffer.from('not json').toString('base64url')}.s`, 'a.b.c.d']) {
+    assert.equal(jwtSubject(bad), null, bad);
+  }
+  assert.equal(jwtSubject(jwt({ user_name: 'x' })), null);
+  assert.equal(jwtSubject(jwt({ sub: '' })), null);
+  assert.equal(jwtSubject(jwt({ sub: 42 })), null);
+  assert.equal(jwtSubject(jwt(null)), null);
+  assert.equal(jwtSubject(undefined as unknown as string), null);
+});
+
+function revokeWorld() {
+  let revoked = 0;
+  const logs: string[] = [];
+  return {
+    revoked: () => revoked,
+    logs,
+    deps: {
+      decrypt: (t: string) => t.slice(4, -1),
+      revoke: async () => { revoked += 1; },
+      log: { info: (m: string) => logs.push(m), warn: (m: string) => logs.push(m), error: (m: string) => logs.push(m) },
+    },
+  };
+}
+const prevWith = (token: string) => ({ access_token_encrypted: `enc(${token})`, refresh_token_encrypted: 'enc(r)' });
+
+test('reconnection with the same account (same sub) → no revocation, generic log only', async () => {
+  const w = revokeWorld();
+  await revokePreviousIfAccountChangedCore(w.deps, prevWith(jwt({ sub: 'acc-1', n: 1 })), jwt({ sub: 'acc-1', n: 2 }));
+  assert.equal(w.revoked(), 0);
+  assert.deepEqual(w.logs, ['[mcp-oauth] Previous session not revoked (same account or unknown)']);
+  assert.equal(w.logs.join(' ').includes('acc-1'), false);
+});
+
+test('reconnection with a different account → revoked exactly once', async () => {
+  const w = revokeWorld();
+  await revokePreviousIfAccountChangedCore(w.deps, prevWith(jwt({ sub: 'acc-1' })), jwt({ sub: 'acc-2' }));
+  assert.equal(w.revoked(), 1);
+});
+
+test('reconnection with an unreadable sub (either side) → no revocation', async () => {
+  for (const [prev, next] of [
+    ['opaque-token', jwt({ sub: 'acc-2' })],
+    [jwt({ sub: 'acc-1' }), 'opaque-token'],
+    [jwt({ user_name: 'x' }), jwt({ sub: 'acc-2' })],
+  ] as const) {
+    const w = revokeWorld();
+    await revokePreviousIfAccountChangedCore(w.deps, prevWith(prev), next);
+    assert.equal(w.revoked(), 0);
+  }
+  const w = revokeWorld();
+  w.deps.decrypt = () => { throw new Error('bad ciphertext'); };
+  await revokePreviousIfAccountChangedCore(w.deps, prevWith(jwt({ sub: 'acc-1' })), jwt({ sub: 'acc-2' }));
+  assert.equal(w.revoked(), 0);
 });

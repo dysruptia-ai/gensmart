@@ -42,7 +42,10 @@ router.get('/:providerId/callback', callbackLimiter, async (req: Request, res: R
     if (providerError) {
       // User cancelled/denied at the provider. Consume the state (single use) to recover the agent.
       const agentId = await consumeStateAgentId(state, providerId);
-      console.warn(`[mcp-oauth] Authorization not granted for provider ${providerId} (error=${providerError.slice(0, 64)})`);
+      // Strip control characters before logging (no log forging through the provider's error param).
+      // eslint-disable-next-line no-control-regex -- intentionally matching control characters
+      const safeError = providerError.replace(/[\r\n\t\x00-\x1f]/g, '').slice(0, 64);
+      console.warn(`[mcp-oauth] Authorization not granted for provider ${providerId} (error=${safeError})`);
       redirectError(res, providerId, providerError === 'access_denied' ? 'access_denied' : 'provider_error', agentId);
       return;
     }

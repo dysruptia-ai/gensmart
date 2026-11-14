@@ -26,6 +26,12 @@ export interface StoredOAuth {
   status: 'connected' | 'needs_reconnect';
   connected_at: string;
   updated_at: string;
+  /**
+   * New UUID on every connection/reconnection. Writes that belong to a session (refresh result,
+   * needs_reconnect) only apply while the stored block still carries the same id, so a late write
+   * of an old session never lands on a newer one. Absent in legacy blocks (treated as matching).
+   */
+  session_id?: string;
 }
 
 export interface OAuthEndpoints {
@@ -71,8 +77,12 @@ export interface OAuthDeps {
   };
   /** Reads `agent_tools.config.oauth` of a tool; null when the tool or oauth block does not exist. */
   loadOAuth(toolId: string, agentId: string): Promise<StoredOAuth | null>;
-  /** Single atomic UPDATE merging these fields into config.oauth (never touching other config keys). */
-  mergeOAuth(toolId: string, agentId: string, patch: Partial<StoredOAuth>): Promise<void>;
+  /**
+   * Single atomic UPDATE merging these fields into config.oauth (never touching other config keys),
+   * applied ONLY when the stored session_id equals `sessionId` (null = legacy block without id).
+   * Returns false when the session changed meanwhile (nothing written).
+   */
+  mergeOAuth(toolId: string, agentId: string, patch: Partial<StoredOAuth>, sessionId: string | null): Promise<boolean>;
   /** Form-urlencoded POST. Network errors must throw. */
   postForm(url: string, form: Record<string, string>): Promise<HttpPostResult>;
   encrypt(text: string): string;
@@ -354,6 +364,7 @@ export function buildStoredOAuth(deps: OAuthDeps, tokens: TokenResponse, connect
     status: 'connected',
     connected_at: connectedAt ?? nowIso,
     updated_at: nowIso,
+    session_id: deps.randomUUID(),
   };
 }
 
@@ -377,20 +388,61 @@ export interface GetTokenInput {
   staleAccessToken?: string;
 }
 
-async function markReconnect(deps: OAuthDeps, toolId: string, agentId: string): Promise<void> {
-  await deps.mergeOAuth(toolId, agentId, {
-    status: 'needs_reconnect',
-    updated_at: new Date(deps.now()).toISOString(),
-  });
+function sessionOf(o: Pick<StoredOAuth, 'session_id'> | Partial<StoredOAuth>): string | null {
+  return typeof o.session_id === 'string' && o.session_id ? o.session_id : null;
 }
 
-export async function markNeedsReconnectCore(deps: OAuthDeps, toolId: string, agentId: string): Promise<void> {
-  await markReconnect(deps, toolId, agentId);
-  deps.log.warn(`[mcp-oauth] Tool ${toolId} marked needs_reconnect`);
+async function markReconnect(deps: OAuthDeps, toolId: string, agentId: string, sessionId: string | null): Promise<boolean> {
+  return deps.mergeOAuth(
+    toolId,
+    agentId,
+    { status: 'needs_reconnect', updated_at: new Date(deps.now()).toISOString() },
+    sessionId
+  );
+}
+
+/** Marks needs_reconnect only if the stored block is still the session `sessionId` (null = legacy). */
+export async function markNeedsReconnectCore(
+  deps: OAuthDeps,
+  toolId: string,
+  agentId: string,
+  sessionId: string | null
+): Promise<void> {
+  if (await markReconnect(deps, toolId, agentId, sessionId)) {
+    deps.log.warn(`[mcp-oauth] Tool ${toolId} marked needs_reconnect`);
+  } else {
+    deps.log.info(`[mcp-oauth] Tool ${toolId} was reconnected meanwhile; needs_reconnect not applied`);
+  }
+}
+
+/**
+ * Runs `fn` holding the per-tool refresh lock (same key as the refresh). Bounded wait; on timeout
+ * throws McpOAuthTransientError without running `fn`. Used by reconnection so it never interleaves
+ * with an in-flight refresh of the previous session.
+ */
+export async function withRefreshLockCore<T>(deps: OAuthDeps, toolId: string, fn: () => Promise<T>): Promise<T> {
+  const lockKey = REFRESH_LOCK_PREFIX + toolId;
+  const lockValue = deps.randomUUID();
+  const deadline = deps.now() + LOCK_WAIT_MAX_MS;
+  while (!(await deps.kv.setNxPx(lockKey, lockValue, REFRESH_LOCK_TTL_MS))) {
+    if (deps.now() >= deadline) throw new McpOAuthTransientError('Timed out waiting for the connection lock');
+    await deps.sleep(LOCK_WAIT_POLL_MS);
+  }
+  try {
+    return await fn();
+  } finally {
+    await deps.kv.delIfEquals(lockKey, lockValue).catch(() => {});
+  }
+}
+
+export interface AccessTokenWithSession {
+  accessToken: string;
+  /** session_id of the stored block the token belongs to (null = legacy block). */
+  sessionId: string | null;
 }
 
 /** Returns the stored token if it can be used for this call (fresh, and not the rejected one when forcing). */
-function usableStored(deps: OAuthDeps, o: StoredOAuth, input: GetTokenInput): string | null {
+function usableStored(deps: OAuthDeps, o: StoredOAuth, input: GetTokenInput): AccessTokenWithSession | null {
   if (o.status === 'needs_reconnect') throw new McpOAuthReconnectRequiredError();
   if (!isFresh(deps, o)) return null;
   const token = deps.decrypt(o.access_token_encrypted);
@@ -398,10 +450,17 @@ function usableStored(deps: OAuthDeps, o: StoredOAuth, input: GetTokenInput): st
     // Only reuse a token that differs from the rejected one (someone else refreshed meanwhile).
     if (!input.staleAccessToken || token === input.staleAccessToken) return null;
   }
-  return token;
+  return { accessToken: token, sessionId: sessionOf(o) };
 }
 
 export async function getValidAccessTokenCore(deps: OAuthDeps, input: GetTokenInput): Promise<string> {
+  return (await getValidAccessTokenWithSessionCore(deps, input)).accessToken;
+}
+
+export async function getValidAccessTokenWithSessionCore(
+  deps: OAuthDeps,
+  input: GetTokenInput
+): Promise<AccessTokenWithSession> {
   const { toolId, agentId } = input;
   const initial = await deps.loadOAuth(toolId, agentId);
   if (!initial) throw new McpOAuthReconnectRequiredError('No OAuth credentials stored for this tool');
@@ -438,6 +497,7 @@ export async function getValidAccessTokenCore(deps: OAuthDeps, input: GetTokenIn
     const again = usableStored(deps, stored, input);
     if (again) return again;
 
+    const sessionId = sessionOf(stored);
     const refreshToken = deps.decrypt(stored.refresh_token_encrypted);
     const form: Record<string, string> = {
       grant_type: 'refresh_token',
@@ -458,27 +518,40 @@ export async function getValidAccessTokenCore(deps: OAuthDeps, input: GetTokenIn
     if (res.status >= 200 && res.status < 300) {
       const tokens = parseTokenBody(res.body);
       if (!tokens) {
-        deps.log.error(`[mcp-oauth] Refresh returned an unparseable token response for tool ${toolId}`);
-        throw new McpOAuthTransientError('Invalid token response from the authorization server');
+        // A 2xx means the provider most likely already rotated (consumed) the refresh token. Retrying
+        // with the stored one would replay it and revoke the session: require a reconnect instead.
+        deps.log.error(`[mcp-oauth] Refresh returned an unreadable 2xx token response for tool ${toolId}; reconnect required`);
+        await markReconnect(deps, toolId, agentId, sessionId);
+        throw new McpOAuthReconnectRequiredError();
       }
       const nowIso = new Date(deps.now()).toISOString();
-      // New access + NEW refresh token + expiry in a single atomic UPDATE.
-      await deps.mergeOAuth(toolId, agentId, {
-        access_token_encrypted: deps.encrypt(tokens.accessToken),
-        refresh_token_encrypted: deps.encrypt(tokens.refreshToken),
-        expires_at: new Date(deps.now() + tokens.expiresIn * 1000).toISOString(),
-        status: 'connected',
-        updated_at: nowIso,
-      });
+      // New access + NEW refresh token + expiry in a single atomic UPDATE, only on the same session.
+      const written = await deps.mergeOAuth(
+        toolId,
+        agentId,
+        {
+          access_token_encrypted: deps.encrypt(tokens.accessToken),
+          refresh_token_encrypted: deps.encrypt(tokens.refreshToken),
+          expires_at: new Date(deps.now() + tokens.expiresIn * 1000).toISOString(),
+          status: 'connected',
+          updated_at: nowIso,
+        },
+        sessionId
+      );
+      if (!written) {
+        // The tool was reconnected (new session) while we refreshed: never use the old account's token.
+        deps.log.warn(`[mcp-oauth] Tool ${toolId} was reconnected during refresh; refreshed token discarded`);
+        throw new McpOAuthTransientError('The connection changed during refresh');
+      }
       deps.log.info(`[mcp-oauth] Refreshed access token for tool ${toolId}`);
-      return tokens.accessToken;
+      return { accessToken: tokens.accessToken, sessionId };
     }
 
     if (res.status === 400 || res.status === 401) {
       deps.log.warn(
         `[mcp-oauth] Refresh rejected for tool ${toolId} (HTTP ${res.status}, error=${oauthErrorCode(res.body)}); reconnect required`
       );
-      await markReconnect(deps, toolId, agentId);
+      await markReconnect(deps, toolId, agentId, sessionId);
       throw new McpOAuthReconnectRequiredError();
     }
 
@@ -511,8 +584,9 @@ export interface McpExecResult {
 
 export interface ExecuteWithOAuthDeps {
   execute: (headers: Record<string, string>) => Promise<McpExecResult>;
-  getToken: (opts: { forceRefresh: boolean; staleAccessToken?: string }) => Promise<string>;
-  markNeedsReconnect: () => Promise<void>;
+  getToken: (opts: { forceRefresh: boolean; staleAccessToken?: string }) => Promise<AccessTokenWithSession>;
+  /** Marks needs_reconnect only for the given session (the one whose token was rejected/revoked). */
+  markNeedsReconnect: (sessionId: string | null) => Promise<void>;
   /** Provider display name used in the neutral message. */
   providerName: string;
   log: OAuthDeps['log'];
@@ -530,11 +604,16 @@ function bearerOf(headers: Record<string, string>): string | undefined {
  */
 export async function executeWithOAuthCore(
   deps: ExecuteWithOAuthDeps,
-  headers: Record<string, string>
+  headers: Record<string, string>,
+  /** Session of the Bearer already in `headers` (null = legacy block). */
+  sessionId: string | null
 ): Promise<McpExecResult> {
+  let currentSession = sessionId;
   const neutral = (): McpExecResult => ({ content: oauthUnavailableMessage(deps.providerName), isError: true });
   const handleReconnect = async (): Promise<McpExecResult> => {
-    await deps.markNeedsReconnect().catch((e) => deps.log.error(`[mcp-oauth] markNeedsReconnect failed: ${(e as Error).message}`));
+    await deps
+      .markNeedsReconnect(currentSession)
+      .catch((e) => deps.log.error(`[mcp-oauth] markNeedsReconnect failed: ${(e as Error).message}`));
     return neutral();
   };
 
@@ -543,7 +622,8 @@ export async function executeWithOAuthCore(
   if (result.isError && /HTTP 401/.test(result.content)) {
     try {
       const fresh = await deps.getToken({ forceRefresh: true, staleAccessToken: bearerOf(headers) });
-      result = await deps.execute({ ...headers, Authorization: `Bearer ${fresh}` });
+      currentSession = fresh.sessionId;
+      result = await deps.execute({ ...headers, Authorization: `Bearer ${fresh.accessToken}` });
     } catch (err) {
       if (err instanceof McpOAuthReconnectRequiredError) return handleReconnect();
       deps.log.error(`[mcp-oauth] Token refresh after 401 failed: ${(err as Error).message}`);
@@ -557,4 +637,85 @@ export async function executeWithOAuthCore(
     return handleReconnect();
   }
   return result;
+}
+
+// ── Default tool selection (first connection) ────────────────────────────────
+
+/**
+ * selected_tools to store after an OAuth connection, or null to leave the stored selection untouched.
+ * - Reconnection: null (the user's selection is kept as is).
+ * - First connection: the profile's default_selected_tools ∩ discovered tools; all discovered when
+ *   the profile has no default (NULL), preserving the behaviour of the other providers.
+ */
+export function selectedToolsAfterConnect(input: {
+  isReconnect: boolean;
+  discovered: readonly string[];
+  profileDefaults: readonly string[] | null;
+}): string[] | null {
+  if (input.isReconnect) return null;
+  if (input.profileDefaults == null) return [...input.discovered];
+  const allowed = new Set(input.profileDefaults);
+  return input.discovered.filter((name) => allowed.has(name));
+}
+
+// ── Outbound header policy ───────────────────────────────────────────────────
+
+/**
+ * OAuth providers without webhook events (e.g. Dropi) need none of GenSmart's own headers
+ * (X-Webhook-Secret, X-Agent-ID, X-Session-ID): they are not sent to them.
+ */
+export function profileOmitsGenSmartHeaders(
+  profile: { oauth_config: unknown; supported_events: readonly string[] } | null | undefined
+): boolean {
+  return !!profile && profile.oauth_config != null && profile.supported_events.length === 0;
+}
+
+// ── Previous-session revocation on reconnection ──────────────────────────────
+
+/**
+ * `sub` claim of a JWT, decoded WITHOUT verifying the signature. Only used to compare whether two
+ * tokens belong to the same provider account; NEVER for authorization. Never throws, never logs.
+ */
+export function jwtSubject(token: string): string | null {
+  try {
+    if (typeof token !== 'string') return null;
+    const parts = token.split('.');
+    if (parts.length !== 3 || !parts[1]) return null;
+    const json = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    const payload: unknown = JSON.parse(json);
+    if (typeof payload !== 'object' || payload === null) return null;
+    const sub = (payload as Record<string, unknown>)['sub'];
+    return typeof sub === 'string' && sub.length > 0 ? sub : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Reconnection: revokes the previous session ONLY when both account subjects are readable and
+ * differ. Same account (the provider already invalidated the old session; revoking could kill the
+ * new one) or an unreadable subject → no revocation. Logs carry no account ids nor tokens.
+ */
+export async function revokePreviousIfAccountChangedCore(
+  deps: {
+    decrypt: (text: string) => string;
+    revoke: (previous: Partial<StoredOAuth>) => Promise<void>;
+    log: OAuthDeps['log'];
+  },
+  previous: Partial<StoredOAuth> | null,
+  newAccessToken: string
+): Promise<void> {
+  if (!previous) return;
+  let prevSub: string | null = null;
+  try {
+    prevSub = previous.access_token_encrypted ? jwtSubject(deps.decrypt(previous.access_token_encrypted)) : null;
+  } catch {
+    prevSub = null;
+  }
+  const newSub = jwtSubject(newAccessToken);
+  if (!prevSub || !newSub || prevSub === newSub) {
+    deps.log.info('[mcp-oauth] Previous session not revoked (same account or unknown)');
+    return;
+  }
+  await deps.revoke(previous);
 }

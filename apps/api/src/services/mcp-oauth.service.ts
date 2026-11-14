@@ -17,6 +17,7 @@ import * as agentService from './agent.service';
 import { connectAndListTools, executeMCPTool, type MCPToolResult } from './mcp-client.service';
 import { decryptHeaders, type EncryptedHeader } from './mcp-headers.service';
 import { serverUrlMatchesProfile } from './mcp-provider-url';
+import { revokeOAuthSession } from './mcp-oauth-revoke.service';
 import {
   startAuthorizationCore,
   consumeState,
@@ -25,9 +26,14 @@ import {
   claimTicket,
   exchangeAuthorizationCode,
   buildStoredOAuth,
-  getValidAccessTokenCore,
+  getValidAccessTokenWithSessionCore,
   markNeedsReconnectCore,
   executeWithOAuthCore,
+  withRefreshLockCore,
+  selectedToolsAfterConnect,
+  profileOmitsGenSmartHeaders,
+  revokePreviousIfAccountChangedCore,
+  type AccessTokenWithSession,
   McpOAuthReconnectRequiredError,
   McpOAuthStateError,
   McpOAuthExchangeError,
@@ -48,6 +54,7 @@ export {
   isRevokedToolResult,
   McpOAuthForbiddenError,
   oauthUnavailableMessage,
+  profileOmitsGenSmartHeaders,
 } from './mcp-oauth.core';
 
 const HTTP_TIMEOUT_MS = 15_000;
@@ -86,6 +93,7 @@ async function loadOAuth(toolId: string, agentId: string): Promise<StoredOAuth |
 /**
  * Replaces the WHOLE `config.oauth` block (no merge: nothing of a previous session survives).
  * Only the OAuth service writes config.oauth; agentService.updateTool preserves it.
+ * Callers must hold the per-tool refresh lock (withRefreshLockCore).
  */
 async function replaceOAuth(toolId: string, agentId: string, oauth: StoredOAuth): Promise<void> {
   await query(
@@ -95,15 +103,26 @@ async function replaceOAuth(toolId: string, agentId: string, oauth: StoredOAuth)
   );
 }
 
-async function mergeOAuth(toolId: string, agentId: string, patch: Partial<StoredOAuth>): Promise<void> {
+/** Exported for the DB integration test; production callers go through the core. */
+export async function mergeOAuth(
+  toolId: string,
+  agentId: string,
+  patch: Partial<StoredOAuth>,
+  sessionId: string | null
+): Promise<boolean> {
   // Merge only config.oauth in one UPDATE: concurrent edits to other config keys are not overwritten.
-  await query(
+  // Applied only while the stored block is still the same session (NULL = legacy block without id),
+  // so a late write of an old session never lands on a reconnected one.
+  const r = await query(
     `UPDATE agent_tools
-        SET config = jsonb_set(config, '{oauth}', COALESCE(config->'oauth', '{}'::jsonb) || $3::jsonb, true),
+        SET config = jsonb_set(config, '{oauth}', config->'oauth' || $3::jsonb, true),
             updated_at = NOW()
-      WHERE id = $1 AND agent_id = $2`,
-    [toolId, agentId, JSON.stringify(patch)]
+      WHERE id = $1 AND agent_id = $2
+        AND config ? 'oauth'
+        AND (config->'oauth'->>'session_id') IS NOT DISTINCT FROM $4::text`,
+    [toolId, agentId, JSON.stringify(patch), sessionId]
   );
+  return (r.rowCount ?? 0) > 0;
 }
 
 const realDeps: OAuthDeps = {
@@ -257,7 +276,6 @@ export class McpOAuthCompletionError extends Error {
 }
 
 async function finishAuthorization(st: OAuthStatePayload, code: string): Promise<CompletedAuthorization> {
-
   const profile = await findOAuthProfileForOrg(st.providerId, st.organizationId);
   if (!profile || !profile.oauth_config) throw new McpOAuthStateError('Provider no longer available');
 
@@ -268,40 +286,58 @@ async function finishAuthorization(st: OAuthStatePayload, code: string): Promise
     throw new McpOAuthStateError('Agent not found');
   }
 
-  const tokens = await exchangeAuthorizationCode(realDeps, {
-    endpoints: await endpointsFor(profile),
-    code,
-    redirectUri: st.redirectUri,
-    codeVerifier: st.codeVerifier,
-  });
-  const oauth = buildStoredOAuth(realDeps, tokens);
-
   const serverUrl = profile.default_server_url ?? '';
   if (!serverUrl) throw new AppError(500, 'Provider has no default server URL', 'PROVIDER_MISCONFIGURED');
   const transport = profile.default_transport;
+  const omitGenSmartHeaders = profileOmitsGenSmartHeaders(profile);
+  const endpoints = await endpointsFor(profile);
+  const exchange = () =>
+    exchangeAuthorizationCode(realDeps, { endpoints, code, redirectUri: st.redirectUri, codeVerifier: st.codeVerifier });
 
-  const existing = await query<{ id: string; config: Record<string, unknown> }>(
-    `SELECT id, config FROM agent_tools WHERE agent_id = $1 AND type = 'mcp' AND config->>'providerId' = $2 ORDER BY created_at ASC LIMIT 1`,
+  const existing = await query<{ id: string }>(
+    `SELECT id FROM agent_tools WHERE agent_id = $1 AND type = 'mcp' AND config->>'providerId' = $2 ORDER BY created_at ASC LIMIT 1`,
     [st.agentId, profile.id]
   );
 
   let toolId: string;
-  let selectedTools: string[];
-  const prev = existing.rows[0];
-  if (prev) {
-    toolId = prev.id;
-    selectedTools = Array.isArray(prev.config['selected_tools']) ? (prev.config['selected_tools'] as string[]) : [];
-    const previousConnectedAt = (prev.config['oauth'] as Partial<StoredOAuth> | undefined)?.connected_at;
-    // 1) Rest of the config (selected_tools, name, ...) WITHOUT oauth: updateTool keeps the DB's oauth.
-    const { oauth: _prevOAuth, ...restConfig } = prev.config;
-    void _prevOAuth;
-    await agentService.updateTool(st.organizationId, st.agentId, toolId, {
-      config: { ...restConfig, server_url: serverUrl, transport, providerId: profile.id },
-      isEnabled: true,
+  let accessToken: string;
+  let previousOAuth: Partial<StoredOAuth> | null = null;
+  const isReconnect = !!existing.rows[0];
+
+  if (existing.rows[0]) {
+    toolId = existing.rows[0].id;
+    // Reconnection holds the same lock as the refresh: it never interleaves with an in-flight
+    // refresh of the previous session. On timeout: generic "try again" (code not exchanged).
+    const done = await withRefreshLockCore(realDeps, toolId, async () => {
+      // Read under the lock: the previous block may have just been rotated.
+      const cur = await query<{ config: Record<string, unknown> }>(
+        'SELECT config FROM agent_tools WHERE id = $1 AND agent_id = $2',
+        [toolId, st.agentId]
+      );
+      const prevConfig = cur.rows[0]?.config ?? {};
+      const prevOAuth = (prevConfig['oauth'] as Partial<StoredOAuth> | undefined) ?? null;
+
+      const tokens = await exchange();
+      const oauth = buildStoredOAuth(realDeps, tokens);
+
+      // 1) Rest of the config (selected_tools, name, ...) WITHOUT oauth: updateTool keeps the DB's oauth.
+      const { oauth: _prevOAuth, ...restConfig } = prevConfig;
+      void _prevOAuth;
+      // Providers without webhook events get no GenSmart secret: drop any stored one.
+      if (omitGenSmartHeaders) delete restConfig['webhookSecret_encrypted'];
+      await agentService.updateTool(st.organizationId, st.agentId, toolId, {
+        config: { ...restConfig, server_url: serverUrl, transport, providerId: profile.id },
+        isEnabled: true,
+      });
+      // 2) Replace the whole oauth block (new session_id; nothing of the previous session survives).
+      await replaceOAuth(toolId, st.agentId, { ...oauth, connected_at: prevOAuth?.connected_at ?? oauth.connected_at });
+      return { accessToken: tokens.accessToken, prevOAuth };
     });
-    // 2) Replace the whole oauth block (no merge, nothing of the previous session survives).
-    await replaceOAuth(toolId, st.agentId, { ...oauth, connected_at: previousConnectedAt ?? oauth.connected_at });
+    accessToken = done.accessToken;
+    previousOAuth = done.prevOAuth;
   } else {
+    const tokens = await exchange();
+    accessToken = tokens.accessToken;
     const config: Record<string, unknown> = {
       server_url: serverUrl,
       name: profile.name,
@@ -309,7 +345,7 @@ async function finishAuthorization(st: OAuthStatePayload, code: string): Promise
       selected_tools: [] as string[],
       headers: [] as EncryptedHeader[],
       providerId: profile.id,
-      oauth,
+      oauth: buildStoredOAuth(realDeps, tokens),
     };
     const created = await agentService.createTool(st.organizationId, st.agentId, {
       type: 'mcp',
@@ -318,39 +354,58 @@ async function finishAuthorization(st: OAuthStatePayload, code: string): Promise
       config,
     });
     toolId = created.id;
-    selectedTools = [];
   }
 
   await redis.del(`mcp:tools:${toolId}`).catch(() => {});
 
-  if (selectedTools.length === 0) {
-    const discovered = await connectAndListTools(serverUrl, transport, {
-      Authorization: `Bearer ${tokens.accessToken}`,
-      'X-Agent-ID': st.agentId,
-      'X-Session-ID': randomUUID(),
+  // Best-effort revocation of the replaced session, after the new one is stored, ONLY when the
+  // provider account changed (JWT `sub` compared, never used to authorize). Never blocks.
+  if (previousOAuth) {
+    void revokePreviousIfAccountChangedCore(
+      { decrypt, revoke: (prev) => revokeOAuthSession(prev, profile), log: realDeps.log },
+      previousOAuth,
+      accessToken
+    ).catch(() => {});
+  }
+
+  // First connection only: default selection from the profile (Dropi: read-only catalog/logistics,
+  // no buyer data, no order creation). A reconnection keeps the user's selection untouched.
+  if (!isReconnect) {
+    const discoveryHeaders: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (!omitGenSmartHeaders) {
+      discoveryHeaders['X-Agent-ID'] = st.agentId;
+      discoveryHeaders['X-Session-ID'] = randomUUID();
+    }
+    const discovered = await connectAndListTools(serverUrl, transport, discoveryHeaders);
+    const selection = selectedToolsAfterConnect({
+      isReconnect,
+      discovered: discovered.map((t) => t.name),
+      profileDefaults: profile.default_selected_tools,
     });
-    // Merge in SQL so the freshly stored oauth block is not overwritten by a stale copy.
-    await query(
-      `UPDATE agent_tools SET config = jsonb_set(config, '{selected_tools}', $3::jsonb, true), updated_at = NOW()
-        WHERE id = $1 AND agent_id = $2`,
-      [toolId, st.agentId, JSON.stringify(discovered.map((t) => t.name))]
-    );
-    await redis.del(`mcp:tools:${toolId}`).catch(() => {});
+    if (selection) {
+      // Merge in SQL so the freshly stored oauth block is not overwritten by a stale copy.
+      await query(
+        `UPDATE agent_tools SET config = jsonb_set(config, '{selected_tools}', $3::jsonb, true), updated_at = NOW()
+          WHERE id = $1 AND agent_id = $2`,
+        [toolId, st.agentId, JSON.stringify(selection)]
+      );
+      await redis.del(`mcp:tools:${toolId}`).catch(() => {});
+    }
   }
 
   console.log(`[mcp-oauth] Connected provider ${profile.id} for agent ${st.agentId} (tool ${toolId})`);
   return { agentId: st.agentId, providerId: profile.id, toolId };
 }
 
-/** Returns a valid access token, refreshing under a distributed lock when needed. */
-export async function getValidAccessToken(input: {
+/** Returns a valid access token (and its session), refreshing under a distributed lock when needed. */
+export async function getValidAccessTokenWithSession(input: {
   toolId: string;
   agentId: string;
   providerId: string;
   forceRefresh?: boolean;
   staleAccessToken?: string;
-}): Promise<string> {
-  return getValidAccessTokenCore(realDeps, {
+}): Promise<AccessTokenWithSession> {
+  return getValidAccessTokenWithSessionCore(realDeps, {
     toolId: input.toolId,
     agentId: input.agentId,
     forceRefresh: input.forceRefresh,
@@ -363,8 +418,9 @@ export async function getValidAccessToken(input: {
   });
 }
 
-export async function markNeedsReconnect(toolId: string, agentId: string): Promise<void> {
-  await markNeedsReconnectCore(realDeps, toolId, agentId);
+/** Marks needs_reconnect only if the tool is still on session `sessionId` (null = legacy block). */
+export async function markNeedsReconnect(toolId: string, agentId: string, sessionId: string | null): Promise<void> {
+  await markNeedsReconnectCore(realDeps, toolId, agentId, sessionId);
   await redis.del(`mcp:tools:${toolId}`).catch(() => {});
 }
 
@@ -385,6 +441,8 @@ export interface McpOAuthContext {
   providerId: string;
   /** Provider display name for the neutral message shown to the LLM. */
   providerName: string;
+  /** session_id of the stored OAuth block the injected Bearer belongs to (null = legacy). */
+  sessionId: string | null;
 }
 
 export interface BuiltMcpHeaders {
@@ -395,29 +453,56 @@ export interface BuiltMcpHeaders {
   needsReconnect: boolean;
 }
 
+/** Injectable dependencies of buildMcpToolHeaders (real ones by default; fakes in tests). */
+export interface BuildHeadersDeps {
+  findProfileById: (id: string) => Promise<mcpProviders.MCPProviderProfile | null>;
+  resolveAutoHeaders: (profile: mcpProviders.MCPProviderProfile) => Promise<Record<string, string>>;
+  decryptHeaders: (headers: EncryptedHeader[] | undefined) => Record<string, string>;
+  decrypt: (text: string) => string;
+  getToken: (ctx: { toolId: string; agentId: string; providerId: string }) => Promise<AccessTokenWithSession>;
+}
+
+const realBuildHeadersDeps: BuildHeadersDeps = {
+  findProfileById: (id) => mcpProviders.findProfileById(id),
+  resolveAutoHeaders: (p) => mcpProviders.resolveAutoHeaders(p),
+  decryptHeaders: (h) => decryptHeaders(h),
+  decrypt: (t) => decrypt(t),
+  getToken: (ctx) => getValidAccessTokenWithSession(ctx),
+};
+
 /**
  * The 3-layer header merge shared by worker and preview (profile auto → user → system), plus the
  * OAuth Bearer as the FINAL layer. Behavior for non-OAuth providers is identical to the previous
- * inline code in each caller.
+ * inline code in each caller. OAuth providers without webhook events (e.g. Dropi) do not receive
+ * GenSmart's own system headers (X-Webhook-Secret, X-Agent-ID, X-Session-ID).
+ *
+ * Beta gating (allowed_org_ids) is deliberately NOT applied here, nor in preview or refresh:
+ * removing an org from a beta does not disconnect the tools it already created (product decision).
+ * Gating applies when creating/changing the provider (catalog, POST/PUT tools, OAuth start, test).
  */
-export async function buildMcpToolHeaders(input: {
-  logPrefix: string;
-  toolId: string;
-  agentId: string;
-  sessionId: string;
-  serverUrl: string;
-  cfg: McpToolConfigShape;
-}): Promise<BuiltMcpHeaders> {
+export async function buildMcpToolHeaders(
+  input: {
+    logPrefix: string;
+    toolId: string;
+    agentId: string;
+    sessionId: string;
+    serverUrl: string;
+    cfg: McpToolConfigShape;
+  },
+  deps: BuildHeadersDeps = realBuildHeadersDeps
+): Promise<BuiltMcpHeaders> {
   const { logPrefix, toolId, agentId, sessionId, serverUrl, cfg } = input;
   let profileAutoHeaders: Record<string, string> = {};
   let oauthProfile: mcpProviders.MCPProviderProfile | null = null;
+  let omitGenSmartHeaders = false;
 
   if (cfg.providerId) {
     try {
-      const profile = await mcpProviders.findProfileById(cfg.providerId);
+      const profile = await deps.findProfileById(cfg.providerId);
       if (profile && profile.is_active) {
+        omitGenSmartHeaders = profileOmitsGenSmartHeaders(profile);
         if (serverUrlMatchesProfile(profile, serverUrl)) {
-          profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
+          profileAutoHeaders = await deps.resolveAutoHeaders(profile);
           if (profile.oauth_config) oauthProfile = profile;
         } else {
           console.error(`${logPrefix} Tool ${toolId} server_url does not match provider ${cfg.providerId}; provider headers not sent`);
@@ -428,13 +513,17 @@ export async function buildMcpToolHeaders(input: {
     }
   }
 
-  const userHeaders = decryptHeaders(cfg.headers);
-  const autoHeaders: Record<string, string> = { 'X-Agent-ID': agentId, 'X-Session-ID': sessionId };
-  if (cfg.webhookSecret_encrypted) {
-    try {
-      autoHeaders['X-Webhook-Secret'] = decrypt(cfg.webhookSecret_encrypted);
-    } catch (err) {
-      console.error(`${logPrefix} Failed to decrypt webhookSecret for tool ${toolId}:`, (err as Error).message);
+  const userHeaders = deps.decryptHeaders(cfg.headers);
+  const autoHeaders: Record<string, string> = {};
+  if (!omitGenSmartHeaders) {
+    autoHeaders['X-Agent-ID'] = agentId;
+    autoHeaders['X-Session-ID'] = sessionId;
+    if (cfg.webhookSecret_encrypted) {
+      try {
+        autoHeaders['X-Webhook-Secret'] = deps.decrypt(cfg.webhookSecret_encrypted);
+      } catch (err) {
+        console.error(`${logPrefix} Failed to decrypt webhookSecret for tool ${toolId}:`, (err as Error).message);
+      }
     }
   }
   const headers: Record<string, string> = { ...profileAutoHeaders, ...userHeaders, ...autoHeaders };
@@ -446,9 +535,17 @@ export async function buildMcpToolHeaders(input: {
     return { headers, oauth: null, needsReconnect: true };
   }
 
-  const ctx: McpOAuthContext = { toolId, agentId, providerId: oauthProfile.id, providerName: oauthProfile.name };
   try {
-    headers['Authorization'] = `Bearer ${await getValidAccessToken(ctx)}`;
+    const tok = await deps.getToken({ toolId, agentId, providerId: oauthProfile.id });
+    headers['Authorization'] = `Bearer ${tok.accessToken}`;
+    const ctx: McpOAuthContext = {
+      toolId,
+      agentId,
+      providerId: oauthProfile.id,
+      providerName: oauthProfile.name,
+      sessionId: tok.sessionId,
+    };
+    return { headers, oauth: ctx, needsReconnect: false };
   } catch (err) {
     if (err instanceof McpOAuthReconnectRequiredError) {
       console.warn(`[mcp-oauth] Tool ${toolId} needs reconnect; not listing its tools`);
@@ -457,7 +554,6 @@ export async function buildMcpToolHeaders(input: {
     // Transient failure: let the caller degrade (its catch logs and skips the tool).
     throw err;
   }
-  return { headers, oauth: ctx, needsReconnect: false };
 }
 
 /**
@@ -477,11 +573,13 @@ export async function executeMCPToolWithOAuth(
   return executeWithOAuthCore(
     {
       execute: (h) => executeMCPTool(serverUrl, toolName, args, transport, h),
-      getToken: (opts) => getValidAccessToken({ ...oauth, ...opts }),
+      getToken: (opts) =>
+        getValidAccessTokenWithSession({ toolId: oauth.toolId, agentId: oauth.agentId, providerId: oauth.providerId, ...opts }),
       providerName: oauth.providerName,
-      markNeedsReconnect: () => markNeedsReconnect(oauth.toolId, oauth.agentId),
+      markNeedsReconnect: (sessionId) => markNeedsReconnect(oauth.toolId, oauth.agentId, sessionId),
       log: realDeps.log,
     },
-    headers
+    headers,
+    oauth.sessionId
   );
 }

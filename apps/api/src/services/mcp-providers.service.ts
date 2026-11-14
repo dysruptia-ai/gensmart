@@ -98,6 +98,11 @@ export interface MCPProviderProfile {
   oauth_config: MCPOAuthConfig | null;
   /** null = visible to every org; array of org UUIDs = beta gating. See migration 070. */
   allowed_org_ids: string[] | null;
+  /**
+   * Tools selected on the FIRST OAuth connection (∩ tools discovered). null = all discovered
+   * (behaviour of every pre-existing profile). See migration 070. Not exposed by toPublicProfile.
+   */
+  default_selected_tools: string[] | null;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -123,6 +128,7 @@ interface ProfileRow {
   health_check_tool: HealthCheckTool | string | null;
   oauth_config?: MCPOAuthConfig | string | null;
   allowed_org_ids?: string[] | string | null;
+  default_selected_tools?: string[] | string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -177,6 +183,18 @@ function parseOAuthConfig(field: MCPOAuthConfig | string | null | undefined): MC
   };
 }
 
+function parseDefaultSelectedTools(field: string[] | string | null | undefined): string[] | null {
+  if (field == null) return null;
+  if (Array.isArray(field)) return field.filter((v) => typeof v === 'string');
+  try {
+    const parsed: unknown = JSON.parse(field);
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
+  } catch {
+    // Malformed value: fail closed (select nothing) rather than enabling every tool.
+    return [];
+  }
+}
+
 function parseAllowedOrgIds(field: string[] | string | null | undefined): string[] | null {
   if (field == null) return null;
   if (Array.isArray(field)) return field.filter((v) => typeof v === 'string');
@@ -211,6 +229,7 @@ function rowToProfile(row: ProfileRow): MCPProviderProfile {
     health_check_tool: parseHealthCheckTool(row.health_check_tool),
     oauth_config: parseOAuthConfig(row.oauth_config),
     allowed_org_ids: parseAllowedOrgIds(row.allowed_org_ids),
+    default_selected_tools: parseDefaultSelectedTools(row.default_selected_tools),
     is_active: row.is_active,
     created_at: row.created_at,
     updated_at: row.updated_at,

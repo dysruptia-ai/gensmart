@@ -1148,6 +1148,9 @@ async function executeTool(
 
   // MCP tools (prefixed with mcp_)
   if (name.startsWith('mcp_') && mcpToolMap[name]) {
+    // TODO(dropi-template): server-side controls for Dropi create_order (explicit buyer confirmation)
+    // and get_order/list_orders (only the current buyer's own orders) before the template enables them.
+    // Today only default_selected_tools (migration 070) keeps them off on the first connection.
     const { serverUrl, originalToolName, transport, extraHeaders, oauth } = mcpToolMap[name];
     const result = await mcpOAuth.executeMCPToolWithOAuth(serverUrl, originalToolName, args, transport, extraHeaders, oauth);
     return result.content;
