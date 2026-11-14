@@ -22,11 +22,9 @@ import {
 import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
 import { revealCustomFunctionConfig } from '../services/secret-fields';
-import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
-import { decryptHeaders } from '../services/mcp-headers.service';
-import * as mcpProviders from '../services/mcp-providers.service';
-import { serverUrlMatchesProfile } from '../services/mcp-provider-url';
-import { decrypt } from '../config/encryption';
+import { connectAndListTools, sanitizeName } from '../services/mcp-client.service';
+import * as mcpOAuth from '../services/mcp-oauth.service';
+import type { StoredOAuth } from '../services/mcp-oauth.core';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
@@ -169,6 +167,8 @@ interface MCPToolMapping {
   transport: 'sse' | 'streamable-http';
   /** Decrypted user headers + auto-injected (X-Agent-ID, X-Session-ID, X-Webhook-Secret). */
   extraHeaders: Record<string, string>;
+  /** Set for MCP OAuth tools: enables 401 refresh+retry and revocation handling. */
+  oauth: mcpOAuth.McpOAuthContext | null;
 }
 
 async function processMessage(job: Job<MessageJobData>): Promise<void> {
@@ -600,6 +600,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       headers?: Array<{ key: string; value_encrypted: string }>;
       webhookSecret_encrypted?: string;
       providerId?: string;
+      oauth?: Partial<StoredOAuth>;
     };
 
     const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
@@ -609,42 +610,26 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
     if (!serverUrl || selectedTools.length === 0) continue;
 
-    // Build effective headers in 3 layers (left → right wins):
-    //   1. profile auto-injected headers (master keys, fixed webhook URL,
-    //      resolved on every call from platform_settings — never persisted)
-    //   2. user-configured headers (encrypted in agent_tools.config.headers,
-    //      can override profile in advanced mode)
-    //   3. system auto-headers (X-Agent-ID, X-Session-ID, X-Webhook-Secret —
-    //      identity & HMAC, always win)
-    // See docs/INTEGRATION.md §3 + MCP-INT-2 design.
-    let profileAutoHeaders: Record<string, string> = {};
-    if (cfg.providerId) {
-      try {
-        const profile = await mcpProviders.findProfileById(cfg.providerId);
-        if (profile && profile.is_active) {
-          if (serverUrlMatchesProfile(profile, serverUrl)) {
-            profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
-          } else {
-            console.error(`[msg-worker] Tool ${tool.id} server_url does not match provider ${cfg.providerId}; provider headers not sent`);
-          }
-        }
-      } catch (err) {
-        console.error(`[msg-worker] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);
-      }
+    // Effective headers in 3 layers (left → right wins): profile auto-injected → user → system
+    // (X-Agent-ID, X-Session-ID, X-Webhook-Secret), plus the MCP OAuth Bearer as the FINAL layer.
+    // See docs/INTEGRATION.md §3 + MCP-INT-2 design. Shared with preview in mcp-oauth.service.ts.
+    let built: mcpOAuth.BuiltMcpHeaders;
+    try {
+      built = await mcpOAuth.buildMcpToolHeaders({
+        logPrefix: '[msg-worker]',
+        toolId: tool.id,
+        agentId,
+        sessionId: conversationId,
+        serverUrl,
+        cfg,
+      });
+    } catch (err) {
+      // Graceful degradation (e.g. transient OAuth refresh failure): skip this MCP, keep the rest.
+      console.error(`[msg-worker] Failed to build MCP headers for tool ${tool.id}:`, (err as Error).message);
+      continue;
     }
-    const userHeaders = decryptHeaders(cfg.headers);
-    const autoHeaders: Record<string, string> = {
-      'X-Agent-ID': agentId,
-      'X-Session-ID': conversationId,
-    };
-    if (cfg.webhookSecret_encrypted) {
-      try {
-        autoHeaders['X-Webhook-Secret'] = decrypt(cfg.webhookSecret_encrypted);
-      } catch (err) {
-        console.error(`[msg-worker] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
-      }
-    }
-    const allHeaders = { ...profileAutoHeaders, ...userHeaders, ...autoHeaders };
+    if (built.needsReconnect) continue;
+    const allHeaders = built.headers;
 
     const cacheKey = `mcp:tools:${tool.id}`;
 
@@ -688,6 +673,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           originalToolName: toolDef.name,
           transport: mcpTransport,
           extraHeaders: allHeaders,
+          oauth: built.oauth,
         };
       }
     } catch (err) {
@@ -1162,8 +1148,8 @@ async function executeTool(
 
   // MCP tools (prefixed with mcp_)
   if (name.startsWith('mcp_') && mcpToolMap[name]) {
-    const { serverUrl, originalToolName, transport, extraHeaders } = mcpToolMap[name];
-    const result = await executeMCPTool(serverUrl, originalToolName, args, transport, extraHeaders);
+    const { serverUrl, originalToolName, transport, extraHeaders, oauth } = mcpToolMap[name];
+    const result = await mcpOAuth.executeMCPToolWithOAuth(serverUrl, originalToolName, args, transport, extraHeaders, oauth);
     return result.content;
   }
 

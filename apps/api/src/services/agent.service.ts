@@ -92,9 +92,23 @@ interface ToolRow {
 }
 
 /** Credentials of custom_function tools never leave the API: they are returned masked. */
-function clientToolConfig(type: string, config: ToolRow['config']): ToolRow['config'] {
-  if (type !== 'custom_function' || typeof config !== 'object' || config === null) return config;
-  return maskCustomFunctionConfig(config as Record<string, unknown>) as ToolRow['config'];
+export function clientToolConfig(type: string, config: ToolRow['config']): ToolRow['config'] {
+  if (typeof config !== 'object' || config === null) return config;
+  if (type === 'custom_function') {
+    return maskCustomFunctionConfig(config as Record<string, unknown>) as ToolRow['config'];
+  }
+  return stripOAuthFromConfig(config);
+}
+
+/**
+ * MCP OAuth tokens (`config.oauth.*_encrypted`) never go to the frontend: the block is removed and
+ * only `oauth_status` ('connected' | 'needs_reconnect') is exposed.
+ */
+export function stripOAuthFromConfig<T extends Record<string, unknown>>(config: T): T {
+  if (!('oauth' in config)) return config;
+  const { oauth, ...rest } = config as Record<string, unknown> & { oauth?: { status?: unknown } };
+  const status = oauth && typeof oauth === 'object' && oauth.status === 'needs_reconnect' ? 'needs_reconnect' : 'connected';
+  return { ...rest, oauth_status: status } as unknown as T;
 }
 
 function formatTool(row: ToolRow) {
@@ -495,7 +509,15 @@ export async function publishAgent(orgId: string, agentId: string, userId: strin
         agent.max_tokens,
         agent.context_window_messages,
         JSON.stringify(agent.variables ?? []),
-        JSON.stringify(toolsResult.rows),
+        // OAuth sessions are never snapshotted: the stored refresh token would be stale after rotation.
+        JSON.stringify(
+          toolsResult.rows.map((t) => {
+            if (typeof t.config !== 'object' || t.config === null || !('oauth' in t.config)) return t;
+            const { oauth: _omit, ...rest } = t.config as Record<string, unknown>;
+            void _omit;
+            return { ...t, config: rest };
+          })
+        ),
         userId,
       ]
     );
@@ -533,9 +555,13 @@ export async function getVersions(orgId: string, agentId: string) {
     tools: Array.isArray(version.tools)
       ? version.tools.map((tool) => {
           const t = tool as { type?: unknown; config?: unknown };
-          return t && t.type === 'custom_function' && typeof t.config === 'object' && t.config !== null
-            ? { ...t, config: maskCustomFunctionConfig(t.config as Record<string, unknown>) }
-            : tool;
+          if (t && t.type === 'custom_function' && typeof t.config === 'object' && t.config !== null) {
+            return { ...t, config: maskCustomFunctionConfig(t.config as Record<string, unknown>) };
+          }
+          if (t && typeof t.config === 'object' && t.config !== null) {
+            return { ...t, config: stripOAuthFromConfig(t.config as Record<string, unknown>) };
+          }
+          return tool;
         })
       : version.tools,
   }));
@@ -960,10 +986,19 @@ export async function duplicateAgent(orgId: string, agentId: string, plan: strin
     [agentId]
   );
   for (const tool of sourceTools.rows) {
+    // MCP OAuth sessions are NOT cloned: the refresh token rotates and reusing it from a second tool
+    // would make the provider revoke the original session. The copy must be reconnected (disabled).
+    const hasOAuth = typeof tool.config === 'object' && tool.config !== null && 'oauth' in tool.config;
+    const { oauth: _omit, ...configWithoutOAuth } = (tool.config ?? {}) as Record<string, unknown>;
+    void _omit;
     await query(
       `INSERT INTO agent_tools (agent_id, type, name, description, config, is_enabled, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())`,
-      [newAgent.id, tool.type, tool.name, tool.description, JSON.stringify(tool.config), tool.is_enabled]
+      [
+        newAgent.id, tool.type, tool.name, tool.description,
+        JSON.stringify(hasOAuth ? configWithoutOAuth : tool.config),
+        hasOAuth ? false : tool.is_enabled,
+      ]
     );
   }
 
