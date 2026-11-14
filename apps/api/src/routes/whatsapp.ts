@@ -344,13 +344,18 @@ router.post(
           .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
       }
 
-      // Find or create active conversation
+      // Find or create active conversation.
+      // channel_metadata.wa_from is the conversation's immutable sender identity: fromPhone comes from
+      // Meta's signed webhook body (message.from), never from the customer's text or the LLM. A
+      // conversation is never reused for a different sender, even when the phone-based contact
+      // lookup above merged two numbers into one contact (contacts.phone can be overwritten).
       const existingConv = await query<{ id: string; status: string }>(
         `SELECT id, status FROM conversations
          WHERE agent_id = $1 AND contact_id = $2 AND channel = 'whatsapp' AND status != 'closed'
+           AND (channel_metadata->>'wa_from' IS NULL OR channel_metadata->>'wa_from' = $3)
          ORDER BY created_at DESC
          LIMIT 1`,
-        [agent.id, contactId]
+        [agent.id, contactId, fromPhone]
       );
 
       let convId: string;
@@ -360,6 +365,15 @@ router.post(
         convId = existingConv.rows[0].id;
         convStatus = existingConv.rows[0].status;
 
+        // Backfill wa_from on conversations created before it existed (or by other paths): only if
+        // missing, never overwritten.
+        await query(
+          `UPDATE conversations
+              SET channel_metadata = COALESCE(channel_metadata, '{}'::jsonb) || jsonb_build_object('wa_from', $1::text)
+            WHERE id = $2 AND (channel_metadata->>'wa_from') IS NULL`,
+          [fromPhone, convId]
+        );
+
         // If this is the first message with a referral on an existing conv, update channel_metadata
         if (referral) {
           await query(
@@ -368,7 +382,7 @@ router.post(
           );
         }
       } else {
-        const channelMeta: Record<string, unknown> = {};
+        const channelMeta: Record<string, unknown> = { wa_from: fromPhone };
         if (referral) {
           channelMeta['referral'] = referral;
           if (referredProduct) channelMeta['referredProduct'] = referredProduct;

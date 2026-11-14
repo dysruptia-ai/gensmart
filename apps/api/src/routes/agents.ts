@@ -30,6 +30,7 @@ import {
   dropiSalesToolDefinitions,
   executeDropiSalesTool,
   isDropiSalesToolName,
+  markDropiSummaryDelivered,
   mcpToolExposure,
   requiresSelectedTools,
   type DropiSalesBinding,
@@ -1675,6 +1676,8 @@ router.post(
   '/:id/preview',
   validateUUID('id'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // Server receipt time of this preview message (dropi_confirmar_pedido time rule).
+    const receivedAt = Date.now();
     try {
       const agentId = String(req.params['id']);
       const { message, systemPrompt } = req.body as {
@@ -2031,10 +2034,15 @@ router.post(
             organizationId: req.org!.id,
             scopeId: previewSessionId,
             conversationId: null,
+            previewSessionId,
             contactId: null,
             channel: 'preview',
-            // Confirmation rule: user turns already in the preview history + the one being processed.
+            waFrom: null,
+            // Confirmation rule: user turns already in the preview history + the one being processed,
+            // received (this request) after the summary turn finished, saying yes.
             currentUserTurn: history.filter((h) => h.role === 'user').length + 1,
+            currentMessageReceivedAt: receivedAt,
+            lastBuyerMessage: message.trim(),
           })
         : null;
 
@@ -2343,6 +2351,7 @@ router.post(
         },
       ];
       await redis.set(previewKey, JSON.stringify(updatedHistory), 'EX', TTL);
+      await markDropiSummaryDelivered(dropiSales);
       await redis.set(previewVarsKey, JSON.stringify(capturedVars), 'EX', TTL);
       // The MCP session id must live exactly as long as the history: renew it every turn
       // (it used to expire 30 min after creation while the history stayed alive, so the MCP

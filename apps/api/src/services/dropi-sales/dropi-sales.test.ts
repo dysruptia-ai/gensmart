@@ -31,9 +31,25 @@ import {
   twoPassTotal,
   parseCities,
   findShippingCompany,
+  isAffirmative,
+  isOfferable,
+  orderCapDecision,
+  parseLooseNumber,
+  receivedAfterSummary,
+  resolveMaxDailyOrders,
+  type BuyerIdentity,
+  type OwnedOrderKeys,
 } from './core';
-import type { DropiOrderRecord, DropiSalesContext, DropiSalesDeps, McpCallResult, NewOrderRow, OwnerFilter } from './service';
-import { executeDropiSalesTool, mcpToolExposure, requiresSelectedTools, dropiSalesToolDefinitions, type DropiSalesToolName } from './tools';
+import type { CapNotice, DropiOrderRecord, DropiSalesContext, DropiSalesDeps, McpCallResult, NewOrderRow } from './service';
+import {
+  executeDropiSalesTool,
+  markDropiSummaryDelivered,
+  mcpToolExposure,
+  requiresSelectedTools,
+  dropiSalesToolDefinitions,
+  type DropiSalesToolName,
+} from './tools';
+import { sanitizeWidgetMessageMetadata } from '../widget-metadata.service';
 import * as F from './fixtures';
 
 const FORBIDDEN_KEYS = ['sale_price', 'suggested_price', 'simple_price', 'supplier_id', 'sku', 'customer', 'stock', 'document'];
@@ -77,6 +93,26 @@ describe('pricing', () => {
     assert.equal(resolveMarginPercent('35'), 35);
     assert.equal(resolveMarginPercent(-10), 0);
     assert.equal(resolveMarginPercent(900), 300);
+  });
+
+  test('config numbers typed by people: "20%", "20,5" and spaces (DS-11)', () => {
+    assert.equal(resolveMarginPercent('20%'), 20);
+    assert.equal(resolveMarginPercent(' 20,5 '), 20.5);
+    assert.equal(resolveMarginPercent(' 35 % '), 35);
+    assert.equal(parseLooseNumber('1 000'), 1000);
+    assert.equal(parseLooseNumber('20,5,1'), null);
+    assert.equal(parseLooseNumber('veinte'), null);
+  });
+
+  test('max_pedidos_diarios: default 50, integer in 1–1000', () => {
+    assert.equal(resolveMaxDailyOrders(undefined), 50);
+    assert.equal(resolveMaxDailyOrders(''), 50);
+    assert.equal(resolveMaxDailyOrders('abc'), 50);
+    assert.equal(resolveMaxDailyOrders('80'), 80);
+    assert.equal(resolveMaxDailyOrders(' 12,7 '), 12);
+    assert.equal(resolveMaxDailyOrders(0), 1);
+    assert.equal(resolveMaxDailyOrders(-3), 1);
+    assert.equal(resolveMaxDailyOrders(5000), 1000);
   });
 
   test('total is a multiple of 100 × quantity (unit price always a multiple of 100)', () => {
@@ -180,6 +216,14 @@ describe('products', () => {
     void noPrice;
   });
 
+  test('supplier cost 0 or missing → product not offered (DS-11)', () => {
+    const free = normalizeProduct({ ...F.LIST_PRODUCTS.items[0], sale_price: 0 })!;
+    assert.equal(isOfferable(free, 20), false);
+    const noCost = normalizeProduct({ ...F.LIST_PRODUCTS.items[0], sale_price: null })!;
+    assert.equal(isOfferable(noCost, 20), false);
+    assert.equal(isOfferable(simple!, 20), true);
+  });
+
   test('trimmed JSON for the LLM has no costs, sku, supplier, stock or customer', () => {
     assertNoForbiddenKeys(JSON.stringify({ productos: presentProducts(parsed.products, 20) }));
   });
@@ -249,13 +293,52 @@ describe('pure rules', () => {
     assert.equal(buyerRepliedSince(Number.NaN, 4), false);
   });
 
-  test('ownership: same agent and contact, or WhatsApp phone', () => {
-    const row = { agentId: 'A', contactId: 'C1', buyerPhoneLast10: '3174304027' };
-    assert.equal(ownsOrder(row, { agentId: 'A', contactId: 'C1', channel: 'web', contactPhoneLast10: null }), true);
-    assert.equal(ownsOrder(row, { agentId: 'B', contactId: 'C1', channel: 'web', contactPhoneLast10: null }), false);
-    assert.equal(ownsOrder(row, { agentId: 'A', contactId: 'C2', channel: 'web', contactPhoneLast10: '3174304027' }), false);
-    assert.equal(ownsOrder(row, { agentId: 'A', contactId: 'C2', channel: 'whatsapp', contactPhoneLast10: '3174304027' }), true);
-    assert.equal(ownsOrder(row, { agentId: 'B', contactId: 'C2', channel: 'whatsapp', contactPhoneLast10: '3174304027' }), false);
+  test('confirmation: buyer message received after the summary turn finished (DS-07)', () => {
+    assert.equal(receivedAfterSummary(2000, 1000), true);
+    assert.equal(receivedAfterSummary(1000, 1000), false);
+    assert.equal(receivedAfterSummary(500, 1000), false);
+    assert.equal(receivedAfterSummary(null, 1000), false); // no reliable receipt time → no
+    assert.equal(receivedAfterSummary(2000, null), false); // summary turn never finished → no
+  });
+
+  test('isAffirmative: affirmation and no negation (DS-07)', () => {
+    for (const yes of ['sí', 'Si', 'SIII!', 'dale', 'listo', 'Confirmo', 'confirmado', 'ok', 'Okay 👍', 'de una', 'correcto',
+      'claro que sí', 'perfecto, gracias', 'Hágale', 'hagale pues', 'adelante', 'va', 'Sí, dale.']) {
+      assert.equal(isAffirmative(yes), true, yes);
+    }
+    for (const no of ['no', 'No.', 'mejor no', 'cancela', 'cancelar el pedido', 'espera', 'espérame', 'cambia la dirección',
+      'sí pero cambiar la talla', 'dale, no espera', 'gracias', '', '   ', '¿cuánto es el envío?', 'Sigo pensando', 'vale']) {
+      assert.equal(isAffirmative(no), false, no);
+    }
+    assert.equal(isAffirmative(undefined), false);
+  });
+
+  test('order caps: verifying first, then conversation, phone and agent', () => {
+    const limits = { perConversation: 2, perPhone: 2, perAgent: 50 };
+    const base = { conversationUnknown: 0, conversation: 0, phone: 0, agent: 0 };
+    assert.equal(orderCapDecision(base, limits), null);
+    assert.equal(orderCapDecision({ ...base, conversationUnknown: 1, conversation: 1 }, limits), 'verifying');
+    assert.equal(orderCapDecision({ ...base, conversation: 2 }, limits), 'conversation_cap');
+    assert.equal(orderCapDecision({ ...base, conversation: 1, phone: 2 }, limits), 'phone_cap');
+    assert.equal(orderCapDecision({ ...base, agent: 50 }, limits), 'agent_cap');
+    assert.equal(orderCapDecision({ ...base, conversation: 1, phone: 1, agent: 49 }, limits), null);
+  });
+
+  test('ownership: wa_from on WhatsApp, else the conversation / preview session; never contact_id (DS-02/DS-04)', () => {
+    const row: OwnedOrderKeys = { agentId: 'A', organizationId: 'O', conversationId: 'conv-1', previewSessionId: null, ownerWaLast10: '3174304027', buyerPhoneLast10: '3110000000' };
+    const who = (over: Partial<BuyerIdentity>): BuyerIdentity => ({ agentId: 'A', organizationId: 'O', waLast10: null, conversationId: null, previewSessionId: null, ...over });
+    assert.equal(ownsOrder(row, who({ conversationId: 'conv-1' })), true);
+    assert.equal(ownsOrder(row, who({ conversationId: 'conv-2' })), false); // same contact, other conversation: no
+    assert.equal(ownsOrder(row, who({ agentId: 'B', conversationId: 'conv-1' })), false);
+    assert.equal(ownsOrder(row, who({ organizationId: 'P', conversationId: 'conv-1' })), false);
+    assert.equal(ownsOrder(row, who({ waLast10: '3174304027', conversationId: 'conv-9' })), true); // owner_wa_last10
+    assert.equal(ownsOrder(row, who({ waLast10: '3110000000', conversationId: 'conv-9' })), true); // buyer_phone_last10
+    assert.equal(ownsOrder(row, who({ waLast10: '3009999999', conversationId: 'conv-1' })), false); // WhatsApp: phones only
+    assert.equal(ownsOrder({ ...row, agentId: null }, who({ conversationId: 'conv-1' })), false); // agent deleted
+    const preview: OwnedOrderKeys = { ...row, conversationId: null, previewSessionId: 'ps-1', ownerWaLast10: null };
+    assert.equal(ownsOrder(preview, who({ previewSessionId: 'ps-1' })), true);
+    assert.equal(ownsOrder(preview, who({ previewSessionId: 'ps-2' })), false);
+    assert.equal(ownsOrder(preview, who({})), false);
   });
 });
 
@@ -290,9 +373,15 @@ interface Harness {
   calls: Array<{ tool: string; args: Record<string, unknown> }>;
   rows: Array<NewOrderRow & DropiOrderRecord>;
   logs: string[];
+  notices: CapNotice[];
   handlers: Record<string, (args: Record<string, unknown>) => McpCallResult>;
+  config: Record<string, unknown>;
+  /** Server clock (ms) used by deps.now(); tests advance it. */
+  clock: { t: number };
   ctx: (over?: Partial<DropiSalesContext>) => DropiSalesContext;
   run: (name: DropiSalesToolName, args: Record<string, unknown>, ctx: DropiSalesContext) => Promise<Record<string, unknown>>;
+  /** End of the turn: the assistant message is saved (worker saveMessages / preview history). */
+  endTurn: (ctx: DropiSalesContext) => Promise<void>;
 }
 
 const ok = (v: unknown): McpCallResult => ({ content: JSON.stringify(v), isError: false });
@@ -306,6 +395,9 @@ function harness(): Harness {
   const calls: Harness['calls'] = [];
   const rows: Harness['rows'] = [];
   const logs: string[] = [];
+  const notices: CapNotice[] = [];
+  const config: Record<string, unknown> = { porcentaje_margen: 20 };
+  const clock = { t: Date.parse('2026-11-14T12:00:00Z') };
   let seq = 0;
   const handlers: Harness['handlers'] = {
     list_products: () => ok(F.LIST_PRODUCTS),
@@ -321,9 +413,10 @@ function harness(): Harness {
     get_order: () => ok(F.GET_ORDER),
     list_orders: () => ok(F.LIST_ORDERS),
   };
-  const owns = (r: NewOrderRow, o: OwnerFilter) =>
-    r.agentId === o.agentId && r.organizationId === o.organizationId &&
-    ((r.contactId !== null && r.contactId === o.contactId) || (o.phoneLast10 !== null && r.buyerPhoneLast10 === o.phoneLast10));
+  const keysOf = (r: NewOrderRow): OwnedOrderKeys => ({
+    agentId: r.agentId, organizationId: r.organizationId, conversationId: r.conversationId,
+    previewSessionId: r.previewSessionId, ownerWaLast10: r.ownerWaLast10, buyerPhoneLast10: r.buyerPhoneLast10,
+  });
   const deps: DropiSalesDeps = {
     kv: {
       get: async (k) => kv.get(k) ?? null,
@@ -339,8 +432,21 @@ function harness(): Harness {
       },
     },
     orders: {
-      insertPending: async (row) => {
+      // Same contract as the SQL version: count (last 24 h, all rows here) and insert in one step.
+      insertPendingWithinLimits: async (row, limits) => {
+        const mine = rows.filter((r) => r.agentId === row.agentId && r.organizationId === row.organizationId);
+        const inScope = mine.filter((r) =>
+          row.conversationId !== null ? r.conversationId === row.conversationId
+            : row.previewSessionId !== null && r.previewSessionId === row.previewSessionId);
+        const refusal = orderCapDecision({
+          conversationUnknown: inScope.filter((r) => r.statusLocal === 'desconocido').length,
+          conversation: inScope.length,
+          phone: mine.filter((r) => r.buyerPhoneLast10 === row.buyerPhoneLast10).length,
+          agent: mine.length,
+        }, limits);
+        if (refusal) return { ok: false, reason: refusal };
         rows.push({ ...row, externalOrderId: null, statusLocal: 'desconocido', statusCached: null, createdAt: '2026-11-10T19:03:22Z' });
+        return { ok: true };
       },
       markCreated: async ({ id, agentId, externalOrderId, status }) => {
         const r = rows.find((x) => x.id === id && x.agentId === agentId)!;
@@ -351,15 +457,15 @@ function harness(): Harness {
         const i = rows.findIndex((x) => x.id === id && x.agentId === agentId && x.externalOrderId === null);
         if (i >= 0) rows.splice(i, 1);
       },
-      findOwnRecent: async (o, limit) => rows.filter((r) => owns(r, o)).slice(0, limit),
-      findOwnByNumber: async (o, n) => rows.find((r) => owns(r, o) && r.externalOrderId === n) ?? null,
+      findOwnRecent: async (o, limit) => rows.filter((r) => ownsOrder(keysOf(r), o)).slice(0, limit),
+      findOwnByNumber: async (o, n) => rows.find((r) => ownsOrder(keysOf(r), o) && r.externalOrderId === n) ?? null,
       updateStatusCached: async () => {},
-      contactPhone: async (contactId) => (contactId === 'contact-wa' ? '573174304027' : null),
     },
-    loadMarginPercent: async () => 20,
+    loadConfigValue: async (_agentId, key) => config[key],
+    notifyCapReached: async (n) => { notices.push(n); },
     log: { info: (m) => logs.push(m), warn: (m) => logs.push(m), error: (m) => logs.push(m) },
     randomId: () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`,
-    now: () => new Date('2026-11-14T12:00:00Z'),
+    now: () => new Date(clock.t),
   };
   const ctx = (over: Partial<DropiSalesContext> = {}): DropiSalesContext => ({
     call: async (tool, args) => {
@@ -373,14 +479,24 @@ function harness(): Harness {
     organizationId: 'org-1',
     scopeId: 'conv-1',
     conversationId: 'conv-1',
+    previewSessionId: null,
     contactId: 'contact-1',
     channel: 'web',
+    waFrom: null,
     currentUserTurn: 1,
+    // By default the message arrived "now" (after anything stamped earlier).
+    currentMessageReceivedAt: clock.t + 1,
+    lastBuyerMessage: 'Sí, confirmo',
+    turn: { preparedToken: null },
     ...over,
   });
   const run: Harness['run'] = async (name, args, c) =>
     JSON.parse(await executeDropiSalesTool(name, args, c, deps)) as Record<string, unknown>;
-  return { deps, calls, rows, logs, handlers, ctx, run };
+  const endTurn: Harness['endTurn'] = async (c) => {
+    await markDropiSummaryDelivered(c, deps);
+    clock.t += 1000; // the buyer's next message arrives later
+  };
+  return { deps, calls, rows, logs, notices, handlers, config, clock, ctx, run, endTurn };
 }
 
 const BUYER = { nombre: 'Ana', apellido: 'Pérez', direccion: 'Calle 1 # 2-3', telefono: '+57 317 430 4027', barrio: 'Centro' };
@@ -388,6 +504,15 @@ const BUYER = { nombre: 'Ana', apellido: 'Pérez', direccion: 'Calle 1 # 2-3', t
 async function quoteFlow(h: Harness, c: DropiSalesContext): Promise<Record<string, unknown>> {
   await h.run('dropi_buscar_productos', { busqueda: 'Rompecabezas' }, c);
   return h.run('dropi_cotizar_envio', { producto_id: 101, cantidad: 1, ciudad: 'Cajicá' }, c);
+}
+
+/** Quote + prepare in one turn, then the turn ends (summary saved); the next message is later. */
+async function prepared(h: Harness, turn: number, over: Partial<DropiSalesContext> = {}) {
+  const c = h.ctx({ currentUserTurn: turn, ...over });
+  const quote = await quoteFlow(h, c);
+  const prep = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
+  await h.endTurn(c);
+  return { quote, prep, c };
 }
 
 describe('sales flow (fakes)', () => {
@@ -486,7 +611,7 @@ describe('sales flow (fakes)', () => {
   test('quote: non-positive margin is refused and logged', async () => {
     const h = harness();
     h.handlers['quote_shipping'] = () => ok(F.quoteShipping({ envia: 1, derocha: 2 }));
-    h.deps.loadMarginPercent = async () => 0; // price 29 200 vs supplier 14 900: still positive
+    h.config['porcentaje_margen'] = 0; // price 29 200 vs supplier 14 900: still positive
     const c = h.ctx();
     assert.ok((await quoteFlow(h, c))['cotizacion_id']);
     h.handlers['quote_shipping'] = () => ok(F.quoteShipping({ envia: 40000, derocha: 41000 }));
@@ -509,12 +634,6 @@ describe('sales flow (fakes)', () => {
 });
 
 describe('confirmation and idempotency (fakes)', () => {
-  async function prepared(h: Harness, turn: number) {
-    const c = h.ctx({ currentUserTurn: turn });
-    const quote = await quoteFlow(h, c);
-    const prep = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
-    return { quote, prep };
-  }
 
   test('prepare: validates the buyer data and returns a summary + instruction', async () => {
     const h = harness();
@@ -610,6 +729,195 @@ describe('confirmation and idempotency (fakes)', () => {
   });
 });
 
+describe('one live order per conversation and caps (DS-01/DS-03)', () => {
+  const confirm = (h: Harness, token: unknown, over: Partial<DropiSalesContext> = {}) =>
+    h.run('dropi_confirmar_pedido', { pedido_token: token }, h.ctx({ currentUserTurn: 9, ...over }));
+
+  test('PoC: 3 prepared summaries + 3 confirmations create ONE order (only the current token)', async () => {
+    const h = harness();
+    const c = h.ctx({ currentUserTurn: 1 });
+    const quote = await quoteFlow(h, c);
+    const tokens: unknown[] = [];
+    for (let i = 0; i < 3; i++) {
+      tokens.push((await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c))['pedido_token']);
+    }
+    await h.endTurn(c);
+    const outs = await Promise.all(tokens.map((t) => confirm(h, t)));
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 1);
+    assert.equal(outs.filter((o) => o['pedido_creado'] === true).length, 1);
+    assert.equal(outs[2]!['pedido_creado'], true); // the last prepared is the live one
+    assert.equal(h.rows.length, 1);
+    // One quote, one order: the quote is consumed.
+    const again = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
+    assert.match(String(again['error']), /cotización no existe/);
+  });
+
+  test('preparing again replaces the previous pending (old token refused)', async () => {
+    const h = harness();
+    const c = h.ctx({ currentUserTurn: 1 });
+    const quote = await quoteFlow(h, c);
+    const first = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
+    const second = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER, barrio: 'Norte' }, c);
+    await h.endTurn(c);
+    assert.ok((await confirm(h, first['pedido_token']))['error']);
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 0);
+    assert.equal((await confirm(h, second['pedido_token']))['pedido_creado'], true);
+    assert.equal(h.calls.find((x) => x.tool === 'create_order')!.args['colonia'], 'Norte');
+  });
+
+  test('cap per conversation: at most 2 orders in 24 h; 3rd → advisor message, warn and one notification', async () => {
+    const h = harness();
+    for (let i = 0; i < 2; i++) {
+      const { prep } = await (async () => {
+        const c = h.ctx({ currentUserTurn: 1 });
+        const q = await quoteFlow(h, c);
+        const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER, telefono: `310000000${i}` }, c);
+        await h.endTurn(c);
+        return { prep: p };
+      })();
+      assert.equal((await confirm(h, prep['pedido_token']))['pedido_creado'], true);
+    }
+    for (let i = 0; i < 2; i++) {
+      const c = h.ctx({ currentUserTurn: 1 });
+      const q = await quoteFlow(h, c);
+      const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER, telefono: `311000000${i}` }, c);
+      await h.endTurn(c);
+      const out = await confirm(h, p['pedido_token']);
+      assert.deepEqual(out, { pedido_creado: false, mensaje: 'Para este pedido un asesor te contactará.' });
+    }
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 2);
+    assert.equal(h.rows.length, 2);
+    assert.deepEqual(h.notices, [{ organizationId: 'org-1', agentId: 'agent-1', reason: 'conversation_cap' }]); // deduplicated
+    assert.ok(h.logs.some((l) => l.includes('order cap reached: conversation_cap')));
+    assert.ok(!h.logs.join('\n').includes('311000000'), 'phones must not be logged');
+  });
+
+  test('cap per buyer phone and agent: 2 in 24 h across conversations', async () => {
+    const h = harness();
+    const results: unknown[] = [];
+    for (let i = 0; i < 3; i++) {
+      const over = { scopeId: `conv-${i}`, conversationId: `conv-${i}` };
+      const { prep } = await prepared(h, 1, over);
+      results.push((await confirm(h, prep['pedido_token'], over))['pedido_creado']);
+    }
+    assert.deepEqual(results, [true, true, false]);
+    assert.equal(h.notices[0]!.reason, 'phone_cap');
+  });
+
+  test('cap per agent: max_pedidos_diarios ("2 " typed with a space)', async () => {
+    const h = harness();
+    h.config['max_pedidos_diarios'] = '2 ';
+    const results: unknown[] = [];
+    for (let i = 0; i < 3; i++) {
+      const over = { scopeId: `conv-${i}`, conversationId: `conv-${i}` };
+      const c = h.ctx({ currentUserTurn: 1, ...over });
+      const q = await quoteFlow(h, c);
+      const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER, telefono: `312000000${i}` }, c);
+      await h.endTurn(c);
+      results.push((await confirm(h, p['pedido_token'], over))['pedido_creado']);
+    }
+    assert.deepEqual(results, [true, true, false]);
+    assert.equal(h.notices[0]!.reason, 'agent_cap');
+  });
+
+  test('concurrent confirmations in different conversations respect the phone cap', async () => {
+    const h = harness();
+    const tokens: Array<{ token: unknown; over: Partial<DropiSalesContext> }> = [];
+    for (let i = 0; i < 4; i++) {
+      const over = { scopeId: `conv-${i}`, conversationId: `conv-${i}` };
+      tokens.push({ token: (await prepared(h, 1, over)).prep['pedido_token'], over });
+    }
+    const outs = await Promise.all(tokens.map(({ token, over }) => confirm(h, token, over)));
+    assert.equal(outs.filter((o) => o['pedido_creado'] === true).length, 2);
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 2);
+  });
+
+  test("a 'desconocido' order in the conversation blocks a new one (in verification)", async () => {
+    const h = harness();
+    h.handlers['create_order'] = () => ({ content: 'MCP tool execution failed: MCP request timeout: tools/call (30s)', isError: true });
+    const first = await prepared(h, 1);
+    assert.equal((await confirm(h, first.prep['pedido_token']))['en_verificacion'], true);
+    // The quote is consumed even when the outcome is unknown.
+    const reuse = await h.run('dropi_preparar_pedido', { cotizacion_id: first.quote['cotizacion_id'], ...BUYER }, first.c);
+    assert.match(String(reuse['error']), /cotización no existe/);
+    h.handlers['create_order'] = () => ok(F.CREATE_ORDER_OK);
+    const second = await prepared(h, 1);
+    const out = await confirm(h, second.prep['pedido_token']);
+    assert.equal(out['pedido_creado'], false);
+    assert.equal(out['en_verificacion'], true);
+    assert.match(String(out['mensaje']), /anterior está en verificación/);
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 1);
+  });
+});
+
+describe('acceptance of the summary (DS-07)', () => {
+  test('a message received before the summary turn finished does not confirm', async () => {
+    const h = harness();
+    const c = h.ctx({ currentUserTurn: 1 });
+    const quote = await quoteFlow(h, c);
+    const prep = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
+    const receivedDuringTurn = h.clock.t - 1;
+    await h.endTurn(c);
+    const early = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] },
+      h.ctx({ currentUserTurn: 2, currentMessageReceivedAt: receivedDuringTurn }));
+    assert.equal(early['requiere_confirmacion'], true);
+    const unknownTime = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] },
+      h.ctx({ currentUserTurn: 2, currentMessageReceivedAt: null }));
+    assert.equal(unknownTime['requiere_confirmacion'], true);
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 0);
+    const late = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2 }));
+    assert.equal(late['pedido_creado'], true);
+  });
+
+  test('summary turn never finished (not stamped) → no confirmation', async () => {
+    const h = harness();
+    const c = h.ctx({ currentUserTurn: 1 });
+    const quote = await quoteFlow(h, c);
+    const prep = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
+    h.clock.t += 5000; // turn crashed before saving the assistant message: no endTurn
+    const out = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2 }));
+    assert.equal(out['requiere_confirmacion'], true);
+    // A later turn that did not prepare it does not stamp it either.
+    await h.endTurn(h.ctx({ currentUserTurn: 2 }));
+    const out2 = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 3 }));
+    assert.equal(out2['requiere_confirmacion'], true);
+  });
+
+  test('the last buyer message must be an affirmation without negation', async () => {
+    const h = harness();
+    const { prep } = await (async () => {
+      const c = h.ctx({ currentUserTurn: 1 });
+      const q = await quoteFlow(h, c);
+      const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER }, c);
+      await h.endTurn(c);
+      return { prep: p };
+    })();
+    for (const text of ['sí pero cambia la dirección', 'mejor no', '¿y cuánto demora?']) {
+      const r = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2, lastBuyerMessage: text }));
+      assert.equal(r['requiere_confirmacion'], true, text);
+    }
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 0);
+    const yes = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2, lastBuyerMessage: 'Dale, de una' }));
+    assert.equal(yes['pedido_creado'], true);
+  });
+});
+
+describe('widget metadata (DS-06)', () => {
+  test('toolTrace and other engine keys never reach the widget', () => {
+    const out = sanitizeWidgetMessageMetadata({
+      toolTrace: [{ calls: [{ name: 'custom_fn', args: { token: 'x' }, result: '{"secret":1}' }] }],
+      toolsCalled: ['dropi_buscar_productos'],
+      tokensUsed: 10,
+      model: 'm',
+      latencyMs: 1,
+      intermediate: true,
+      cart_action: { type: 'add' },
+    });
+    assert.deepEqual(out, { intermediate: true, cart_action: { type: 'add' } });
+    assert.ok(!JSON.stringify(out).includes('secret'));
+  });
+});
+
 describe('isolation between conversations (fakes)', () => {
   test('products, quotes and tokens of another conversation are rejected', async () => {
     const h = harness();
@@ -635,11 +943,13 @@ describe('isolation between conversations (fakes)', () => {
 });
 
 describe('order tracking (fakes)', () => {
-  async function withOrder(h: Harness, over: Partial<DropiSalesContext>) {
+  async function withOrder(h: Harness, over: Partial<DropiSalesContext>, buyer: Record<string, unknown> = BUYER) {
     const c = h.ctx({ ...over, currentUserTurn: 1 });
     const quote = await quoteFlow(h, c);
-    const prep = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
-    await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, { ...c, currentUserTurn: 2 });
+    const prep = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...buyer }, c);
+    await h.endTurn(c);
+    const out = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ ...over, currentUserTurn: 2 }));
+    assert.equal(out['pedido_creado'], true);
   }
 
   test('own orders without a number: trimmed, with carrier and no customer data', async () => {
@@ -657,10 +967,14 @@ describe('order tracking (fakes)', () => {
     assert.deepEqual(lo, { text_to_search: '96972142', from: '2026-11-10', until: '2026-11-15', result_number: 5 });
   });
 
-  test('order of another contact or agent is not returned without phone verification', async () => {
+  test('order of another conversation or agent is not returned without phone verification', async () => {
     const h = harness();
+    h.handlers['get_order'] = () => ok({ ...F.GET_ORDER, tracking_code: 'GUIA-777' });
     await withOrder(h, {});
-    // Another contact on the web: needs the phone.
+    // Own (same conversation): the tracking code is included.
+    const own = await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, h.ctx());
+    assert.equal((own['pedidos'] as Array<Record<string, unknown>>)[0]!['guia'], 'GUIA-777');
+    // Another conversation on the web: needs the phone.
     const other = h.ctx({ scopeId: 'conv-2', conversationId: 'conv-2', contactId: 'contact-2' });
     assert.deepEqual(await h.run('dropi_estado_pedido', {}, other), {
       pedidos: [],
@@ -673,8 +987,36 @@ describe('order tracking (fakes)', () => {
     assert.deepEqual((await h.run('dropi_estado_pedido', {}, otherAgent))['pedidos'], []);
     // Right phone → allowed, still trimmed.
     const verified = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '317 430 4027' }, other);
-    assert.equal((verified['pedidos'] as unknown[]).length, 1);
+    const vp = verified['pedidos'] as Array<Record<string, unknown>>;
+    assert.equal(vp.length, 1);
+    // Verified but not own: status, products, total and carrier — no tracking code (DS-05).
+    assert.equal(vp[0]!['guia'], undefined);
+    assert.equal(vp[0]!['estado'], 'PENDIENTE');
+    assert.equal(vp[0]!['transportadora'], 'ENVIA');
+    assert.ok(!JSON.stringify(verified).includes('GUIA-777'));
     assertNoForbiddenKeys(JSON.stringify(verified));
+  });
+
+  test('DS-04: a contact shared between conversations does not give access (web)', async () => {
+    const h = harness();
+    await withOrder(h, { scopeId: 'conv-victim', conversationId: 'conv-victim', contactId: 'contact-shared' });
+    const attacker = h.ctx({ scopeId: 'conv-attacker', conversationId: 'conv-attacker', contactId: 'contact-shared' });
+    assert.deepEqual((await h.run('dropi_estado_pedido', {}, attacker))['pedidos'], []);
+    assert.match(String((await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, attacker))['error']), /teléfono/);
+    // Same contact on WhatsApp (contact merged by phone) with another wa_from: no access either.
+    const waAttacker = h.ctx({ channel: 'whatsapp', waFrom: '573009999999', scopeId: 'conv-wa-x', conversationId: 'conv-wa-x', contactId: 'contact-shared' });
+    assert.deepEqual((await h.run('dropi_estado_pedido', {}, waAttacker))['pedidos'], []);
+  });
+
+  test('preview: own orders are those of the same preview session', async () => {
+    const h = harness();
+    const pv = { scopeId: 'ps-1', conversationId: null, previewSessionId: 'ps-1', contactId: null, channel: 'preview' };
+    await withOrder(h, pv);
+    assert.equal(h.rows[0]!.previewSessionId, 'ps-1');
+    assert.equal(h.rows[0]!.ownerWaLast10, null);
+    assert.equal(((await h.run('dropi_estado_pedido', {}, h.ctx(pv)))['pedidos'] as unknown[]).length, 1);
+    const pv2 = { ...pv, scopeId: 'ps-2', previewSessionId: 'ps-2' };
+    assert.deepEqual((await h.run('dropi_estado_pedido', {}, h.ctx(pv2)))['pedidos'], []);
   });
 
   test('missing order and wrong phone give the same message', async () => {
@@ -687,16 +1029,69 @@ describe('order tracking (fakes)', () => {
     assert.deepEqual(missing, wrong);
   });
 
-  test('WhatsApp: verified with the contact phone, no arguments needed', async () => {
+  test('WhatsApp: verified with wa_from, no arguments needed', async () => {
     const h = harness();
-    const wa = h.ctx({ channel: 'whatsapp', contactId: 'contact-wa', scopeId: 'conv-wa', conversationId: 'conv-wa' });
-    // Order not in dropi_orders: verified against contacts.phone (573174304027 → 3174304027).
+    const wa = h.ctx({ channel: 'whatsapp', waFrom: '573174304027', contactId: 'contact-wa', scopeId: 'conv-wa', conversationId: 'conv-wa' });
+    // Order not in dropi_orders: verified against wa_from (573174304027 → 3174304027).
     const out = await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, wa);
     assert.equal((out['pedidos'] as unknown[]).length, 1);
     // A phone in the arguments is ignored on WhatsApp.
     h.handlers['get_order'] = () => ok({ ...F.GET_ORDER, customer: { ...F.GET_ORDER.customer, phone: '3110000000' } });
     const spoof = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3110000000' }, wa);
     assert.equal(spoof['error'], 'No encontré un pedido con esos datos');
+  });
+
+  test('DS-02 PoC: overwriting contacts.phone (capture_variable) no longer gives access on WhatsApp', async () => {
+    const h = harness();
+    // Victim orders from WhatsApp: owner_wa_last10 = their Meta number.
+    await withOrder(h, { channel: 'whatsapp', waFrom: '573174304027', scopeId: 'conv-v', conversationId: 'conv-v', contactId: 'contact-v' });
+    assert.equal(h.rows[0]!.ownerWaLast10, '3174304027');
+    // Attacker on WhatsApp sets contacts.phone = victim's phone via capture_variable. The sales
+    // service never reads contacts.phone (OrdersRepository has no such method): identity = wa_from.
+    const attacker = h.ctx({ channel: 'whatsapp', waFrom: '573001112233', scopeId: 'conv-a', conversationId: 'conv-a', contactId: 'contact-a' });
+    assert.deepEqual((await h.run('dropi_estado_pedido', {}, attacker))['pedidos'], []);
+    assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, attacker))['error'], 'No encontré un pedido con esos datos');
+    // The phone argument is ignored on WhatsApp.
+    assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3174304027' }, attacker))['error'], 'No encontré un pedido con esos datos');
+    // The victim still sees it from a new WhatsApp conversation.
+    const victim2 = h.ctx({ channel: 'whatsapp', waFrom: '573174304027', scopeId: 'conv-v2', conversationId: 'conv-v2', contactId: 'contact-other' });
+    assert.equal(((await h.run('dropi_estado_pedido', {}, victim2))['pedidos'] as unknown[]).length, 1);
+  });
+
+  test('WhatsApp without wa_from behaves as web (conversation + phone argument)', async () => {
+    const h = harness();
+    const wa = h.ctx({ channel: 'whatsapp', waFrom: null, contactId: 'contact-wa', scopeId: 'conv-old', conversationId: 'conv-old' });
+    assert.match(String((await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, wa))['error']), /teléfono/);
+    assert.equal(((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3174304027' }, wa))['pedidos'] as unknown[]).length, 1);
+  });
+
+  test('DS-05: verified lookups are limited per agent (30/h) across new sessions', async () => {
+    const h = harness();
+    for (let i = 0; i < 30; i++) {
+      const c = h.ctx({ scopeId: `conv-${i}`, conversationId: `conv-${i}` });
+      const r = await h.run('dropi_estado_pedido', { numero_pedido: String(93204600 + i), telefono: `31100000${String(i).padStart(2, '0')}` }, c);
+      assert.equal(r['error'], 'No encontré un pedido con esos datos');
+    }
+    const fresh = h.ctx({ scopeId: 'conv-new', conversationId: 'conv-new' });
+    const limited = await h.run('dropi_estado_pedido', { numero_pedido: '93204699', telefono: '3119999999' }, fresh);
+    assert.match(String(limited['error']), /límite/);
+    assert.equal(h.calls.filter((x) => x.tool === 'get_order').length, 30);
+    assert.ok(h.logs.some((l) => l.includes('agent limit')));
+    // Another agent is not affected.
+    const other = h.ctx({ agentId: 'agent-2', scopeId: 'conv-z', conversationId: 'conv-z' });
+    assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '93204699', telefono: '3119999999' }, other))['error'], 'No encontré un pedido con esos datos');
+  });
+
+  test('DS-05: verified lookups are limited per agent and target phone (5/h) across new sessions', async () => {
+    const h = harness();
+    for (let i = 0; i < 5; i++) {
+      const c = h.ctx({ scopeId: `conv-${i}`, conversationId: `conv-${i}` });
+      await h.run('dropi_estado_pedido', { numero_pedido: String(93204600 + i), telefono: '3174304027' }, c);
+    }
+    const c6 = h.ctx({ scopeId: 'conv-6', conversationId: 'conv-6' });
+    assert.match(String((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3174304027' }, c6))['error']), /límite/);
+    // A different target phone still works.
+    assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3000000001' }, c6))['error'], 'No encontré un pedido con esos datos');
   });
 
   test('rate limit: 5 lookups per order number per conversation and hour', async () => {

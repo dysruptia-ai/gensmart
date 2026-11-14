@@ -3,8 +3,9 @@
  * (tool calls with their arguments, token usage, model, error details, dashboard user ids) that
  * only the dashboard needs.
  *
- * Exclusion list (not allow list): only known sensitive keys (toolsCalled, tokensUsed, model,
- * latencyMs, error, errorMessage) and actor keys are removed. Unknown or harmless keys pass through
+ * Exclusion list (not allow list): only known sensitive keys (toolsCalled, toolTrace, tokensUsed,
+ * model, latencyMs, error, errorMessage) and actor keys are removed. toolTrace holds the arguments
+ * and RAW results of every tool of the turn (custom functions and MCP providers included). Unknown or harmless keys pass through
  * because clients outside this repository (the Tiendanube/NubeSDK widget) consume keys such as
  * cart_action and cart_query from the long-poll and we cannot enumerate everything they read.
  * images, hasImages, imageCount and isVoiceMessage (human messages) pass on purpose: they are
@@ -13,6 +14,7 @@
 
 const INTERNAL_KEYS = new Set([
   'toolsCalled',
+  'toolTrace',
   'tokensUsed',
   'model',
   'latencyMs',

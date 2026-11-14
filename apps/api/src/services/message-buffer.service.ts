@@ -9,6 +9,8 @@ export interface BufferItem {
   content: string;           // text content for 'text', caption for 'image'
   mimeType?: string;         // only for 'image': 'image/jpeg', etc.
   data?: string;             // only for 'image': base64 data
+  /** Server receipt time (ms epoch), set by pushToBuffer. Absent in entries queued before it existed. */
+  receivedAt?: number;
 }
 
 export async function pushToBuffer(
@@ -22,9 +24,10 @@ export async function pushToBuffer(
   const jobKey = `${JOB_KEY_PREFIX}${conversationId}`;
 
   // Serialize: if string, wrap as text BufferItem for uniform handling
-  const item: BufferItem = typeof message === 'string'
-    ? { type: 'text', content: message }
-    : message;
+  const item: BufferItem = {
+    ...(typeof message === 'string' ? { type: 'text' as const, content: message } : message),
+    receivedAt: Date.now(),
+  };
 
   // Push JSON to Redis list
   await redis.rpush(bufferKey, JSON.stringify(item));

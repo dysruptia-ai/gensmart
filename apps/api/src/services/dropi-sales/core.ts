@@ -59,7 +59,7 @@ export function normalizePhone(value: unknown): string | null {
   return digits.length === 10 ? digits : null;
 }
 
-/** Last 10 digits of a stored phone (contacts.phone, Dropi customer.phone), or null. */
+/** Last 10 digits of a stored phone (wa_from, Dropi customer.phone), or null. */
 export function last10Digits(value: unknown): string | null {
   if (typeof value !== 'string' && typeof value !== 'number') return null;
   const digits = String(value).replace(/\D/g, '');
@@ -131,11 +131,33 @@ export const PLATFORM_FEE_RATE = 0.035;
 /** Safety margin over the first shipping quote when the second quote fails. */
 export const SHIPPING_FALLBACK_FACTOR = 1.05;
 
+/**
+ * Number typed by a person in the agent configuration: tolerates spaces, a trailing "%" and a
+ * decimal comma ("20%", " 20,5 ", "1 000") before the strict toNumber check. Null when invalid.
+ */
+export function parseLooseNumber(raw: unknown): number | null {
+  if (typeof raw !== 'string') return toNumber(raw);
+  let s = raw.replace(/\s+/g, '').replace(/%$/, '');
+  if (/^-?\d+,\d+$/.test(s)) s = s.replace(',', '.');
+  return toNumber(s);
+}
+
 /** porcentaje_margen → number in [0, 300]; 20 when missing or invalid. */
 export function resolveMarginPercent(raw: unknown): number {
-  const n = toNumber(raw);
+  const n = parseLooseNumber(raw);
   if (n === null) return DEFAULT_MARGIN_PERCENT;
   return Math.min(MAX_MARGIN_PERCENT, Math.max(MIN_MARGIN_PERCENT, n));
+}
+
+export const DEFAULT_MAX_DAILY_ORDERS = 50;
+export const MIN_MAX_DAILY_ORDERS = 1;
+export const MAX_MAX_DAILY_ORDERS = 1000;
+
+/** max_pedidos_diarios → integer in [1, 1000]; 50 when missing or invalid. */
+export function resolveMaxDailyOrders(raw: unknown): number {
+  const n = parseLooseNumber(raw);
+  if (n === null) return DEFAULT_MAX_DAILY_ORDERS;
+  return Math.min(MAX_MAX_DAILY_ORDERS, Math.max(MIN_MAX_DAILY_ORDERS, Math.floor(n)));
 }
 
 /** Smallest multiple of `step` ≥ value (tolerant to float noise). */
@@ -317,16 +339,28 @@ export function parseListProducts(content: string): ParsedProducts {
   return { ok: true, currency, products };
 }
 
-/** Variations with stock ≥ qty and a sellable price. */
+/**
+ * Supplier cost usable for the margin check: a positive number. 0 is treated as invalid (a free
+ * product is a data error, and it would make every margin check pass).
+ */
+export function validSupplierCost(cost: number | null): cost is number {
+  return cost !== null && Number.isFinite(cost) && cost > 0;
+}
+
+/** Variations with stock ≥ qty, a sellable price and a valid supplier cost. */
 export function sellableVariations(product: DropiProduct, marginPercent: number, quantity = 1): DropiVariation[] {
   return product.variations.filter(
-    (v) => v.stock >= quantity && productPrice(v.suggestedPrice, marginPercent) !== null
+    (v) => v.stock >= quantity && productPrice(v.suggestedPrice, marginPercent) !== null && validSupplierCost(v.salePrice)
   );
 }
 
 export function isOfferable(product: DropiProduct, marginPercent: number): boolean {
   if (product.type === 'VARIABLE') return sellableVariations(product, marginPercent).length > 0;
-  return product.stock > 0 && productPrice(product.suggestedPrice, marginPercent) !== null;
+  return (
+    product.stock > 0 &&
+    productPrice(product.suggestedPrice, marginPercent) !== null &&
+    validSupplierCost(product.salePrice)
+  );
 }
 
 export function describeVariation(v: DropiVariation): string {
@@ -617,25 +651,117 @@ export function buyerRepliedSince(markerTurn: number, currentTurn: number): bool
   return Number.isInteger(markerTurn) && Number.isInteger(currentTurn) && currentTurn > markerTurn;
 }
 
-// ── Orders (tracking) ────────────────────────────────────────────────────────
+/**
+ * Time rule, on top of the turn counter: the buyer message being processed was RECEIVED after the
+ * turn that showed the summary finished (its assistant message was saved). Both instants come from
+ * the server clock; a missing one (summary turn never finished, no receipt time) means "no".
+ */
+export function receivedAfterSummary(messageReceivedAt: number | null, summaryDeliveredAt: number | null): boolean {
+  return (
+    messageReceivedAt !== null &&
+    summaryDeliveredAt !== null &&
+    Number.isFinite(messageReceivedAt) &&
+    Number.isFinite(summaryDeliveredAt) &&
+    messageReceivedAt > summaryDeliveredAt
+  );
+}
+
+const AFFIRMATIVE_WORDS = new Set([
+  'si', 'dale', 'listo', 'confirmo', 'confirmado', 'confirmada', 'ok', 'okay', 'okey', 'correcto',
+  'claro', 'perfecto', 'hagale', 'adelante', 'va',
+]);
+const AFFIRMATIVE_PHRASES = ['de una'];
+const NEGATIVE_WORDS = new Set(['no', 'nop', 'nope']);
+/** Stems: cancela/cancelar/cancelo, espera/espere/esperar, cambia/cambiar/cambio… */
+const NEGATIVE_STEMS = ['cancel', 'esper', 'cambi'];
 
 /**
- * "Own" order of the current buyer: same agent and either the same contact, or — only on WhatsApp,
- * where the phone is the channel identity — the same last 10 phone digits. The SQL in service.ts
- * mirrors this rule; it is kept here so it can be tested.
+ * Minimal server-side acceptance check of the buyer's last message: at least one affirmation and
+ * no negation ("sí, dale" → true; "sí pero cambia la dirección", "mejor no", "espera" → false).
+ * It does not stop an attacker (who will just say "sí"); it prevents accidental confirmations and
+ * a confirmation driven only by injected catalog text.
  */
-export function ownsOrder(
-  row: { agentId: string; contactId: string | null; buyerPhoneLast10: string | null },
-  who: { agentId: string; contactId: string | null; channel: string; contactPhoneLast10: string | null }
-): boolean {
-  if (row.agentId !== who.agentId) return false;
-  if (row.contactId !== null && who.contactId !== null && row.contactId === who.contactId) return true;
-  return (
-    who.channel === 'whatsapp' &&
-    who.contactPhoneLast10 !== null &&
-    row.buyerPhoneLast10 !== null &&
-    row.buyerPhoneLast10 === who.contactPhoneLast10
-  );
+export function isAffirmative(text: unknown): boolean {
+  if (typeof text !== 'string') return false;
+  const normalized = stripControl(text)
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9ñ]+/g, ' ')
+    .replace(/([a-z])\1{2,}/g, '$1') // "siii" → "si", "okkk" → "ok"
+    .trim();
+  if (!normalized) return false;
+  const words = normalized.split(' ');
+  if (words.some((w) => NEGATIVE_WORDS.has(w) || NEGATIVE_STEMS.some((s) => w.startsWith(s)))) return false;
+  const padded = ` ${normalized} `;
+  return words.some((w) => AFFIRMATIVE_WORDS.has(w)) || AFFIRMATIVE_PHRASES.some((p) => padded.includes(` ${p} `));
+}
+
+// ── Orders (tracking) ────────────────────────────────────────────────────────
+
+/** Identity of the current buyer for order ownership. Nothing here can be written by the buyer or the LLM. */
+export interface BuyerIdentity {
+  agentId: string;
+  organizationId: string;
+  /** WhatsApp only: last 10 digits of channel_metadata.wa_from (Meta's signed webhook). */
+  waLast10: string | null;
+  /** Real conversation id (worker), null in preview. */
+  conversationId: string | null;
+  /** Preview session id (preview), null in the worker. */
+  previewSessionId: string | null;
+}
+
+export interface OwnedOrderKeys {
+  agentId: string | null;
+  organizationId: string;
+  conversationId: string | null;
+  previewSessionId: string | null;
+  ownerWaLast10: string | null;
+  buyerPhoneLast10: string | null;
+}
+
+/**
+ * "Own" order of the current buyer. Never uses contact_id or contacts.phone (both can be merged or
+ * overwritten by the buyer / capture_variable):
+ * - WhatsApp with wa_from: same agent + org and owner_wa_last10 or buyer_phone_last10 equal to
+ *   last10(wa_from) — the Meta sender number IS the channel identity.
+ * - Any other case: same agent + org and the same conversation (preview: the same preview session).
+ * The SQL in service.ts (OWNER_WHERE) mirrors this rule; it is kept here so it can be tested.
+ */
+export function ownsOrder(row: OwnedOrderKeys, who: BuyerIdentity): boolean {
+  if (row.agentId === null || row.agentId !== who.agentId || row.organizationId !== who.organizationId) return false;
+  if (who.waLast10 !== null) return row.ownerWaLast10 === who.waLast10 || row.buyerPhoneLast10 === who.waLast10;
+  if (who.conversationId !== null) return row.conversationId === who.conversationId;
+  if (who.previewSessionId !== null) return row.previewSessionId === who.previewSessionId;
+  return false;
+}
+
+// ── Order caps ───────────────────────────────────────────────────────────────
+
+/** Rows of dropi_orders in the last 24 h ('desconocido' included) for one confirmation. */
+export interface OrderCapCounts {
+  /** 'desconocido' rows of the same conversation / preview session. */
+  conversationUnknown: number;
+  /** All rows of the same conversation / preview session. */
+  conversation: number;
+  /** All rows of the same agent with the same buyer_phone_last10. */
+  phone: number;
+  /** All rows of the same agent. */
+  agent: number;
+}
+
+export type OrderCapRefusal = 'verifying' | 'conversation_cap' | 'phone_cap' | 'agent_cap';
+
+/** null when the order may be created; otherwise why not (checked in this order). */
+export function orderCapDecision(
+  counts: OrderCapCounts,
+  limits: { perConversation: number; perPhone: number; perAgent: number }
+): OrderCapRefusal | null {
+  if (counts.conversationUnknown > 0) return 'verifying';
+  if (counts.conversation >= limits.perConversation) return 'conversation_cap';
+  if (counts.phone >= limits.perPhone) return 'phone_cap';
+  if (counts.agent >= limits.perAgent) return 'agent_cap';
+  return null;
 }
 
 export interface ParsedOrder {
@@ -703,8 +829,11 @@ export interface OrderForLlm {
   guia?: string;
 }
 
-/** Trimmed order for the LLM: never customer, name, address, document or phone. */
-export function presentOrder(order: ParsedOrder, carrier: string | null): OrderForLlm {
+/**
+ * Trimmed order for the LLM: never customer, name, address, document or phone. The tracking code
+ * (guia) only for own orders: a verified-by-phone lookup gets status, products, total and carrier.
+ */
+export function presentOrder(order: ParsedOrder, carrier: string | null, opts: { includeTracking: boolean } = { includeTracking: true }): OrderForLlm {
   return {
     numero_pedido: order.orderId,
     estado: order.status,
@@ -713,7 +842,7 @@ export function presentOrder(order: ParsedOrder, carrier: string | null): OrderF
     total: order.total,
     moneda: order.currency,
     ...(carrier ? { transportadora: carrier } : {}),
-    ...(order.trackingCode ? { guia: order.trackingCode } : {}),
+    ...(opts.includeTracking && order.trackingCode ? { guia: order.trackingCode } : {}),
   };
 }
 

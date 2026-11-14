@@ -113,7 +113,8 @@ async function processExport(exportRequestId: string, organizationId: string): P
     ),
     query(
       `SELECT id, agent_id, conversation_id, contact_id, external_order_id, status_local, status_cached,
-              total, currency, items, city_name, carrier_id, created_at, updated_at
+              total, currency, items, city_name, buyer_phone_last10, owner_wa_last10, preview_session_id, carrier_id,
+              created_at, updated_at
        FROM dropi_orders WHERE organization_id = $1 ORDER BY created_at`,
       [organizationId]
     ),

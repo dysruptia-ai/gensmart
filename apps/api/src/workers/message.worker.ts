@@ -30,6 +30,7 @@ import {
   dropiSalesToolDefinitions,
   executeDropiSalesTool,
   isDropiSalesToolName,
+  markDropiSummaryDelivered,
   mcpToolExposure,
   requiresSelectedTools,
   type DropiSalesBinding,
@@ -712,6 +713,13 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       `SELECT COUNT(*)::text AS n FROM messages WHERE conversation_id = $1 AND role = 'user'`,
       [conversationId]
     );
+    // Server receipt time of the newest buffered message (set by pushToBuffer) and the buyer's last
+    // text: dropi_confirmar_pedido needs a message received after the summary turn that says yes.
+    const receipts = bufferedItems
+      .map((item) => item.receivedAt)
+      .filter((t): t is number => typeof t === 'number' && Number.isFinite(t));
+    const lastText = [...textItems].reverse().find((item) => item.content)?.content ?? '';
+    const waFrom = conv.channel === 'whatsapp' ? conv.channel_metadata?.['wa_from'] : undefined;
     dropiSales = buildDropiSalesContext({
       binding: dropiBinding,
       execute: mcpOAuth.executeMCPToolWithOAuth,
@@ -719,9 +727,13 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       organizationId,
       scopeId: conversationId,
       conversationId,
+      previewSessionId: null,
       contactId: conv.contact_id,
       channel: conv.channel,
+      waFrom: typeof waFrom === 'string' ? waFrom : null,
       currentUserTurn: Number(turns.rows[0]?.n ?? 0) + 1,
+      currentMessageReceivedAt: receipts.length > 0 ? Math.max(...receipts) : null,
+      lastBuyerMessage: lastText,
     });
   }
 
@@ -978,6 +990,9 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     Object.keys(userMsgMeta).length > 0 ? userMsgMeta : undefined,
     deliveredIntermediates
   );
+
+  // The summary shown in this turn is now saved (and is sent below, in Step 14).
+  await markDropiSummaryDelivered(dropiSales);
 
   // Step 11: Update conversation stats
   await updateConversation(conversationId, bufferedItems.length + 1 + deliveredIntermediates.length);

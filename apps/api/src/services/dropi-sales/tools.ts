@@ -16,6 +16,7 @@ import {
   confirmOrder,
   createRealDeps,
   listCategories,
+  markSummaryDelivered,
   orderStatus,
   prepareOrder,
   quoteShipping,
@@ -94,9 +95,15 @@ export function buildDropiSalesContext(input: {
   organizationId: string;
   scopeId: string;
   conversationId: string | null;
+  previewSessionId: string | null;
   contactId: string | null;
   channel: string;
+  /** channel_metadata.wa_from of a WhatsApp conversation (Meta's signed webhook), else null. */
+  waFrom: string | null;
   currentUserTurn: number;
+  /** Server receipt time (ms) of the newest buyer message of this turn; null when unknown. */
+  currentMessageReceivedAt: number | null;
+  lastBuyerMessage: string;
 }): DropiSalesContext {
   const { binding, execute } = input;
   return {
@@ -107,9 +114,14 @@ export function buildDropiSalesContext(input: {
     organizationId: input.organizationId,
     scopeId: input.scopeId,
     conversationId: input.conversationId,
+    previewSessionId: input.previewSessionId,
     contactId: input.contactId,
     channel: input.channel,
+    waFrom: input.channel === 'whatsapp' && typeof input.waFrom === 'string' ? input.waFrom : null,
     currentUserTurn: input.currentUserTurn,
+    currentMessageReceivedAt: input.currentMessageReceivedAt,
+    lastBuyerMessage: input.lastBuyerMessage,
+    turn: { preparedToken: null },
   };
 }
 
@@ -193,7 +205,8 @@ export const dropiSalesToolDefinitions: ToolDefinition[] = [
     name: 'dropi_confirmar_pedido',
     description:
       'Crea el pedido real. Llámala SOLO después de mostrar el resumen de dropi_preparar_pedido y de que el cliente ' +
-      'responda confirmándolo. Si devuelve requiere_confirmacion, espera la respuesta del cliente.',
+      'responda confirmándolo. Si devuelve requiere_confirmacion, espera la respuesta del cliente. ' +
+      'Si devuelve un mensaje (por ejemplo, que un asesor lo contactará o que su pedido está en verificación), comunícalo tal cual.',
     parameters: {
       type: 'object',
       properties: {
@@ -291,6 +304,20 @@ function invalidArgs(error: z.ZodError): string {
 // ── Dispatcher ───────────────────────────────────────────────────────────────
 
 let realDeps: DropiSalesDeps | null = null;
+
+/**
+ * To be called once the turn's assistant message is saved (worker: after saveMessages; preview:
+ * after the history is persisted). Never throws.
+ */
+export async function markDropiSummaryDelivered(
+  ctx: DropiSalesContext | null,
+  deps: DropiSalesDeps = (realDeps ??= createRealDeps())
+): Promise<void> {
+  if (!ctx) return;
+  await markSummaryDelivered(ctx, deps).catch((err: Error) =>
+    deps.log.warn(`[dropi-sales] summary stamp failed (conversation ${ctx.scopeId}): ${err.name}`)
+  );
+}
 
 /** Executes a sales tool. Always returns a string for the LLM (JSON with neutral messages). */
 export async function executeDropiSalesTool(
