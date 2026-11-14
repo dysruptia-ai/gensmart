@@ -40,6 +40,8 @@ export interface OAuthStatePayload {
   providerId: string;
   codeVerifier: string;
   redirectUri: string;
+  /** User that started the flow: the authenticated completion step must be performed by the same user. */
+  userId: string;
 }
 
 export interface TokenResponse {
@@ -58,6 +60,8 @@ export interface OAuthDeps {
   kv: {
     /** SET key value EX seconds */
     setEx(key: string, value: string, seconds: number): Promise<void>;
+    /** Plain GET (no delete). */
+    get(key: string): Promise<string | null>;
     /** Atomic GET + DEL. */
     getDel(key: string): Promise<string | null>;
     /** SET key value PX ms NX. Returns true when the lock was acquired. */
@@ -120,11 +124,15 @@ export class McpOAuthExchangeError extends Error {
 export const STATE_KEY_PREFIX = 'mcp:oauth:state:';
 export const REFRESH_LOCK_PREFIX = 'mcp:oauth:refresh-lock:';
 export const STATE_TTL_SECONDS = 600;
-export const REFRESH_LOCK_TTL_MS = 20_000;
+export const TICKET_KEY_PREFIX = 'mcp:oauth:ticket:';
+export const TICKET_TTL_SECONDS = 300;
+/** Must exceed the HTTP timeout (15 s) plus DB reads inside the lock, or a second process could replay a consumed refresh token. */
+export const REFRESH_LOCK_TTL_MS = 60_000;
 export const LOCK_WAIT_POLL_MS = 250;
-export const LOCK_WAIT_MAX_MS = 10_000;
+export const LOCK_WAIT_MAX_MS = 20_000;
 export const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const STATE_PATTERN = /^[a-f0-9]{48}$/;
+export const TICKET_PATTERN = /^[a-f0-9]{48}$/;
 
 // ── PKCE ─────────────────────────────────────────────────────────────────────
 
@@ -158,6 +166,7 @@ export async function startAuthorizationCore(
   input: {
     organizationId: string;
     agentId: string;
+    userId: string;
     providerId: string;
     redirectUri: string;
     config: AuthorizeConfig;
@@ -172,6 +181,7 @@ export async function startAuthorizationCore(
     providerId: input.providerId,
     codeVerifier: verifier,
     redirectUri: input.redirectUri,
+    userId: input.userId,
   };
   await deps.kv.setEx(STATE_KEY_PREFIX + state, deps.encrypt(JSON.stringify(payload)), STATE_TTL_SECONDS);
 
@@ -199,7 +209,7 @@ export async function consumeState(deps: OAuthDeps, state: string): Promise<OAut
   if (!raw) throw new McpOAuthStateError();
   try {
     const p = JSON.parse(deps.decrypt(raw)) as Partial<OAuthStatePayload>;
-    if (!p.organizationId || !p.agentId || !p.providerId || !p.codeVerifier || !p.redirectUri) {
+    if (!p.organizationId || !p.agentId || !p.providerId || !p.codeVerifier || !p.redirectUri || !p.userId) {
       throw new McpOAuthStateError();
     }
     return {
@@ -208,10 +218,80 @@ export async function consumeState(deps: OAuthDeps, state: string): Promise<OAut
       providerId: p.providerId,
       codeVerifier: p.codeVerifier,
       redirectUri: p.redirectUri,
+      userId: p.userId,
     };
   } catch {
     throw new McpOAuthStateError();
   }
+}
+
+/** Reads the state WITHOUT consuming it (callback step: only to know which agent to redirect to). */
+export async function peekState(deps: OAuthDeps, state: string): Promise<OAuthStatePayload | null> {
+  if (typeof state !== 'string' || !STATE_PATTERN.test(state)) return null;
+  try {
+    const raw = await deps.kv.get(STATE_KEY_PREFIX + state);
+    if (!raw) return null;
+    const p = JSON.parse(deps.decrypt(raw)) as Partial<OAuthStatePayload>;
+    if (!p.agentId || !p.providerId) return null;
+    return p as OAuthStatePayload;
+  } catch {
+    return null;
+  }
+}
+
+/** Single-use ticket carrying {state, code} from the public callback to the authenticated completion. */
+export async function createTicket(deps: OAuthDeps, payload: { state: string; code: string }): Promise<string> {
+  const ticket = deps.randomBytes(24).toString('hex');
+  await deps.kv.setEx(TICKET_KEY_PREFIX + ticket, deps.encrypt(JSON.stringify(payload)), TICKET_TTL_SECONDS);
+  return ticket;
+}
+
+export async function consumeTicket(deps: OAuthDeps, ticket: string): Promise<{ state: string; code: string }> {
+  if (typeof ticket !== 'string' || !TICKET_PATTERN.test(ticket)) throw new McpOAuthStateError();
+  let raw: string | null;
+  try {
+    raw = await deps.kv.getDel(TICKET_KEY_PREFIX + ticket);
+  } catch {
+    throw new McpOAuthStateError();
+  }
+  if (!raw) throw new McpOAuthStateError();
+  try {
+    const p = JSON.parse(deps.decrypt(raw)) as { state?: unknown; code?: unknown };
+    if (typeof p.state !== 'string' || typeof p.code !== 'string' || !p.state || !p.code) throw new McpOAuthStateError();
+    return { state: p.state, code: p.code };
+  } catch {
+    throw new McpOAuthStateError();
+  }
+}
+
+export class McpOAuthForbiddenError extends Error {
+  readonly code = 'FORBIDDEN';
+  constructor() {
+    super('OAuth completion not allowed');
+    this.name = 'McpOAuthForbiddenError';
+  }
+}
+
+/**
+ * Authenticated completion gate: the state must belong to THIS org, agent, provider and user.
+ * Consumes the ticket and the state (both single use) before comparing, so a mismatch cannot be retried.
+ * Returns the state payload and the code; the caller then exchanges the code.
+ */
+export async function claimTicket(
+  deps: OAuthDeps,
+  input: { ticket: string; organizationId: string; agentId: string; providerId: string; userId: string }
+): Promise<{ state: OAuthStatePayload; code: string }> {
+  const t = await consumeTicket(deps, input.ticket);
+  const state = await consumeState(deps, t.state);
+  if (
+    state.organizationId !== input.organizationId ||
+    state.agentId !== input.agentId ||
+    state.providerId !== input.providerId ||
+    state.userId !== input.userId
+  ) {
+    throw new McpOAuthForbiddenError();
+  }
+  return { state, code: t.code };
 }
 
 // ── Token endpoint ───────────────────────────────────────────────────────────
@@ -329,6 +409,9 @@ export async function getValidAccessTokenCore(deps: OAuthDeps, input: GetTokenIn
   const direct = usableStored(deps, initial, input);
   if (direct) return direct;
 
+  // Resolve endpoints BEFORE taking the lock (settings/profile lookups must not eat lock time).
+  const endpoints = await input.getEndpoints();
+
   const lockKey = REFRESH_LOCK_PREFIX + toolId;
   const lockValue = deps.randomUUID();
   const deadline = deps.now() + LOCK_WAIT_MAX_MS;
@@ -355,7 +438,6 @@ export async function getValidAccessTokenCore(deps: OAuthDeps, input: GetTokenIn
     const again = usableStored(deps, stored, input);
     if (again) return again;
 
-    const endpoints = await input.getEndpoints();
     const refreshToken = deps.decrypt(stored.refresh_token_encrypted);
     const form: Record<string, string> = {
       grant_type: 'refresh_token',
@@ -415,8 +497,10 @@ export function isRevokedToolResult(content: string): boolean {
   return typeof content === 'string' && /token has been revoked/i.test(content);
 }
 
-export const OAUTH_UNAVAILABLE_MESSAGE =
-  'La conexión con Dropi no está disponible en este momento; un asesor revisará el pedido.';
+/** Neutral text for the LLM (no technical detail, no promises). Treatment of the buyer is up to the template. */
+export function oauthUnavailableMessage(providerName: string): string {
+  return `No pude consultar ${providerName} en este momento. Intenta de nuevo más tarde.`;
+}
 
 // ── Tool execution wrapper (401 retry + revocation handling) ─────────────────
 
@@ -429,6 +513,8 @@ export interface ExecuteWithOAuthDeps {
   execute: (headers: Record<string, string>) => Promise<McpExecResult>;
   getToken: (opts: { forceRefresh: boolean; staleAccessToken?: string }) => Promise<string>;
   markNeedsReconnect: () => Promise<void>;
+  /** Provider display name used in the neutral message. */
+  providerName: string;
   log: OAuthDeps['log'];
 }
 
@@ -439,16 +525,17 @@ function bearerOf(headers: Record<string, string>): string | undefined {
 
 /**
  * Runs an MCP call with the Bearer token already in `headers`. On HTTP 401 forces ONE refresh and
- * retries ONCE. On revocation (or reconnect-required) marks the tool and returns a neutral message
- * so the agent never exposes technical details to the buyer.
+ * retries ONCE. On revocation (isError result with the revoked text) or reconnect-required marks the
+ * tool and returns a neutral message so the agent never exposes technical details to the buyer.
  */
 export async function executeWithOAuthCore(
   deps: ExecuteWithOAuthDeps,
   headers: Record<string, string>
 ): Promise<McpExecResult> {
+  const neutral = (): McpExecResult => ({ content: oauthUnavailableMessage(deps.providerName), isError: true });
   const handleReconnect = async (): Promise<McpExecResult> => {
     await deps.markNeedsReconnect().catch((e) => deps.log.error(`[mcp-oauth] markNeedsReconnect failed: ${(e as Error).message}`));
-    return { content: OAUTH_UNAVAILABLE_MESSAGE, isError: true };
+    return neutral();
   };
 
   let result = await deps.execute(headers);
@@ -460,11 +547,12 @@ export async function executeWithOAuthCore(
     } catch (err) {
       if (err instanceof McpOAuthReconnectRequiredError) return handleReconnect();
       deps.log.error(`[mcp-oauth] Token refresh after 401 failed: ${(err as Error).message}`);
-      return { content: OAUTH_UNAVAILABLE_MESSAGE, isError: true };
+      return neutral();
     }
   }
 
-  if (isRevokedToolResult(result.content)) {
+  // Only an error result can mean a revoked session: a successful result may legitimately contain the text.
+  if (result.isError && isRevokedToolResult(result.content)) {
     deps.log.warn('[mcp-oauth] Provider reported a revoked session');
     return handleReconnect();
   }

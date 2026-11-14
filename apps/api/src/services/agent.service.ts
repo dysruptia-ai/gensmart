@@ -935,7 +935,15 @@ export async function updateTool(
   }
   if (configToStore !== undefined) {
     params.push(JSON.stringify(configToStore));
-    setClauses.push(`config = $${params.length}`);
+    const n = params.length;
+    // `config.oauth` is written ONLY by the MCP OAuth service. Any `oauth` in the incoming object is
+    // ignored and the one stored in the DB AT THIS MOMENT is kept (a stale copy would restore an
+    // already-rotated refresh token and make the provider revoke the session).
+    setClauses.push(
+      `config = CASE WHEN config ? 'oauth'
+                     THEN ($${n}::jsonb - 'oauth') || jsonb_build_object('oauth', config->'oauth')
+                     ELSE ($${n}::jsonb - 'oauth') END`
+    );
   }
   if (data.isEnabled !== undefined) {
     params.push(data.isEnabled);

@@ -525,7 +525,7 @@ router.post(
       let profileAutoHeaders: Record<string, string> = {};
       if (providerId) {
         profile = await mcpProviders.findProfileById(providerId);
-        if (profile && profile.is_active) {
+        if (profile && profile.is_active && mcpProviders.isProfileVisibleToOrg(profile, req.org!.id)) {
           if (!serverUrlMatchesProfile(profile, server_url)) {
             res.status(400).json({
               success: false,
@@ -632,7 +632,7 @@ router.post(
             mcpTransport,
             extraHeaders
           );
-          if (result.isError || mcpOAuth.isRevokedToolResult(result.content)) {
+          if (result.isError) {
             if (profile.oauth_config && toolId && mcpOAuth.isRevokedToolResult(result.content)) {
               await mcpOAuth.markNeedsReconnect(String(toolId), String(req.params['id'])).catch(() => {});
             }
@@ -745,10 +745,51 @@ router.post(
       const authorizeUrl = await mcpOAuth.startAuthorization({
         organizationId: req.org!.id,
         agentId,
+        userId: req.user!.userId,
         profile,
         redirectUri: `${env.API_URL}/api/oauth/${encodeURIComponent(profile.id)}/callback`,
       });
       res.status(200).json({ authorizeUrl });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/agents/:id/tools/mcp/:providerId/oauth/complete
+// Step 2 of the OAuth flow (authenticated). The public callback only parks {state, code} in a
+// single-use ticket; here the code is exchanged ONLY if the state was started by this same user,
+// org, agent and provider. Errors are generic on purpose.
+const oauthCompleteSchema = z.object({ ticket: z.string().regex(/^[a-f0-9]{48}$/) });
+router.post(
+  '/:id/tools/mcp/:providerId/oauth/complete',
+  validateUUID('id'),
+  rateLimiter({ windowSeconds: 60, maxRequests: 20, keyPrefix: 'mcp-oauth-complete', keyFn: (req) => req.org?.id ?? null }),
+  validate(oauthCompleteSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const providerId = String(req.params['providerId']);
+      try {
+        const done = await mcpOAuth.completeAuthorizationWithTicket({
+          ticket: (req.body as { ticket: string }).ticket,
+          organizationId: req.org!.id,
+          agentId,
+          providerId,
+          userId: req.user!.userId,
+        });
+        res.status(200).json({ success: true, toolId: done.toolId });
+      } catch (err) {
+        if (err instanceof mcpOAuth.McpOAuthForbiddenError) {
+          res.status(403).json({ error: { message: 'Not allowed', code: 'FORBIDDEN' } });
+        } else if (err instanceof mcpOAuth.McpOAuthStateError) {
+          res.status(400).json({ error: { message: 'Connection session expired', code: 'CONNECT_SESSION_EXPIRED' } });
+        } else if (err instanceof mcpOAuth.McpOAuthCompletionError) {
+          res.status(502).json({ error: { message: 'Could not complete the connection', code: err.reason.toUpperCase() } });
+        } else {
+          throw err;
+        }
+      }
     } catch (err) {
       next(err);
     }
@@ -841,7 +882,6 @@ router.put(
             headers?: EncryptedHeader[];
             webhookSecret_encrypted?: string;
             providerId?: string;
-            oauth?: Record<string, unknown>;
           };
           const validated = mcpConfigInputSchema.parse(req.body.config);
 
@@ -901,8 +941,7 @@ router.put(
             // Preserve secret — rotation is explicit via /regenerate-webhook-secret
             webhookSecret_encrypted: existingCfg.webhookSecret_encrypted,
             ...(effectiveProviderId ? { providerId: effectiveProviderId } : {}),
-            // OAuth tokens are server-managed (never sent by the client); a config save must not drop them.
-            ...(existingCfg.oauth ? { oauth: existingCfg.oauth } : {}),
+            // config.oauth is not handled here: agentService.updateTool always keeps the DB's copy.
           };
         }
       }
@@ -956,14 +995,12 @@ router.post(
       }
 
       const newSecret = generateWebhookSecret();
-      const newConfig = {
-        ...existing.rows[0].config,
-        webhookSecret_encrypted: encrypt(newSecret),
-      };
-
+      // Atomic single-key update: never rewrites the whole config (config.oauth may be rotated concurrently).
       await query(
-        'UPDATE agent_tools SET config = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3',
-        [JSON.stringify(newConfig), toolId, agentId]
+        `UPDATE agent_tools
+            SET config = jsonb_set(config, '{webhookSecret_encrypted}', to_jsonb($1::text), true), updated_at = NOW()
+          WHERE id = $2 AND agent_id = $3`,
+        [encrypt(newSecret), toolId, agentId]
       );
 
       // Invalidate MCP tool cache so the worker picks up the new secret on next call

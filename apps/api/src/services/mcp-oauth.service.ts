@@ -20,6 +20,9 @@ import { serverUrlMatchesProfile } from './mcp-provider-url';
 import {
   startAuthorizationCore,
   consumeState,
+  peekState,
+  createTicket,
+  claimTicket,
   exchangeAuthorizationCode,
   buildStoredOAuth,
   getValidAccessTokenCore,
@@ -28,6 +31,7 @@ import {
   McpOAuthReconnectRequiredError,
   McpOAuthStateError,
   McpOAuthExchangeError,
+  McpOAuthForbiddenError,
   type OAuthStatePayload,
   type OAuthDeps,
   type OAuthEndpoints,
@@ -42,7 +46,8 @@ export {
   McpOAuthExchangeError,
   McpOAuthTransientError,
   isRevokedToolResult,
-  OAUTH_UNAVAILABLE_MESSAGE,
+  McpOAuthForbiddenError,
+  oauthUnavailableMessage,
 } from './mcp-oauth.core';
 
 const HTTP_TIMEOUT_MS = 15_000;
@@ -78,6 +83,18 @@ async function loadOAuth(toolId: string, agentId: string): Promise<StoredOAuth |
   return r.rows[0]?.oauth ?? null;
 }
 
+/**
+ * Replaces the WHOLE `config.oauth` block (no merge: nothing of a previous session survives).
+ * Only the OAuth service writes config.oauth; agentService.updateTool preserves it.
+ */
+async function replaceOAuth(toolId: string, agentId: string, oauth: StoredOAuth): Promise<void> {
+  await query(
+    `UPDATE agent_tools SET config = jsonb_set(config, '{oauth}', $3::jsonb, true), is_enabled = true, updated_at = NOW()
+      WHERE id = $1 AND agent_id = $2`,
+    [toolId, agentId, JSON.stringify(oauth)]
+  );
+}
+
 async function mergeOAuth(toolId: string, agentId: string, patch: Partial<StoredOAuth>): Promise<void> {
   // Merge only config.oauth in one UPDATE: concurrent edits to other config keys are not overwritten.
   await query(
@@ -98,6 +115,7 @@ const realDeps: OAuthDeps = {
         throw new AppError(503, 'Could not start the connection session. Try again.', 'CONNECT_SESSION_UNAVAILABLE');
       }
     },
+    get: (key) => redis.get(key),
     getDel: (key) => redis.getdel(key),
     setNxPx: async (key, value, ms) => (await redis.set(key, value, 'PX', ms, 'NX')) === 'OK',
     delIfEquals: async (key, value) => {
@@ -155,6 +173,7 @@ export async function findOAuthProfileForOrg(
 export async function startAuthorization(input: {
   organizationId: string;
   agentId: string;
+  userId: string;
   profile: mcpProviders.MCPProviderProfile;
   redirectUri: string;
 }): Promise<string> {
@@ -163,6 +182,7 @@ export async function startAuthorization(input: {
   return startAuthorizationCore(realDeps, {
     organizationId: input.organizationId,
     agentId: input.agentId,
+    userId: input.userId,
     providerId: input.profile.id,
     redirectUri: input.redirectUri,
     config: {
@@ -174,18 +194,23 @@ export async function startAuthorization(input: {
   });
 }
 
-/** Failure after the state was consumed: carries the agent so the callback can redirect back to it. */
-export class McpOAuthCompletionError extends Error {
-  constructor(
-    readonly reason: 'exchange_failed' | 'server_error',
-    readonly agentId: string
-  ) {
-    super(reason);
-    this.name = 'McpOAuthCompletionError';
-  }
+/**
+ * Public callback, step 1: does NOT exchange the code nor consume the state. Verifies the state
+ * exists for this provider and parks {state, code} in a single-use ticket (5 min). Returns the
+ * agent to redirect to plus the ticket, or null when the state is invalid/expired.
+ */
+export async function createCallbackTicket(input: {
+  state: string;
+  code: string;
+  providerId: string;
+}): Promise<{ agentId: string; ticket: string } | null> {
+  const st = await peekState(realDeps, input.state);
+  if (!st || st.providerId !== input.providerId) return null;
+  const ticket = await createTicket(realDeps, { state: input.state, code: input.code });
+  return { agentId: st.agentId, ticket };
 }
 
-/** Consumes a state (single use) only to learn which agent to redirect to (user denied access). */
+/** Provider returned an error (user denied): consume the state only to learn which agent to go back to. */
 export async function consumeStateAgentId(state: string, providerId: string): Promise<string | undefined> {
   try {
     const st = await consumeState(realDeps, state);
@@ -201,21 +226,33 @@ export interface CompletedAuthorization {
   toolId: string;
 }
 
-export async function completeAuthorization(input: {
-  state: string;
-  code: string;
-  /** Provider id taken from the callback URL; must match the one stored in the state. */
+/**
+ * Authenticated completion (step 2). The state must have been started by this same user, org, agent
+ * and provider; otherwise McpOAuthForbiddenError and NO call to the token endpoint.
+ */
+export async function completeAuthorizationWithTicket(input: {
+  ticket: string;
+  organizationId: string;
+  agentId: string;
   providerId: string;
+  userId: string;
 }): Promise<CompletedAuthorization> {
-  const st = await consumeState(realDeps, input.state);
-  if (st.providerId !== input.providerId) throw new McpOAuthStateError();
+  const { state: st, code } = await claimTicket(realDeps, input);
   try {
-    return await finishAuthorization(st, input.code);
+    return await finishAuthorization(st, code);
   } catch (err) {
-    if (err instanceof McpOAuthStateError) throw err;
+    if (err instanceof McpOAuthStateError || err instanceof McpOAuthForbiddenError) throw err;
     const reason = err instanceof McpOAuthExchangeError ? 'exchange_failed' : 'server_error';
     if (reason === 'server_error') console.error('[mcp-oauth] Completing authorization failed:', (err as Error).message);
-    throw new McpOAuthCompletionError(reason, st.agentId);
+    throw new McpOAuthCompletionError(reason);
+  }
+}
+
+/** Failure after the ticket/state were consumed (exchange or persistence). */
+export class McpOAuthCompletionError extends Error {
+  constructor(readonly reason: 'exchange_failed' | 'server_error') {
+    super(reason);
+    this.name = 'McpOAuthCompletionError';
   }
 }
 
@@ -255,15 +292,15 @@ async function finishAuthorization(st: OAuthStatePayload, code: string): Promise
     toolId = prev.id;
     selectedTools = Array.isArray(prev.config['selected_tools']) ? (prev.config['selected_tools'] as string[]) : [];
     const previousConnectedAt = (prev.config['oauth'] as Partial<StoredOAuth> | undefined)?.connected_at;
-    // Replace oauth completely, enable, keep everything else (selected_tools, name, ...).
-    const config: Record<string, unknown> = {
-      ...prev.config,
-      server_url: serverUrl,
-      transport,
-      providerId: profile.id,
-      oauth: { ...oauth, connected_at: previousConnectedAt ?? oauth.connected_at },
-    };
-    await agentService.updateTool(st.organizationId, st.agentId, toolId, { config, isEnabled: true });
+    // 1) Rest of the config (selected_tools, name, ...) WITHOUT oauth: updateTool keeps the DB's oauth.
+    const { oauth: _prevOAuth, ...restConfig } = prev.config;
+    void _prevOAuth;
+    await agentService.updateTool(st.organizationId, st.agentId, toolId, {
+      config: { ...restConfig, server_url: serverUrl, transport, providerId: profile.id },
+      isEnabled: true,
+    });
+    // 2) Replace the whole oauth block (no merge, nothing of the previous session survives).
+    await replaceOAuth(toolId, st.agentId, { ...oauth, connected_at: previousConnectedAt ?? oauth.connected_at });
   } else {
     const config: Record<string, unknown> = {
       server_url: serverUrl,
@@ -346,6 +383,8 @@ export interface McpOAuthContext {
   toolId: string;
   agentId: string;
   providerId: string;
+  /** Provider display name for the neutral message shown to the LLM. */
+  providerName: string;
 }
 
 export interface BuiltMcpHeaders {
@@ -407,7 +446,7 @@ export async function buildMcpToolHeaders(input: {
     return { headers, oauth: null, needsReconnect: true };
   }
 
-  const ctx: McpOAuthContext = { toolId, agentId, providerId: oauthProfile.id };
+  const ctx: McpOAuthContext = { toolId, agentId, providerId: oauthProfile.id, providerName: oauthProfile.name };
   try {
     headers['Authorization'] = `Bearer ${await getValidAccessToken(ctx)}`;
   } catch (err) {
@@ -439,6 +478,7 @@ export async function executeMCPToolWithOAuth(
     {
       execute: (h) => executeMCPTool(serverUrl, toolName, args, transport, h),
       getToken: (opts) => getValidAccessToken({ ...oauth, ...opts }),
+      providerName: oauth.providerName,
       markNeedsReconnect: () => markNeedsReconnect(oauth.toolId, oauth.agentId),
       log: realDeps.log,
     },

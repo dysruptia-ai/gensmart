@@ -3,19 +3,16 @@
  *
  * GET /api/oauth/:providerId/callback?code&state[&error&error_description]
  *
- * There is no GenSmart session here (the browser comes back from the provider): security comes from
- * the single-use `state` stored in Redis (bound to org + agent + PKCE verifier). The handler ALWAYS
- * answers with a 302 to the frontend and never puts internal details in the URL.
+ * There is no GenSmart session here (the browser comes back from the provider), so this handler
+ * NEVER exchanges the code: it parks {state, code} in a single-use ticket (5 min) and redirects to
+ * the frontend, which calls the AUTHENTICATED POST /api/agents/:id/tools/mcp/:providerId/oauth/complete.
+ * That step verifies the state was started by the same user/org/agent (anti login-CSRF).
+ * Always answers 302 and never puts internal details in the URL.
  */
 import { Router, Request, Response } from 'express';
 import { rateLimiter } from '../middleware/rateLimiter';
 import { env } from '../config/env';
-import {
-  completeAuthorization,
-  consumeStateAgentId,
-  McpOAuthStateError,
-  McpOAuthCompletionError,
-} from '../services/mcp-oauth.service';
+import { createCallbackTicket, consumeStateAgentId } from '../services/mcp-oauth.service';
 
 const router = Router();
 
@@ -55,18 +52,16 @@ router.get('/:providerId/callback', callbackLimiter, async (req: Request, res: R
       return;
     }
 
-    const done = await completeAuthorization({ state, code, providerId });
-    const qs = new URLSearchParams({ mcp_oauth: 'connected', provider: done.providerId });
-    res.redirect(302, `${env.FRONTEND_URL}/dashboard/agents/${encodeURIComponent(done.agentId)}?${qs.toString()}`);
-  } catch (err) {
-    if (err instanceof McpOAuthStateError) {
-      redirectError(res, safeProvider, 'session_expired');
-    } else if (err instanceof McpOAuthCompletionError) {
-      redirectError(res, safeProvider, err.reason, err.agentId);
-    } else {
-      console.error(`[mcp-oauth] Callback failed for provider ${safeProvider}:`, (err as Error).message);
-      redirectError(res, safeProvider, 'server_error');
+    const parked = await createCallbackTicket({ state, code, providerId });
+    if (!parked) {
+      redirectError(res, providerId, 'session_expired');
+      return;
     }
+    const qs = new URLSearchParams({ mcp_oauth: 'pending', provider: providerId, ticket: parked.ticket });
+    res.redirect(302, `${env.FRONTEND_URL}/dashboard/agents/${encodeURIComponent(parked.agentId)}?${qs.toString()}`);
+  } catch (err) {
+    console.error(`[mcp-oauth] Callback failed for provider ${safeProvider}:`, (err as Error).message);
+    redirectError(res, safeProvider, 'server_error');
   }
 });
 

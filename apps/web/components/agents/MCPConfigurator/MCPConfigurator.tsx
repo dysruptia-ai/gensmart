@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Plug, Check, X, ChevronDown, ChevronUp, Info,
+  Plug, Check, X, ChevronDown, ChevronUp, Info, AlertTriangle,
   Plus, Eye, EyeOff, Copy, RefreshCw, Wrench, ArrowLeft,
 } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -528,20 +528,21 @@ export default function MCPConfigurator({
 
         {profile.requires_oauth_connect && toolId && (
           <div className={styles.fieldGroup}>
-          <div className={styles.statusOk}>
-            <Check size={14} />
-            {profile.uses_mcp_oauth && oauthStatus === 'needs_reconnect' ? (
-              <span className={styles.statusError}>
-                {t('agents.tools.mcp.provider.mcpOauthNeedsReconnect', { name: profile.name })}
-              </span>
-            ) : (
+          {profile.uses_mcp_oauth && oauthStatus === 'needs_reconnect' ? (
+            <div className={styles.statusWarn}>
+              <AlertTriangle size={14} />
+              <span>{t('agents.tools.mcp.provider.mcpOauthNeedsReconnect', { name: profile.name })}</span>
+            </div>
+          ) : (
+            <div className={styles.statusOk}>
+              <Check size={14} />
               <span>
                 {profile.uses_mcp_oauth
                   ? t('agents.tools.mcp.provider.mcpOauthConnected', { name: profile.name })
                   : t('agents.tools.mcp.provider.oauthConnectedStatus', { name: profile.name })}
               </span>
-            )}
-          </div>
+            </div>
+          )}
           <div>
             <Button
               variant="secondary"

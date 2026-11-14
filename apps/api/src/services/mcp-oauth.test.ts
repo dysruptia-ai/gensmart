@@ -14,7 +14,14 @@ import {
   McpOAuthReconnectRequiredError,
   McpOAuthTransientError,
   McpOAuthStateError,
-  OAUTH_UNAVAILABLE_MESSAGE,
+  oauthUnavailableMessage,
+  createTicket,
+  claimTicket,
+  peekState,
+  McpOAuthForbiddenError,
+  REFRESH_LOCK_TTL_MS,
+  LOCK_WAIT_MAX_MS,
+  TICKET_KEY_PREFIX,
   STATE_KEY_PREFIX,
   type OAuthDeps,
   type StoredOAuth,
@@ -48,6 +55,7 @@ function fakeWorld(opts: { tokenResponses?: Array<HttpPostResult | Error>; start
   const deps: OAuthDeps = {
     kv: {
       setEx: async (k, v) => { kv.set(k, v); },
+      get: async (k) => kv.get(k) ?? null,
       getDel: async (k) => { const v = kv.get(k) ?? null; kv.delete(k); return v; },
       setNxPx: async (k, v) => { if (kv.has(k)) return false; kv.set(k, v); return true; },
       delIfEquals: async (k, v) => { if (kv.get(k) === v) kv.delete(k); },
@@ -92,7 +100,7 @@ test('PKCE: challenge is S256 of verifier, base64url without padding', () => {
 test('state: authorize URL carries PKCE params and state is single-use', async () => {
   const w = fakeWorld();
   const url = new URL(await startAuthorizationCore(w.deps, {
-    organizationId: 'o1', agentId: 'a1', providerId: 'dropi', redirectUri: 'http://localhost:4000/api/oauth/dropi/callback',
+    organizationId: 'o1', agentId: 'a1', userId: 'u1', providerId: 'dropi', redirectUri: 'http://localhost:4000/api/oauth/dropi/callback',
     config: { authorizationEndpoint: 'https://oauth.example/authorize', clientId: 'cid', scope: 'mcp', resource: 'https://mcp.example/mcp' },
   }));
   assert.equal(url.searchParams.get('response_type'), 'code');
@@ -209,6 +217,7 @@ function execDeps(results: Array<{ content: string; isError: boolean }>, tokenFn
       execute: async (h: Record<string, string>) => { calls.push(h); return results.shift()!; },
       getToken: tokenFn ?? (async () => 'fresh'),
       markNeedsReconnect: async () => { reconnectMarked += 1; },
+      providerName: 'Dropi',
       log: { info: () => {}, warn: () => {}, error: () => {} },
     },
   };
@@ -238,14 +247,14 @@ test('execute: second 401 is returned as is (no loop)', async () => {
 test('execute: revoked session → needs_reconnect + neutral Spanish message (no technical detail)', async () => {
   const e = execDeps([{ content: 'sesión MCP no válida (token has been revoked): reconecta', isError: true }]);
   const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' });
-  assert.equal(r.content, OAUTH_UNAVAILABLE_MESSAGE);
+  assert.equal(r.content, oauthUnavailableMessage('Dropi'));
   assert.equal(e.marked(), 1);
 });
 
 test('execute: reconnect-required during 401 refresh → needs_reconnect + neutral message', async () => {
   const e = execDeps([{ content: 'HTTP 401', isError: true }], async () => { throw new McpOAuthReconnectRequiredError(); });
   const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' });
-  assert.equal(r.content, OAUTH_UNAVAILABLE_MESSAGE);
+  assert.equal(r.content, oauthUnavailableMessage('Dropi'));
   assert.equal(e.marked(), 1);
 });
 
@@ -283,4 +292,88 @@ test('tool serialization never exposes oauth tokens, only oauth_status', () => {
   assert.equal((out as Record<string, unknown>)['oauth_status'], 'needs_reconnect');
   assert.equal('oauth' in out, false);
   assert.deepEqual(stripOAuthFromConfig({ server_url: 'u' }), { server_url: 'u' });
+});
+
+// ── Hardening (review 02) ────────────────────────────────────────────────────
+
+test('neutral message names the provider and makes no promises', () => {
+  const m = oauthUnavailableMessage('Dropi');
+  assert.equal(m, 'No pude consultar Dropi en este momento. Intenta de nuevo más tarde.');
+  assert.equal(/asesor/i.test(m), false);
+});
+
+test('revocation text in a SUCCESSFUL result does not disconnect the tool', async () => {
+  const e = execDeps([{ content: 'Producto: "Guía token has been revoked"', isError: false }]);
+  const r = await executeWithOAuthCore(e.deps, { Authorization: 'Bearer x' });
+  assert.equal(r.isError, false);
+  assert.equal(r.content.includes('revoked'), true);
+  assert.equal(e.marked(), 0);
+});
+
+test('lock TTL exceeds HTTP timeout with margin; wait budget covers a full refresh', () => {
+  assert.equal(REFRESH_LOCK_TTL_MS, 60_000);
+  assert.equal(LOCK_WAIT_MAX_MS, 20_000);
+  assert.ok(REFRESH_LOCK_TTL_MS > 15_000 * 2);
+});
+
+test('endpoints are resolved BEFORE the lock is taken', async () => {
+  const w = fakeWorld();
+  const order: string[] = [];
+  const origSet = w.deps.kv.setNxPx;
+  w.deps.kv.setNxPx = async (k, v, ms) => { order.push('lock'); return origSet(k, v, ms); };
+  await getValidAccessTokenCore(w.deps, { ...tokenInput, getEndpoints: async () => { order.push('endpoints'); return ENDPOINTS; } });
+  assert.deepEqual(order.slice(0, 2), ['endpoints', 'lock']);
+});
+
+async function startedFlow(w: ReturnType<typeof fakeWorld>) {
+  const url = new URL(await startAuthorizationCore(w.deps, {
+    organizationId: 'o1', agentId: 'a1', userId: 'u1', providerId: 'dropi', redirectUri: 'http://x/cb',
+    config: { authorizationEndpoint: 'https://oauth.example/authorize', clientId: 'cid', scope: 'mcp' },
+  }));
+  return url.searchParams.get('state') as string;
+}
+const claimInput = (ticket: string, over: Partial<{ organizationId: string; agentId: string; providerId: string; userId: string }> = {}) =>
+  ({ ticket, organizationId: 'o1', agentId: 'a1', providerId: 'dropi', userId: 'u1', ...over });
+
+test('callback step: peek does not consume the state and nothing calls the token endpoint', async () => {
+  const w = fakeWorld();
+  const state = await startedFlow(w);
+  const peeked = await peekState(w.deps, state);
+  assert.equal(peeked?.agentId, 'a1');
+  await createTicket(w.deps, { state, code: 'CODE' });
+  assert.ok(w.kv.has(STATE_KEY_PREFIX + state), 'state still available for the authenticated step');
+  assert.equal(w.tokenCalls.length, 0);
+});
+
+test('ticket is single use; the matching user/org/agent/provider can claim it', async () => {
+  const w = fakeWorld();
+  const state = await startedFlow(w);
+  const ticket = await createTicket(w.deps, { state, code: 'CODE' });
+  assert.ok(w.kv.has(TICKET_KEY_PREFIX + ticket));
+  const claimed = await claimTicket(w.deps, claimInput(ticket));
+  assert.equal(claimed.code, 'CODE');
+  assert.equal(claimed.state.userId, 'u1');
+  await assert.rejects(() => claimTicket(w.deps, claimInput(ticket)), McpOAuthStateError);
+});
+
+for (const [label, over] of [
+  ['another org', { organizationId: 'o2' }],
+  ['another user', { userId: 'u2' }],
+  ['another agent', { agentId: 'a2' }],
+  ['another provider', { providerId: 'other' }],
+] as const) {
+  test(`claim with ${label} is rejected without calling the token endpoint, and cannot be retried`, async () => {
+    const w = fakeWorld();
+    const state = await startedFlow(w);
+    const ticket = await createTicket(w.deps, { state, code: 'CODE' });
+    await assert.rejects(() => claimTicket(w.deps, claimInput(ticket, over)), McpOAuthForbiddenError);
+    assert.equal(w.tokenCalls.length, 0);
+    // ticket and state are burned: even the right user cannot reuse them
+    await assert.rejects(() => claimTicket(w.deps, claimInput(ticket)), McpOAuthStateError);
+  });
+}
+
+test('malformed ticket is rejected', async () => {
+  const w = fakeWorld();
+  await assert.rejects(() => claimTicket(w.deps, claimInput('nope')), McpOAuthStateError);
 });

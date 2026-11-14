@@ -220,26 +220,51 @@ export default function AgentEditorPage() {
     }
   }, [agentId, toastError, router]);
 
-  // Result of the MCP OAuth flow (callback redirects here with ?mcp_oauth=connected|error). Toast once, then clean the URL.
+  // Result of the MCP OAuth flow. The public callback redirects here with:
+  //   ?mcp_oauth=pending&ticket=...  → we finish the connection with the AUTHENTICATED POST /oauth/complete
+  //   ?mcp_oauth=error&reason=...    → error toast
+  // The ref guards against the double effect of React strict mode (the ticket is single use).
   const mcpOauthResult = searchParams.get('mcp_oauth');
   const mcpOauthProvider = searchParams.get('provider');
   const mcpOauthReason = searchParams.get('reason');
+  const mcpOauthTicket = searchParams.get('ticket');
+  const mcpOauthHandledRef = useRef<string | null>(null);
+  const [toolsRefreshKey, setToolsRefreshKey] = useState(0);
   useEffect(() => {
-    if (mcpOauthResult !== 'connected' && mcpOauthResult !== 'error') return;
-    const name = mcpOauthProvider === 'dropi' ? 'Dropi' : (mcpOauthProvider ?? '');
-    if (mcpOauthResult === 'connected') {
-      success(t('agents.tools.mcp.provider.mcpOauthToastConnected', { name }));
-    } else {
+    if (mcpOauthResult !== 'pending' && mcpOauthResult !== 'error') return;
+    const handledId = `${mcpOauthResult}:${mcpOauthTicket ?? mcpOauthReason ?? ''}`;
+    if (mcpOauthHandledRef.current === handledId) return;
+    mcpOauthHandledRef.current = handledId;
+
+    const providerId = mcpOauthProvider ?? '';
+    const name = providerId === 'dropi' ? 'Dropi' : providerId;
+    router.replace(pathname); // never keep the ticket in the URL
+
+    if (mcpOauthResult === 'error') {
       const key = mcpOauthReason === 'access_denied'
         ? 'mcpOauthToastDenied'
         : mcpOauthReason === 'session_expired'
           ? 'mcpOauthToastExpired'
           : 'mcpOauthToastError';
       toastError(t(`agents.tools.mcp.provider.${key}`, { name }));
+      return;
     }
-    router.replace(pathname);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per OAuth result
-  }, [mcpOauthResult]);
+    if (!mcpOauthTicket || !/^[a-z0-9_-]{1,50}$/.test(providerId)) {
+      toastError(t('agents.tools.mcp.provider.mcpOauthToastError', { name }));
+      return;
+    }
+    void (async () => {
+      try {
+        await api.post(`/api/agents/${agentId}/tools/mcp/${providerId}/oauth/complete`, { ticket: mcpOauthTicket });
+        success(t('agents.tools.mcp.provider.mcpOauthToastConnected', { name }));
+        setToolsRefreshKey((k) => k + 1); // remount ToolConfigurator so the new connection appears
+      } catch (err) {
+        const code = err instanceof ApiError ? err.code : undefined;
+        toastError(t(`agents.tools.mcp.provider.${code === 'CONNECT_SESSION_EXPIRED' ? 'mcpOauthToastExpired' : 'mcpOauthToastError'}`, { name }));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per OAuth result (guarded by ref)
+  }, [mcpOauthResult, mcpOauthTicket]);
 
   const loadVersions = useCallback(async () => {
     try {
@@ -700,7 +725,7 @@ export default function AgentEditorPage() {
                 <Spinner />
               </div>
             ) : (
-              <ToolConfigurator agentId={agentId} orgPlan={orgPlan} orgPlanLoaded={orgPlanLoaded} />
+              <ToolConfigurator key={toolsRefreshKey} agentId={agentId} orgPlan={orgPlan} orgPlanLoaded={orgPlanLoaded} />
             )}
           </div>
         )}
