@@ -97,6 +97,8 @@ export async function performAccountDeletion(orgId: string): Promise<void> {
     }
 
     // 6. Delete in dependency order
+    // dropi_orders would also go via ON DELETE CASCADE (agents/organizations); deleted explicitly like the other per-org tables.
+    await client.query('DELETE FROM dropi_orders WHERE organization_id = $1', [orgId]);
     await client.query('DELETE FROM conversations WHERE organization_id = $1', [orgId]);
     await client.query(
       agentIds.length > 0

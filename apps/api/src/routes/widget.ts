@@ -16,6 +16,8 @@ import { clampString, decodedHead, isBase64, isUuid } from '../services/widget-i
 import { detectImageMime } from '../services/image-sniff';
 import { checkContactLimit } from '../services/contact.service';
 import { notifyContactLimitReached } from '../services/usage.service';
+import { hashWidgetIp } from '../services/widget-ip-hash';
+import { env } from '../config/env';
 
 const router = Router();
 
@@ -82,6 +84,16 @@ async function checkResolveRateLimit(ip: string): Promise<boolean> {
   const count = await redis.incr(key);
   if (count === 1) await redis.expire(key, 3600); // 1 hour window
   return count <= 300; // max 300 requests per IP per hour
+}
+
+/**
+ * channel_metadata.ip_hash of a new web conversation: HMAC of the same client IP the rate limiter
+ * uses (getClientIp, 'trust proxy' aware), keyed with the server encryption key + a domain prefix.
+ * Reserved key (services/channel-metadata-keys.ts): only written here. Absent when the IP is unknown.
+ */
+function ipHashMetadata(ip: string): { ip_hash?: string } {
+  const h = hashWidgetIp(ip, env.ENCRYPTION_KEY);
+  return h ? { ip_hash: h } : {};
 }
 
 function getClientIp(req: Request): string {
@@ -289,6 +301,7 @@ router.post(
             ip: ip.slice(0, 15),
             userAgent: userAgent ?? '',
             referrer: referrer ?? '',
+            ...ipHashMetadata(ip),
           }),
         ]
       );
@@ -423,9 +436,9 @@ router.post(
         const convRes = await query<{ id: string }>(
           `INSERT INTO conversations (organization_id, agent_id, contact_id, channel, status,
                                       channel_metadata, created_at, updated_at)
-           VALUES ($1, $2, $3, 'web', 'active', '{}'::jsonb, NOW(), NOW())
+           VALUES ($1, $2, $3, 'web', 'active', $4::jsonb, NOW(), NOW())
            RETURNING id`,
-          [ag.organization_id, ag.id, newContactId]
+          [ag.organization_id, ag.id, newContactId, JSON.stringify(ipHashMetadata(ip))]
         );
         resolvedSessionId = convRes.rows[0]!.id;
       }

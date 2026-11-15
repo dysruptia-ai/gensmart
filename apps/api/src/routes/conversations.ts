@@ -8,10 +8,12 @@ import { PLAN_LIMITS } from '@gensmart/shared';
 import { scoringQueue } from '../config/queues';
 import { chat } from '../services/llm.service';
 import { getIO } from '../config/websocket';
+import { withoutReservedChannelKeys } from '../services/channel-metadata-keys';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
 const router = Router();
+
 
 // All conversation routes require auth + orgContext
 router.use(requireAuth, orgContext);
@@ -954,7 +956,8 @@ router.post(
         `INSERT INTO conversations (agent_id, organization_id, channel, status, channel_metadata, created_at, updated_at)
          VALUES ($1, $2, $3, 'active', $4, NOW(), NOW())
          RETURNING id, created_at`,
-        [agentId, req.org!.id, channel, JSON.stringify(channelMetadata)]
+        // Reserved keys (wa_from, ip_hash) are written only by the server (services/channel-metadata-keys.ts).
+        [agentId, req.org!.id, channel, JSON.stringify(withoutReservedChannelKeys(channelMetadata))]
       );
 
       res.status(201).json({

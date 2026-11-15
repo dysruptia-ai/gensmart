@@ -33,7 +33,7 @@ async function processExport(exportRequestId: string, organizationId: string): P
   // Collect all organization data
   const [orgResult, usersResult, agentsResult, agentToolsResult, knowledgeResult,
     contactsResult, conversationsResult, messagesResult, calendarsResult,
-    appointmentsResult, billingResult, notificationsResult] = await Promise.all([
+    appointmentsResult, billingResult, notificationsResult, dropiOrdersResult] = await Promise.all([
     query(
       `SELECT id, name, slug, plan, subscription_status, settings, created_at
        FROM organizations WHERE id = $1`,
@@ -111,6 +111,13 @@ async function processExport(exportRequestId: string, organizationId: string): P
        FROM notifications WHERE organization_id = $1 ORDER BY created_at DESC LIMIT 500`,
       [organizationId]
     ),
+    query(
+      `SELECT id, agent_id, conversation_id, contact_id, external_order_id, status_local, status_cached,
+              total, currency, items, city_name, buyer_phone_last10, owner_wa_last10, owner_wa_full, preview_session_id, carrier_id,
+              created_at, updated_at
+       FROM dropi_orders WHERE organization_id = $1 ORDER BY created_at`,
+      [organizationId]
+    ),
   ]);
 
   // Build contacts CSV
@@ -158,6 +165,7 @@ async function processExport(exportRequestId: string, organizationId: string): P
     archive.append(JSON.stringify(appointmentsResult.rows, null, 2), { name: 'appointments.json' });
     archive.append(JSON.stringify(billingResult.rows, null, 2), { name: 'billing.json' });
     archive.append(JSON.stringify(notificationsResult.rows, null, 2), { name: 'notifications.json' });
+    archive.append(JSON.stringify(dropiOrdersResult.rows, null, 2), { name: 'dropi_orders.json' });
     archive.append(
       JSON.stringify({ exportedAt: new Date().toISOString(), version: '1.0', organizationId }, null, 2),
       { name: 'README.json' }
