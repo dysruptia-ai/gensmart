@@ -204,6 +204,12 @@ export interface DropiSalesDeps {
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
+/** Agent configuration keys read by the sales tools (the "Vendedor Dropi" template uses the same). */
+export const DROPI_CONFIG_KEYS = {
+  marginPercent: 'porcentaje_margen',
+  maxDailyOrders: 'max_pedidos_diarios',
+} as const;
+
 export const TTL = {
   catalog: 60 * 60,
   products: 2 * 60 * 60,
@@ -350,7 +356,7 @@ const neutral = (message: string): string => json({ error: message });
 
 async function marginOf(ctx: DropiSalesContext, deps: DropiSalesDeps): Promise<number> {
   try {
-    return resolveMarginPercent(await deps.loadConfigValue(ctx.agentId, 'porcentaje_margen'));
+    return resolveMarginPercent(await deps.loadConfigValue(ctx.agentId, DROPI_CONFIG_KEYS.marginPercent));
   } catch {
     return resolveMarginPercent(undefined);
   }
@@ -358,7 +364,7 @@ async function marginOf(ctx: DropiSalesContext, deps: DropiSalesDeps): Promise<n
 
 async function maxDailyOrdersOf(ctx: DropiSalesContext, deps: DropiSalesDeps): Promise<number> {
   try {
-    return resolveMaxDailyOrders(await deps.loadConfigValue(ctx.agentId, 'max_pedidos_diarios'));
+    return resolveMaxDailyOrders(await deps.loadConfigValue(ctx.agentId, DROPI_CONFIG_KEYS.maxDailyOrders));
   } catch {
     return resolveMaxDailyOrders(undefined);
   }

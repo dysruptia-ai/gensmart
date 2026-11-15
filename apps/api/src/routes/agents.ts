@@ -203,9 +203,9 @@ function validateProviderHeaders(
 // GET /api/agents/templates — must be before /:id routes
 router.get(
   '/templates',
-  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const templates = await agentService.getTemplates();
+      const templates = await agentService.getTemplates(req.org!.id);
       res.json({ templates });
     } catch (err) {
       next(err);

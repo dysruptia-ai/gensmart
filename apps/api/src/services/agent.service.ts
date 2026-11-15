@@ -4,6 +4,7 @@ import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { resolveCalendarIds } from './calendar.service';
 import { unlinkInside } from './upload-paths';
+import { TEMPLATE_VISIBLE_TO_ORG_SQL } from './agent-template-visibility';
 import {
   replacePlaceholders,
   applyCustomFunctionAuth,
@@ -141,6 +142,15 @@ interface TemplateRow {
   integrations?: string[];
   default_llm_provider: string;
   default_llm_model: string;
+  /** Beta gating (migration 072). Never sent to clients (see toPublicTemplate). */
+  allowed_org_ids?: unknown;
+}
+
+/** Template as returned to clients: the beta list (other organizations' ids) is never exposed. */
+function toPublicTemplate(row: TemplateRow): Omit<TemplateRow, 'allowed_org_ids'> {
+  const { allowed_org_ids: _hidden, ...rest } = row;
+  void _hidden;
+  return rest;
 }
 
 function makeInitials(name: string): string {
@@ -600,18 +610,19 @@ export async function rollbackAgent(orgId: string, agentId: string, versionId: s
   return formatAgent(result.rows[0]!);
 }
 
-export async function getTemplates() {
+export async function getTemplates(orgId: string) {
   const result = await query<TemplateRow>(
-    'SELECT * FROM agent_templates WHERE is_active = true ORDER BY category, name',
-    []
+    `SELECT * FROM agent_templates WHERE is_active = true AND ${TEMPLATE_VISIBLE_TO_ORG_SQL} ORDER BY category, name`,
+    [orgId]
   );
-  return result.rows;
+  return result.rows.map(toPublicTemplate);
 }
 
 export async function createFromTemplate(orgId: string, plan: string, templateId: string) {
+  // A template hidden by the beta gating answers exactly like a nonexistent one (same 404).
   const templateResult = await query<TemplateRow>(
-    'SELECT * FROM agent_templates WHERE id = $1 AND is_active = true',
-    [templateId]
+    `SELECT * FROM agent_templates WHERE id = $2 AND is_active = true AND ${TEMPLATE_VISIBLE_TO_ORG_SQL}`,
+    [orgId, templateId]
   );
   const template = templateResult.rows[0];
   if (!template) throw new AppError(404, 'Template not found', 'TEMPLATE_NOT_FOUND');
