@@ -256,14 +256,16 @@ export const MSG = {
   quoteNotFound: 'La cotización no existe o expiró. Vuelve a cotizar con dropi_cotizar_envio.',
   pendingNotFound: 'El pedido no existe o expiró. Vuelve a preparar el pedido con dropi_preparar_pedido.',
   pendingReplaced: 'Ese pedido fue reemplazado por uno más reciente. Usa el último pedido_token de dropi_preparar_pedido.',
-  advisorWillContact: 'Para este pedido un asesor te contactará.',
-  previousVerifying: 'Tu pedido anterior está en verificación; te confirmaremos en breve. No es necesario hacer otro pedido.',
+  // No message promises a proactive contact: nobody writes to the buyer on their own (the buyer
+  // taps request_human_handoff's button). ofrecer_asesor tells the agent to offer it.
+  orderCapReached: 'En este momento no puedo registrar más pedidos por este medio. Si quieres, te puedo conectar con una persona del equipo para ayudarte.',
+  previousVerifying: 'Tu pedido anterior está en verificación, así que no es necesario hacer otro. Puedes consultar su estado más tarde y, si quieres, te conecto con una persona del equipo.',
   confirmInstruction:
     'Muestra este resumen al cliente y pide su confirmación explícita. Solo cuando responda, llama a dropi_confirmar_pedido.',
   needsConfirmation: 'El cliente aún no ha confirmado. Muéstrale el resumen y espera su respuesta antes de confirmar.',
   processing: 'Tu pedido se está procesando. Espera un momento y vuelve a consultarlo.',
   orderFailed: 'No pude crear el pedido en este momento. Ofrece al cliente intentarlo más tarde o con otra dirección.',
-  orderVerifying: 'Estamos verificando tu pedido; te confirmaremos en breve.',
+  orderVerifying: 'Estamos verificando tu pedido. Puedes consultar su estado más tarde y, si quieres, te conecto con una persona del equipo.',
   orderNotFound: 'No encontré un pedido con esos datos',
   lookupRateLimited: 'Se alcanzó el límite de consultas de pedidos por ahora. Intenta más tarde.',
   phoneRequired: 'Para consultar ese pedido necesito el teléfono con el que se hizo.',
@@ -819,10 +821,10 @@ export async function confirmOrder(
   if (!admitted.ok) {
     if (admitted.reason === 'verifying') {
       deps.log.warn(`[dropi-sales] order refused: previous order under verification (agent ${ctx.agentId}, conversation ${ctx.scopeId})`);
-      return finish(json({ pedido_creado: false, en_verificacion: true, mensaje: MSG.previousVerifying }));
+      return finish(json({ pedido_creado: false, en_verificacion: true, mensaje: MSG.previousVerifying, ofrecer_asesor: true }));
     }
     await noticeCap(ctx, deps, admitted.reason);
-    return finish(json({ pedido_creado: false, mensaje: MSG.advisorWillContact }));
+    return finish(json({ pedido_creado: false, mensaje: MSG.orderCapReached, ofrecer_asesor: true }));
   }
 
   let attempts = 0;
@@ -880,7 +882,7 @@ export async function confirmOrder(
     if (outcome.kind === 'unknown') {
       await deps.orders.markUnknown({ id: orderRowId, agentId: ctx.agentId, carrierId: carrier.id }).catch(() => {});
       deps.log.error(`[dropi-sales] create_order outcome unknown — MANUAL REVIEW (row ${orderRowId}, carrier ${carrier.id}, conversation ${ctx.scopeId})`);
-      return finish(json({ pedido_creado: false, en_verificacion: true, mensaje: MSG.orderVerifying }), { consumeQuote: true });
+      return finish(json({ pedido_creado: false, en_verificacion: true, mensaje: MSG.orderVerifying, ofrecer_asesor: true }), { consumeQuote: true });
     }
     if (outcome.kind === 'no_margin') {
       deps.log.error(`[dropi-sales] Dropi refused order row ${orderRowId}: non-positive profit (product ${quote.product.id})`);

@@ -714,7 +714,8 @@ describe('confirmation and idempotency (fakes)', () => {
     const p3 = await prepared(h3, 1);
     const o3 = await h3.run('dropi_confirmar_pedido', { pedido_token: p3.prep['pedido_token'] }, h3.ctx({ currentUserTurn: 2 }));
     assert.equal(o3['en_verificacion'], true);
-    assert.equal(o3['mensaje'], 'Estamos verificando tu pedido; te confirmaremos en breve.');
+    assert.equal(o3['mensaje'], 'Estamos verificando tu pedido. Puedes consultar su estado más tarde y, si quieres, te conecto con una persona del equipo.');
+    assert.equal(o3['ofrecer_asesor'], true);
     assert.equal(h3.calls.filter((c) => c.tool === 'create_order').length, 1);
     assert.equal(h3.rows[0]!.statusLocal, 'desconocido');
     assert.ok(h3.logs.some((l) => l.includes('MANUAL REVIEW')));
@@ -728,6 +729,8 @@ describe('confirmation and idempotency (fakes)', () => {
     for (const pii of ['Ana', 'Pérez', '3174304027', 'Calle 1']) assert.ok(!all.includes(pii), `PII "${pii}" in logs`);
   });
 });
+
+const CAP_TEXT = 'En este momento no puedo registrar más pedidos por este medio. Si quieres, te puedo conectar con una persona del equipo para ayudarte.';
 
 describe('one live order per conversation and caps (DS-01/DS-03)', () => {
   const confirm = (h: Harness, token: unknown, over: Partial<DropiSalesContext> = {}) =>
@@ -783,7 +786,11 @@ describe('one live order per conversation and caps (DS-01/DS-03)', () => {
       const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER, telefono: `311000000${i}` }, c);
       await h.endTurn(c);
       const out = await confirm(h, p['pedido_token']);
-      assert.deepEqual(out, { pedido_creado: false, mensaje: 'Para este pedido un asesor te contactará.' });
+      assert.deepEqual(out, {
+        pedido_creado: false,
+        mensaje: 'En este momento no puedo registrar más pedidos por este medio. Si quieres, te puedo conectar con una persona del equipo para ayudarte.',
+        ofrecer_asesor: true,
+      });
     }
     assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 2);
     assert.equal(h.rows.length, 2);
@@ -795,29 +802,35 @@ describe('one live order per conversation and caps (DS-01/DS-03)', () => {
   test('cap per buyer phone and agent: 2 in 24 h across conversations', async () => {
     const h = harness();
     const results: unknown[] = [];
+    let lastOut: Record<string, unknown> = {};
     for (let i = 0; i < 3; i++) {
       const over = { scopeId: `conv-${i}`, conversationId: `conv-${i}` };
       const { prep } = await prepared(h, 1, over);
-      results.push((await confirm(h, prep['pedido_token'], over))['pedido_creado']);
+      lastOut = await confirm(h, prep['pedido_token'], over);
+      results.push(lastOut['pedido_creado']);
     }
     assert.deepEqual(results, [true, true, false]);
     assert.equal(h.notices[0]!.reason, 'phone_cap');
+    assert.deepEqual(lastOut, { pedido_creado: false, mensaje: CAP_TEXT, ofrecer_asesor: true });
   });
 
   test('cap per agent: max_pedidos_diarios ("2 " typed with a space)', async () => {
     const h = harness();
     h.config['max_pedidos_diarios'] = '2 ';
     const results: unknown[] = [];
+    let lastOut: Record<string, unknown> = {};
     for (let i = 0; i < 3; i++) {
       const over = { scopeId: `conv-${i}`, conversationId: `conv-${i}` };
       const c = h.ctx({ currentUserTurn: 1, ...over });
       const q = await quoteFlow(h, c);
       const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER, telefono: `312000000${i}` }, c);
       await h.endTurn(c);
-      results.push((await confirm(h, p['pedido_token'], over))['pedido_creado']);
+      lastOut = await confirm(h, p['pedido_token'], over);
+      results.push(lastOut['pedido_creado']);
     }
     assert.deepEqual(results, [true, true, false]);
     assert.equal(h.notices[0]!.reason, 'agent_cap');
+    assert.deepEqual(lastOut, { pedido_creado: false, mensaje: CAP_TEXT, ofrecer_asesor: true });
   });
 
   test('concurrent confirmations in different conversations respect the phone cap', async () => {
@@ -846,6 +859,7 @@ describe('one live order per conversation and caps (DS-01/DS-03)', () => {
     assert.equal(out['pedido_creado'], false);
     assert.equal(out['en_verificacion'], true);
     assert.match(String(out['mensaje']), /anterior está en verificación/);
+    assert.equal(out['ofrecer_asesor'], true);
     assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 1);
   });
 });
@@ -899,6 +913,15 @@ describe('acceptance of the summary (DS-07)', () => {
     assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 0);
     const yes = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2, lastBuyerMessage: 'Dale, de una' }));
     assert.equal(yes['pedido_creado'], true);
+  });
+});
+
+describe('neutral messages never promise a proactive contact', () => {
+  test('no "te contactará" / "te confirmaremos" / "te escribiremos" in any message', async () => {
+    const { MSG } = await import('./service');
+    for (const [key, text] of Object.entries(MSG)) {
+      assert.ok(!/contactar[aá]n?\b|te contactar|confirmaremos|te escribiremos|te llamaremos|te avisaremos/i.test(text), `${key}: ${text}`);
+    }
   });
 });
 

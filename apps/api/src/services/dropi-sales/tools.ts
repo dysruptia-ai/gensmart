@@ -206,7 +206,8 @@ export const dropiSalesToolDefinitions: ToolDefinition[] = [
     description:
       'Crea el pedido real. Llámala SOLO después de mostrar el resumen de dropi_preparar_pedido y de que el cliente ' +
       'responda confirmándolo. Si devuelve requiere_confirmacion, espera la respuesta del cliente. ' +
-      'Si devuelve un mensaje (por ejemplo, que un asesor lo contactará o que su pedido está en verificación), comunícalo tal cual.',
+      'Si devuelve un mensaje (por ejemplo, que no se pueden registrar más pedidos o que su pedido está en verificación), comunícalo tal cual. ' +
+      'Si devuelve ofrecer_asesor, ofrece conectarlo con una persona del equipo (request_human_handoff, si está disponible); nunca digas que lo contactarán.',
     parameters: {
       type: 'object',
       properties: {
