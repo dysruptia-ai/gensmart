@@ -10,8 +10,8 @@
  * - Buyer identity (order ownership, tracking verification) never depends on data the buyer or the
  *   LLM can write (contacts.phone, captured variables, tool arguments): only wa_from (Meta's signed
  *   webhook) on WhatsApp, else the conversation / preview session itself.
- * - Order creation is capped per conversation, per buyer phone and per agent (counted in
- *   dropi_orders under a per-agent lock, in the same transaction as the insert).
+ * - Order creation is capped per conversation, per buyer phone, per web network (ip_hash) and per
+ *   agent (counted in dropi_orders under a per-agent lock, in the same transaction as the insert).
  * - Outputs to the LLM are whitelisted objects with neutral Spanish messages; details go to the log
  *   with ids only (never names, phones or addresses).
  *
@@ -32,7 +32,10 @@ import {
   findShippingCompany,
   hasPositiveMargin,
   isoDatePlusDays,
-  last10Digits,
+  colombianNational10,
+  waFullDigits,
+  summaryFallbackLine,
+  summaryTotalShown,
   longestWord,
   matchCategory,
   normalizeForSearch,
@@ -59,6 +62,7 @@ import {
   type NamedItem,
   type OrderForLlm,
   type ParsedOrder,
+  type PreparedSummary,
 } from './core';
 
 // ── Context and dependencies ─────────────────────────────────────────────────
@@ -91,14 +95,22 @@ export interface DropiSalesContext {
    * webhook, written once by routes/whatsapp.ts. Null elsewhere (then the channel behaves as web).
    */
   waFrom: string | null;
+  /**
+   * Web widget only: conversations.channel_metadata.ip_hash — HMAC of the client network, written
+   * once by routes/widget.ts when the session is created. Null elsewhere (no network cap).
+   */
+  ipHash: string | null;
   /** User messages saved in the conversation + the one being processed (see buyerRepliedSince). */
   currentUserTurn: number;
   /** Server receipt time (ms) of the newest buyer message being processed; null when unknown. */
   currentMessageReceivedAt: number | null;
   /** Text of the buyer's last message in this turn (isAffirmative). */
   lastBuyerMessage: string;
-  /** Mutable per-turn state: the token prepared in this turn (stamped by markSummaryDelivered). */
-  turn: { preparedToken: string | null };
+  /**
+   * Mutable per-turn state: the token prepared in this turn (stamped by markSummaryDelivered) and
+   * its summary (summaryFallback adds it to the reply when the LLM did not show it).
+   */
+  turn: { preparedToken: string | null; preparedSummary?: PreparedSummary | null };
 }
 
 export interface KeyValueStore {
@@ -145,19 +157,24 @@ export interface NewOrderRow {
   items: StoredOrderItem[];
   cityName: string;
   buyerPhoneLast10: string;
-  /** last10(wa_from) on WhatsApp, else null. */
+  /** colombianNational10(wa_from) on WhatsApp (null for a foreign sender), else null. */
   ownerWaLast10: string | null;
+  /** All digits of wa_from on WhatsApp, else null: the ownership key. */
+  ownerWaFull: string | null;
+  /** ip_hash of the web conversation, else null. */
+  ipHash: string | null;
 }
 
 export interface OrderLimits {
   perConversation: number;
   perPhone: number;
+  perNetwork: number;
   perAgent: number;
 }
 
 export type InsertWithinLimitsOutcome =
   | { ok: true }
-  | { ok: false; reason: 'verifying' | 'conversation_cap' | 'phone_cap' | 'agent_cap' };
+  | { ok: false; reason: 'verifying' | 'conversation_cap' | 'phone_cap' | 'network_cap' | 'agent_cap' };
 
 export interface OrdersRepository {
   /**
@@ -178,7 +195,7 @@ export interface OrdersRepository {
 export interface CapNotice {
   organizationId: string;
   agentId: string;
-  reason: 'conversation_cap' | 'phone_cap' | 'agent_cap';
+  reason: 'conversation_cap' | 'phone_cap' | 'network_cap' | 'agent_cap';
 }
 
 export interface DropiSalesLog {
@@ -232,6 +249,8 @@ export const LIMITS = {
   ordersPerConversation: 2,
   /** Orders per buyer phone (buyer_phone_last10) and agent in 24 h. */
   ordersPerPhone: 2,
+  /** Orders per web network (conversations.channel_metadata.ip_hash) and agent in 24 h. */
+  ordersPerNetwork: 3,
   /** Verified (not own) order lookups per agent and hour, across conversations. */
   lookupsPerAgentPerHour: 30,
   /** Verified (not own) lookups per agent and target phone per hour. */
@@ -374,10 +393,12 @@ async function maxDailyOrdersOf(ctx: DropiSalesContext, deps: DropiSalesDeps): P
 
 /** Buyer identity of this turn: wa_from on WhatsApp, else conversation / preview session. */
 export function identityOf(ctx: DropiSalesContext): BuyerIdentity {
+  const waFull = ctx.channel === 'whatsapp' ? waFullDigits(ctx.waFrom) : null;
   return {
     agentId: ctx.agentId,
     organizationId: ctx.organizationId,
-    waLast10: ctx.channel === 'whatsapp' ? last10Digits(ctx.waFrom) : null,
+    waFull,
+    waNational10: waFull !== null ? colombianNational10(waFull) : null,
     conversationId: ctx.conversationId,
     previewSessionId: ctx.conversationId === null ? ctx.previewSessionId : null,
   };
@@ -686,6 +707,12 @@ export async function prepareOrder(
     await deps.kv.del(keys.pending(ctx.scopeId, previousToken)).catch(() => {});
   }
   ctx.turn.preparedToken = token;
+  ctx.turn.preparedSummary = {
+    producto: quote.product.name,
+    opcion: quote.product.option,
+    cantidad: quote.quantity,
+    total: quote.total,
+  };
 
   return json({
     pedido_token: token,
@@ -721,6 +748,17 @@ export async function markSummaryDelivered(ctx: DropiSalesContext, deps: DropiSa
   await deps.kv.set(key, json(pending), TTL.pending).catch((err: Error) =>
     deps.log.warn(`[dropi-sales] could not stamp summary delivery (conversation ${ctx.scopeId}): ${err.name}`)
   );
+}
+
+/**
+ * Server-side guarantee that the buyer sees the summary they will confirm: when this turn prepared
+ * an order and none of the turn's texts (intermediates + final) shows its total, returns the fixed
+ * summary line to add to the outgoing reply; null otherwise. Pure (no I/O).
+ */
+export function summaryFallback(ctx: DropiSalesContext | null, turnTexts: string[]): string | null {
+  const s = ctx?.turn.preparedToken ? ctx.turn.preparedSummary : null;
+  if (!s) return null;
+  return summaryTotalShown(turnTexts, s.total) ? null : summaryFallbackLine(s);
 }
 
 async function noticeCap(ctx: DropiSalesContext, deps: DropiSalesDeps, reason: CapNotice['reason']): Promise<void> {
@@ -787,6 +825,7 @@ export async function confirmOrder(
   const limits: OrderLimits = {
     perConversation: LIMITS.ordersPerConversation,
     perPhone: LIMITS.ordersPerPhone,
+    perNetwork: LIMITS.ordersPerNetwork,
     perAgent: await maxDailyOrdersOf(ctx, deps),
   };
   let admitted: InsertWithinLimitsOutcome;
@@ -812,10 +851,14 @@ export async function confirmOrder(
       ],
       cityName: quote.city.name,
       buyerPhoneLast10: buyer.phone,
-      ownerWaLast10: who.waLast10,
+      ownerWaLast10: who.waNational10,
+      ownerWaFull: who.waFull,
+      ipHash: ctx.channel === 'web' ? ctx.ipHash : null,
     }, limits);
   } catch (err) {
-    deps.log.error(`[dropi-sales] could not register order (conversation ${ctx.scopeId}): ${(err as Error).name}`);
+    // Includes lock_timeout (55P03) / statement_timeout (57014): definitive, no order is created.
+    const code = typeof (err as { code?: unknown }).code === 'string' ? ` ${(err as { code: string }).code}` : '';
+    deps.log.error(`[dropi-sales] could not register order (conversation ${ctx.scopeId}): ${(err as Error).name}${code}`);
     return releaseAndFail(null);
   }
   if (!admitted.ok) {
@@ -975,8 +1018,13 @@ export async function orderStatus(
   }
 
   // Not an own order: verify by phone. WhatsApp with wa_from: the Meta sender number (any phone in
-  // the arguments is ignored). Otherwise: the phone given by the buyer.
-  const expected = who.waLast10 ?? input.telefono;
+  // the arguments is ignored); a foreign sender is never compared with a Colombian phone, so only
+  // its own orders are visible. Otherwise: the phone given by the buyer.
+  if (who.waFull !== null && who.waNational10 === null) {
+    deps.log.info(`[dropi-sales] order lookup not verified: non-Colombian sender (conversation ${ctx.scopeId})`);
+    return neutral(MSG.orderNotFound);
+  }
+  const expected = who.waFull !== null ? who.waNational10 : input.telefono;
   if (expected === null) return neutral(MSG.phoneRequired);
 
   // Per-agent limits (new sessions do not reset them): overall and per target phone.
@@ -1024,16 +1072,17 @@ function toRecord(r: OrderDbRow): DropiOrderRecord {
 
 const ORDER_COLUMNS = 'id, external_order_id, status_local, status_cached, total, currency, items, created_at';
 /**
- * Mirrors core.ownsOrder ($1 agent, $2 org, $3 waLast10, $4 conversation, $5 preview session):
- * WhatsApp with wa_from → owner_wa_last10 or buyer_phone_last10; else the same conversation;
- * else (preview) the same preview session. Never contact_id. Rows with a NULL agent never match.
+ * Mirrors core.ownsOrder ($1 agent, $2 org, $3 waFull, $4 waNational10, $5 conversation,
+ * $6 preview session): WhatsApp with wa_from → owner_wa_full, or buyer_phone_last10 only when the
+ * sender is Colombian; else the same conversation; else (preview) the same preview session.
+ * Never contact_id. Rows with a NULL agent never match.
  */
 const OWNER_WHERE = `agent_id = $1 AND organization_id = $2 AND (
-    ($3::text IS NOT NULL AND (owner_wa_last10 = $3::text OR buyer_phone_last10 = $3::text))
-    OR ($3::text IS NULL AND $4::uuid IS NOT NULL AND conversation_id = $4::uuid)
-    OR ($3::text IS NULL AND $4::uuid IS NULL AND $5::text IS NOT NULL AND preview_session_id = $5::text)
+    ($3::text IS NOT NULL AND (owner_wa_full = $3::text OR ($4::text IS NOT NULL AND buyer_phone_last10 = $4::text)))
+    OR ($3::text IS NULL AND $5::uuid IS NOT NULL AND conversation_id = $5::uuid)
+    OR ($3::text IS NULL AND $5::uuid IS NULL AND $6::text IS NOT NULL AND preview_session_id = $6::text)
   )`;
-const ownerParams = (o: BuyerIdentity): unknown[] => [o.agentId, o.organizationId, o.waLast10, o.conversationId, o.previewSessionId];
+const ownerParams = (o: BuyerIdentity): unknown[] => [o.agentId, o.organizationId, o.waFull, o.waNational10, o.conversationId, o.previewSessionId];
 
 export function createRealDeps(): DropiSalesDeps {
   return {
@@ -1078,28 +1127,40 @@ export function createRealDeps(): DropiSalesDeps {
       async insertPendingWithinLimits(row, limits) {
         const { getClient } = await import('../../config/database');
         const client = await getClient();
+        let failure: Error | undefined;
         try {
           await client.query('BEGIN');
+          // Bounded waits: a stuck lock or query fails the confirmation (neutral message) instead of
+          // holding a pool connection. Both settings end with the transaction.
+          await client.query(`SET LOCAL lock_timeout = '5s'`);
+          await client.query(`SET LOCAL statement_timeout = '10s'`);
           // Per-agent lock for count + insert (released at COMMIT/ROLLBACK): no count-then-insert race.
           await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`dropi_orders:${row.agentId}`]);
-          const r = await client.query<{ conv_unknown: number; conv: number; phone: number; agent: number }>(
+          const r = await client.query<{ conv_unknown: number; conv: number; phone: number; network: number; agent: number }>(
             `SELECT
                COUNT(*) FILTER (WHERE in_scope AND status_local = 'desconocido')::int AS conv_unknown,
                COUNT(*) FILTER (WHERE in_scope)::int AS conv,
                COUNT(*) FILTER (WHERE buyer_phone_last10 = $5::text)::int AS phone,
+               COUNT(*) FILTER (WHERE $6::text IS NOT NULL AND ip_hash = $6::text)::int AS network,
                COUNT(*)::int AS agent
              FROM (
-               SELECT status_local, buyer_phone_last10,
+               SELECT status_local, buyer_phone_last10, ip_hash,
                       (($3::uuid IS NOT NULL AND conversation_id = $3::uuid)
                         OR ($3::uuid IS NULL AND $4::text IS NOT NULL AND preview_session_id = $4::text)) AS in_scope
                  FROM dropi_orders
                 WHERE agent_id = $1 AND organization_id = $2 AND created_at > NOW() - INTERVAL '24 hours'
              ) t`,
-            [row.agentId, row.organizationId, row.conversationId, row.previewSessionId, row.buyerPhoneLast10]
+            [row.agentId, row.organizationId, row.conversationId, row.previewSessionId, row.buyerPhoneLast10, row.ipHash]
           );
           const c = r.rows[0];
           const refusal = orderCapDecision(
-            { conversationUnknown: c?.conv_unknown ?? 0, conversation: c?.conv ?? 0, phone: c?.phone ?? 0, agent: c?.agent ?? 0 },
+            {
+              conversationUnknown: c?.conv_unknown ?? 0,
+              conversation: c?.conv ?? 0,
+              phone: c?.phone ?? 0,
+              network: c?.network ?? 0,
+              agent: c?.agent ?? 0,
+            },
             limits
           );
           if (refusal) {
@@ -1109,18 +1170,21 @@ export function createRealDeps(): DropiSalesDeps {
           await client.query(
             `INSERT INTO dropi_orders
                (id, organization_id, agent_id, conversation_id, preview_session_id, contact_id, status_local, total,
-                currency, items, city_name, buyer_phone_last10, owner_wa_last10)
-             VALUES ($1, $2, $3, $4, $5, $6, 'desconocido', $7, $8, $9::jsonb, $10, $11, $12)`,
+                currency, items, city_name, buyer_phone_last10, owner_wa_last10, owner_wa_full, ip_hash)
+             VALUES ($1, $2, $3, $4, $5, $6, 'desconocido', $7, $8, $9::jsonb, $10, $11, $12, $13, $14)`,
             [row.id, row.organizationId, row.agentId, row.conversationId, row.previewSessionId, row.contactId, row.total,
-              row.currency, JSON.stringify(row.items), row.cityName, row.buyerPhoneLast10, row.ownerWaLast10]
+              row.currency, JSON.stringify(row.items), row.cityName, row.buyerPhoneLast10, row.ownerWaLast10,
+              row.ownerWaFull, row.ipHash]
           );
           await client.query('COMMIT');
           return { ok: true };
         } catch (err) {
+          failure = err instanceof Error ? err : new Error('dropi_orders transaction failed');
           await client.query('ROLLBACK').catch(() => {});
           throw err;
         } finally {
-          client.release();
+          // With an error the connection is destroyed instead of returned (it may be broken).
+          client.release(failure);
         }
       },
       async markCreated({ id, agentId, externalOrderId, status, carrierId }) {
@@ -1149,7 +1213,7 @@ export function createRealDeps(): DropiSalesDeps {
       async findOwnRecent(owner, limit) {
         const { query } = await import('../../config/database');
         const r = await query<OrderDbRow>(
-          `SELECT ${ORDER_COLUMNS} FROM dropi_orders WHERE ${OWNER_WHERE} ORDER BY created_at DESC LIMIT $6`,
+          `SELECT ${ORDER_COLUMNS} FROM dropi_orders WHERE ${OWNER_WHERE} ORDER BY created_at DESC LIMIT $7`,
           [...ownerParams(owner), limit]
         );
         return r.rows.map(toRecord);
@@ -1157,7 +1221,7 @@ export function createRealDeps(): DropiSalesDeps {
       async findOwnByNumber(owner, externalOrderId) {
         const { query } = await import('../../config/database');
         const r = await query<OrderDbRow>(
-          `SELECT ${ORDER_COLUMNS} FROM dropi_orders WHERE ${OWNER_WHERE} AND external_order_id = $6 LIMIT 1`,
+          `SELECT ${ORDER_COLUMNS} FROM dropi_orders WHERE ${OWNER_WHERE} AND external_order_id = $7 LIMIT 1`,
           [...ownerParams(owner), externalOrderId]
         );
         return r.rows[0] ? toRecord(r.rows[0]) : null;
@@ -1185,7 +1249,9 @@ export function createRealDeps(): DropiSalesDeps {
           ? 'el agente alcanzó su máximo de pedidos diarios (max_pedidos_diarios)'
           : reason === 'phone_cap'
             ? 'un mismo teléfono alcanzó el máximo de 2 pedidos en 24 h'
-            : 'una conversación alcanzó el máximo de 2 pedidos en 24 h';
+            : reason === 'network_cap'
+              ? 'una misma red del chat web alcanzó el máximo de 3 pedidos en 24 h'
+              : 'una conversación alcanzó el máximo de 2 pedidos en 24 h';
       await createNotification({
         organizationId,
         type: 'dropi_order_cap',

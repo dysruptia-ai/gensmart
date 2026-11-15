@@ -37,6 +37,10 @@ import {
   parseLooseNumber,
   receivedAfterSummary,
   resolveMaxDailyOrders,
+  colombianNational10,
+  formatCop,
+  summaryFallbackLine,
+  summaryTotalShown,
   type BuyerIdentity,
   type OwnedOrderKeys,
 } from './core';
@@ -47,9 +51,13 @@ import {
   mcpToolExposure,
   requiresSelectedTools,
   dropiSalesToolDefinitions,
+  dropiSummaryFallback,
   type DropiSalesToolName,
 } from './tools';
 import { sanitizeWidgetMessageMetadata } from '../widget-metadata.service';
+import { RESERVED_CHANNEL_KEYS, withoutReservedChannelKeys } from '../channel-metadata-keys';
+import { hashWidgetIp, widgetNetworkKey } from '../widget-ip-hash';
+import { whatsappWebhookSignaturePolicy } from '../whatsapp-webhook-policy';
 import * as F from './fixtures';
 
 const FORBIDDEN_KEYS = ['sale_price', 'suggested_price', 'simple_price', 'supplier_id', 'sku', 'customer', 'stock', 'document'];
@@ -104,10 +112,10 @@ describe('pricing', () => {
     assert.equal(parseLooseNumber('veinte'), null);
   });
 
-  test('max_pedidos_diarios: default 50, integer in 1–1000', () => {
-    assert.equal(resolveMaxDailyOrders(undefined), 50);
-    assert.equal(resolveMaxDailyOrders(''), 50);
-    assert.equal(resolveMaxDailyOrders('abc'), 50);
+  test('max_pedidos_diarios: default 20 (N-01), integer in 1–1000', () => {
+    assert.equal(resolveMaxDailyOrders(undefined), 20);
+    assert.equal(resolveMaxDailyOrders(''), 20);
+    assert.equal(resolveMaxDailyOrders('abc'), 20);
     assert.equal(resolveMaxDailyOrders('80'), 80);
     assert.equal(resolveMaxDailyOrders(' 12,7 '), 12);
     assert.equal(resolveMaxDailyOrders(0), 1);
@@ -313,29 +321,81 @@ describe('pure rules', () => {
     assert.equal(isAffirmative(undefined), false);
   });
 
+  test('isAffirmative: questions, hesitation, conditional "si" and long replies are not a yes (N-03)', () => {
+    for (const no of ['ok pero la talla es M', 'listo, pero ponle otro color', 'va a llegar a tiempo?', 'perfecto, déjame pensarlo',
+      'claro, quiero 3 en vez de 1', 'si lo puedo pagar con tarjeta?', 'si me llega el viernes lo recibo', 'dale aunque mejor mañana',
+      'listo, luego te confirmo', 'ok después vemos', 'claro, otra talla', 'si me lo mandas', '¿sí?', 'ok ok ok ok ok ok ok']) {
+      assert.equal(isAffirmative(no), false, no);
+    }
+    for (const yes of ['sí', 'si', 'sí confirmo', 'dale', 'listo', 'confirmo el pedido', 'ok', 'sí señor', 'de una',
+      'si señor', 'si confirmo', 'Sí, dale.', 'claro que sí']) {
+      assert.equal(isAffirmative(yes), true, yes);
+    }
+  });
+
+  test('colombianNational10: only 57 + 10 digits or national 3xxxxxxxxx (N-02)', () => {
+    assert.equal(colombianNational10('573051234567'), '3051234567');
+    assert.equal(colombianNational10('+57 305 123 4567'), '3051234567');
+    assert.equal(colombianNational10('3051234567'), '3051234567');
+    assert.equal(colombianNational10('13051234567'), null); // +1 305 123 4567 (US)
+    assert.equal(colombianNational10('523051234567'), null); // +52 (MX), 12 digits
+    assert.equal(colombianNational10('6011234567'), null); // national format not starting with 3
+    assert.equal(colombianNational10('5730512345678'), null);
+    assert.equal(colombianNational10('abc'), null);
+    assert.equal(colombianNational10(null), null);
+  });
+
+  test('summary fallback: total detection in usual formats and the fixed line (N-03)', () => {
+    assert.equal(formatCop(34800), '34.800');
+    assert.equal(formatCop(1234567), '1.234.567');
+    for (const t of ['En total pagas 34.800 al recibir', 'total: $34,800', 'Total 34800 COP', 'son 34 800']) {
+      assert.equal(summaryTotalShown([t], 34800), true, t);
+    }
+    assert.equal(summaryTotalShown(['El envío es 13.300', 'pagas 348.000'], 34800), false);
+    assert.equal(summaryTotalShown(['¿Confirmas?', 'resumen: total 34.800'], 34800), true); // any text of the turn
+    assert.equal(
+      summaryFallbackLine({ producto: 'Rompecabezas', opcion: null, cantidad: 1, total: 34800 }),
+      'Resumen: Rompecabezas x1 — total 34.800 COP contra entrega. ¿Confirmas el pedido?'
+    );
+    assert.equal(
+      summaryFallbackLine({ producto: 'Sábana', opcion: 'COLOR: Beige', cantidad: 2, total: 120000 }),
+      'Resumen: Sábana (COLOR: Beige) x2 — total 120.000 COP contra entrega. ¿Confirmas el pedido?'
+    );
+  });
+
   test('order caps: verifying first, then conversation, phone and agent', () => {
-    const limits = { perConversation: 2, perPhone: 2, perAgent: 50 };
-    const base = { conversationUnknown: 0, conversation: 0, phone: 0, agent: 0 };
+    const limits = { perConversation: 2, perPhone: 2, perNetwork: 3, perAgent: 50 };
+    const base = { conversationUnknown: 0, conversation: 0, phone: 0, network: 0, agent: 0 };
     assert.equal(orderCapDecision(base, limits), null);
     assert.equal(orderCapDecision({ ...base, conversationUnknown: 1, conversation: 1 }, limits), 'verifying');
     assert.equal(orderCapDecision({ ...base, conversation: 2 }, limits), 'conversation_cap');
     assert.equal(orderCapDecision({ ...base, conversation: 1, phone: 2 }, limits), 'phone_cap');
     assert.equal(orderCapDecision({ ...base, agent: 50 }, limits), 'agent_cap');
     assert.equal(orderCapDecision({ ...base, conversation: 1, phone: 1, agent: 49 }, limits), null);
+    assert.equal(orderCapDecision({ ...base, network: 3 }, limits), 'network_cap');
+    assert.equal(orderCapDecision({ ...base, network: 2, agent: 49 }, limits), null);
   });
 
-  test('ownership: wa_from on WhatsApp, else the conversation / preview session; never contact_id (DS-02/DS-04)', () => {
-    const row: OwnedOrderKeys = { agentId: 'A', organizationId: 'O', conversationId: 'conv-1', previewSessionId: null, ownerWaLast10: '3174304027', buyerPhoneLast10: '3110000000' };
-    const who = (over: Partial<BuyerIdentity>): BuyerIdentity => ({ agentId: 'A', organizationId: 'O', waLast10: null, conversationId: null, previewSessionId: null, ...over });
+  test('ownership: wa_from on WhatsApp, else the conversation / preview session; never contact_id (DS-02/DS-04/N-02)', () => {
+    const row: OwnedOrderKeys = { agentId: 'A', organizationId: 'O', conversationId: 'conv-1', previewSessionId: null, ownerWaFull: '573174304027', buyerPhoneLast10: '3110000000' };
+    const who = (over: Partial<BuyerIdentity>): BuyerIdentity => ({ agentId: 'A', organizationId: 'O', waFull: null, waNational10: null, conversationId: null, previewSessionId: null, ...over });
+    const co = (full: string): Partial<BuyerIdentity> => ({ waFull: full, waNational10: colombianNational10(full) });
     assert.equal(ownsOrder(row, who({ conversationId: 'conv-1' })), true);
     assert.equal(ownsOrder(row, who({ conversationId: 'conv-2' })), false); // same contact, other conversation: no
     assert.equal(ownsOrder(row, who({ agentId: 'B', conversationId: 'conv-1' })), false);
     assert.equal(ownsOrder(row, who({ organizationId: 'P', conversationId: 'conv-1' })), false);
-    assert.equal(ownsOrder(row, who({ waLast10: '3174304027', conversationId: 'conv-9' })), true); // owner_wa_last10
-    assert.equal(ownsOrder(row, who({ waLast10: '3110000000', conversationId: 'conv-9' })), true); // buyer_phone_last10
-    assert.equal(ownsOrder(row, who({ waLast10: '3009999999', conversationId: 'conv-1' })), false); // WhatsApp: phones only
+    assert.equal(ownsOrder(row, who({ ...co('573174304027'), conversationId: 'conv-9' })), true); // owner_wa_full
+    assert.equal(ownsOrder(row, who({ ...co('573110000000'), conversationId: 'conv-9' })), true); // Colombian sender = buyer phone
+    assert.equal(ownsOrder(row, who({ ...co('573009999999'), conversationId: 'conv-1' })), false); // WhatsApp: phones only
+    // N-02: a foreign number with the same last 10 digits never matches.
+    assert.equal(ownsOrder(row, who({ ...co('13174304027'), conversationId: 'conv-9' })), false);
+    assert.equal(ownsOrder(row, who({ ...co('13110000000'), conversationId: 'conv-9' })), false);
+    const usRow: OwnedOrderKeys = { ...row, ownerWaFull: '13051234567', buyerPhoneLast10: '3051234567' };
+    assert.equal(ownsOrder(usRow, who(co('13051234567'))), true); // the foreign sender owns its own orders
+    assert.equal(ownsOrder(usRow, who(co('573051234567'))), true); // …and the Colombian delivery phone owner too
+    assert.equal(ownsOrder({ ...usRow, buyerPhoneLast10: '3000000000' }, who(co('573051234567'))), false);
     assert.equal(ownsOrder({ ...row, agentId: null }, who({ conversationId: 'conv-1' })), false); // agent deleted
-    const preview: OwnedOrderKeys = { ...row, conversationId: null, previewSessionId: 'ps-1', ownerWaLast10: null };
+    const preview: OwnedOrderKeys = { ...row, conversationId: null, previewSessionId: 'ps-1', ownerWaFull: null };
     assert.equal(ownsOrder(preview, who({ previewSessionId: 'ps-1' })), true);
     assert.equal(ownsOrder(preview, who({ previewSessionId: 'ps-2' })), false);
     assert.equal(ownsOrder(preview, who({})), false);
@@ -415,7 +475,7 @@ function harness(): Harness {
   };
   const keysOf = (r: NewOrderRow): OwnedOrderKeys => ({
     agentId: r.agentId, organizationId: r.organizationId, conversationId: r.conversationId,
-    previewSessionId: r.previewSessionId, ownerWaLast10: r.ownerWaLast10, buyerPhoneLast10: r.buyerPhoneLast10,
+    previewSessionId: r.previewSessionId, ownerWaFull: r.ownerWaFull, buyerPhoneLast10: r.buyerPhoneLast10,
   });
   const deps: DropiSalesDeps = {
     kv: {
@@ -442,6 +502,7 @@ function harness(): Harness {
           conversationUnknown: inScope.filter((r) => r.statusLocal === 'desconocido').length,
           conversation: inScope.length,
           phone: mine.filter((r) => r.buyerPhoneLast10 === row.buyerPhoneLast10).length,
+          network: row.ipHash === null ? 0 : mine.filter((r) => r.ipHash === row.ipHash).length,
           agent: mine.length,
         }, limits);
         if (refusal) return { ok: false, reason: refusal };
@@ -483,11 +544,12 @@ function harness(): Harness {
     contactId: 'contact-1',
     channel: 'web',
     waFrom: null,
+    ipHash: null,
     currentUserTurn: 1,
     // By default the message arrived "now" (after anything stamped earlier).
     currentMessageReceivedAt: clock.t + 1,
     lastBuyerMessage: 'Sí, confirmo',
-    turn: { preparedToken: null },
+    turn: { preparedToken: null, preparedSummary: null },
     ...over,
   });
   const run: Harness['run'] = async (name, args, c) =>
@@ -864,6 +926,96 @@ describe('one live order per conversation and caps (DS-01/DS-03)', () => {
   });
 });
 
+describe('cap per web network (N-01)', () => {
+  const NET = 'a'.repeat(64);
+  test('4 web sessions from the same network with different phones create at most 3 orders', async () => {
+    const h = harness();
+    const results: unknown[] = [];
+    for (let i = 0; i < 4; i++) {
+      const over = { scopeId: `conv-n${i}`, conversationId: `conv-n${i}`, ipHash: NET };
+      const c = h.ctx({ currentUserTurn: 1, ...over });
+      const q = await quoteFlow(h, c);
+      const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER, telefono: `313000000${i}` }, c);
+      await h.endTurn(c);
+      results.push((await h.run('dropi_confirmar_pedido', { pedido_token: p['pedido_token'] }, h.ctx({ currentUserTurn: 2, ...over })))['pedido_creado']);
+    }
+    assert.deepEqual(results, [true, true, true, false]);
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 3);
+    assert.ok(h.rows.every((r) => r.ipHash === NET));
+    assert.equal(h.notices[0]!.reason, 'network_cap');
+    // Another network is not affected.
+    const other = { scopeId: 'conv-o', conversationId: 'conv-o', ipHash: 'b'.repeat(64) };
+    const { prep } = await prepared(h, 1, other);
+    assert.equal((await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2, ...other })))['pedido_creado'], true);
+  });
+
+  test('without ip_hash (WhatsApp, preview) the network cap does not apply and nothing is stored', async () => {
+    const h = harness();
+    for (let i = 0; i < 4; i++) {
+      const over = { channel: 'whatsapp', waFrom: `57300000000${i}`, scopeId: `conv-w${i}`, conversationId: `conv-w${i}`, ipHash: NET };
+      const c = h.ctx({ currentUserTurn: 1, ...over });
+      const q = await quoteFlow(h, c);
+      const p = await h.run('dropi_preparar_pedido', { cotizacion_id: q['cotizacion_id'], ...BUYER, telefono: `314000000${i}` }, c);
+      await h.endTurn(c);
+      assert.equal((await h.run('dropi_confirmar_pedido', { pedido_token: p['pedido_token'] }, h.ctx({ currentUserTurn: 2, ...over })))['pedido_creado'], true);
+    }
+    assert.ok(h.rows.every((r) => r.ipHash === null)); // ip_hash is only taken on the web channel
+  });
+
+  test('ip_hash: HMAC of the network (IPv6 /64, IPv4-mapped = IPv4), never the IP', () => {
+    const key = 'k'.repeat(64);
+    const a = hashWidgetIp('203.0.113.7', key)!;
+    assert.match(a, /^[0-9a-f]{64}$/);
+    assert.ok(!a.includes('203'));
+    assert.equal(hashWidgetIp('::ffff:203.0.113.7', key), a);
+    assert.notEqual(hashWidgetIp('203.0.113.8', key), a);
+    assert.notEqual(hashWidgetIp('203.0.113.7', 'other-secret'), a);
+    assert.equal(hashWidgetIp('2001:db8:1:2::1', key), hashWidgetIp('2001:0db8:0001:0002:ffff:1:2:3', key)); // same /64
+    assert.notEqual(hashWidgetIp('2001:db8:1:2::1', key), hashWidgetIp('2001:db8:1:3::1', key));
+    assert.equal(widgetNetworkKey('2001:db8:1:2::1'), '6:2001:0db8:0001:0002::/64');
+    assert.equal(hashWidgetIp('unknown', key), null);
+    assert.equal(hashWidgetIp('203.0.113.7', ''), null);
+  });
+
+  test('reserved channel_metadata keys cannot be written through POST /conversations', () => {
+    assert.ok(RESERVED_CHANNEL_KEYS.has('wa_from') && RESERVED_CHANNEL_KEYS.has('ip_hash'));
+    assert.deepEqual(withoutReservedChannelKeys({ ip_hash: NET, wa_from: '573001112233', source: 'api' }), { source: 'api' });
+    assert.deepEqual(withoutReservedChannelKeys(JSON.parse('{"__proto__": {"ip_hash": "x"}, "ip_hash": "y"}')), { ['__proto__']: { ip_hash: 'x' } });
+    assert.deepEqual(withoutReservedChannelKeys(['ip_hash']), {});
+    assert.deepEqual(withoutReservedChannelKeys(null), {});
+  });
+});
+
+describe('summary shown to the buyer (N-03)', () => {
+  test('the turn that prepared an order gets the fixed line only when no text shows the total', async () => {
+    const h = harness();
+    const c = h.ctx({ currentUserTurn: 1 });
+    const quote = await quoteFlow(h, c);
+    assert.equal(dropiSummaryFallback(c, ['hola']), null); // nothing prepared yet
+    await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
+    const total = Number(quote['total']);
+    assert.equal(
+      dropiSummaryFallback(c, ['Listo, ¿te lo envío?']),
+      `Resumen: Rompecabezas 500 piezas x1 — total ${formatCop(total)} COP contra entrega. ¿Confirmas el pedido?`
+    );
+    assert.equal(dropiSummaryFallback(c, [`Total a pagar: ${formatCop(total)}. ¿Confirmas?`]), null);
+    assert.equal(dropiSummaryFallback(c, [`Resumen ${total}`, 'ok']), null); // shown in an intermediate text
+    assert.equal(dropiSummaryFallback(h.ctx({ currentUserTurn: 2 }), ['¿Confirmas?']), null); // another turn
+    assert.equal(dropiSummaryFallback(null, ['x']), null);
+  });
+});
+
+describe('WhatsApp webhook signature policy (N-04)', () => {
+  test('unsigned webhooks only with the explicit flag and never in production', () => {
+    assert.equal(whatsappWebhookSignaturePolicy({ appSecret: 's', nodeEnv: 'production', allowUnsigned: true }), 'verify');
+    assert.equal(whatsappWebhookSignaturePolicy({ appSecret: 's', nodeEnv: 'development', allowUnsigned: false }), 'verify');
+    assert.equal(whatsappWebhookSignaturePolicy({ appSecret: '', nodeEnv: 'development', allowUnsigned: false }), 'reject');
+    assert.equal(whatsappWebhookSignaturePolicy({ appSecret: '', nodeEnv: 'staging', allowUnsigned: false }), 'reject');
+    assert.equal(whatsappWebhookSignaturePolicy({ appSecret: '', nodeEnv: 'production', allowUnsigned: true }), 'reject');
+    assert.equal(whatsappWebhookSignaturePolicy({ appSecret: '', nodeEnv: 'development', allowUnsigned: true }), 'allow_unsigned');
+  });
+});
+
 describe('acceptance of the summary (DS-07)', () => {
   test('a message received before the summary turn finished does not confirm', async () => {
     const h = harness();
@@ -1069,6 +1221,7 @@ describe('order tracking (fakes)', () => {
     // Victim orders from WhatsApp: owner_wa_last10 = their Meta number.
     await withOrder(h, { channel: 'whatsapp', waFrom: '573174304027', scopeId: 'conv-v', conversationId: 'conv-v', contactId: 'contact-v' });
     assert.equal(h.rows[0]!.ownerWaLast10, '3174304027');
+    assert.equal(h.rows[0]!.ownerWaFull, '573174304027');
     // Attacker on WhatsApp sets contacts.phone = victim's phone via capture_variable. The sales
     // service never reads contacts.phone (OrdersRepository has no such method): identity = wa_from.
     const attacker = h.ctx({ channel: 'whatsapp', waFrom: '573001112233', scopeId: 'conv-a', conversationId: 'conv-a', contactId: 'contact-a' });
@@ -1079,6 +1232,35 @@ describe('order tracking (fakes)', () => {
     // The victim still sees it from a new WhatsApp conversation.
     const victim2 = h.ctx({ channel: 'whatsapp', waFrom: '573174304027', scopeId: 'conv-v2', conversationId: 'conv-v2', contactId: 'contact-other' });
     assert.equal(((await h.run('dropi_estado_pedido', {}, victim2))['pedidos'] as unknown[]).length, 1);
+  });
+
+  test('N-02: +1 305 123 4567 does not get the orders of +57 305 123 4567', async () => {
+    const h = harness();
+    h.handlers['get_order'] = () => ok({ ...F.GET_ORDER, customer: { ...F.GET_ORDER.customer, phone: '3051234567' }, tracking_code: 'GUIA-1' });
+    await withOrder(h, { channel: 'whatsapp', waFrom: '573051234567', scopeId: 'conv-co', conversationId: 'conv-co', contactId: 'c-co' },
+      { ...BUYER, telefono: '3051234567' });
+    assert.equal(h.rows[0]!.ownerWaLast10, '3051234567');
+    assert.equal(h.rows[0]!.ownerWaFull, '573051234567');
+    const us = h.ctx({ channel: 'whatsapp', waFrom: '13051234567', scopeId: 'conv-us', conversationId: 'conv-us', contactId: 'c-us' });
+    assert.deepEqual((await h.run('dropi_estado_pedido', {}, us))['pedidos'], []);
+    const byNumber = await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, us);
+    assert.equal(byNumber['error'], 'No encontré un pedido con esos datos');
+    const withPhone = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3051234567' }, us);
+    assert.equal(withPhone['error'], 'No encontré un pedido con esos datos');
+    assert.ok(!JSON.stringify([byNumber, withPhone]).includes('GUIA-1'));
+    assert.equal(h.calls.filter((x) => x.tool === 'get_order').length, 0); // never compared with customer.phone
+    // The Colombian owner still sees it.
+    const co = h.ctx({ channel: 'whatsapp', waFrom: '573051234567', scopeId: 'conv-co2', conversationId: 'conv-co2', contactId: 'c-x' });
+    assert.equal(((await h.run('dropi_estado_pedido', {}, co))['pedidos'] as unknown[]).length, 1);
+  });
+
+  test('N-02: a foreign sender owns the orders it created (owner_wa_full), with a null owner_wa_last10', async () => {
+    const h = harness();
+    await withOrder(h, { channel: 'whatsapp', waFrom: '13051234567', scopeId: 'conv-us', conversationId: 'conv-us', contactId: 'c-us' });
+    assert.equal(h.rows[0]!.ownerWaLast10, null);
+    assert.equal(h.rows[0]!.ownerWaFull, '13051234567');
+    const us2 = h.ctx({ channel: 'whatsapp', waFrom: '13051234567', scopeId: 'conv-us2', conversationId: 'conv-us2', contactId: 'c-us' });
+    assert.equal(((await h.run('dropi_estado_pedido', {}, us2))['pedidos'] as unknown[]).length, 1);
   });
 
   test('WhatsApp without wa_from behaves as web (conversation + phone argument)', async () => {

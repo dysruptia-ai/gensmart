@@ -27,6 +27,7 @@ import * as mcpOAuth from '../services/mcp-oauth.service';
 import type { StoredOAuth } from '../services/mcp-oauth.core';
 import {
   buildDropiSalesContext,
+  dropiSummaryFallback,
   dropiSalesToolDefinitions,
   executeDropiSalesTool,
   isDropiSalesToolName,
@@ -720,6 +721,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       .filter((t): t is number => typeof t === 'number' && Number.isFinite(t));
     const lastText = [...textItems].reverse().find((item) => item.content)?.content ?? '';
     const waFrom = conv.channel === 'whatsapp' ? conv.channel_metadata?.['wa_from'] : undefined;
+    // Web widget network (HMAC written by routes/widget.ts at session creation): order cap per network.
+    const ipHash = conv.channel === 'web' ? conv.channel_metadata?.['ip_hash'] : undefined;
     dropiSales = buildDropiSalesContext({
       binding: dropiBinding,
       execute: mcpOAuth.executeMCPToolWithOAuth,
@@ -731,6 +734,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       contactId: conv.contact_id,
       channel: conv.channel,
       waFrom: typeof waFrom === 'string' ? waFrom : null,
+      ipHash: typeof ipHash === 'string' ? ipHash : null,
       currentUserTurn: Number(turns.rows[0]?.n ?? 0) + 1,
       currentMessageReceivedAt: receipts.length > 0 ? Math.max(...receipts) : null,
       lastBuyerMessage: lastText,
@@ -953,6 +957,20 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     } catch (retryErr) {
       console.error('[msg-worker] Retry for minimal response failed:', retryErr);
       finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
+    }
+  }
+
+  // Dropi: the buyer must see the summary they will confirm. If this turn prepared an order and no
+  // text of the turn shows its total, the server adds the fixed summary line to the reply.
+  const dropiSummaryLine = dropiSummaryFallback(dropiSales, [...deliveredIntermediates, finalResponse]);
+  if (dropiSummaryLine) {
+    if (finalAlreadyDelivered) {
+      // The final text already went out as an intermediate: keep it as such and send the line alone.
+      deliveredIntermediates.push(finalResponse);
+      finalResponse = dropiSummaryLine;
+      finalAlreadyDelivered = false;
+    } else {
+      finalResponse = finalResponse.trim() ? `${finalResponse}\n\n${dropiSummaryLine}` : dropiSummaryLine;
     }
   }
 

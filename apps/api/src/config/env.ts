@@ -69,6 +69,9 @@ export const env = {
   // WhatsApp (alias of META_* for clarity — falls back to META_* if not set)
   WHATSAPP_APP_SECRET: process.env['WHATSAPP_APP_SECRET'] ?? process.env['META_APP_SECRET'] ?? '',
   WHATSAPP_VERIFY_TOKEN: process.env['WHATSAPP_VERIFY_TOKEN'] ?? process.env['META_VERIFY_TOKEN'] ?? '',
+  // Local development only: accept unsigned WhatsApp webhooks when no app secret is configured.
+  // Never honoured when NODE_ENV=production (see services/whatsapp-webhook-policy.ts).
+  WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS: process.env['WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS'] === 'true',
   // Facebook Embedded Signup
   FACEBOOK_APP_ID: process.env['FACEBOOK_APP_ID'] ?? '',
   FACEBOOK_APP_SECRET: process.env['FACEBOOK_APP_SECRET'] ?? '',

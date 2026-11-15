@@ -18,7 +18,12 @@ export async function pushToBuffer(
   agentId: string,
   organizationId: string,
   message: string | BufferItem,
-  bufferSeconds: number
+  bufferSeconds: number,
+  /**
+   * Receipt time (ms) to record instead of now. Only routes/whatsapp.ts passes it: the signed
+   * message.timestamp of Meta (when the buyer sent it), clamped to now. Other channels: now.
+   */
+  receivedAtOverride?: number
 ): Promise<void> {
   const bufferKey = `${BUFFER_PREFIX}${conversationId}`;
   const jobKey = `${JOB_KEY_PREFIX}${conversationId}`;
@@ -26,7 +31,10 @@ export async function pushToBuffer(
   // Serialize: if string, wrap as text BufferItem for uniform handling
   const item: BufferItem = {
     ...(typeof message === 'string' ? { type: 'text' as const, content: message } : message),
-    receivedAt: Date.now(),
+    receivedAt:
+      typeof receivedAtOverride === 'number' && Number.isFinite(receivedAtOverride) && receivedAtOverride > 0
+        ? Math.min(receivedAtOverride, Date.now())
+        : Date.now(),
   };
 
   // Push JSON to Redis list

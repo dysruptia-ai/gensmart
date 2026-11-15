@@ -21,6 +21,7 @@ import {
   prepareOrder,
   quoteShipping,
   searchProducts,
+  summaryFallback,
   viewOptions,
   type DropiSalesContext,
   type DropiSalesDeps,
@@ -100,6 +101,8 @@ export function buildDropiSalesContext(input: {
   channel: string;
   /** channel_metadata.wa_from of a WhatsApp conversation (Meta's signed webhook), else null. */
   waFrom: string | null;
+  /** channel_metadata.ip_hash of a web conversation (routes/widget.ts), else null. */
+  ipHash: string | null;
   currentUserTurn: number;
   /** Server receipt time (ms) of the newest buyer message of this turn; null when unknown. */
   currentMessageReceivedAt: number | null;
@@ -118,10 +121,11 @@ export function buildDropiSalesContext(input: {
     contactId: input.contactId,
     channel: input.channel,
     waFrom: input.channel === 'whatsapp' && typeof input.waFrom === 'string' ? input.waFrom : null,
+    ipHash: input.channel === 'web' && typeof input.ipHash === 'string' && /^[0-9a-f]{64}$/.test(input.ipHash) ? input.ipHash : null,
     currentUserTurn: input.currentUserTurn,
     currentMessageReceivedAt: input.currentMessageReceivedAt,
     lastBuyerMessage: input.lastBuyerMessage,
-    turn: { preparedToken: null },
+    turn: { preparedToken: null, preparedSummary: null },
   };
 }
 
@@ -318,6 +322,14 @@ export async function markDropiSummaryDelivered(
   await markSummaryDelivered(ctx, deps).catch((err: Error) =>
     deps.log.warn(`[dropi-sales] summary stamp failed (conversation ${ctx.scopeId}): ${err.name}`)
   );
+}
+
+/**
+ * Fixed summary line to add to this turn's reply when it prepared an order and no text of the turn
+ * (intermediates + final) shows the total; null otherwise. Pure.
+ */
+export function dropiSummaryFallback(ctx: DropiSalesContext | null, turnTexts: string[]): string | null {
+  return summaryFallback(ctx, turnTexts);
 }
 
 /** Executes a sales tool. Always returns a string for the LLM (JSON with neutral messages). */

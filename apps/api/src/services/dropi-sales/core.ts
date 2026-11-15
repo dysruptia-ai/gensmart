@@ -66,6 +66,27 @@ export function last10Digits(value: unknown): string | null {
   return digits.length >= 10 ? digits.slice(-10) : null;
 }
 
+/**
+ * WhatsApp sender (wa_from) or stored phone → Colombian national 10 digits, ONLY when the number is
+ * Colombian: 57 + 10 digits, or 10 digits starting with 3 (national mobile format). Anything else
+ * (another country, short or long numbers, non-numeric ids) → null. Unlike last10Digits, a foreign
+ * number whose last 10 digits look Colombian (+1 305 123 4567) never maps to +57 305 123 4567.
+ */
+export function colombianNational10(value: unknown): string | null {
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
+  const digits = String(value).replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('57')) return digits.slice(2);
+  if (digits.length === 10 && digits.startsWith('3')) return digits;
+  return null;
+}
+
+/** All the digits of a WhatsApp sender (wa_from), 8–15 (E.164 bounds), or null. */
+export function waFullDigits(value: unknown): string | null {
+  if (typeof value !== 'string' && typeof value !== 'number') return null;
+  const digits = String(value).replace(/\D/g, '');
+  return digits.length >= 8 && digits.length <= 15 ? digits : null;
+}
+
 /** Order number given by the buyer: digits only, 1–12, or null. */
 export function parseOrderNumber(value: unknown): string | null {
   if (typeof value !== 'string' && typeof value !== 'number') return null;
@@ -149,11 +170,11 @@ export function resolveMarginPercent(raw: unknown): number {
   return Math.min(MAX_MARGIN_PERCENT, Math.max(MIN_MARGIN_PERCENT, n));
 }
 
-export const DEFAULT_MAX_DAILY_ORDERS = 50;
+export const DEFAULT_MAX_DAILY_ORDERS = 20;
 export const MIN_MAX_DAILY_ORDERS = 1;
 export const MAX_MAX_DAILY_ORDERS = 1000;
 
-/** max_pedidos_diarios → integer in [1, 1000]; 50 when missing or invalid. */
+/** max_pedidos_diarios → integer in [1, 1000]; 20 when missing or invalid. */
 export function resolveMaxDailyOrders(raw: unknown): number {
   const n = parseLooseNumber(raw);
   if (n === null) return DEFAULT_MAX_DAILY_ORDERS;
@@ -674,16 +695,33 @@ const AFFIRMATIVE_PHRASES = ['de una'];
 const NEGATIVE_WORDS = new Set(['no', 'nop', 'nope']);
 /** Stems: cancela/cancelar/cancelo, espera/espere/esperar, cambia/cambiar/cambio… */
 const NEGATIVE_STEMS = ['cancel', 'esper', 'cambi'];
+/** Hesitation / change / deferral words: the buyer is not (only) accepting the summary. */
+const HESITATION_WORDS = new Set([
+  'pero', 'aunque', 'otro', 'otra', 'otros', 'otras', 'mejor', 'pensarlo', 'pensar', 'dejame', 'luego', 'despues',
+]);
+const HESITATION_PHRASES = ['en vez'];
+/** Words that may follow an affirmative "si" without making it conditional ("si señor", "si confirmo"). */
+const AFTER_YES_WORDS = new Set([
+  ...AFFIRMATIVE_WORDS, 'senor', 'senora', 'senorita', 'gracias', 'porfa', 'por', 'favor', 'pues', 'ya', 'el', 'pedido', 'una', 'de',
+]);
+/** Longest reply accepted as a confirmation. */
+export const MAX_AFFIRMATIVE_WORDS = 6;
 
 /**
- * Minimal server-side acceptance check of the buyer's last message: at least one affirmation and
- * no negation ("sí, dale" → true; "sí pero cambia la dirección", "mejor no", "espera" → false).
- * It does not stop an attacker (who will just say "sí"); it prevents accidental confirmations and
- * a confirmation driven only by injected catalog text.
+ * Minimal server-side acceptance check of the buyer's last message: a short affirmation with no
+ * negation, question, hesitation or change request ("sí, dale" → true; "ok pero la talla es M",
+ * "va a llegar a tiempo?", "si me llega el viernes lo recibo" → false). It does not stop an attacker
+ * (who will just say "sí"); it prevents accidental confirmations and a confirmation driven only by
+ * injected catalog text.
  */
 export function isAffirmative(text: unknown): boolean {
   if (typeof text !== 'string') return false;
-  const normalized = stripControl(text)
+  const raw = stripControl(text);
+  if (/[?¿]/.test(raw)) return false;
+  // Conditional "si" ("si me llega…", "si lo puedo…"): unaccented "si" followed by a word that is
+  // not an affirmation or courtesy. "Sí" with an accent is always the affirmation.
+  const firstRaw = raw.trim().toLowerCase().match(/^[\p{L}]+/u)?.[0] ?? '';
+  const normalized = raw
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
     .toLowerCase()
@@ -692,9 +730,42 @@ export function isAffirmative(text: unknown): boolean {
     .trim();
   if (!normalized) return false;
   const words = normalized.split(' ');
-  if (words.some((w) => NEGATIVE_WORDS.has(w) || NEGATIVE_STEMS.some((s) => w.startsWith(s)))) return false;
+  if (words.length > MAX_AFFIRMATIVE_WORDS) return false;
+  if (words.some((w) => NEGATIVE_WORDS.has(w) || HESITATION_WORDS.has(w) || NEGATIVE_STEMS.some((s) => w.startsWith(s)))) return false;
   const padded = ` ${normalized} `;
+  if (HESITATION_PHRASES.some((p) => padded.includes(` ${p} `))) return false;
+  if (/^si+$/.test(firstRaw) && words.length > 1 && !words.slice(1).every((w) => AFTER_YES_WORDS.has(w))) return false;
   return words.some((w) => AFFIRMATIVE_WORDS.has(w)) || AFFIRMATIVE_PHRASES.some((p) => padded.includes(` ${p} `));
+}
+
+// ── Summary shown to the buyer ───────────────────────────────────────────────
+
+export interface PreparedSummary {
+  producto: string;
+  opcion: string | null;
+  cantidad: number;
+  total: number;
+}
+
+/** 34800 → "34.800" (Colombian grouping, no locale dependency). */
+export function formatCop(value: number): string {
+  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+/**
+ * True when any of the turn's texts shows the summary total, in any usual format ("34800",
+ * "34.800", "$34,800", "34 800").
+ */
+export function summaryTotalShown(texts: string[], total: number): boolean {
+  const target = String(Math.round(total));
+  const re = new RegExp(`(^|\\D)${target}(\\D|$)`);
+  return texts.some((t) => re.test(String(t ?? '').replace(/(\d)[.,\s\u00a0](?=\d{3}(\D|$))/g, '$1')));
+}
+
+/** Fixed line the server adds when the LLM did not show the summary total. */
+export function summaryFallbackLine(s: PreparedSummary): string {
+  const product = s.opcion ? `${s.producto} (${s.opcion})` : s.producto;
+  return `Resumen: ${product} x${s.cantidad} — total ${formatCop(s.total)} COP contra entrega. ¿Confirmas el pedido?`;
 }
 
 // ── Orders (tracking) ────────────────────────────────────────────────────────
@@ -703,8 +774,10 @@ export function isAffirmative(text: unknown): boolean {
 export interface BuyerIdentity {
   agentId: string;
   organizationId: string;
-  /** WhatsApp only: last 10 digits of channel_metadata.wa_from (Meta's signed webhook). */
-  waLast10: string | null;
+  /** WhatsApp only: all digits of channel_metadata.wa_from (Meta's signed webhook). */
+  waFull: string | null;
+  /** WhatsApp only: colombianNational10(wa_from); null when wa_from is not Colombian. */
+  waNational10: string | null;
   /** Real conversation id (worker), null in preview. */
   conversationId: string | null;
   /** Preview session id (preview), null in the worker. */
@@ -716,21 +789,25 @@ export interface OwnedOrderKeys {
   organizationId: string;
   conversationId: string | null;
   previewSessionId: string | null;
-  ownerWaLast10: string | null;
+  ownerWaFull: string | null;
   buyerPhoneLast10: string | null;
 }
 
 /**
  * "Own" order of the current buyer. Never uses contact_id or contacts.phone (both can be merged or
  * overwritten by the buyer / capture_variable):
- * - WhatsApp with wa_from: same agent + org and owner_wa_last10 or buyer_phone_last10 equal to
- *   last10(wa_from) — the Meta sender number IS the channel identity.
+ * - WhatsApp with wa_from: same agent + org and owner_wa_full equal to all the digits of wa_from
+ *   (the Meta sender number IS the channel identity) or, only when wa_from is Colombian,
+ *   buyer_phone_last10 equal to its national 10 digits. A foreign wa_from is never compared with a
+ *   Colombian phone (+1 305 123 4567 is not +57 305 123 4567).
  * - Any other case: same agent + org and the same conversation (preview: the same preview session).
  * The SQL in service.ts (OWNER_WHERE) mirrors this rule; it is kept here so it can be tested.
  */
 export function ownsOrder(row: OwnedOrderKeys, who: BuyerIdentity): boolean {
   if (row.agentId === null || row.agentId !== who.agentId || row.organizationId !== who.organizationId) return false;
-  if (who.waLast10 !== null) return row.ownerWaLast10 === who.waLast10 || row.buyerPhoneLast10 === who.waLast10;
+  if (who.waFull !== null) {
+    return row.ownerWaFull === who.waFull || (who.waNational10 !== null && row.buyerPhoneLast10 === who.waNational10);
+  }
   if (who.conversationId !== null) return row.conversationId === who.conversationId;
   if (who.previewSessionId !== null) return row.previewSessionId === who.previewSessionId;
   return false;
@@ -746,20 +823,23 @@ export interface OrderCapCounts {
   conversation: number;
   /** All rows of the same agent with the same buyer_phone_last10. */
   phone: number;
+  /** All rows of the same agent with the same ip_hash (web widget network); 0 without ip_hash. */
+  network: number;
   /** All rows of the same agent. */
   agent: number;
 }
 
-export type OrderCapRefusal = 'verifying' | 'conversation_cap' | 'phone_cap' | 'agent_cap';
+export type OrderCapRefusal = 'verifying' | 'conversation_cap' | 'phone_cap' | 'network_cap' | 'agent_cap';
 
 /** null when the order may be created; otherwise why not (checked in this order). */
 export function orderCapDecision(
   counts: OrderCapCounts,
-  limits: { perConversation: number; perPhone: number; perAgent: number }
+  limits: { perConversation: number; perPhone: number; perNetwork: number; perAgent: number }
 ): OrderCapRefusal | null {
   if (counts.conversationUnknown > 0) return 'verifying';
   if (counts.conversation >= limits.perConversation) return 'conversation_cap';
   if (counts.phone >= limits.perPhone) return 'phone_cap';
+  if (counts.network >= limits.perNetwork) return 'network_cap';
   if (counts.agent >= limits.perAgent) return 'agent_cap';
   return null;
 }

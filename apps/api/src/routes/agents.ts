@@ -27,6 +27,7 @@ import { rateLimiter } from '../middleware/rateLimiter';
 import type { StoredOAuth } from '../services/mcp-oauth.core';
 import {
   buildDropiSalesContext,
+  dropiSummaryFallback,
   dropiSalesToolDefinitions,
   executeDropiSalesTool,
   isDropiSalesToolName,
@@ -2038,6 +2039,7 @@ router.post(
             contactId: null,
             channel: 'preview',
             waFrom: null,
+            ipHash: null,
             // Confirmation rule: user turns already in the preview history + the one being processed,
             // received (this request) after the summary turn finished, saying yes.
             currentUserTurn: history.filter((h) => h.role === 'user').length + 1,
@@ -2332,6 +2334,12 @@ router.post(
           console.error('[agents.preview] Retry for minimal response failed:', (retryErr as Error).message);
           finalResponse = 'Disculpa, no pude procesar tu mensaje. ¿Podrías repetirlo?';
         }
+      }
+
+      // Dropi: same summary guarantee as the worker (fixed line when the reply omits the total).
+      const dropiSummaryLine = dropiSummaryFallback(dropiSales, [...deliveredIntermediates, finalResponse]);
+      if (dropiSummaryLine) {
+        finalResponse = finalResponse.trim() ? `${finalResponse}\n\n${dropiSummaryLine}` : dropiSummaryLine;
       }
 
       // Persist updated history

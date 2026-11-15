@@ -8,18 +8,12 @@ import { PLAN_LIMITS } from '@gensmart/shared';
 import { scoringQueue } from '../config/queues';
 import { chat } from '../services/llm.service';
 import { getIO } from '../config/websocket';
+import { withoutReservedChannelKeys } from '../services/channel-metadata-keys';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
 const router = Router();
 
-/** channel_metadata keys only the channel webhooks may write (wa_from: WhatsApp sender identity). */
-const RESERVED_CHANNEL_KEYS = new Set(['wa_from']);
-
-function withoutReservedChannelKeys(meta: unknown): Record<string, unknown> {
-  if (typeof meta !== 'object' || meta === null || Array.isArray(meta)) return {};
-  return Object.fromEntries(Object.entries(meta as Record<string, unknown>).filter(([k]) => !RESERVED_CHANNEL_KEYS.has(k)));
-}
 
 // All conversation routes require auth + orgContext
 router.use(requireAuth, orgContext);
@@ -962,7 +956,7 @@ router.post(
         `INSERT INTO conversations (agent_id, organization_id, channel, status, channel_metadata, created_at, updated_at)
          VALUES ($1, $2, $3, 'active', $4, NOW(), NOW())
          RETURNING id, created_at`,
-        // wa_from is the WhatsApp sender identity and is written only by the signed webhook.
+        // Reserved keys (wa_from, ip_hash) are written only by the server (services/channel-metadata-keys.ts).
         [agentId, req.org!.id, channel, JSON.stringify(withoutReservedChannelKeys(channelMetadata))]
       );
 

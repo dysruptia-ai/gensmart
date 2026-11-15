@@ -20,6 +20,7 @@ import {
 } from '../services/whatsapp.service';
 import { createSignupSession, loadSignupSession, deleteSignupSession } from '../services/whatsapp-signup-session.service';
 import { pushToBuffer } from '../services/message-buffer.service';
+import { whatsappWebhookSignaturePolicy } from '../services/whatsapp-webhook-policy';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import { checkContactLimit } from '../services/contact.service';
@@ -104,17 +105,24 @@ router.post(
       // req.body is a Buffer (express.raw registered before express.json in index.ts)
       const rawBuffer: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
       const appSecret = env.WHATSAPP_APP_SECRET || env.META_APP_SECRET;
-      if (appSecret) {
+      const policy = whatsappWebhookSignaturePolicy({
+        appSecret,
+        nodeEnv: env.NODE_ENV,
+        allowUnsigned: env.WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS,
+      });
+      if (policy === 'verify') {
         const signature = req.headers['x-hub-signature-256'] as string;
         if (!signature || !verifyWebhookSignature(rawBuffer, signature, appSecret)) {
           console.warn('[whatsapp] Invalid webhook signature — ignoring');
           return;
         }
-      } else if (process.env['NODE_ENV'] === 'production') {
-        console.error('[whatsapp] No app secret configured in production — rejecting webhook');
+      } else if (policy === 'reject') {
+        console.error(
+          '[whatsapp] No app secret configured — rejecting unsigned webhook (local testing: WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS=true, never in production)'
+        );
         return;
       } else {
-        console.warn('[whatsapp] No app secret configured — skipping signature validation');
+        console.warn('[whatsapp] No app secret configured — accepting UNSIGNED webhook (WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS, development only)');
       }
 
       // Parse body from raw buffer
@@ -458,18 +466,23 @@ router.post(
         return;
       }
 
+      // Receipt time = when the buyer sent it (Meta's signed message.timestamp, seconds → ms), not
+      // when the download / transcription finished; pushToBuffer clamps it to now. Missing → now.
+      const metaTs = Number(message.timestamp);
+      const sentAtMs = Number.isFinite(metaTs) && metaTs > 0 ? metaTs * 1000 : undefined;
+
       // Push to message buffer — image, voice transcription, or text
       if (imageBufferItem?.data) {
-        await pushToBuffer(convId, agent.id, agent.organization_id, imageBufferItem, agent.message_buffer_seconds);
+        await pushToBuffer(convId, agent.id, agent.organization_id, imageBufferItem, agent.message_buffer_seconds, sentAtMs);
       } else if (audioTranscription) {
         const voiceItem: BufferItem = {
           type: 'text',
           content: audioTranscription,
           mimeType: 'audio/voice-transcription',
         };
-        await pushToBuffer(convId, agent.id, agent.organization_id, voiceItem, agent.message_buffer_seconds);
+        await pushToBuffer(convId, agent.id, agent.organization_id, voiceItem, agent.message_buffer_seconds, sentAtMs);
       } else {
-        await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds);
+        await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds, sentAtMs);
       }
     } catch (err) {
       console.error('[whatsapp] Webhook processing error:', err);
