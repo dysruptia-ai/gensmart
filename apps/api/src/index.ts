@@ -314,6 +314,7 @@ async function expireTrials(): Promise<void> {
       `UPDATE organizations
        SET is_suspended = true, trial_ends_at = NULL, updated_at = NOW()
        WHERE trial_ends_at IS NOT NULL AND trial_ends_at < NOW() AND is_suspended = false
+         AND NOT (stripe_subscription_id IS NOT NULL AND subscription_status IN ('active', 'trialing'))
        RETURNING id, name`
     );
     if (result.rows.length > 0) {
