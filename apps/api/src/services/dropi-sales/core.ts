@@ -181,8 +181,12 @@ function safeUrl(value: unknown): string | null {
 export const DEFAULT_MARGIN_PERCENT = 20;
 export const MIN_MARGIN_PERCENT = 0;
 export const MAX_MARGIN_PERCENT = 300;
-/** Platform commission used in the margin check (observed ≈3.14 %; 3.5 % for headroom). */
-export const PLATFORM_FEE_RATE = 0.035;
+/**
+ * Dropi's commission: 5 % of (total − shipping), verified on real settlements:
+ * order 97335413: total 56 600, shipping 13 460 → 2 157.00 = 5 % of 43 140;
+ * order 96972142: total 35 000, shipping 13 028 → 1 098.60 = 5 % of 21 972.
+ */
+export const PLATFORM_FEE_RATE = 0.05;
 /** Safety margin over the first shipping quote when the second quote fails. */
 export const SHIPPING_FALLBACK_FACTOR = 1.05;
 
@@ -278,14 +282,15 @@ export function twoPassTotal(input: {
   };
 }
 
-/** Estimated profit = total − shipping − supplier cost × qty − total × 3.5 %. */
+/** Estimated profit = total − shipping − supplier cost × qty − 5 % × (total − shipping). */
 export function estimatedProfit(input: {
   total: number;
   shipping: number;
   supplierCost: number;
   quantity: number;
 }): number {
-  return input.total - input.shipping - input.supplierCost * input.quantity - input.total * PLATFORM_FEE_RATE;
+  const fee = PLATFORM_FEE_RATE * (input.total - input.shipping);
+  return input.total - input.shipping - input.supplierCost * input.quantity - fee;
 }
 
 export function hasPositiveMargin(input: Parameters<typeof estimatedProfit>[0]): boolean {
