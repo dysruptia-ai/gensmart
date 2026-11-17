@@ -160,13 +160,16 @@ describe('pricing', () => {
     assert.equal(q2.chargedUnitPrice % 100, 0);
   });
 
-  test('margin check with the real settlement of order 96972142', () => {
-    // Total 35 000, shipping 13 028, supplier 14 900, real commission 1 098.60 → real profit 5 973.
+  test('margin check: Dropi commission = 5 % of (total − shipping), real settlements', () => {
+    // Order 96972142: total 35 000, shipping 13 028, supplier 14 900 → commission 1 098.60 (5 % of 21 972).
     const est = estimatedProfit({ total: 35000, shipping: 13028, supplierCost: 14900, quantity: 1 });
-    assert.equal(est, 35000 - 13028 - 14900 - 1225);
-    assert.ok(est > 0 && est <= 5973, 'estimate (3.5 %) must be ≤ the real profit (≈3.14 %)');
+    assert.ok(Math.abs(est - 5973.4) <= 1, `estimate ${est}`);
+    // Order 97335413: total 56 600, shipping 13 460, supplier 14 900 × 2 → commission 2 157 (5 % of 43 140).
+    const est2 = estimatedProfit({ total: 56600, shipping: 13460, supplierCost: 14900, quantity: 2 });
+    assert.ok(Math.abs(est2 - 11183) <= 1, `estimate ${est2}`);
     assert.equal(hasPositiveMargin({ total: 35000, shipping: 13028, supplierCost: 14900, quantity: 1 }), true);
-    assert.equal(hasPositiveMargin({ total: 35000, shipping: 19000, supplierCost: 14900, quantity: 1 }), false);
+    // 35 000 − 19 500 − 14 900 − 775 = −175: refused.
+    assert.equal(hasPositiveMargin({ total: 35000, shipping: 19500, supplierCost: 14900, quantity: 1 }), false);
   });
 });
 

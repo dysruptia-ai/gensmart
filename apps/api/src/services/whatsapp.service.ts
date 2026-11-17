@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { encrypt, decrypt } from '../config/encryption';
+import { toWhatsAppText } from './whatsapp-format';
 
 const META_API_VERSION = 'v22.0';
 const META_BASE_URL = `https://graph.facebook.com/${META_API_VERSION}`;
@@ -24,7 +25,8 @@ export async function sendTextMessage(
       messaging_product: 'whatsapp',
       to: normalizedTo,
       type: 'text',
-      text: { body: text },
+      // Every text to WhatsApp (all agents and human replies): Markdown → WhatsApp formatting.
+      text: { body: toWhatsAppText(text) },
     }),
   });
 
