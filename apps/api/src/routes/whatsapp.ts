@@ -1175,6 +1175,53 @@ router.post(
         console.log(`[embedded-signup] Health status for WABA ${wabaId}:`, JSON.stringify({ error: (healthErr as Error).message }));
       }
 
+      // Idempotency: a retry after the browser dropped the previous request (while the
+      // backend finished it) must not re-subscribe the webhook nor re-register the number
+      // with a fresh PIN. Only the newly exchanged customer token is refreshed, so a
+      // reconnect still repairs an expired/revoked stored token.
+      const currentCfg = await query<{ whatsapp_config: Record<string, unknown> | null }>(
+        'SELECT whatsapp_config FROM agents WHERE id = $1',
+        [agentId]
+      );
+      const existingCfg = currentCfg.rows[0]?.whatsapp_config ?? {};
+      const existingVerifyToken = existingCfg['verify_token'];
+      if (
+        existingCfg['connected'] === true &&
+        existingCfg['phone_number_id'] === phoneNumberId &&
+        existingCfg['waba_id'] === wabaId &&
+        typeof existingVerifyToken === 'string'
+      ) {
+        const idemExpiresAtSec = debugData.data.expires_at ?? 0;
+        await query(
+          `UPDATE agents
+           SET whatsapp_config = whatsapp_config || $1::jsonb,
+               updated_at = NOW()
+           WHERE id = $2`,
+          [
+            JSON.stringify({
+              access_token_encrypted: encryptAccessToken(fbAccessToken),
+              token_expires_at: idemExpiresAtSec > 0 ? new Date(idemExpiresAtSec * 1000).toISOString() : null,
+              token_type: debugData.data.type ?? null,
+              token_checked_at: new Date().toISOString(),
+            }),
+            agentId,
+          ]
+        );
+        if (signupSessionId) {
+          void deleteSignupSession(signupSessionId);
+        }
+        console.log(`[embedded-signup] Agent ${agentId} already connected to ${phoneNumberId} (WABA ${wabaId}) — skipping webhook subscribe and phone register`);
+        res.json({
+          success: true,
+          phoneNumber: displayPhone,
+          phoneNumberId,
+          wabaId,
+          verifyToken: existingVerifyToken,
+          webhookUrl: `${env.API_URL}/api/whatsapp/webhook`,
+        });
+        return;
+      }
+
       // Steps 6-9 use the customer's own business token (fbAccessToken, obtained by
       // exchanging the Embedded Signup code) instead of the central platformToken.
       // Per Meta's "Onboarding business customers as a Solution Partner" guide, that
