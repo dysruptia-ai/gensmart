@@ -2,10 +2,12 @@
  * Dropi sales toolkit — pure functions (no DB, Redis or network).
  *
  * Everything that comes from Dropi is DATA, never instructions: texts are stripped of control
- * characters and truncated, JSON is parsed defensively, and the shapes sent to the LLM are built
+ * characters and truncated, tool content (TOON, or JSON) is decoded defensively, and the shapes sent to the LLM are built
  * field by field (whitelists), so supplier costs (sale_price, simple_price), suggested_price,
  * supplier_id, sku, exact stock and any `customer` object can never leak by accident.
  */
+
+import { decode } from '@toon-format/toon';
 
 // ── Text ─────────────────────────────────────────────────────────────────────
 
@@ -94,12 +96,44 @@ export function parseOrderNumber(value: unknown): string | null {
   return /^\d{1,12}$/.test(s) ? s : null;
 }
 
-// ── Defensive JSON helpers ───────────────────────────────────────────────────
+// ── Defensive decoding helpers ───────────────────────────────────────────────
 
+/** JSON for the server's own values (Redis). Dropi tool content goes through decodeToolContent. */
 export function safeParseJson(content: unknown): unknown {
   if (typeof content !== 'string') return undefined;
   try {
     return JSON.parse(content) as unknown;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Largest Dropi tool content that is decoded (bytes, UTF-8). */
+export const MAX_TOOL_CONTENT_BYTES = 512 * 1024;
+
+/**
+ * Dropi MCP tool content → plain JSON values, or undefined. Dropi answers in TOON (Token-Oriented
+ * Object Notation); JSON is still accepted when the content starts with `{` or `[`. TOON is decoded
+ * in strict mode (declared array lengths and row counts must match). Every Dropi answer is an object
+ * or a list, so a primitive root (TOON turns any one-line text such as "hola mundo" into a string)
+ * is treated as unreadable. Pure data: nothing is evaluated, and it never throws. Only for successful (isError=false) results: error texts are
+ * plain text and must never be decoded (a "key: value" message would look like an object).
+ */
+export function decodeToolContent(content: unknown): unknown {
+  if (typeof content !== 'string') return undefined;
+  if (content.length > MAX_TOOL_CONTENT_BYTES || Buffer.byteLength(content, 'utf8') > MAX_TOOL_CONTENT_BYTES) return undefined;
+  const structured = (v: unknown): unknown => (v !== null && typeof v === 'object' ? v : undefined);
+  const trimmed = content.trim();
+  if (trimmed === '') return undefined; // TOON decodes an empty document as {}
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      return structured(JSON.parse(trimmed) as unknown);
+    } catch {
+      // not JSON: fall through to TOON (a TOON root array also starts with "[")
+    }
+  }
+  try {
+    return structured(decode(content, { strict: true }));
   } catch {
     return undefined;
   }
@@ -351,7 +385,7 @@ export type ParsedProducts =
   | { ok: false };
 
 export function parseListProducts(content: string): ParsedProducts {
-  const parsed = asRecord(safeParseJson(content));
+  const parsed = asRecord(decodeToolContent(content));
   if (!parsed || !Array.isArray(parsed['items'])) return { ok: false };
   const currency = cleanText(parsed['currency'], 8).toUpperCase();
   const products = (parsed['items'] as unknown[])
@@ -483,7 +517,7 @@ export interface NamedItem {
 }
 
 export function parseNamedItems(content: string): NamedItem[] | null {
-  const items = itemsOf(safeParseJson(content));
+  const items = itemsOf(decodeToolContent(content));
   if (!items) return null;
   const out: NamedItem[] = [];
   for (const it of items) {
@@ -516,7 +550,7 @@ export interface DropiCity {
 }
 
 export function parseCities(content: string): DropiCity[] | null {
-  const items = itemsOf(safeParseJson(content));
+  const items = itemsOf(decodeToolContent(content));
   if (!items) return null;
   const out: DropiCity[] = [];
   for (const it of items) {
@@ -580,7 +614,7 @@ export type ParsedQuote =
 
 /** quote_shipping → carriers that quoted (shipping_cost != null, error == null). */
 export function parseQuote(content: string): ParsedQuote {
-  const parsed = asRecord(safeParseJson(content));
+  const parsed = asRecord(decodeToolContent(content));
   if (!parsed || !Array.isArray(parsed['carriers'])) return { ok: false };
   const quotes: Array<{ name: string; cost: number }> = [];
   for (const c of parsed['carriers'] as unknown[]) {
@@ -625,40 +659,59 @@ const NO_MARGIN_ERROR = /monto a ganar/;
 /** Transport failures where the request certainly never reached Dropi's create_order handler. */
 const DEFINITIVE_TRANSPORT_ERROR = /MCP server returned HTTP 4\d\d|MCP server URL is not allowed|Invalid MCP server URL|must use HTTPS/;
 
+/** Text of a create_order error: `{error:{message}}` / `{error:"…"}` when JSON, else the whole text. */
+function createOrderErrorText(content: string): string {
+  const trimmed = content.trim();
+  if (trimmed.startsWith('{')) {
+    const err = asRecord(safeParseJson(trimmed))?.['error'];
+    if (typeof err === 'string') return err;
+    const message = asRecord(err)?.['message'];
+    if (typeof message === 'string') return message;
+  }
+  return content;
+}
+
 /**
  * Classifies a create_order result. `unavailableMessage` is the neutral text the OAuth wrapper
  * returns when the session is unusable (401 not recoverable / revoked): the order was not created.
+ *
+ * Dropi rejects with isError=true and a PLAIN TEXT message (never decoded as TOON: a "key: value"
+ * message would become a fake object). A successful answer (isError=false) is decoded (TOON or
+ * JSON). Anything that cannot be classified with certainty is `unknown`: the order may exist.
  */
 export function classifyCreateOrderResult(
   result: { content: string; isError: boolean },
   unavailableMessage?: string
 ): CreateOrderOutcome {
   if (unavailableMessage && result.content === unavailableMessage) return { kind: 'rejected' };
-  const parsed = asRecord(safeParseJson(result.content));
-  if (parsed) {
-    const err = parsed['error'];
-    if (err !== undefined && err !== null) {
-      const message = normalizeKey(
-        typeof err === 'string' ? err : String(asRecord(err)?.['message'] ?? '')
-      ).toLowerCase();
-      if (NO_MARGIN_ERROR.test(message)) return { kind: 'no_margin' };
-      if (CARRIER_ERROR.test(message)) return { kind: 'carrier_rejected' };
-      return { kind: 'rejected' };
-    }
-    const orderId = parseOrderNumber(parsed['order_id']);
-    if (orderId && !result.isError) {
-      return {
-        kind: 'created',
-        orderId,
-        status: cleanText(parsed['status'], 40) || null,
-        total: toNumber(parsed['total']),
-        currency: cleanText(parsed['currency'], 8).toUpperCase() || null,
-      };
-    }
+  if (result.isError) {
+    const text = typeof result.content === 'string' ? result.content : '';
+    const message = normalizeKey(createOrderErrorText(text)).toLowerCase();
+    if (NO_MARGIN_ERROR.test(message)) return { kind: 'no_margin' };
+    if (CARRIER_ERROR.test(message)) return { kind: 'carrier_rejected' };
+    if (DEFINITIVE_TRANSPORT_ERROR.test(text)) return { kind: 'rejected' };
     return { kind: 'unknown' };
   }
-  if (result.isError && DEFINITIVE_TRANSPORT_ERROR.test(result.content)) return { kind: 'rejected' };
-  return { kind: 'unknown' };
+  const parsed = asRecord(decodeToolContent(result.content));
+  if (!parsed) return { kind: 'unknown' };
+  const err = parsed['error'];
+  if (err !== undefined && err !== null) {
+    const message = normalizeKey(
+      typeof err === 'string' ? err : String(asRecord(err)?.['message'] ?? '')
+    ).toLowerCase();
+    if (NO_MARGIN_ERROR.test(message)) return { kind: 'no_margin' };
+    if (CARRIER_ERROR.test(message)) return { kind: 'carrier_rejected' };
+    return { kind: 'rejected' };
+  }
+  const orderId = parseOrderNumber(parsed['order_id']);
+  if (!orderId) return { kind: 'unknown' };
+  return {
+    kind: 'created',
+    orderId,
+    status: cleanText(parsed['status'], 40) || null,
+    total: toNumber(parsed['total']),
+    currency: cleanText(parsed['currency'], 8).toUpperCase() || null,
+  };
 }
 
 // ── Confirmation rule ────────────────────────────────────────────────────────
@@ -857,7 +910,7 @@ export interface ParsedOrder {
 }
 
 export function parseGetOrder(content: string): ParsedOrder | null {
-  const parsed = asRecord(safeParseJson(content));
+  const parsed = asRecord(decodeToolContent(content));
   if (!parsed || parsed['error'] !== undefined) return null;
   const orderId = parseOrderNumber(parsed['order_id']);
   if (!orderId) return null;
@@ -885,10 +938,13 @@ export function parseGetOrder(content: string): ParsedOrder | null {
   };
 }
 
-/** shipping_company of the list_orders row with that order_id (other rows ignored). */
-export function findShippingCompany(content: string, orderId: string): string | null {
-  const items = itemsOf(safeParseJson(content));
-  if (!items) return null;
+/**
+ * shipping_company of the list_orders row with that order_id (other rows ignored). null when the
+ * row or the field is missing; undefined when the content could not be decoded at all.
+ */
+export function findShippingCompany(content: string, orderId: string): string | null | undefined {
+  const items = itemsOf(decodeToolContent(content));
+  if (!items) return undefined;
   for (const it of items) {
     const rec = asRecord(it);
     if (rec && parseOrderNumber(rec['order_id']) === orderId) {
