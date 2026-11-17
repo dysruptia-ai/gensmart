@@ -9,6 +9,8 @@ import {
   buyerRepliedSince,
   ceilToMultiple,
   classifyCreateOrderResult,
+  decodeToolContent,
+  MAX_TOOL_CONTENT_BYTES,
   estimatedProfit,
   hasPositiveMargin,
   normalizeForSearch,
@@ -20,6 +22,7 @@ import {
   parseListProducts,
   parseNamedItems,
   parseQuote,
+  presentOptions,
   presentOrder,
   presentProducts,
   productPrice,
@@ -178,11 +181,11 @@ describe('normalization', () => {
   });
 
   test('phones', () => {
-    assert.equal(normalizePhone('+57 317 430 4027'), '3174304027');
-    assert.equal(normalizePhone('573174304027'), '3174304027');
-    assert.equal(normalizePhone('317-430-4027'), '3174304027');
-    assert.equal(normalizePhone('31743040'), null);
-    assert.equal(normalizePhone('5731743040271'), null);
+    assert.equal(normalizePhone('+57 300 123 4567'), '3001234567');
+    assert.equal(normalizePhone('573001234567'), '3001234567');
+    assert.equal(normalizePhone('300-123-4567'), '3001234567');
+    assert.equal(normalizePhone('30012345'), null);
+    assert.equal(normalizePhone('5730012345671'), null);
   });
 
   test('provider text: control chars stripped and truncated to 120', () => {
@@ -194,16 +197,21 @@ describe('normalization', () => {
 // ── Products ─────────────────────────────────────────────────────────────────
 
 describe('products', () => {
-  const parsed = parseListProducts(JSON.stringify(F.LIST_PRODUCTS));
+  const parsed = parseListProducts(F.LIST_PRODUCTS);
+  const rawSimple = (decodeToolContent(F.LIST_PRODUCTS) as { items: Array<Record<string, unknown>> }).items[0]!;
   assert.ok(parsed.ok);
   const [simple, variable, soldOut, noPrice] = parsed.products;
 
-  test('variations: [{}] → simple; numeric ids → variable', () => {
+  test('variations[0]: (TOON) or [{}] (JSON) → simple; numeric ids → variable', () => {
     assert.equal(simple!.type, 'SIMPLE');
     assert.equal(simple!.variations.length, 0);
     assert.equal(variable!.type, 'VARIABLE');
     assert.equal(variable!.variations.length, 3);
     assert.equal(normalizeProduct({ id: 1, name: 'x', variations: {} })!.type, 'SIMPLE');
+    const json = parseListProducts(JSON.stringify(F.JSON_LIST_PRODUCTS));
+    assert.ok(json.ok);
+    assert.equal(json.products[0]!.type, 'SIMPLE');
+    assert.equal(json.products[0]!.suggestedPrice, 29166);
   });
 
   test('gallery: urlS3 or url', () => {
@@ -225,9 +233,9 @@ describe('products', () => {
   });
 
   test('supplier cost 0 or missing → product not offered (DS-11)', () => {
-    const free = normalizeProduct({ ...F.LIST_PRODUCTS.items[0], sale_price: 0 })!;
+    const free = normalizeProduct({ ...rawSimple, sale_price: 0 })!;
     assert.equal(isOfferable(free, 20), false);
-    const noCost = normalizeProduct({ ...F.LIST_PRODUCTS.items[0], sale_price: null })!;
+    const noCost = normalizeProduct({ ...rawSimple, sale_price: null })!;
     assert.equal(isOfferable(noCost, 20), false);
     assert.equal(isOfferable(simple!, 20), true);
   });
@@ -240,14 +248,14 @@ describe('products', () => {
 // ── Cities, carriers, create_order errors ────────────────────────────────────
 
 describe('cities and carriers', () => {
-  const departments = parseNamedItems(JSON.stringify(F.LIST_DEPARTMENTS))!;
+  const departments = parseNamedItems(F.LIST_DEPARTMENTS)!;
 
   test('city found (accentless upper case) and disambiguation by department', () => {
-    const one = resolveCity({ query: 'Cajicá', cities: parseCities(JSON.stringify(F.SEARCH_CITIES_CAJICA))!, departments });
+    const one = resolveCity({ query: 'Cajicá', cities: parseCities(F.SEARCH_CITIES_CAJICA)!, departments });
     assert.equal(one.kind, 'found');
     if (one.kind === 'found') assert.equal(one.departmentName, 'CUNDINAMARCA');
 
-    const cities = parseCities(JSON.stringify(F.SEARCH_CITIES_AMBIGUOUS))!;
+    const cities = parseCities(F.SEARCH_CITIES_AMBIGUOUS)!;
     const amb = resolveCity({ query: 'Guayabal', cities, departments });
     assert.deepEqual(amb, { kind: 'needs_department', options: ['CUNDINAMARCA', 'RISARALDA'] });
     const ok = resolveCity({ query: 'Guayabal', cities, departments, department: 'Risaralda' });
@@ -256,38 +264,64 @@ describe('cities and carriers', () => {
   });
 
   test('carriers: only quoted ones with an id, cheapest first', () => {
-    const q = parseQuote(JSON.stringify(F.quoteShipping({ envia: 13028, derocha: 12900 })));
+    const q = parseQuote(F.quoteShipping({ envia: 13028, derocha: 12900 }));
     assert.ok(q.ok);
-    const ranked = rankCarriers(q.quotes, parseNamedItems(JSON.stringify(F.LIST_CARRIERS))!);
+    const ranked = rankCarriers(q.quotes, parseNamedItems(F.LIST_CARRIERS)!);
     assert.deepEqual(ranked, [
-      { id: 2, name: 'DEROCHA-EXPRESS', cost: 12900 },
-      { id: 1, name: 'ENVIA', cost: 13028 },
+      { id: 14, name: 'DEROCHA-EXPRESS', cost: 12900 },
+      { id: 2, name: 'ENVIA', cost: 13028 },
     ]); // INTERRAPIDISIMO (error/null) and DESCONOCIDA (no id) dropped
   });
 
-  test('create_order classification with the real messages', () => {
-    const r = (v: unknown, isError = false) => classifyCreateOrderResult({ content: JSON.stringify(v), isError });
-    assert.deepEqual(r(F.CREATE_ORDER_OK), { kind: 'created', orderId: '96972142', status: 'PENDIENTE', total: 35000, currency: 'COP' });
-    assert.equal(r(F.CREATE_ORDER_CARRIER_ERROR).kind, 'carrier_rejected');
-    assert.equal(r(F.CREATE_ORDER_CARRIER_ERROR, true).kind, 'carrier_rejected');
-    assert.equal(r({ error: { code: 3, message: 'La transportadora no está disponible' } }).kind, 'carrier_rejected');
-    assert.equal(r(F.CREATE_ORDER_NO_MARGIN_ERROR).kind, 'no_margin');
-    assert.equal(r({ error: { code: 1, message: 'El teléfono es inválido' } }).kind, 'rejected');
-    assert.equal(classifyCreateOrderResult({ content: 'MCP tool execution failed: MCP request timeout: tools/call (30s)', isError: true }).kind, 'unknown');
-    assert.equal(classifyCreateOrderResult({ content: 'MCP tool execution failed: fetch failed', isError: true }).kind, 'unknown');
-    assert.equal(classifyCreateOrderResult({ content: '(no output)', isError: false }).kind, 'unknown');
-    assert.equal(classifyCreateOrderResult({ content: 'MCP tool execution failed: MCP server returned HTTP 400: bad', isError: true }).kind, 'rejected');
+  test('create_order classification: plain-text rejections with isError, TOON success', () => {
+    const c = (r: { content: string; isError: boolean }) => classifyCreateOrderResult(r).kind;
+    const okText = (content: string) => classifyCreateOrderResult({ content, isError: false });
+    assert.deepEqual(okText(F.CREATE_ORDER_OK), { kind: 'created', orderId: '96972142', status: 'PENDIENTE', total: 35000, currency: 'COP' });
+    assert.equal(c(F.CREATE_ORDER_CARRIER_ERROR), 'carrier_rejected');
+    assert.equal(c({ content: 'La transportadora no está disponible', isError: true }), 'carrier_rejected');
+    assert.equal(c(F.CREATE_ORDER_NO_MARGIN_ERROR), 'no_margin');
+    // Unrecognized isError texts: the order MAY exist → unknown (never retried).
+    assert.equal(c(F.ERROR_ORDER_NOT_FOUND), 'unknown');
+    assert.equal(c(F.ERROR_SCHEMA), 'unknown');
+    assert.equal(c({ content: 'El teléfono es inválido', isError: true }), 'unknown');
+    assert.equal(c({ content: 'MCP tool execution failed: MCP request timeout: tools/call (30s)', isError: true }), 'unknown');
+    assert.equal(c({ content: 'MCP tool execution failed: fetch failed', isError: true }), 'unknown');
+    assert.equal(c({ content: '', isError: true }), 'unknown');
+    assert.equal(c({ content: '(no output)', isError: false }), 'unknown');
+    assert.equal(c({ content: 'MCP tool execution failed: MCP server returned HTTP 400: bad', isError: true }), 'rejected');
     assert.equal(classifyCreateOrderResult({ content: 'No pude consultar Dropi en este momento. Intenta de nuevo más tarde.', isError: true }, 'No pude consultar Dropi en este momento. Intenta de nuevo más tarde.').kind, 'rejected');
+    // An error text that looks like TOON ("key: value") is never decoded into a fake order.
+    assert.equal(c({ content: 'order_id: 123', isError: true }), 'unknown');
+    // isError=false but not readable → unknown.
+    assert.equal(c({ content: 'items[3]{id}:\n  1', isError: false }), 'unknown');
+  });
+
+  test('create_order classification: JSON path still works', () => {
+    const r = (v: unknown, isError = false) => classifyCreateOrderResult({ content: JSON.stringify(v), isError });
+    assert.deepEqual(r(F.JSON_CREATE_ORDER_OK), { kind: 'created', orderId: '96972142', status: 'PENDIENTE', total: 35000, currency: 'COP' });
+    assert.equal(r(F.JSON_CREATE_ORDER_CARRIER_ERROR).kind, 'carrier_rejected');
+    assert.equal(r(F.JSON_CREATE_ORDER_CARRIER_ERROR, true).kind, 'carrier_rejected'); // {error:{message}} with isError
+    assert.equal(r({ error: { code: 3, message: 'No puede continuar, ya que el monto a ganar es menor o igual a cero(0)' } }, true).kind, 'no_margin');
+    assert.equal(r({ error: { code: 1, message: 'El teléfono es inválido' } }).kind, 'rejected'); // isError=false with an error object
+    assert.equal(r({ error: { code: 1, message: 'El teléfono es inválido' } }, true).kind, 'unknown');
+    assert.equal(r(F.JSON_CREATE_ORDER_OK, true).kind, 'unknown'); // an order id under isError is not trusted
   });
 
   test('orders: trimmed view without customer; carrier from the matching list_orders row', () => {
-    const o = parseGetOrder(JSON.stringify(F.GET_ORDER))!;
-    assert.equal(o.phoneLast10, '3174304027');
-    const carrier = findShippingCompany(JSON.stringify(F.LIST_ORDERS), '96972142');
+    const o = parseGetOrder(F.GET_ORDER)!;
+    assert.equal(o.phoneLast10, '3001234567');
+    assert.equal(o.status, 'CANCELADO');
+    assert.equal(o.createdAt, '2026-11-14T14:39:45');
+    const carrier = findShippingCompany(F.LIST_ORDERS, '96972142');
     assert.equal(carrier, 'ENVIA');
-    const out = JSON.stringify(presentOrder(o, carrier));
+    assert.equal(findShippingCompany(F.LIST_ORDERS, '1'), null);
+    assert.equal(findShippingCompany('basura', '96972142'), undefined);
+    // JSON path: only the row with that order_id counts.
+    assert.equal(findShippingCompany(JSON.stringify(F.JSON_LIST_ORDERS), '96972142'), 'ENVIA');
+    assert.equal(parseGetOrder(JSON.stringify(F.JSON_GET_ORDER))!.phoneLast10, '3001234567');
+    const out = JSON.stringify(presentOrder(o, carrier ?? null));
     assertNoForbiddenKeys(out);
-    for (const pii of ['Ana', 'Pérez', '3174304027', '1020304050', 'Calle 1']) assert.ok(!out.includes(pii), `PII "${pii}" leaked`);
+    for (const pii of ['Ana', 'Pérez', '3001234567', '1020304050', 'Calle 1']) assert.ok(!out.includes(pii), `PII "${pii}" leaked`);
   });
 });
 
@@ -377,18 +411,18 @@ describe('pure rules', () => {
   });
 
   test('ownership: wa_from on WhatsApp, else the conversation / preview session; never contact_id (DS-02/DS-04/N-02)', () => {
-    const row: OwnedOrderKeys = { agentId: 'A', organizationId: 'O', conversationId: 'conv-1', previewSessionId: null, ownerWaFull: '573174304027', buyerPhoneLast10: '3110000000' };
+    const row: OwnedOrderKeys = { agentId: 'A', organizationId: 'O', conversationId: 'conv-1', previewSessionId: null, ownerWaFull: '573001234567', buyerPhoneLast10: '3110000000' };
     const who = (over: Partial<BuyerIdentity>): BuyerIdentity => ({ agentId: 'A', organizationId: 'O', waFull: null, waNational10: null, conversationId: null, previewSessionId: null, ...over });
     const co = (full: string): Partial<BuyerIdentity> => ({ waFull: full, waNational10: colombianNational10(full) });
     assert.equal(ownsOrder(row, who({ conversationId: 'conv-1' })), true);
     assert.equal(ownsOrder(row, who({ conversationId: 'conv-2' })), false); // same contact, other conversation: no
     assert.equal(ownsOrder(row, who({ agentId: 'B', conversationId: 'conv-1' })), false);
     assert.equal(ownsOrder(row, who({ organizationId: 'P', conversationId: 'conv-1' })), false);
-    assert.equal(ownsOrder(row, who({ ...co('573174304027'), conversationId: 'conv-9' })), true); // owner_wa_full
+    assert.equal(ownsOrder(row, who({ ...co('573001234567'), conversationId: 'conv-9' })), true); // owner_wa_full
     assert.equal(ownsOrder(row, who({ ...co('573110000000'), conversationId: 'conv-9' })), true); // Colombian sender = buyer phone
     assert.equal(ownsOrder(row, who({ ...co('573009999999'), conversationId: 'conv-1' })), false); // WhatsApp: phones only
     // N-02: a foreign number with the same last 10 digits never matches.
-    assert.equal(ownsOrder(row, who({ ...co('13174304027'), conversationId: 'conv-9' })), false);
+    assert.equal(ownsOrder(row, who({ ...co('13001234567'), conversationId: 'conv-9' })), false);
     assert.equal(ownsOrder(row, who({ ...co('13110000000'), conversationId: 'conv-9' })), false);
     const usRow: OwnedOrderKeys = { ...row, ownerWaFull: '13051234567', buyerPhoneLast10: '3051234567' };
     assert.equal(ownsOrder(usRow, who(co('13051234567'))), true); // the foreign sender owns its own orders
@@ -444,7 +478,8 @@ interface Harness {
   endTurn: (ctx: DropiSalesContext) => Promise<void>;
 }
 
-const ok = (v: unknown): McpCallResult => ({ content: JSON.stringify(v), isError: false });
+/** Successful Dropi result: TOON strings as they are, objects as JSON (JSON path). */
+const ok = (v: unknown): McpCallResult => ({ content: typeof v === 'string' ? v : JSON.stringify(v), isError: false });
 
 /** ENVIA cost grows with the declared value, as observed (17 900 → 12 686, 35 000 → 13 028). */
 const enviaCost = (price: number): number => 12686 + Math.round((price - 17900) * 0.02);
@@ -561,7 +596,7 @@ function harness(): Harness {
   return { deps, calls, rows, logs, notices, handlers, config, clock, ctx, run, endTurn };
 }
 
-const BUYER = { nombre: 'Ana', apellido: 'Pérez', direccion: 'Calle 1 # 2-3', telefono: '+57 317 430 4027', barrio: 'Centro' };
+const BUYER = { nombre: 'Ana', apellido: 'Pérez', direccion: 'Calle 1 # 2-3', telefono: '+57 300 123 4567', barrio: 'Centro' };
 
 async function quoteFlow(h: Harness, c: DropiSalesContext): Promise<Record<string, unknown>> {
   await h.run('dropi_buscar_productos', { busqueda: 'Rompecabezas' }, c);
@@ -589,7 +624,7 @@ describe('sales flow (fakes)', () => {
 
   test('search: 0 results with several words → one retry with the longest word', async () => {
     const h = harness();
-    h.handlers['list_products'] = (a) => ok(a['search'] === 'adhesivo' ? F.LIST_PRODUCTS : { items: [], count: 0, currency: 'COP' });
+    h.handlers['list_products'] = (a) => ok(a['search'] === 'adhesivo' ? F.LIST_PRODUCTS : F.LIST_PRODUCTS_EMPTY);
     const out = await h.run('dropi_buscar_productos', { busqueda: 'papel adhesivo' }, h.ctx());
     assert.deepEqual(h.calls.map((c) => c.args['search']), ['papel adhesivo', 'adhesivo']);
     assert.equal((out['productos'] as unknown[]).length, 2);
@@ -597,12 +632,12 @@ describe('sales flow (fakes)', () => {
 
   test('search: empty → suggestion; non-COP → neutral', async () => {
     const h = harness();
-    h.handlers['list_products'] = () => ok({ items: [], count: 0, currency: 'COP' });
+    h.handlers['list_products'] = () => ok(F.LIST_PRODUCTS_EMPTY);
     assert.deepEqual(await h.run('dropi_buscar_productos', { busqueda: 'nada' }, h.ctx()), {
       productos: [],
       sugerencia: 'Pide al cliente que describa el producto con otras palabras',
     });
-    h.handlers['list_products'] = () => ok({ ...F.LIST_PRODUCTS, currency: 'MXN' });
+    h.handlers['list_products'] = () => ok(F.listProducts({ currency: 'MXN' }));
     assert.ok(typeof (await h.run('dropi_buscar_productos', { busqueda: 'x' }, h.ctx()))['error'] === 'string');
   });
 
@@ -629,7 +664,7 @@ describe('sales flow (fakes)', () => {
     const priceOf = (i: number) => (quotes[i]!.args['products'] as Array<Record<string, unknown>>)[0]!['price'];
     assert.equal(priceOf(0), 35000);
     assert.equal(priceOf(1), 48100); // ceil100(35 000 + 13 028)
-    assert.deepEqual(quotes[0]!.args['destination_city'], { id: 1234, dane_code: '25126', zip_code: null });
+    assert.deepEqual(quotes[0]!.args['destination_city'], { id: 70, dane_code: '25126000', zip_code: null });
     assert.equal(quotes[0]!.args['cash_on_delivery'], true);
     assert.equal(out['precio_unitario'], 35000);
     assert.equal(out['total'], 48300); // ceil100(35 000 + 13 290)
@@ -658,7 +693,7 @@ describe('sales flow (fakes)', () => {
     const h = harness();
     const c = h.ctx();
     await h.run('dropi_buscar_productos', { busqueda: 'x' }, c);
-    h.handlers['search_cities'] = () => ok({ items: [] });
+    h.handlers['search_cities'] = () => ok(F.SEARCH_CITIES_EMPTY);
     assert.deepEqual(await h.run('dropi_cotizar_envio', { producto_id: 101, cantidad: 1, ciudad: 'Nada' }, c), { ciudad_no_encontrada: true });
     h.handlers['search_cities'] = () => ok(F.SEARCH_CITIES_AMBIGUOUS);
     assert.deepEqual(await h.run('dropi_cotizar_envio', { producto_id: 101, cantidad: 1, ciudad: 'Guayabal' }, c), {
@@ -666,7 +701,7 @@ describe('sales flow (fakes)', () => {
       opciones: ['CUNDINAMARCA', 'RISARALDA'],
     });
     h.handlers['search_cities'] = () => ok(F.SEARCH_CITIES_CAJICA);
-    h.handlers['quote_shipping'] = () => ok({ carriers: [{ carrier: 'ENVIA', shipping_cost: null, error: 'x' }], currency: 'COP' });
+    h.handlers['quote_shipping'] = () => ok(F.QUOTE_NO_COVERAGE);
     assert.deepEqual(await h.run('dropi_cotizar_envio', { producto_id: 101, cantidad: 1, ciudad: 'Cajica' }, c), { sin_cobertura: true });
   });
 
@@ -679,7 +714,7 @@ describe('sales flow (fakes)', () => {
     h.handlers['quote_shipping'] = () => ok(F.quoteShipping({ envia: 40000, derocha: 41000 }));
     // Expensive shipping is passed to the buyer by the formula, so the margin stays positive: force a
     // negative one by making the supplier cost higher than the price.
-    h.handlers['list_products'] = () => ok({ ...F.LIST_PRODUCTS, items: [{ ...F.LIST_PRODUCTS.items[0], sale_price: 90000 }] });
+    h.handlers['list_products'] = () => ok(F.listProducts({ rmpSalePrice: 90000 }));
     const out = await quoteFlow(h, c);
     assert.ok(typeof out['error'] === 'string');
     assert.ok(h.logs.some((l) => l.includes('non-positive margin')));
@@ -705,7 +740,7 @@ describe('confirmation and idempotency (fakes)', () => {
     assert.match(String(bad['error']), /telefono/);
     const { prep } = await prepared(h, 1);
     const resumen = prep['resumen'] as Record<string, unknown>;
-    assert.equal(resumen['telefono'], '3174304027');
+    assert.equal(resumen['telefono'], '3001234567');
     assert.equal(resumen['total'], 48300);
     assert.match(String(prep['instruccion']), /confirmación explícita/);
   });
@@ -724,10 +759,10 @@ describe('confirmation and idempotency (fakes)', () => {
     assert.equal(orders.length, 1);
     const a = orders[0]!.args;
     assert.equal(a['rate_type'], 'CON RECAUDO');
-    assert.equal(a['distribution_company_id'], 1); // cheapest (ENVIA) of the 2nd quote — not the LLM's choice
+    assert.equal(a['distribution_company_id'], 2); // cheapest (ENVIA) of the 2nd quote — not the LLM's choice
     assert.equal(a['state'], 'CUNDINAMARCA');
     assert.equal(a['city'], 'CAJICA');
-    assert.equal(a['phone'], '3174304027');
+    assert.equal(a['phone'], '3001234567');
     assert.equal(a['colonia'], 'Centro');
     assert.deepEqual(a['products'], [{ id: 101, price: 48300, quantity: 1 }]);
     assert.equal(a['shop_order_id'], h.rows[0]!.id);
@@ -755,15 +790,15 @@ describe('confirmation and idempotency (fakes)', () => {
   test('carrier rejection → next carrier; no-margin → stop; network → unknown, never retried', async () => {
     const h = harness();
     let n = 0;
-    h.handlers['create_order'] = () => (++n === 1 ? ok(F.CREATE_ORDER_CARRIER_ERROR) : ok(F.CREATE_ORDER_OK));
+    h.handlers['create_order'] = () => (++n === 1 ? F.CREATE_ORDER_CARRIER_ERROR : ok(F.CREATE_ORDER_OK));
     const { prep } = await prepared(h, 1);
     const out = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2 }));
     assert.equal(out['pedido_creado'], true);
     const ids = h.calls.filter((c) => c.tool === 'create_order').map((c) => c.args['distribution_company_id']);
-    assert.deepEqual(ids, [1, 2]);
+    assert.deepEqual(ids, [2, 14]); // ENVIA, then DEROCHA-EXPRESS
 
     const h2 = harness();
-    h2.handlers['create_order'] = () => ok(F.CREATE_ORDER_NO_MARGIN_ERROR);
+    h2.handlers['create_order'] = () => F.CREATE_ORDER_NO_MARGIN_ERROR;
     const p2 = await prepared(h2, 1);
     const o2 = await h2.run('dropi_confirmar_pedido', { pedido_token: p2.prep['pedido_token'] }, h2.ctx({ currentUserTurn: 2 }));
     assert.ok(typeof o2['error'] === 'string');
@@ -788,7 +823,7 @@ describe('confirmation and idempotency (fakes)', () => {
     const { prep } = await prepared(h, 1);
     await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2 }));
     const all = h.logs.join('\n');
-    for (const pii of ['Ana', 'Pérez', '3174304027', 'Calle 1']) assert.ok(!all.includes(pii), `PII "${pii}" in logs`);
+    for (const pii of ['Ana', 'Pérez', '3001234567', 'Calle 1']) assert.ok(!all.includes(pii), `PII "${pii}" in logs`);
   });
 });
 
@@ -1137,14 +1172,15 @@ describe('order tracking (fakes)', () => {
     assert.equal(pedidos[0]!['transportadora'], 'ENVIA');
     const text = JSON.stringify(out);
     assertNoForbiddenKeys(text);
-    for (const pii of ['Ana', 'Pérez', '3174304027', '1020304050', 'Calle 1', 'Otro Cliente']) assert.ok(!text.includes(pii), `PII "${pii}" leaked`);
+    for (const pii of ['Ana', 'Pérez', '3001234567', '1020304050', 'Calle 1', 'Otro Cliente']) assert.ok(!text.includes(pii), `PII "${pii}" leaked`);
     const lo = h.calls.find((c) => c.tool === 'list_orders')!.args;
-    assert.deepEqual(lo, { text_to_search: '96972142', from: '2026-11-10', until: '2026-11-15', result_number: 5 });
+    // from = date of get_order's ISO created_at ("2026-11-14T14:39:45"); until = now + 1 day.
+    assert.deepEqual(lo, { text_to_search: '96972142', from: '2026-11-14', until: '2026-11-15', result_number: 5 });
   });
 
   test('order of another conversation or agent is not returned without phone verification', async () => {
     const h = harness();
-    h.handlers['get_order'] = () => ok({ ...F.GET_ORDER, tracking_code: 'GUIA-777' });
+    h.handlers['get_order'] = () => ok(F.getOrder({ trackingCode: 'GUIA-777' }));
     await withOrder(h, {});
     // Own (same conversation): the tracking code is included.
     const own = await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, h.ctx());
@@ -1161,12 +1197,12 @@ describe('order tracking (fakes)', () => {
     const otherAgent = h.ctx({ agentId: 'agent-2' });
     assert.deepEqual((await h.run('dropi_estado_pedido', {}, otherAgent))['pedidos'], []);
     // Right phone → allowed, still trimmed.
-    const verified = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '317 430 4027' }, other);
+    const verified = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '300 123 4567' }, other);
     const vp = verified['pedidos'] as Array<Record<string, unknown>>;
     assert.equal(vp.length, 1);
     // Verified but not own: status, products, total and carrier — no tracking code (DS-05).
     assert.equal(vp[0]!['guia'], undefined);
-    assert.equal(vp[0]!['estado'], 'PENDIENTE');
+    assert.equal(vp[0]!['estado'], 'CANCELADO'); // live status from get_order
     assert.equal(vp[0]!['transportadora'], 'ENVIA');
     assert.ok(!JSON.stringify(verified).includes('GUIA-777'));
     assertNoForbiddenKeys(JSON.stringify(verified));
@@ -1196,9 +1232,9 @@ describe('order tracking (fakes)', () => {
 
   test('missing order and wrong phone give the same message', async () => {
     const h = harness();
-    h.handlers['get_order'] = () => ok({ error: { code: 4, message: 'Orden no encontrada' } });
+    h.handlers['get_order'] = () => F.ERROR_ORDER_NOT_FOUND;
     const c = h.ctx({ contactId: null });
-    const missing = await h.run('dropi_estado_pedido', { numero_pedido: '93204655', telefono: '3174304027' }, c);
+    const missing = await h.run('dropi_estado_pedido', { numero_pedido: '93204655', telefono: '3001234567' }, c);
     h.handlers['get_order'] = () => ok(F.GET_ORDER);
     const wrong = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3110000000' }, c);
     assert.deepEqual(missing, wrong);
@@ -1206,12 +1242,12 @@ describe('order tracking (fakes)', () => {
 
   test('WhatsApp: verified with wa_from, no arguments needed', async () => {
     const h = harness();
-    const wa = h.ctx({ channel: 'whatsapp', waFrom: '573174304027', contactId: 'contact-wa', scopeId: 'conv-wa', conversationId: 'conv-wa' });
-    // Order not in dropi_orders: verified against wa_from (573174304027 → 3174304027).
+    const wa = h.ctx({ channel: 'whatsapp', waFrom: '573001234567', contactId: 'contact-wa', scopeId: 'conv-wa', conversationId: 'conv-wa' });
+    // Order not in dropi_orders: verified against wa_from (573001234567 → 3001234567).
     const out = await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, wa);
     assert.equal((out['pedidos'] as unknown[]).length, 1);
     // A phone in the arguments is ignored on WhatsApp.
-    h.handlers['get_order'] = () => ok({ ...F.GET_ORDER, customer: { ...F.GET_ORDER.customer, phone: '3110000000' } });
+    h.handlers['get_order'] = () => ok(F.getOrder({ phone: '3110000000' }));
     const spoof = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3110000000' }, wa);
     assert.equal(spoof['error'], 'No encontré un pedido con esos datos');
   });
@@ -1219,24 +1255,24 @@ describe('order tracking (fakes)', () => {
   test('DS-02 PoC: overwriting contacts.phone (capture_variable) no longer gives access on WhatsApp', async () => {
     const h = harness();
     // Victim orders from WhatsApp: owner_wa_last10 = their Meta number.
-    await withOrder(h, { channel: 'whatsapp', waFrom: '573174304027', scopeId: 'conv-v', conversationId: 'conv-v', contactId: 'contact-v' });
-    assert.equal(h.rows[0]!.ownerWaLast10, '3174304027');
-    assert.equal(h.rows[0]!.ownerWaFull, '573174304027');
+    await withOrder(h, { channel: 'whatsapp', waFrom: '573001234567', scopeId: 'conv-v', conversationId: 'conv-v', contactId: 'contact-v' });
+    assert.equal(h.rows[0]!.ownerWaLast10, '3001234567');
+    assert.equal(h.rows[0]!.ownerWaFull, '573001234567');
     // Attacker on WhatsApp sets contacts.phone = victim's phone via capture_variable. The sales
     // service never reads contacts.phone (OrdersRepository has no such method): identity = wa_from.
     const attacker = h.ctx({ channel: 'whatsapp', waFrom: '573001112233', scopeId: 'conv-a', conversationId: 'conv-a', contactId: 'contact-a' });
     assert.deepEqual((await h.run('dropi_estado_pedido', {}, attacker))['pedidos'], []);
     assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, attacker))['error'], 'No encontré un pedido con esos datos');
     // The phone argument is ignored on WhatsApp.
-    assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3174304027' }, attacker))['error'], 'No encontré un pedido con esos datos');
+    assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3001234567' }, attacker))['error'], 'No encontré un pedido con esos datos');
     // The victim still sees it from a new WhatsApp conversation.
-    const victim2 = h.ctx({ channel: 'whatsapp', waFrom: '573174304027', scopeId: 'conv-v2', conversationId: 'conv-v2', contactId: 'contact-other' });
+    const victim2 = h.ctx({ channel: 'whatsapp', waFrom: '573001234567', scopeId: 'conv-v2', conversationId: 'conv-v2', contactId: 'contact-other' });
     assert.equal(((await h.run('dropi_estado_pedido', {}, victim2))['pedidos'] as unknown[]).length, 1);
   });
 
   test('N-02: +1 305 123 4567 does not get the orders of +57 305 123 4567', async () => {
     const h = harness();
-    h.handlers['get_order'] = () => ok({ ...F.GET_ORDER, customer: { ...F.GET_ORDER.customer, phone: '3051234567' }, tracking_code: 'GUIA-1' });
+    h.handlers['get_order'] = () => ok(F.getOrder({ phone: '3051234567', trackingCode: 'GUIA-1' }));
     await withOrder(h, { channel: 'whatsapp', waFrom: '573051234567', scopeId: 'conv-co', conversationId: 'conv-co', contactId: 'c-co' },
       { ...BUYER, telefono: '3051234567' });
     assert.equal(h.rows[0]!.ownerWaLast10, '3051234567');
@@ -1267,7 +1303,7 @@ describe('order tracking (fakes)', () => {
     const h = harness();
     const wa = h.ctx({ channel: 'whatsapp', waFrom: null, contactId: 'contact-wa', scopeId: 'conv-old', conversationId: 'conv-old' });
     assert.match(String((await h.run('dropi_estado_pedido', { numero_pedido: '96972142' }, wa))['error']), /teléfono/);
-    assert.equal(((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3174304027' }, wa))['pedidos'] as unknown[]).length, 1);
+    assert.equal(((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3001234567' }, wa))['pedidos'] as unknown[]).length, 1);
   });
 
   test('DS-05: verified lookups are limited per agent (30/h) across new sessions', async () => {
@@ -1291,10 +1327,10 @@ describe('order tracking (fakes)', () => {
     const h = harness();
     for (let i = 0; i < 5; i++) {
       const c = h.ctx({ scopeId: `conv-${i}`, conversationId: `conv-${i}` });
-      await h.run('dropi_estado_pedido', { numero_pedido: String(93204600 + i), telefono: '3174304027' }, c);
+      await h.run('dropi_estado_pedido', { numero_pedido: String(93204600 + i), telefono: '3001234567' }, c);
     }
     const c6 = h.ctx({ scopeId: 'conv-6', conversationId: 'conv-6' });
-    assert.match(String((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3174304027' }, c6))['error']), /límite/);
+    assert.match(String((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3001234567' }, c6))['error']), /límite/);
     // A different target phone still works.
     assert.equal((await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3000000001' }, c6))['error'], 'No encontré un pedido con esos datos');
   });
@@ -1316,5 +1352,226 @@ describe('order tracking (fakes)', () => {
     const r = await h.run('dropi_estado_pedido', { numero_pedido: '12ab' }, h.ctx());
     assert.ok(r['error']);
     assert.equal(h.calls.length, 0);
+  });
+});
+
+// ── Real Dropi responses (TOON) ──────────────────────────────────────────────
+
+describe('Dropi TOON responses (real samples)', () => {
+  test('decodeToolContent: TOON and JSON; oversize, wrong counts and garbage → undefined without throwing', () => {
+    assert.deepEqual(decodeToolContent('items[2]{id,name}:\n  1,a\n  2,"25126000"'), { items: [{ id: 1, name: 'a' }, { id: 2, name: '25126000' }] });
+    assert.deepEqual(decodeToolContent(' {"a":1} '), { a: 1 });
+    assert.deepEqual(decodeToolContent('[2]: a,b'), ['a', 'b']); // TOON root list starts with "[" too
+    const big = 'items[1]{id,name}:\n  1,' + 'x'.repeat(MAX_TOOL_CONTENT_BYTES);
+    assert.equal(decodeToolContent(big), undefined);
+    assert.equal(decodeToolContent('a: ' + 'ñ'.repeat(MAX_TOOL_CONTENT_BYTES / 2)), undefined); // > 512 KB in UTF-8 bytes
+    assert.equal(decodeToolContent('items[3]{id}:\n  1\n  2\ncount: 3'), undefined); // strict row count
+    assert.equal(decodeToolContent(F.SEARCH_CITIES_CAJICA.replace('items[1]', 'items[2]')), undefined);
+    for (const junk of ['hola mundo', '"sin cerrar', '{roto', 'x:\n   y: 1', '', '   ', 'core failed for country CO', '\u0000\u0001']) {
+      assert.doesNotThrow(() => decodeToolContent(junk));
+      assert.equal(decodeToolContent(junk), undefined, JSON.stringify(junk));
+    }
+    assert.equal(decodeToolContent(undefined), undefined);
+    assert.equal(decodeToolContent(42), undefined);
+  });
+
+  test('list_products: simple products have variations[0]: and keep their own price', () => {
+    const r = parseListProducts(F.REAL_LIST_PRODUCTS_ROMPECABEZAS);
+    assert.ok(r.ok);
+    assert.equal(r.currency, 'COP');
+    const [rmp] = r.products;
+    assert.equal(rmp!.id, 1912391);
+    assert.equal(rmp!.type, 'SIMPLE');
+    assert.deepEqual(rmp!.variations, []);
+    assert.equal(rmp!.salePrice, 14900);
+    assert.equal(rmp!.image?.startsWith('https://d39ru7awumhhs2.cloudfront.net/'), true);
+    const shown = presentProducts(r.products, 20);
+    assert.equal(shown[0]!.precio, 21500); // 17 900 × 1.20 = 21 480 → 21 500
+    assert.equal(shown[1]!.precio, 33500); // 27 900 × 1.20 = 33 480 → 33 500
+  });
+
+  test('list_products: variable products use the variations, not the product stock / suggested_price', () => {
+    const r = parseListProducts(F.REAL_LIST_PRODUCTS_SABANA);
+    assert.ok(r.ok);
+    const [sabana, juego] = r.products;
+    assert.equal(sabana!.type, 'VARIABLE');
+    assert.equal(sabana!.stock, 0);
+    assert.equal(sabana!.suggestedPrice, 0);
+    assert.equal(sabana!.variations.length, 5);
+    assert.equal(juego!.suggestedPrice, 79); // garbage at product level
+    const shown = presentProducts(r.products, 20);
+    assert.deepEqual(shown.map((p) => p.producto_id), [1919960, 1969814]);
+    assert.equal(shown[0]!.precio_desde, 72000); // 60 000 × 1.2
+    assert.equal(shown[0]!.precio_hasta, 96000); // 80 000 × 1.2
+    assert.deepEqual(shown[0]!.opciones_resumen, { TALLA: ['KING', 'QUEEN', 'DOBLE', 'SEMIDOBLE', 'SENCILLA'] });
+    assert.equal(shown[1]!.precio, 94800); // from the variations (79 000), not the product's 79
+    assert.deepEqual(presentOptions(sabana!, 20).map((o) => [o.opcion_id, o.descripcion, o.precio]), [
+      [1714552, 'TALLA: KING', 96000],
+      [1714553, 'TALLA: QUEEN', 96000],
+      [1714554, 'TALLA: DOBLE', 72000],
+      [1714555, 'TALLA: SEMIDOBLE', 72000],
+      [1714556, 'TALLA: SENCILLA', 72000],
+    ]);
+    assertNoForbiddenKeys(JSON.stringify({ productos: shown }));
+  });
+
+  test('catalog lists: carriers, departments and categories', () => {
+    const carriers = parseNamedItems(F.LIST_CARRIERS)!;
+    assert.equal(carriers.length, 10);
+    assert.deepEqual(carriers[0], { id: 2, name: 'ENVIA' });
+    const departments = parseNamedItems(F.LIST_DEPARTMENTS)!;
+    assert.equal(departments.length, 33);
+    assert.deepEqual(departments.find((d) => d.id === 3), { id: 3, name: 'CUNDINAMARCA' });
+    assert.equal(departments.find((d) => d.id === 40)!.name, 'NARIÑO');
+    const categories = parseNamedItems(F.LIST_CATEGORIES)!;
+    assert.deepEqual(categories.slice(0, 3).map((c) => c.name), ['Bisutería', 'Ropa Deportiva', 'Vaporizadores']);
+    assert.deepEqual(parseNamedItems(JSON.stringify(F.JSON_LIST_CATEGORIES))!.map((c) => c.name), ['Juguetes', 'Hogar']);
+  });
+
+  test('search_cities: CAJICA → id 70, department 3 (CUNDINAMARCA); SAN JOSE partial matches', () => {
+    const departments = parseNamedItems(F.LIST_DEPARTMENTS)!;
+    const cities = parseCities(F.SEARCH_CITIES_CAJICA)!;
+    assert.deepEqual(cities, [{ id: 70, departmentId: 3, name: 'CAJICA', daneCode: '25126000', zipCode: null }]);
+    const one = resolveCity({ query: 'Cajicá', cities, departments });
+    assert.equal(one.kind === 'found' && one.departmentName, 'CUNDINAMARCA');
+    const sj = parseCities(F.REAL_SEARCH_CITIES_SAN_JOSE)!;
+    assert.equal(sj.length, 6);
+    const exact = resolveCity({ query: 'San José', cities: sj, departments });
+    assert.equal(exact.kind === 'found' && exact.city.id, 1468);
+    assert.equal(exact.kind === 'found' && exact.departmentName, 'RISARALDA');
+    const partial = resolveCity({ query: 'San Jose del', cities: sj, departments });
+    assert.equal(partial.kind, 'needs_department');
+    assert.deepEqual(parseCities(JSON.stringify(F.JSON_SEARCH_CITIES))!.map((c) => c.id), [70]);
+  });
+
+  test('quote_shipping: only carriers without error and with a cost; decimals read; ENVIA cheapest', () => {
+    const q = parseQuote(F.REAL_QUOTE_CAJICA);
+    assert.ok(q.ok);
+    assert.equal(q.currency, 'COP');
+    assert.deepEqual(q.quotes, [
+      { name: 'ENVIA', cost: 12758 },
+      { name: 'DOMINA', cost: 15081.4 },
+      { name: 'COORDINADORA', cost: 14475 },
+      { name: 'TCC', cost: 14497.5 }, // insurance 607.5 is not added (see report)
+      { name: 'JAMV-DRIVE', cost: 19000 },
+      { name: 'DEROCHA-EXPRESS', cost: 22400 },
+    ]);
+    const ranked = rankCarriers(q.quotes, parseNamedItems(F.LIST_CARRIERS)!);
+    assert.deepEqual(ranked[0], { id: 2, name: 'ENVIA', cost: 12758 });
+    assert.deepEqual(ranked.map((c) => c.id), [2, 5, 10, 4, 13, 14]);
+    const json = parseQuote(JSON.stringify(F.JSON_QUOTE));
+    assert.ok(json.ok);
+    assert.deepEqual(json.quotes, [{ name: 'ENVIA', cost: 12758 }]);
+    assert.equal(parseQuote(F.ERROR_SCHEMA.content).ok, false); // an error text never parses as a quote
+  });
+
+  test('flow with real responses: search → 21 500, quote to Cajicá with zip_code null', async () => {
+    const h = harness();
+    h.handlers['list_products'] = () => ok(F.REAL_LIST_PRODUCTS_ROMPECABEZAS);
+    h.handlers['quote_shipping'] = () => ok(F.REAL_QUOTE_CAJICA);
+    const c = h.ctx();
+    const found = await h.run('dropi_buscar_productos', { busqueda: 'rompecabezas' }, c);
+    const productos = found['productos'] as Array<Record<string, unknown>>;
+    assert.equal(productos[0]!['producto_id'], 1912391);
+    assert.equal(productos[0]!['precio'], 21500);
+    const text = JSON.stringify(found);
+    assertNoForbiddenKeys(text);
+    for (const leak of ['sale_price', 'supplier_id', '14900', '12108', '77182828']) assert.ok(!text.includes(leak), `${leak} leaked`);
+
+    const quote = await h.run('dropi_cotizar_envio', { producto_id: 1912391, cantidad: 1, ciudad: 'Cajicá' }, c);
+    const q = h.calls.filter((x) => x.tool === 'quote_shipping');
+    assert.deepEqual(q[0]!.args['destination_city'], { id: 70, dane_code: '25126000', zip_code: null });
+    assert.deepEqual((q[0]!.args['products'] as unknown[])[0], { id: 1912391, type: 'SIMPLE', quantity: 1, price: 21500 });
+    assert.equal(quote['precio_unitario'], 21500);
+    assert.equal(quote['total'], 34300); // ceil100(21 500 + 12 758)
+    assert.equal(quote['envio'], 12800);
+    assert.ok(!h.logs.some((l) => l.includes('unparseable')));
+  });
+
+  test('flow with real responses: variable product offers its variations', async () => {
+    const h = harness();
+    h.handlers['list_products'] = () => ok(F.REAL_LIST_PRODUCTS_SABANA);
+    const c = h.ctx();
+    const found = await h.run('dropi_buscar_productos', { busqueda: 'sabana' }, c);
+    const first = (found['productos'] as Array<Record<string, unknown>>)[0]!;
+    assert.equal(first['tiene_opciones'], true);
+    assert.equal(first['precio_desde'], 72000);
+    const out = await h.run('dropi_ver_opciones', { producto_id: 1919960, filtro: 'queen' }, c);
+    assert.deepEqual(out['opciones'], [{ opcion_id: 1714553, descripcion: 'TALLA: QUEEN', precio: 96000 }]);
+  });
+
+  test('dropi_listar_categorias returns the names (TOON)', async () => {
+    const h = harness();
+    const out = await h.run('dropi_listar_categorias', {}, h.ctx());
+    assert.deepEqual(out['categorias'], ['Bisutería', 'Ropa Deportiva', 'Vaporizadores', 'Mascotas', 'Moda', 'Tecnologia', 'Cocina', 'Belleza', 'Salud', 'Hogar']);
+  });
+
+  test('get_order not found (plain-text isError) → same neutral answer as a wrong phone', async () => {
+    const h = harness();
+    h.handlers['get_order'] = () => F.ERROR_ORDER_NOT_FOUND;
+    const out = await h.run('dropi_estado_pedido', { numero_pedido: '1', telefono: '3001234567' }, h.ctx({ contactId: null }));
+    assert.equal(out['error'], 'No encontré un pedido con esos datos');
+    assert.ok(!h.logs.some((l) => l.includes('unparseable')), 'an isError result is a failure, not an unparseable answer');
+  });
+
+  test('unparseable answers are logged with tool, ids and length only — never the content', async () => {
+    const h = harness();
+    // get_order with a wrong row count: strict TOON refuses it.
+    const brokenOrder = F.GET_ORDER.replace('items[1]', 'items[2]');
+    h.handlers['get_order'] = () => ok(brokenOrder);
+    const c = h.ctx({ contactId: null });
+    const out = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3001234567' }, c);
+    assert.ok(typeof out['error'] === 'string');
+    const line = h.logs.find((l) => l.includes('get_order unparseable'));
+    assert.equal(line, `[dropi-sales] get_order unparseable (tool tool-1, conversation conv-1, len ${brokenOrder.length})`);
+
+    // list_orders unreadable: the order is still shown, without carrier.
+    h.handlers['get_order'] = () => ok(F.GET_ORDER);
+    const brokenList = F.LIST_ORDERS.replace('items[1]', 'items[3]');
+    h.handlers['list_orders'] = () => ok(brokenList);
+    const shown = await h.run('dropi_estado_pedido', { numero_pedido: '96972142', telefono: '3001234567' }, c);
+    const pedidos = shown['pedidos'] as Array<Record<string, unknown>>;
+    assert.equal(pedidos.length, 1);
+    assert.equal(pedidos[0]!['transportadora'], undefined);
+    assert.ok(h.logs.some((l) => l === `[dropi-sales] list_orders unparseable (tool tool-1, conversation conv-1, len ${brokenList.length})`));
+
+    // list_products / search_cities / quote_shipping / catalogs.
+    const h2 = harness();
+    h2.handlers['list_products'] = () => ok('hola mundo');
+    assert.ok(typeof (await h2.run('dropi_buscar_productos', { busqueda: 'x' }, h2.ctx()))['error'] === 'string');
+    h2.handlers['list_categories'] = () => ok('items[5]{id,name}:\n  1,a');
+    assert.ok(typeof (await h2.run('dropi_listar_categorias', {}, h2.ctx()))['error'] === 'string');
+    for (const tool of ['list_products', 'list_categories']) assert.ok(h2.logs.some((l) => l.startsWith(`[dropi-sales] ${tool} unparseable (`)), tool);
+
+    const all = [...h.logs, ...h2.logs].join('\n');
+    for (const pii of [F.FAKE_BUYER.phone, 'Ana', 'Pérez', 'Calle 1', 'CAJICA', 'Rompecabezas', 'CANCELADO']) {
+      assert.ok(!all.includes(pii), `"${pii}" in logs`);
+    }
+  });
+
+  test('create_order unknown: MANUAL REVIEW says why (isError / unparseable), without content', async () => {
+    const h = harness();
+    h.handlers['create_order'] = () => F.ERROR_ORDER_NOT_FOUND;
+    const p = await prepared(h, 1);
+    const o = await h.run('dropi_confirmar_pedido', { pedido_token: p.prep['pedido_token'] }, h.ctx({ currentUserTurn: 2 }));
+    assert.equal(o['en_verificacion'], true);
+    assert.equal(h.calls.filter((x) => x.tool === 'create_order').length, 1); // never retried
+    const review = h.logs.find((l) => l.includes('MANUAL REVIEW'))!;
+    assert.match(review, /cause isError, len 26\)$/);
+    assert.ok(!review.includes('core failed'));
+
+    const h2 = harness();
+    h2.handlers['create_order'] = () => ok('pedido listo');
+    const p2 = await prepared(h2, 1);
+    await h2.run('dropi_confirmar_pedido', { pedido_token: p2.prep['pedido_token'] }, h2.ctx({ currentUserTurn: 2 }));
+    assert.match(h2.logs.find((l) => l.includes('MANUAL REVIEW'))!, /cause unparseable, len 12\)$/);
+    assert.equal(h2.rows[0]!.statusLocal, 'desconocido');
+
+    const h3 = harness();
+    h3.handlers['create_order'] = () => { throw new Error('socket hang up'); };
+    const p3 = await prepared(h3, 1);
+    await h3.run('dropi_confirmar_pedido', { pedido_token: p3.prep['pedido_token'] }, h3.ctx({ currentUserTurn: 2 }));
+    assert.match(h3.logs.find((l) => l.includes('MANUAL REVIEW'))!, /cause call threw, len 0\)$/);
+    assert.ok(!h3.logs.join('\n').includes('socket hang up'));
   });
 });

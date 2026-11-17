@@ -26,6 +26,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
     "@gensmart/shared": "*",
+    "@toon-format/toon": "2.3.1",
     "@types/archiver": "^7.0.0",
     "archiver": "^7.0.1",
     "bcryptjs": "^2.4.3",

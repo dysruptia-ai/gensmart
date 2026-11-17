@@ -404,6 +404,14 @@ export function identityOf(ctx: DropiSalesContext): BuyerIdentity {
   };
 }
 
+/**
+ * Logs a successful (isError=false) Dropi answer that could not be parsed. Ids, tool and length
+ * only: never the content (get_order / list_orders carry the buyer's name, phone and address).
+ */
+function logUnparseable(ctx: DropiSalesContext, deps: DropiSalesDeps, tool: string, content: string): void {
+  deps.log.warn(`[dropi-sales] ${tool} unparseable (tool ${ctx.toolId}, conversation ${ctx.scopeId}, len ${content.length})`);
+}
+
 /** Calls a Dropi tool and returns its content, or null on an error result (logged with ids only). */
 async function callContent(ctx: DropiSalesContext, deps: DropiSalesDeps, tool: string, args: Record<string, unknown>): Promise<string | null> {
   try {
@@ -429,7 +437,9 @@ async function catalog(
   if (Array.isArray(cached)) return cached as NamedItem[];
   const tool = kind === 'carriers' ? 'list_carriers' : kind === 'departments' ? 'list_departments' : 'list_categories';
   const content = await callContent(ctx, deps, tool, {});
-  const items = content === null ? null : parseNamedItems(content);
+  if (content === null) return null;
+  const items = parseNamedItems(content);
+  if (!items) logUnparseable(ctx, deps, tool, content);
   if (!items || items.length === 0) return null;
   await deps.kv.set(key, json(items), TTL.catalog).catch(() => {});
   return items;
@@ -464,7 +474,10 @@ export async function searchProducts(
       page_size: 10,
       get_stock: true,
     });
-    return content === null ? null : parseListProducts(content);
+    if (content === null) return null;
+    const parsed = parseListProducts(content);
+    if (!parsed.ok) logUnparseable(ctx, deps, 'list_products', content);
+    return parsed;
   };
 
   let result = await run(search);
@@ -566,6 +579,7 @@ export async function quoteShipping(
   // City
   const citiesContent = await callContent(ctx, deps, 'search_cities', { name: normalizeKey(input.ciudad) });
   const cities = citiesContent === null ? null : parseCities(citiesContent);
+  if (citiesContent !== null && !cities) logUnparseable(ctx, deps, 'search_cities', citiesContent);
   if (!cities) return neutral(MSG.unavailable);
   if (cities.length === 0) return json({ ciudad_no_encontrada: true });
   const departments = await catalog(ctx, deps, 'departments');
@@ -599,7 +613,10 @@ export async function quoteShipping(
     });
     if (content === null) return null;
     const parsed = parseQuote(content);
-    if (!parsed.ok) return null;
+    if (!parsed.ok) {
+      logUnparseable(ctx, deps, 'quote_shipping', content);
+      return null;
+    }
     return { ranked: rankCarriers(parsed.quotes, carriersCatalog), currency: parsed.currency };
   };
 
@@ -878,6 +895,7 @@ export async function confirmOrder(
     }
     attempts += 1;
     let result: McpCallResult;
+    let threw = false;
     try {
       result = await ctx.call('create_order', {
         name: buyer.name,
@@ -901,6 +919,7 @@ export async function confirmOrder(
         ],
       });
     } catch {
+      threw = true;
       result = { content: '', isError: true }; // classified as unknown below: never retried
     }
 
@@ -924,7 +943,12 @@ export async function confirmOrder(
     }
     if (outcome.kind === 'unknown') {
       await deps.orders.markUnknown({ id: orderRowId, agentId: ctx.agentId, carrierId: carrier.id }).catch(() => {});
-      deps.log.error(`[dropi-sales] create_order outcome unknown — MANUAL REVIEW (row ${orderRowId}, carrier ${carrier.id}, conversation ${ctx.scopeId})`);
+      // Cause only (no content): the call threw, Dropi answered isError with an unrecognized text,
+      // or a successful answer could not be read.
+      const cause = threw ? 'call threw' : result.isError ? 'isError' : 'unparseable';
+      deps.log.error(
+        `[dropi-sales] create_order outcome unknown — MANUAL REVIEW (row ${orderRowId}, carrier ${carrier.id}, conversation ${ctx.scopeId}, cause ${cause}, len ${typeof result.content === 'string' ? result.content.length : 0})`
+      );
       return finish(json({ pedido_creado: false, en_verificacion: true, mensaje: MSG.orderVerifying, ofrecer_asesor: true }), { consumeQuote: true });
     }
     if (outcome.kind === 'no_margin') {
@@ -944,6 +968,7 @@ async function fetchOrder(ctx: DropiSalesContext, deps: DropiSalesDeps, orderNum
   const content = await callContent(ctx, deps, 'get_order', { id: orderNumber });
   if (content === null) return null;
   const order = parseGetOrder(content);
+  if (!order) logUnparseable(ctx, deps, 'get_order', content);
   return order && order.orderId === orderNumber ? order : null;
 }
 
@@ -956,7 +981,13 @@ async function carrierOf(ctx: DropiSalesContext, deps: DropiSalesDeps, order: Pa
     until: isoDatePlusDays(deps.now(), 1),
     result_number: 5,
   });
-  return content === null ? null : findShippingCompany(content, order.orderId);
+  if (content === null) return null;
+  const company = findShippingCompany(content, order.orderId);
+  if (company === undefined) {
+    logUnparseable(ctx, deps, 'list_orders', content);
+    return null;
+  }
+  return company;
 }
 
 async function freshOrder(
