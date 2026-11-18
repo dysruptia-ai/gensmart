@@ -23,6 +23,7 @@ interface OrgDetail {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   trialEndsAt: string | null;
+  isSuspended: boolean;
   settings: Record<string, unknown>;
   created_at: string;
 }
@@ -45,6 +46,14 @@ interface OrgAgent {
   llmModel: string;
   channels: unknown;
   createdAt: string;
+}
+
+interface ChangePlanResponse {
+  message: string;
+  plan: string;
+  trialCleared: boolean;
+  reactivated: boolean;
+  warning?: 'STRIPE_SUBSCRIPTION_ACTIVE';
 }
 
 interface OrgDetailResponse {
@@ -70,6 +79,7 @@ export default function AdminOrgDetailPage() {
   const [data, setData] = useState<OrgDetailResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [changingPlan, setChangingPlan] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
   const [reset2FAModal, setReset2FAModal] = useState<OrgUser | null>(null);
   const [resetting2FA, setResetting2FA] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -91,11 +101,23 @@ export default function AdminOrgDetailPage() {
     loadOrg();
   }, [loadOrg]);
 
-  async function handlePlanChange(newPlan: string) {
+  // Every admin plan change is definitive: the API clears the trial and reactivates the org.
+  async function handlePlanChange() {
+    if (!pendingPlan) return;
     setChangingPlan(true);
     try {
-      await api.put(`/api/admin/organizations/${orgId}/plan`, { plan: newPlan });
-      toast.success(`Plan updated to ${newPlan}`);
+      const res = await api.put<ChangePlanResponse>(`/api/admin/organizations/${orgId}/plan`, { plan: pendingPlan });
+      toast.success(
+        `Plan updated to ${res.plan}`,
+        res.reactivated ? 'Trial removed and organization reactivated.' : 'Trial removed.'
+      );
+      if (res.warning === 'STRIPE_SUBSCRIPTION_ACTIVE') {
+        toast.warning(
+          'Active Stripe subscription',
+          'This organization has an active Stripe subscription; an upcoming charge or a change in Stripe may overwrite the plan.'
+        );
+      }
+      setPendingPlan(null);
       await loadOrg();
     } catch {
       toast.error('Failed to change plan');
@@ -175,7 +197,7 @@ export default function AdminOrgDetailPage() {
           <select
             className={styles.planSelect}
             value={org.plan}
-            onChange={(e) => handlePlanChange(e.target.value)}
+            onChange={(e) => { if (e.target.value !== org.plan) setPendingPlan(e.target.value); }}
             disabled={changingPlan}
           >
             {PLANS.map((p) => (
@@ -289,6 +311,19 @@ export default function AdminOrgDetailPage() {
           </div>
         </div>
         <div className={styles.settingRow}>
+          <div className={styles.settingLabel}>Suspended</div>
+          <div className={styles.settingValue}>
+            <span className={`${styles.statusDot} ${org.isSuspended ? styles.statusDotRed : styles.statusDotGreen}`} />
+            {org.isSuspended ? 'Yes' : 'No'}
+          </div>
+        </div>
+        <div className={styles.settingRow}>
+          <div className={styles.settingLabel}>Trial Ends</div>
+          <div className={styles.settingValue}>
+            {org.trialEndsAt ? new Date(org.trialEndsAt).toLocaleDateString() : '—'}
+          </div>
+        </div>
+        <div className={styles.settingRow}>
           <div className={styles.settingLabel}>Stripe Customer ID</div>
           <div className={styles.settingValue}>
             <code>{org.stripeCustomerId ?? '—'}</code>
@@ -335,6 +370,27 @@ export default function AdminOrgDetailPage() {
             onClick={handleDeleteOrg}
           >
             Delete permanently
+          </Button>
+        </div>
+      </Modal>
+
+      {/* Change Plan Confirmation Modal */}
+      <Modal
+        isOpen={!!pendingPlan}
+        onClose={() => { if (!changingPlan) setPendingPlan(null); }}
+        title={`Change plan to ${pendingPlan ? pendingPlan.charAt(0).toUpperCase() + pendingPlan.slice(1) : ''}`}
+        size="sm"
+      >
+        <p className={styles.confirmText}>
+          This change assigns the plan permanently: it removes the trial period and reactivates the
+          organization if it is suspended.
+        </p>
+        <div className={styles.confirmActions}>
+          <Button variant="secondary" size="sm" onClick={() => setPendingPlan(null)} disabled={changingPlan}>
+            Cancel
+          </Button>
+          <Button size="sm" icon={CreditCard} loading={changingPlan} onClick={handlePlanChange}>
+            Change plan
           </Button>
         </div>
       </Modal>
