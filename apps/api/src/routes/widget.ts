@@ -17,6 +17,13 @@ import { detectImageMime } from '../services/image-sniff';
 import { checkContactLimit } from '../services/contact.service';
 import { notifyContactLimitReached } from '../services/usage.service';
 import { hashWidgetIp } from '../services/widget-ip-hash';
+import { verifyTurnstileTokenStrict, WIDGET_TURNSTILE_ACTION } from '../services/turnstile.service';
+import {
+  SQL_FIND_WEB_SESSION,
+  SQL_MARK_VERIFIED,
+  verifyWidgetSession,
+  type WidgetVerifyDeps,
+} from '../services/widget-verify.service';
 import { env } from '../config/env';
 
 const router = Router();
@@ -551,16 +558,62 @@ router.get(
         throw new AppError(404, 'Session not found', 'NOT_FOUND');
       }
 
-      const result = await query<{ id: string; status: string }>(
-        `SELECT id, status FROM conversations WHERE id = $1 AND agent_id = $2 AND channel = 'web'`,
-        [sessionId, agentId]
-      );
+      const result = await query<{ status: string; verified: boolean }>(SQL_FIND_WEB_SESSION, [sessionId, agentId]);
       const conv = result.rows[0];
       if (!conv || conv.status === 'closed') {
         throw new AppError(404, 'Session not found', 'NOT_FOUND');
       }
 
-      res.json({ valid: true });
+      // verified tells the widget whether a resumed session still needs Turnstile (the date is not exposed)
+      res.json({ valid: true, verified: conv.verified === true });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/widget/:agentId/session/:sessionId/verify ───────────────────────
+// Cloudflare Turnstile once per web session. Body: { token } (≤ 2048 chars). The chat never depends on
+// it (fail-open); Dropi web orders do (fail-closed, services/dropi-sales/service.ts confirmOrder).
+// Answers { verified } with 200 (a failed check is not an error for the widget), 404 for any session
+// that is not an open web conversation of this agent, 429 over the rate limits.
+const widgetVerifyDeps: WidgetVerifyDeps = {
+  hit: async (key, max, windowSeconds) => {
+    const count = await redis.incr(key);
+    if (count === 1) await redis.expire(key, windowSeconds);
+    return count <= max;
+  },
+  findSession: async (sessionId, agentId) => {
+    const r = await query<{ status: string; verified: boolean }>(SQL_FIND_WEB_SESSION, [sessionId, agentId]);
+    return r.rows[0] ?? null;
+  },
+  markVerified: async (sessionId, agentId) => {
+    const r = await query(SQL_MARK_VERIFIED, [sessionId, agentId]);
+    return r.rowCount ?? 0;
+  },
+  verifyToken: (token, ip) => verifyTurnstileTokenStrict(token, ip, { expectedAction: WIDGET_TURNSTILE_ACTION }),
+};
+
+router.post(
+  '/:agentId/session/:sessionId/verify',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const outcome = await verifyWidgetSession(
+        {
+          agentId: String(req.params['agentId'] ?? ''),
+          sessionId: String(req.params['sessionId'] ?? ''),
+          token: body['token'],
+          ip: getClientIp(req),
+        },
+        widgetVerifyDeps
+      );
+      if (outcome.kind === 'invalid') throw new AppError(400, 'Invalid request', 'VALIDATION_ERROR');
+      if (outcome.kind === 'rate_limited') {
+        throw new AppError(429, 'Too many requests. Please try again later.', 'RATE_LIMIT');
+      }
+      if (outcome.kind === 'not_found') throw new AppError(404, 'Session not found', 'NOT_FOUND');
+      res.json({ verified: outcome.verified });
     } catch (err) {
       next(err);
     }

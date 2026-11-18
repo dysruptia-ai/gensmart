@@ -2040,6 +2040,7 @@ router.post(
             channel: 'preview',
             waFrom: null,
             ipHash: null,
+            humanVerified: false, // channel 'preview': the web verification does not apply
             // Confirmation rule: user turns already in the preview history + the one being processed,
             // received (this request) after the summary turn finished, saying yes.
             currentUserTurn: history.filter((h) => h.role === 'user').length + 1,

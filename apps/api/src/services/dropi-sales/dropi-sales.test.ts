@@ -48,7 +48,9 @@ import {
   type OwnedOrderKeys,
 } from './core';
 import type { CapNotice, DropiOrderRecord, DropiSalesContext, DropiSalesDeps, McpCallResult, NewOrderRow } from './service';
+import { keys, MSG } from './service';
 import {
+  buildDropiSalesContext,
   executeDropiSalesTool,
   markDropiSummaryDelivered,
   mcpToolExposure,
@@ -583,6 +585,8 @@ function harness(): Harness {
     channel: 'web',
     waFrom: null,
     ipHash: null,
+    // Default web session: already verified with Turnstile (the unverified case has its own tests).
+    humanVerified: true,
     currentUserTurn: 1,
     // By default the message arrived "now" (after anything stamped earlier).
     currentMessageReceivedAt: clock.t + 1,
@@ -1576,5 +1580,90 @@ describe('Dropi TOON responses (real samples)', () => {
     await h3.run('dropi_confirmar_pedido', { pedido_token: p3.prep['pedido_token'] }, h3.ctx({ currentUserTurn: 2 }));
     assert.match(h3.logs.find((l) => l.includes('MANUAL REVIEW'))!, /cause call threw, len 0\)$/);
     assert.ok(!h3.logs.join('\n').includes('socket hang up'));
+  });
+});
+
+describe('web human verification (Turnstile, prompt 15)', () => {
+  const binding = {
+    toolId: 'tool-1', serverUrl: 'https://mcp.example.test', transport: 'streamable-http' as const, headers: {},
+    oauth: { toolId: 'tool-1', agentId: 'agent-1', providerId: 'dropi', providerName: 'Dropi', sessionId: 's' },
+  };
+  const base = {
+    binding, execute: async () => ({ content: '', isError: false }), agentId: 'agent-1', organizationId: 'org-1',
+    scopeId: 'conv-1', conversationId: 'conv-1', previewSessionId: null, contactId: null, waFrom: null, ipHash: null,
+    currentUserTurn: 1, currentMessageReceivedAt: null, lastBuyerMessage: '',
+  };
+
+  test('buildDropiSalesContext: humanVerified is only true on the web channel', () => {
+    assert.equal(buildDropiSalesContext({ ...base, channel: 'web', humanVerified: true }).humanVerified, true);
+    assert.equal(buildDropiSalesContext({ ...base, channel: 'web', humanVerified: false }).humanVerified, false);
+    assert.equal(buildDropiSalesContext({ ...base, channel: 'whatsapp', humanVerified: true }).humanVerified, false);
+    assert.equal(buildDropiSalesContext({ ...base, channel: 'preview', humanVerified: true }).humanVerified, false);
+  });
+
+  test('web without verification → requiere_verificacion; nothing inserted, consumed or locked', async () => {
+    const h = harness();
+    const { quote, prep } = await prepared(h, 1);
+    const token = String(prep['pedido_token']);
+    const out = await h.run('dropi_confirmar_pedido', { pedido_token: token }, h.ctx({ currentUserTurn: 2, humanVerified: false }));
+    assert.deepEqual(out, { pedido_creado: false, requiere_verificacion: true, mensaje: MSG.needsHumanVerification });
+    assert.equal(MSG.needsHumanVerification, 'Para proteger tu pedido necesitamos una verificación rápida. Recarga la página del chat y vuelve a confirmar.');
+    assert.equal(h.rows.length, 0);
+    assert.equal(h.calls.filter((c) => c.tool === 'create_order').length, 0);
+    assert.notEqual(await h.deps.kv.get(keys.quote('conv-1', String(quote['cotizacion_id']))), null, 'quote kept');
+    assert.notEqual(await h.deps.kv.get(keys.pending('conv-1', token)), null, 'pending kept');
+    assert.equal(await h.deps.kv.get(keys.pendingCurrent('conv-1')), token, 'still the current pending order');
+    assert.equal(await h.deps.kv.get(keys.confirmLock('conv-1', token)), null, 'no lock left behind');
+    assert.equal(await h.deps.kv.get(keys.confirmed('conv-1', token)), null, 'not recorded as confirmed');
+  });
+
+  test('unanswered summary still asks for confirmation first (acceptance is checked before verification)', async () => {
+    const h = harness();
+    const { prep } = await prepared(h, 1);
+    const out = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 1, humanVerified: false }));
+    assert.equal(out['requiere_confirmacion'], true);
+  });
+
+  test('confirm again with the same token after verifying → the order is created once', async () => {
+    const h = harness();
+    const { prep } = await prepared(h, 1);
+    const token = prep['pedido_token'];
+    const blocked = await h.run('dropi_confirmar_pedido', { pedido_token: token }, h.ctx({ currentUserTurn: 2, humanVerified: false }));
+    assert.equal(blocked['requiere_verificacion'], true);
+    h.clock.t += 1000; // the buyer reloads, passes Turnstile and says yes again
+    const ok2 = await h.run('dropi_confirmar_pedido', { pedido_token: token }, h.ctx({ currentUserTurn: 3, humanVerified: true }));
+    assert.deepEqual(ok2, { pedido_creado: true, numero_pedido: '96972142', total: 48300, moneda: 'COP', pago: 'contra entrega' });
+    assert.equal(h.rows.length, 1);
+    assert.equal(h.calls.filter((c) => c.tool === 'create_order').length, 1);
+  });
+
+  test('verified web session → current flow intact', async () => {
+    const h = harness();
+    const { prep } = await prepared(h, 1);
+    const out = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ currentUserTurn: 2, humanVerified: true }));
+    assert.equal(out['pedido_creado'], true);
+  });
+
+  test('WhatsApp and Preview do not need the web verification', async () => {
+    const wa = { channel: 'whatsapp', waFrom: '573001234567', humanVerified: false };
+    const h = harness();
+    const { prep } = await prepared(h, 1, wa);
+    const out = await h.run('dropi_confirmar_pedido', { pedido_token: prep['pedido_token'] }, h.ctx({ ...wa, currentUserTurn: 2 }));
+    assert.equal(out['pedido_creado'], true);
+
+    const pv = { scopeId: 'ps-1', conversationId: null, previewSessionId: 'ps-1', contactId: null, channel: 'preview', humanVerified: false };
+    const h2 = harness();
+    const p2 = await prepared(h2, 1, pv);
+    const out2 = await h2.run('dropi_confirmar_pedido', { pedido_token: p2.prep['pedido_token'] }, h2.ctx({ ...pv, currentUserTurn: 2 }));
+    assert.equal(out2['pedido_creado'], true);
+  });
+
+  test('quote and prepare do not depend on the verification', async () => {
+    const h = harness();
+    const c = h.ctx({ humanVerified: false });
+    const quote = await quoteFlow(h, c);
+    assert.ok(quote['cotizacion_id']);
+    const prep = await h.run('dropi_preparar_pedido', { cotizacion_id: quote['cotizacion_id'], ...BUYER }, c);
+    assert.ok(prep['pedido_token']);
   });
 });

@@ -100,6 +100,12 @@ export interface DropiSalesContext {
    * once by routes/widget.ts when the session is created. Null elsewhere (no network cap).
    */
   ipHash: string | null;
+  /**
+   * Web widget only: true when conversations.channel_metadata.human_verified_at is set (Cloudflare
+   * Turnstile, written only by POST /api/widget/:agentId/session/:sessionId/verify). Web orders
+   * require it (fail-closed). Always false on other channels, where it is not checked.
+   */
+  humanVerified: boolean;
   /** User messages saved in the conversation + the one being processed (see buyerRepliedSince). */
   currentUserTurn: number;
   /** Server receipt time (ms) of the newest buyer message being processed; null when unknown. */
@@ -282,6 +288,7 @@ export const MSG = {
   confirmInstruction:
     'Muestra este resumen al cliente y pide su confirmación explícita. Solo cuando responda, llama a dropi_confirmar_pedido.',
   needsConfirmation: 'El cliente aún no ha confirmado. Muéstrale el resumen y espera su respuesta antes de confirmar.',
+  needsHumanVerification: 'Para proteger tu pedido necesitamos una verificación rápida. Recarga la página del chat y vuelve a confirmar.',
   processing: 'Tu pedido se está procesando. Espera un momento y vuelve a consultarlo.',
   orderFailed: 'No pude crear el pedido en este momento. Ofrece al cliente intentarlo más tarde o con otra dirección.',
   orderVerifying: 'Estamos verificando tu pedido. Puedes consultar su estado más tarde y, si quieres, te conecto con una persona del equipo.',
@@ -815,6 +822,14 @@ export async function confirmOrder(
     !isAffirmative(ctx.lastBuyerMessage)
   ) {
     return json({ requiere_confirmacion: true, mensaje: MSG.needsConfirmation });
+  }
+
+  // Web widget: an anonymous visitor creates cash-on-delivery orders, so the session must have passed
+  // Turnstile (fail-closed). Checked before the lock and the insert: nothing is created or consumed
+  // (quote, pending token and lock stay as they were), so the buyer can confirm again with the same
+  // pedido_token once the session is verified.
+  if (ctx.channel === 'web' && !ctx.humanVerified) {
+    return json({ pedido_creado: false, requiere_verificacion: true, mensaje: MSG.needsHumanVerification });
   }
 
   const locked = await deps.kv.setNx(keys.confirmLock(ctx.scopeId, token), '1', TTL.confirmLock).catch(() => false);

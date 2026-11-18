@@ -103,6 +103,8 @@ export function buildDropiSalesContext(input: {
   waFrom: string | null;
   /** channel_metadata.ip_hash of a web conversation (routes/widget.ts), else null. */
   ipHash: string | null;
+  /** Web only: conversations.channel_metadata.human_verified_at is a string (Turnstile passed). */
+  humanVerified: boolean;
   currentUserTurn: number;
   /** Server receipt time (ms) of the newest buyer message of this turn; null when unknown. */
   currentMessageReceivedAt: number | null;
@@ -122,6 +124,7 @@ export function buildDropiSalesContext(input: {
     channel: input.channel,
     waFrom: input.channel === 'whatsapp' && typeof input.waFrom === 'string' ? input.waFrom : null,
     ipHash: input.channel === 'web' && typeof input.ipHash === 'string' && /^[0-9a-f]{64}$/.test(input.ipHash) ? input.ipHash : null,
+    humanVerified: input.channel === 'web' && input.humanVerified === true,
     currentUserTurn: input.currentUserTurn,
     currentMessageReceivedAt: input.currentMessageReceivedAt,
     lastBuyerMessage: input.lastBuyerMessage,

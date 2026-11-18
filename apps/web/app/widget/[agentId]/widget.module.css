@@ -22,6 +22,28 @@
   overflow: hidden;
 }
 
+/* ── Turnstile (session check) ───────────────────────────────────────────── */
+/* Empty and zero-height while Cloudflare does not ask for interaction. */
+.turnstile {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.turnstile:empty {
+  display: none;
+}
+
+.turnstileVisible {
+  padding: 8px 12px 0;
+}
+
+.turnstileVisible iframe {
+  max-width: 100%;
+}
+
 /* ── Header ─────────────────────────────────────────────────────────────── */
 
 .header {
