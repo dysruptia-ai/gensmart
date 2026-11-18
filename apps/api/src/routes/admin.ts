@@ -8,6 +8,7 @@ import * as platformSettings from '../services/platform-settings.service';
 import * as mcpProviders from '../services/mcp-providers.service';
 import { assertNoSubAccounts, performAccountDeletion } from '../services/account-deletion.service';
 import { AppError } from '../middleware/errorHandler';
+import { requireUuidParam } from '../middleware/uuidParam';
 import { getIO } from '../config/websocket';
 import {
   ADMIN_PLANS,
@@ -22,6 +23,10 @@ const router = Router();
 // All admin routes require auth + super admin
 router.use(requireAuth);
 router.use(requireSuperAdmin);
+
+// Organization ids are UUIDs: anything else is a 404 before it reaches the database (GET, PUT plan,
+// DELETE, reset-2fa). Scoped to /organizations/:id because /mcp-providers/:id uses slugs.
+router.use('/organizations/:id', requireUuidParam('id', 'Organization not found'));
 
 // ─── Platform Settings ───────────────────────────────────────
 

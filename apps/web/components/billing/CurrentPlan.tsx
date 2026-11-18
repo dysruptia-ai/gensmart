@@ -61,7 +61,9 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
     switch (status) {
       case 'active': return t('billing.currentPlan.subscriptionActive');
       case 'past_due': return t('billing.currentPlan.paymentPastDue');
-      case 'canceled': return t('billing.currentPlan.subscriptionCancelled');
+      case 'canceled':
+      case 'cancelled': // legacy spelling written by account deletion before prompt 17
+        return t('billing.currentPlan.subscriptionCancelled');
       case 'trialing': return t('billing.currentPlan.trial');
       default: return status;
     }
