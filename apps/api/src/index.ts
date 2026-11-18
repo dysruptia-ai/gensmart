@@ -318,8 +318,9 @@ async function expireTrials(): Promise<void> {
        RETURNING id, name`
     );
     if (result.rows.length > 0) {
+      // Ids only: organization names are not logged.
       console.log(`[trial-cron] Suspended ${result.rows.length} orgs with expired trials:`,
-        result.rows.map(r => r.name).join(', '));
+        result.rows.map(r => r.id).join(', '));
       for (const org of result.rows) {
         try {
           getIO().to(`org:${org.id}`).emit('org:suspended', { reason: 'trial_expired' });

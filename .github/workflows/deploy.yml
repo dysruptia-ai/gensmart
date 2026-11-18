@@ -16,16 +16,37 @@ jobs:
           host: ${{ secrets.LIGHTSAIL_HOST }}
           username: ${{ secrets.LIGHTSAIL_USER }}
           key: ${{ secrets.LIGHTSAIL_SSH_KEY }}
-          script_stop: true
           command_timeout: 10m
+          # script_stop was removed from appleboy/ssh-action (v1.2.0): set -e stops at the first failed
+          # step and the job fails. One command per line: set -e ignores failures inside a && list.
           script: |
+            set -eo pipefail
             cd /home/ubuntu/gensmart
+            echo "==> git pull"
             git pull origin main
+            echo "==> npm ci"
             npm ci --production=false
-            cd packages/shared && npm run build && cd ../..
+            echo "==> build shared"
+            cd packages/shared
+            npm run build
+            cd ../..
+            echo "==> build web"
             rm -rf apps/web/.next
-            cd apps/web && npm run build && cd ../..
-            export $(grep -v '^#' .env | xargs)
-            cd apps/api && npx node-pg-migrate --migrations-dir=src/db/migrations --migration-file-language=sql up && cd ../..
+            cd apps/web
+            npm run build
+            cd ../..
+            echo "==> load .env"
+            test -f .env
+            # Same parsing as before (grep | xargs). || true: a .env with only comments is not an error.
+            # Never run export without arguments: it would print the whole environment to the log.
+            ENV_EXPORTS="$( { grep -v '^#' .env || true; } | xargs)"
+            # shellcheck disable=SC2086,SC2163  # word splitting is intended: one NAME=value per word
+            [ -z "$ENV_EXPORTS" ] || export $ENV_EXPORTS
+            unset ENV_EXPORTS
+            echo "==> migrate"
+            cd apps/api
+            npx node-pg-migrate --migrations-dir=src/db/migrations --migration-file-language=sql up
+            cd ../..
+            echo "==> pm2 reload"
             pm2 reload /home/ubuntu/gensmart/ecosystem.config.cjs
             echo "Deploy complete at $(date)"
