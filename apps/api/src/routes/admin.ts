@@ -7,6 +7,15 @@ import { query } from '../config/database';
 import * as platformSettings from '../services/platform-settings.service';
 import * as mcpProviders from '../services/mcp-providers.service';
 import { assertNoSubAccounts, performAccountDeletion } from '../services/account-deletion.service';
+import { AppError } from '../middleware/errorHandler';
+import { getIO } from '../config/websocket';
+import {
+  ADMIN_PLANS,
+  SQL_ASSIGN_DEFINITIVE_PLAN,
+  assignDefinitivePlan,
+  type AdminPlanDeps,
+  type AssignPlanRow,
+} from '../services/admin-plan.service';
 
 const router = Router();
 
@@ -209,12 +218,13 @@ router.get(
         current_period_start: string | null;
         current_period_end: string | null;
         trial_ends_at: string | null;
+        is_suspended: boolean;
         settings: Record<string, unknown>;
         created_at: string;
       }>(
         `SELECT id, name, slug, plan, subscription_status, stripe_customer_id,
                 stripe_subscription_id, current_period_start, current_period_end,
-                trial_ends_at, settings, created_at
+                trial_ends_at, is_suspended, settings, created_at
          FROM organizations WHERE id = $1`,
         [orgId]
       );
@@ -265,6 +275,7 @@ router.get(
           currentPeriodStart: org.current_period_start,
           currentPeriodEnd: org.current_period_end,
           trialEndsAt: org.trial_ends_at,
+          isSuspended: org.is_suspended,
         },
         users: usersResult.rows.map((u) => ({
           id: u.id,
@@ -291,22 +302,41 @@ router.get(
   }
 );
 
-// PUT /api/admin/organizations/:id/plan — Change org plan manually
+// PUT /api/admin/organizations/:id/plan — Assign a definitive plan manually
+// One statement: plan + trial cleared + reactivated + audit row (services/admin-plan.service.ts).
 const changePlanSchema = z.object({
-  plan: z.enum(['solo', 'starter', 'pro', 'enterprise']),
+  plan: z.enum(ADMIN_PLANS),
 });
+
+const adminPlanDeps: AdminPlanDeps = {
+  assign: async (plan, orgId, adminUserId) => {
+    const r = await query<AssignPlanRow>(SQL_ASSIGN_DEFINITIVE_PLAN, [plan, orgId, adminUserId]);
+    return r.rows[0] ?? null;
+  },
+  emitReactivated: (orgId) => {
+    try { getIO().to(`org:${orgId}`).emit('org:reactivated', {}); } catch { /* ignore */ }
+  },
+  log: { info: (msg) => console.info(msg) },
+};
 
 router.put(
   '/organizations/:id/plan',
   validate(changePlanSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const orgId = String(req.params['id']);
-      await query(
-        'UPDATE organizations SET plan = $1, updated_at = NOW() WHERE id = $2',
-        [req.body.plan, orgId]
+      const { plan } = req.body as z.infer<typeof changePlanSchema>;
+      const outcome = await assignDefinitivePlan(
+        { orgId: String(req.params['id']), plan, adminUserId: req.user!.userId },
+        adminPlanDeps
       );
-      res.json({ message: `Plan updated to ${req.body.plan as string}` });
+      if (outcome.kind === 'not_found') throw new AppError(404, 'Organization not found', 'NOT_FOUND');
+      res.json({
+        message: `Plan updated to ${outcome.plan}`,
+        plan: outcome.plan,
+        trialCleared: outcome.trialCleared,
+        reactivated: outcome.reactivated,
+        ...(outcome.warning ? { warning: outcome.warning } : {}),
+      });
     } catch (err) {
       next(err);
     }

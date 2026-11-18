@@ -17,6 +17,7 @@
     "test:safe-url": "tsx --test src/services/safe-url.headers.test.ts",
     "test:whatsapp-format": "tsx --test src/services/whatsapp-format.test.ts",
     "test:widget-turnstile": "tsx --test src/services/widget-turnstile.test.ts",
+    "test:admin-plan": "tsx --test src/services/admin-plan.test.ts",
     "test:templates": "tsx --test src/db/seeds/agent-templates.test.ts && dotenv -e ../../.env -- tsx --test --test-force-exit src/services/agent-templates.db.test.ts",
     "sync-agent-prompt": "tsx src/db/seeds/sync-agent-prompt.ts",
     "test:email": "dotenv -e ../../.env -- tsx --test src/services/email.test.ts src/services/email-contact.test.ts",
