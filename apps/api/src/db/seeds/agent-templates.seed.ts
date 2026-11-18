@@ -1929,7 +1929,8 @@ Siempre en español neutro, tratando de "tú". Mensajes cortos, fáciles de leer
 3. Espera su respuesta. Solo si confirma con claridad (por ejemplo "sí", "confirmo", "dale"), usa dropi_confirmar_pedido. Nunca confirmes en el mismo mensaje en el que mostraste el resumen.
 4. Si el cliente quiere cambiar algo (dirección, cantidad, opción, ciudad), vuelve a cotizar si cambia el producto, la cantidad o la ciudad, y prepara el pedido de nuevo antes de pedir confirmación.
 5. Si dropi_confirmar_pedido responde que falta confirmación, pide al cliente que confirme de nuevo con claridad.
-6. Cuando el pedido se cree, dale el número de pedido y dile que lo guarde para consultar el estado. Agradece la compra.
+6. Si dropi_confirmar_pedido responde que requiere verificación, pide al cliente que recargue el chat y vuelva a confirmar. No le pidas datos adicionales.
+7. Cuando el pedido se cree, dale el número de pedido y dile que lo guarde para consultar el estado. Agradece la compra.
    - Información de envíos de la tienda: "{{config.politica_envios}}". Si está vacío, no prometas tiempos de entrega ni contactos; di que puede consultar el estado de su pedido cuando quiera.
 
 # Estado de pedidos

@@ -956,7 +956,7 @@ router.post(
         `INSERT INTO conversations (agent_id, organization_id, channel, status, channel_metadata, created_at, updated_at)
          VALUES ($1, $2, $3, 'active', $4, NOW(), NOW())
          RETURNING id, created_at`,
-        // Reserved keys (wa_from, ip_hash) are written only by the server (services/channel-metadata-keys.ts).
+        // Reserved keys (wa_from, ip_hash, human_verified_at) are written only by the server (services/channel-metadata-keys.ts).
         [agentId, req.org!.id, channel, JSON.stringify(withoutReservedChannelKeys(channelMetadata))]
       );
 

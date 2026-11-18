@@ -723,6 +723,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     const waFrom = conv.channel === 'whatsapp' ? conv.channel_metadata?.['wa_from'] : undefined;
     // Web widget network (HMAC written by routes/widget.ts at session creation): order cap per network.
     const ipHash = conv.channel === 'web' ? conv.channel_metadata?.['ip_hash'] : undefined;
+    // Web widget Turnstile (POST /api/widget/:agentId/session/:sessionId/verify): required to confirm orders.
+    const humanVerifiedAt = conv.channel === 'web' ? conv.channel_metadata?.['human_verified_at'] : undefined;
     dropiSales = buildDropiSalesContext({
       binding: dropiBinding,
       execute: mcpOAuth.executeMCPToolWithOAuth,
@@ -735,6 +737,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       channel: conv.channel,
       waFrom: typeof waFrom === 'string' ? waFrom : null,
       ipHash: typeof ipHash === 'string' ? ipHash : null,
+      humanVerified: typeof humanVerifiedAt === 'string',
       currentUserTurn: Number(turns.rows[0]?.n ?? 0) + 1,
       currentMessageReceivedAt: receipts.length > 0 ? Math.max(...receipts) : null,
       lastBuyerMessage: lastText,

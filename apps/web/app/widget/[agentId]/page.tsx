@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
+import Script from 'next/script';
 import { Send, X, Bot, Paperclip, Mic, Square } from 'lucide-react';
 import styles from './widget.module.css';
 
@@ -51,6 +52,25 @@ function stripHandoffUrl(msg: ChatMessage): ChatMessage {
 
 const SESSION_KEY_PREFIX = 'gs_widget_session_';
 const MESSAGES_KEY_PREFIX = 'gs_widget_msgs_';
+
+// Cloudflare Turnstile, once per session: required by the server to confirm Dropi orders on the web.
+// Never blocks the chat (fail-open): if it does not load, fails or is not solved, messages still work.
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
+const TURNSTILE_ACTION = 'widget_session';
+const TURNSTILE_MAX_RETRIES = 2;
+
+interface TurnstileApi {
+  render: (container: HTMLElement, options: Record<string, unknown>) => string;
+  reset: (widgetId?: string) => void;
+  remove: (widgetId?: string) => void;
+}
+
+function getTurnstile(): TurnstileApi | null {
+  const t = (window as unknown as { turnstile?: Partial<TurnstileApi> }).turnstile;
+  return t && typeof t.render === 'function' && typeof t.reset === 'function' && typeof t.remove === 'function'
+    ? (t as TurnstileApi)
+    : null;
+}
 
 function renderMarkdown(text: string): string {
   // Escape HTML first to prevent XSS
@@ -108,6 +128,11 @@ export default function WidgetPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [humanVerified, setHumanVerified] = useState(false);
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const [challengeVisible, setChallengeVisible] = useState(false);
+  const turnstileContainerRef = useRef<HTMLDivElement>(null);
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, []);
@@ -149,6 +174,10 @@ export default function WidgetPage() {
               { signal: AbortSignal.timeout(5000) }
             );
             sessionValid = validateRes.status !== 404;
+            if (validateRes.ok) {
+              const info = await validateRes.json() as { verified?: boolean };
+              setHumanVerified(info.verified === true);
+            }
           } catch {
             // Network error — assume valid to avoid losing session on transient failures
             sessionValid = true;
@@ -211,11 +240,90 @@ export default function WidgetPage() {
     }
   }, [messages, agentId]);
 
+  // Turnstile for the current session (new, created by /message or resumed with verified: false).
+  // Invisible unless Cloudflare asks for interaction; up to 2 retries, then it stops quietly.
+  useEffect(() => {
+    if (!sessionId || humanVerified || !turnstileReady || !TURNSTILE_SITE_KEY) return;
+    const container = turnstileContainerRef.current;
+    const turnstile = getTurnstile();
+    if (!container || !turnstile) return;
+
+    let cancelled = false;
+    let retries = 0;
+    let widgetId: string | null = null;
+    const removeWidget = () => {
+      if (widgetId) {
+        try { turnstile.remove(widgetId); } catch { /* already gone */ }
+        widgetId = null;
+      }
+      if (!cancelled) setChallengeVisible(false);
+    };
+    const retry = () => {
+      if (cancelled || !widgetId) return;
+      if (retries < TURNSTILE_MAX_RETRIES) {
+        retries += 1;
+        try { turnstile.reset(widgetId); } catch { removeWidget(); }
+      } else {
+        removeWidget(); // give up: the chat keeps working, only web orders need the check
+      }
+    };
+
+    try {
+      widgetId = turnstile.render(container, {
+        sitekey: TURNSTILE_SITE_KEY,
+        action: TURNSTILE_ACTION,
+        appearance: 'interaction-only',
+        size: 'flexible',
+        retry: 'never',
+        'refresh-expired': 'manual',
+        callback: (token: string) => {
+          void (async () => {
+            let verified = false;
+            try {
+              const r = await fetch(`${API_BASE}/api/widget/${agentId}/session/${sessionId}/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token }),
+              });
+              if (r.ok) verified = ((await r.json()) as { verified?: boolean }).verified === true;
+            } catch {
+              // network error: counted as a failed attempt
+            }
+            if (cancelled) return;
+            if (verified) {
+              removeWidget();
+              setHumanVerified(true);
+            } else {
+              retry();
+            }
+          })();
+        },
+        'error-callback': () => {
+          retry();
+          return true; // handled: no console noise from Turnstile
+        },
+        'expired-callback': retry,
+        'before-interactive-callback': () => { if (!cancelled) setChallengeVisible(true); },
+        'after-interactive-callback': () => { if (!cancelled) setChallengeVisible(false); },
+      });
+    } catch {
+      widgetId = null; // Turnstile could not render: fail-open
+    }
+
+    return () => {
+      cancelled = true;
+      if (widgetId) {
+        try { turnstile.remove(widgetId); } catch { /* already gone */ }
+      }
+    };
+  }, [sessionId, humanVerified, turnstileReady, agentId]);
+
   // Reset stale session — clears localStorage and state so next message creates a fresh session
   const resetSession = useCallback((cfg?: WidgetConfig | null) => {
     localStorage.removeItem(SESSION_KEY_PREFIX + agentId);
     localStorage.removeItem(MESSAGES_KEY_PREFIX + agentId);
     setSessionId(null);
+    setHumanVerified(false);
     setPendingCount(0);
     const welcome = cfg?.welcome_message ?? config?.welcome_message ?? 'Hello! How can I help you?';
     setMessages([{
@@ -595,6 +703,13 @@ export default function WidgetPage() {
 
   return (
     <div className={styles.widget} style={{ '--widget-primary': config.primary_color } as React.CSSProperties}>
+      {TURNSTILE_SITE_KEY && (
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
+          strategy="afterInteractive"
+          onReady={() => setTurnstileReady(true)}
+        />
+      )}
       {/* Header */}
       <div className={styles.header} style={{ backgroundColor: config.primary_color }}>
         <div className={styles.headerLeft}>
@@ -762,6 +877,11 @@ export default function WidgetPage() {
 
       {/* Input */}
       <div className={styles.inputArea}>
+        {/* Turnstile (session check): empty unless Cloudflare asks for interaction */}
+        <div
+          ref={turnstileContainerRef}
+          className={challengeVisible && !humanVerified ? `${styles.turnstile} ${styles.turnstileVisible}` : styles.turnstile}
+        />
         {isRecording && (
           <div className={styles.recordingStrip}>
             <div className={styles.recordingDot} />
