@@ -28,6 +28,13 @@ import {
   REFRESH_LOCK_PREFIX,
   REFRESH_LOCK_TTL_MS,
   LOCK_WAIT_MAX_MS,
+  RETRY_LOCK_EXTEND_MS,
+  LOCK_EXTEND_TIMEOUT_MS,
+  TOKEN_404_ALERT_PREFIX,
+  TOKEN_404_ALERT_TTL_MS,
+  oauthErrorCode,
+  exchangeAuthorizationCode,
+  McpOAuthExchangeError,
   TICKET_KEY_PREFIX,
   STATE_KEY_PREFIX,
   type OAuthDeps,
@@ -56,6 +63,7 @@ function fakeWorld(opts: { tokenResponses?: Array<HttpPostResult | Error>; start
     ...opts.start,
   };
   const tokenCalls: Array<{ url: string; form: Record<string, string> }> = [];
+  const extendCalls: Array<{ key: string; ms: number }> = [];
   const responses = [...(opts.tokenResponses ?? [])];
   let n = 0;
 
@@ -66,6 +74,7 @@ function fakeWorld(opts: { tokenResponses?: Array<HttpPostResult | Error>; start
       getDel: async (k) => { const v = kv.get(k) ?? null; kv.delete(k); return v; },
       setNxPx: async (k, v) => { if (kv.has(k)) return false; kv.set(k, v); return true; },
       delIfEquals: async (k, v) => { if (kv.get(k) === v) kv.delete(k); },
+      extendIfEquals: async (k, v, ms) => { extendCalls.push({ key: k, ms }); return kv.get(k) === v; },
     },
     loadOAuth: async () => (row ? { ...row } : null),
     // Same contract as the SQL: only when the stored session_id equals the expected one (null = legacy).
@@ -92,7 +101,7 @@ function fakeWorld(opts: { tokenResponses?: Array<HttpPostResult | Error>; start
     log: { info: () => {}, warn: () => {}, error: () => {} },
   };
   return {
-    deps, kv, tokenCalls,
+    deps, kv, tokenCalls, extendCalls,
     getRow: () => row,
     setRow: (r: StoredOAuth) => { row = r; },
     advance: (ms: number) => { clock += ms; },
@@ -586,4 +595,280 @@ test('reconnection with an unreadable sub (either side) → no revocation', asyn
   w.deps.decrypt = () => { throw new Error('bad ciphertext'); };
   await revokePreviousIfAccountChangedCore(w.deps, prevWith(jwt({ sub: 'acc-1' })), jwt({ sub: 'acc-2' }));
   assert.equal(w.revoked(), 0);
+});
+
+// ── Refresh: one retry when the token endpoint moved (prompt 19) ────────────
+
+const NEW_TOKEN_ENDPOINT = 'https://mcp.dropi.co/oauth/token';
+
+function capturingLogs(w: ReturnType<typeof fakeWorld>): string[] {
+  const logs: string[] = [];
+  w.deps.log = { info: (m) => logs.push(m), warn: (m) => logs.push(m), error: (m) => logs.push(m) };
+  return logs;
+}
+
+function rediscoverInput(result: string | null | Error) {
+  let calls = 0;
+  return {
+    get calls() { return calls; },
+    input: {
+      ...tokenInput,
+      rediscoverTokenEndpoint: async () => {
+        calls += 1;
+        if (result instanceof Error) throw result;
+        return result;
+      },
+    },
+  };
+}
+
+const SECRET_VALUES = ['refresh-1', 'refresh-2', 'access-1', 'access-old'];
+function assertNoSecrets(logs: string[]) {
+  for (const line of logs) for (const s of SECRET_VALUES) assert.ok(!line.includes(s), `log leaks ${s}: ${line}`);
+}
+
+test('refresh retry: 400 invalid_request at the old endpoint + another discovered endpoint → ONE retry that stores the tokens', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 400, body: { error: 'invalid_request' } }] });
+  const logs = capturingLogs(w);
+  const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+  assert.equal(await getValidAccessTokenCore(w.deps, r.input), 'access-1');
+  assert.equal(r.calls, 1);
+  assert.deepEqual(w.tokenCalls.map((c) => c.url), [ENDPOINTS.tokenEndpoint, NEW_TOKEN_ENDPOINT]);
+  assert.equal(w.tokenCalls[1]!.form['refresh_token'], 'refresh-1', 'same refresh token: the old endpoint did not accept it');
+  assert.equal(w.tokenCalls[1]!.form['resource'], ENDPOINTS.resource);
+  assert.equal(w.getRow()!.status, 'connected');
+  assert.equal(w.getRow()!.refresh_token_encrypted, 'enc(refresh-2)');
+  assert.ok(logs.some((l) => l.includes(`retrying once at discovered ${NEW_TOKEN_ENDPOINT}`) && l.includes('tool t1')));
+  assert.equal(w.kv.has(REFRESH_LOCK_PREFIX + 't1'), false, 'lock released');
+  assertNoSecrets(logs);
+});
+
+test('refresh retry: 400 with a non-JSON body and 404 also trigger the single retry', async () => {
+  for (const first of [{ status: 400, body: null }, { status: 401, body: { error: 'invalid_client' } }, { status: 404, body: null }]) {
+    const w = fakeWorld({ tokenResponses: [first] });
+    const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+    assert.equal(await getValidAccessTokenCore(w.deps, r.input), 'access-1', JSON.stringify(first));
+    assert.equal(w.tokenCalls.length, 2);
+  }
+});
+
+test('refresh retry: invalid_grant → no re-discovery, no retry, reconnect', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 400, body: { error: 'invalid_grant' } }] });
+  const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+  await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthReconnectRequiredError);
+  assert.equal(r.calls, 0);
+  assert.equal(w.tokenCalls.length, 1);
+  assert.equal(w.getRow()!.status, 'needs_reconnect');
+});
+
+test('refresh retry: same endpoint discovered (or none) → no retry, reconnect', async () => {
+  for (const discovered of [ENDPOINTS.tokenEndpoint, null, new Error('discovery down')]) {
+    const w = fakeWorld({ tokenResponses: [{ status: 400, body: { error: 'invalid_request' } }] });
+    const r = rediscoverInput(discovered);
+    await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthReconnectRequiredError);
+    assert.equal(r.calls, 1);
+    assert.equal(w.tokenCalls.length, 1);
+    assert.equal(w.getRow()!.status, 'needs_reconnect');
+  }
+});
+
+test('refresh retry: the retry also fails (400) → reconnect, exactly two calls', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 400, body: { error: 'invalid_request' } }, { status: 400, body: { error: 'invalid_request' } }] });
+  const logs = capturingLogs(w);
+  const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+  await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthReconnectRequiredError);
+  assert.equal(r.calls, 1);
+  assert.equal(w.tokenCalls.length, 2);
+  assert.equal(w.getRow()!.status, 'needs_reconnect');
+  assertNoSecrets(logs);
+});
+
+test('refresh retry: network error on the first call → transient, no re-discovery, tokens untouched', async () => {
+  const w = fakeWorld({ tokenResponses: [new Error('ECONNRESET')] });
+  const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+  await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthTransientError);
+  assert.equal(r.calls, 0);
+  assert.equal(w.getRow()!.status, 'connected');
+  assert.equal(w.getRow()!.refresh_token_encrypted, 'enc(refresh-1)');
+});
+
+test('refresh retry: network error on the retry → transient, tokens untouched', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }, new Error('ETIMEDOUT')] });
+  const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+  await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthTransientError);
+  assert.equal(w.tokenCalls.length, 2);
+  assert.equal(w.getRow()!.status, 'connected');
+});
+
+test('refresh retry: 404 with the endpoint unchanged keeps the current behaviour (transient, tokens untouched)', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }] });
+  const r = rediscoverInput(ENDPOINTS.tokenEndpoint);
+  await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthTransientError);
+  assert.equal(w.getRow()!.status, 'connected');
+});
+
+test('refresh retry: 5xx is not a moved-endpoint signal (no re-discovery)', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 503, body: null }] });
+  const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+  await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthTransientError);
+  assert.equal(r.calls, 0);
+});
+
+test('refresh retry happens inside the lock (re-discovery and retry run while it is held)', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 400, body: { error: 'invalid_request' } }] });
+  let heldDuringRediscovery = false;
+  let heldDuringRetry = false;
+  const origPost = w.deps.postForm;
+  w.deps.postForm = async (url, form) => {
+    if (url === NEW_TOKEN_ENDPOINT) heldDuringRetry = w.kv.has(REFRESH_LOCK_PREFIX + 't1');
+    return origPost(url, form);
+  };
+  await getValidAccessTokenCore(w.deps, {
+    ...tokenInput,
+    rediscoverTokenEndpoint: async () => { heldDuringRediscovery = w.kv.has(REFRESH_LOCK_PREFIX + 't1'); return NEW_TOKEN_ENDPOINT; },
+  });
+  assert.equal(heldDuringRediscovery, true);
+  assert.equal(heldDuringRetry, true);
+});
+
+test('lock TTL covers refresh + re-discovery (2 x 5 s); the retry is covered by the extension', () => {
+  assert.ok(REFRESH_LOCK_TTL_MS > 15_000 + 2 * 5_000);
+  assert.ok(RETRY_LOCK_EXTEND_MS >= 30_000 && RETRY_LOCK_EXTEND_MS > 15_000);
+  assert.ok(LOCK_EXTEND_TIMEOUT_MS <= 2_000);
+});
+
+// ── D-01: the retry only runs with the lock confirmed ours (prompt 21) ─────
+
+test('D-01: lock extended (still ours) → the retry happens, extension requested for >= 30 s', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }] });
+  const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+  assert.equal(await getValidAccessTokenCore(w.deps, r.input), 'access-1');
+  assert.deepEqual(w.extendCalls, [{ key: REFRESH_LOCK_PREFIX + 't1', ms: RETRY_LOCK_EXTEND_MS }]);
+  assert.equal(w.tokenCalls.length, 2);
+});
+
+test('D-01: lock lost (another process holds it now) → NO retry, current behaviour, warn log', async () => {
+  for (const [first, expected] of [
+    [{ status: 404, body: null }, McpOAuthTransientError],
+    [{ status: 400, body: { error: 'invalid_request' } }, McpOAuthReconnectRequiredError],
+  ] as const) {
+    const w = fakeWorld({ tokenResponses: [first] });
+    const logs = capturingLogs(w);
+    await assert.rejects(
+      getValidAccessTokenCore(w.deps, {
+        ...tokenInput,
+        rediscoverTokenEndpoint: async () => {
+          w.kv.set(REFRESH_LOCK_PREFIX + 't1', 'someone-else'); // our lock expired and was taken
+          return NEW_TOKEN_ENDPOINT;
+        },
+      }),
+      expected
+    );
+    assert.equal(w.tokenCalls.length, 1, 'the refresh token is never sent twice');
+    assert.ok(logs.some((l) => l.includes('refresh lock could not be confirmed') && l.includes('skipped')));
+    assert.equal(w.kv.get(REFRESH_LOCK_PREFIX + 't1'), 'someone-else', 'the other holder keeps its lock');
+    assertNoSecrets(logs);
+  }
+});
+
+test('D-01: Redis extension fails or does not answer in time → NO retry', async () => {
+  for (const extend of [
+    async () => { throw new Error('redis down'); },
+    () => new Promise<boolean>(() => { /* never answers */ }),
+  ]) {
+    const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }] });
+    w.deps.kv.extendIfEquals = extend;
+    const r = rediscoverInput(NEW_TOKEN_ENDPOINT);
+    const t0 = Date.now();
+    await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthTransientError);
+    assert.ok(Date.now() - t0 < LOCK_EXTEND_TIMEOUT_MS + 1_000, 'bounded wait');
+    assert.equal(w.tokenCalls.length, 1);
+    assert.equal(w.getRow()!.refresh_token_encrypted, 'enc(refresh-1)', 'tokens untouched');
+  }
+});
+
+test('D-01: no extension is attempted when there is nothing to retry', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }] });
+  const r = rediscoverInput(ENDPOINTS.tokenEndpoint);
+  await assert.rejects(getValidAccessTokenCore(w.deps, r.input), McpOAuthTransientError);
+  assert.equal(w.extendCalls.length, 0);
+});
+
+// ── D-07: persistent 404 alert ───────────────────────────────────────────────
+
+test('D-07: 404 with the endpoint unchanged → transient + ONE ALERT per provider per 24 h', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }, { status: 404, body: null }] });
+  const logs = capturingLogs(w);
+  const input = { ...rediscoverInput(ENDPOINTS.tokenEndpoint).input, providerId: 'dropi' };
+  await assert.rejects(getValidAccessTokenCore(w.deps, input), McpOAuthTransientError);
+  await assert.rejects(getValidAccessTokenCore(w.deps, input), McpOAuthTransientError);
+  const alerts = logs.filter((l) => l.includes('ALERT token endpoint returned 404'));
+  assert.deepEqual(alerts, ['[mcp-oauth] ALERT token endpoint returned 404 for provider dropi; tools may stay disconnected']);
+  assert.ok(w.kv.has(TOKEN_404_ALERT_PREFIX + 'dropi'));
+  assert.equal(TOKEN_404_ALERT_TTL_MS, 24 * 60 * 60 * 1000);
+  assert.equal(w.getRow()!.status, 'connected');
+});
+
+test('D-07: a 404 that was retried successfully elsewhere does not alert', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }] });
+  const logs = capturingLogs(w);
+  await getValidAccessTokenCore(w.deps, { ...rediscoverInput(NEW_TOKEN_ENDPOINT).input, providerId: 'dropi' });
+  assert.equal(logs.filter((l) => l.includes('ALERT token endpoint returned 404')).length, 0);
+});
+
+// ── D-11 / D-12 ──────────────────────────────────────────────────────────────
+
+test('D-11: no alternative endpoint → neutral log (no "re-discovery" wording)', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 400, body: { error: 'invalid_request' } }] });
+  const logs = capturingLogs(w);
+  await assert.rejects(getValidAccessTokenCore(w.deps, rediscoverInput(null).input), McpOAuthReconnectRequiredError);
+  assert.ok(logs.some((l) => l.includes('no other token endpoint available, no retry')));
+  assert.ok(logs.every((l) => !/re-?discovery/i.test(l)));
+});
+
+test('D-12: a discovered endpoint that only differs in normalization from the current one → no retry', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 404, body: null }] });
+  const input = {
+    ...tokenInput,
+    getEndpoints: async () => ({ ...ENDPOINTS, tokenEndpoint: 'https://T.EXAMPLE:443/token' }),
+    rediscoverTokenEndpoint: async () => 'https://t.example/token',
+  };
+  await assert.rejects(getValidAccessTokenCore(w.deps, input), McpOAuthTransientError);
+  assert.equal(w.tokenCalls.length, 1, 'same endpoint: the token is not resent');
+});
+
+// ── D-09: error codes in logs ────────────────────────────────────────────────
+
+test('D-09: oauthErrorCode keeps only [a-z0-9_.-]{1,64}; anything else → unknown', () => {
+  assert.equal(oauthErrorCode({ error: 'invalid_grant' }), 'invalid_grant');
+  assert.equal(oauthErrorCode({ error: 'server.error-1' }), 'server.error-1');
+  assert.equal(oauthErrorCode({ error: 'x\n[mcp-oauth] Refreshed access token for tool t1' }), 'unknown');
+  assert.equal(oauthErrorCode({ error: 'bad\r\ncode' }), 'unknown');
+  assert.equal(oauthErrorCode({ error: 'INVALID_GRANT' }), 'unknown');
+  assert.equal(oauthErrorCode({ error: 'a'.repeat(65) }), 'unknown');
+  assert.equal(oauthErrorCode({ error: '' }), 'unknown');
+  assert.equal(oauthErrorCode({ error: 42 }), 'unknown');
+  assert.equal(oauthErrorCode(null), 'unknown');
+});
+
+test('D-09: a CRLF error code never reaches the refresh logs', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 400, body: { error: 'evil\n[mcp-oauth] fake line' } }] });
+  const logs = capturingLogs(w);
+  await assert.rejects(getValidAccessTokenCore(w.deps, tokenInput), McpOAuthReconnectRequiredError);
+  assert.ok(logs.every((l) => !l.includes('\n') && !l.includes('fake line')));
+  assert.ok(logs.some((l) => l.includes('error=unknown')));
+});
+
+// ── D-08: an oversized (unreadable) token body ───────────────────────────────
+
+test('D-08: oversized 2xx body (postForm → body null): refresh → reconnect, exchange → failed', async () => {
+  const w = fakeWorld({ tokenResponses: [{ status: 200, body: null }] });
+  await assert.rejects(getValidAccessTokenCore(w.deps, tokenInput), McpOAuthReconnectRequiredError);
+  assert.equal(w.getRow()!.status, 'needs_reconnect', 'never a blind replay of a possibly rotated token');
+  assert.equal(w.tokenCalls.length, 1);
+  const x = fakeWorld({ tokenResponses: [{ status: 200, body: null }] });
+  await assert.rejects(
+    exchangeAuthorizationCode(x.deps, { endpoints: ENDPOINTS, code: 'c', redirectUri: 'https://app/cb', codeVerifier: 'v' }),
+    McpOAuthExchangeError
+  );
 });

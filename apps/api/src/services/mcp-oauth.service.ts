@@ -11,13 +11,14 @@ import { randomUUID, randomBytes } from 'crypto';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { encrypt, decrypt } from '../config/encryption';
-import { safeUndiciFetch } from './safe-url';
+import { safeUndiciFetch, readBodyLimited, BodyTooLargeError } from './safe-url';
 import * as mcpProviders from './mcp-providers.service';
 import * as agentService from './agent.service';
 import { connectAndListTools, executeMCPTool, type MCPToolResult } from './mcp-client.service';
 import { decryptHeaders, type EncryptedHeader } from './mcp-headers.service';
 import { serverUrlMatchesProfile } from './mcp-provider-url';
 import { revokeOAuthSession } from './mcp-oauth-revoke.service';
+import { resolveOAuthEndpoints, type ResolvedOAuthEndpoints, type ResolveOptions } from './mcp-oauth-discovery.service';
 import {
   startAuthorizationCore,
   consumeState,
@@ -41,6 +42,7 @@ import {
   type OAuthStatePayload,
   type OAuthDeps,
   type OAuthEndpoints,
+  type AuthorizeConfig,
   type StoredOAuth,
   type HttpPostResult,
 } from './mcp-oauth.core';
@@ -58,14 +60,31 @@ export {
 } from './mcp-oauth.core';
 
 const HTTP_TIMEOUT_MS = 15_000;
+/** Cap for token endpoint responses (decoded). Beyond it the body is treated as unreadable (null). */
+export const TOKEN_RESPONSE_MAX_BYTES = 64 * 1024;
 
 // ── Real dependencies ────────────────────────────────────────────────────────
 
 const RELEASE_LOCK_LUA = `if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end`;
+/** Compare-and-extend: only if the lock is still ours, raise its TTL to at least ARGV[2] ms (never shortens). */
+const EXTEND_LOCK_LUA = `if redis.call("get", KEYS[1]) == ARGV[1] then
+  if redis.call("pttl", KEYS[1]) < tonumber(ARGV[2]) then redis.call("pexpire", KEYS[1], ARGV[2]) end
+  return 1
+else return 0 end`;
 
-async function postForm(url: string, form: Record<string, string>): Promise<HttpPostResult> {
+/**
+ * Token endpoint POST (code exchange and refresh). 15 s total (body included) and a 64 KB cap on the
+ * decoded body: a larger body is treated as unreadable (`body: null`), so a 2xx becomes "unreadable
+ * token response" (refresh → reconnect, never a blind replay; exchange → failed) and a 4xx carries
+ * error=unknown. Network errors and timeouts throw. Exported for tests.
+ */
+export async function postForm(
+  url: string,
+  form: Record<string, string>,
+  opts: { timeoutMs?: number; maxBytes?: number } = {}
+): Promise<HttpPostResult> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), HTTP_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? HTTP_TIMEOUT_MS);
   try {
     const res = await safeUndiciFetch(url, {
       method: 'POST',
@@ -73,7 +92,14 @@ async function postForm(url: string, form: Record<string, string>): Promise<Http
       body: new URLSearchParams(form).toString(),
       signal: controller.signal,
     });
-    const text = await res.text().catch(() => '');
+    let text: string;
+    try {
+      text = await readBodyLimited(res.body as ReadableStream<Uint8Array> | null, opts.maxBytes ?? TOKEN_RESPONSE_MAX_BYTES);
+    } catch (err) {
+      if (!(err instanceof BodyTooLargeError)) throw err;
+      console.warn(`[mcp-oauth] Token endpoint response over ${opts.maxBytes ?? TOKEN_RESPONSE_MAX_BYTES} bytes (HTTP ${res.status}); treated as unreadable`);
+      return { status: res.status, body: null };
+    }
     let body: unknown = null;
     try { body = text ? JSON.parse(text) : null; } catch { body = null; }
     return { status: res.status, body };
@@ -140,6 +166,7 @@ const realDeps: OAuthDeps = {
     delIfEquals: async (key, value) => {
       await redis.eval(RELEASE_LOCK_LUA, 1, key, value);
     },
+    extendIfEquals: async (key, value, ms) => (await redis.eval(EXTEND_LOCK_LUA, 1, key, value, String(ms))) === 1,
   },
   loadOAuth,
   mergeOAuth,
@@ -170,10 +197,60 @@ async function resolveClientId(profile: mcpProviders.MCPProviderProfile): Promis
   return clientId;
 }
 
-async function endpointsFor(profile: mcpProviders.MCPProviderProfile): Promise<OAuthEndpoints> {
+/**
+ * Endpoint + client_id resolution for a profile. Endpoints come from discovery (profiles with
+ * oauth_config.discovery.enabled) or from oauth_config; client_id, scope and resource ALWAYS come
+ * from oauth_config. Injectable for tests.
+ */
+export interface ProfileEndpointDeps {
+  resolveEndpoints: (profile: mcpProviders.MCPProviderProfile, opts?: ResolveOptions) => Promise<ResolvedOAuthEndpoints>;
+  resolveClientId: (profile: mcpProviders.MCPProviderProfile) => Promise<string>;
+}
+
+const realProfileEndpointDeps: ProfileEndpointDeps = {
+  resolveEndpoints: (profile, opts) => resolveOAuthEndpoints(profile, opts),
+  resolveClientId,
+};
+
+/** Authorization request settings (the authorize URL goes to the browser: discovered only within the allow-list). */
+export async function authorizeConfigFor(
+  profile: mcpProviders.MCPProviderProfile,
+  deps: ProfileEndpointDeps = realProfileEndpointDeps
+): Promise<AuthorizeConfig> {
   const cfg = profile.oauth_config;
   if (!cfg) throw new AppError(400, 'Provider does not use OAuth', 'OAUTH_NOT_SUPPORTED');
-  return { tokenEndpoint: cfg.token_endpoint, clientId: await resolveClientId(profile), resource: cfg.resource };
+  const resolved = await deps.resolveEndpoints(profile);
+  return {
+    authorizationEndpoint: resolved.authorizationEndpoint,
+    clientId: await deps.resolveClientId(profile),
+    scope: cfg.scope,
+    resource: cfg.resource,
+  };
+}
+
+/** Token endpoint settings for code exchange and refresh. */
+export async function tokenEndpointsFor(
+  profile: mcpProviders.MCPProviderProfile,
+  deps: ProfileEndpointDeps = realProfileEndpointDeps
+): Promise<OAuthEndpoints> {
+  const cfg = profile.oauth_config;
+  if (!cfg) throw new AppError(400, 'Provider does not use OAuth', 'OAUTH_NOT_SUPPORTED');
+  const resolved = await deps.resolveEndpoints(profile);
+  return { tokenEndpoint: resolved.tokenEndpoint, clientId: await deps.resolveClientId(profile), resource: cfg.resource };
+}
+
+/**
+ * After a suspicious refresh rejection: forces a new discovery and returns the token endpoint only
+ * when it was freshly DISCOVERED (validated). Cached/static fallbacks return null: no retry on them.
+ */
+export async function rediscoverTokenEndpoint(
+  profile: mcpProviders.MCPProviderProfile,
+  deps: ProfileEndpointDeps = realProfileEndpointDeps
+): Promise<string | null> {
+  // Profiles without discovery have nothing to re-discover (static endpoints only).
+  if (profile.oauth_config?.discovery?.enabled !== true) return null;
+  const resolved = await deps.resolveEndpoints(profile, { forceRefresh: true });
+  return resolved.source === 'discovered' ? resolved.tokenEndpoint : null;
 }
 
 /** Profile usable for OAuth start: exists, active, has oauth_config, visible to the org. Otherwise null. */
@@ -196,20 +273,13 @@ export async function startAuthorization(input: {
   profile: mcpProviders.MCPProviderProfile;
   redirectUri: string;
 }): Promise<string> {
-  const cfg = input.profile.oauth_config;
-  if (!cfg) throw new AppError(400, 'Provider does not use OAuth', 'OAUTH_NOT_SUPPORTED');
   return startAuthorizationCore(realDeps, {
     organizationId: input.organizationId,
     agentId: input.agentId,
     userId: input.userId,
     providerId: input.profile.id,
     redirectUri: input.redirectUri,
-    config: {
-      authorizationEndpoint: cfg.authorization_endpoint,
-      clientId: await resolveClientId(input.profile),
-      scope: cfg.scope,
-      resource: cfg.resource,
-    },
+    config: await authorizeConfigFor(input.profile),
   });
 }
 
@@ -290,7 +360,7 @@ async function finishAuthorization(st: OAuthStatePayload, code: string): Promise
   if (!serverUrl) throw new AppError(500, 'Provider has no default server URL', 'PROVIDER_MISCONFIGURED');
   const transport = profile.default_transport;
   const omitGenSmartHeaders = profileOmitsGenSmartHeaders(profile);
-  const endpoints = await endpointsFor(profile);
+  const endpoints = await tokenEndpointsFor(profile);
   const exchange = () =>
     exchangeAuthorizationCode(realDeps, { endpoints, code, redirectUri: st.redirectUri, codeVerifier: st.codeVerifier });
 
@@ -405,16 +475,20 @@ export async function getValidAccessTokenWithSession(input: {
   forceRefresh?: boolean;
   staleAccessToken?: string;
 }): Promise<AccessTokenWithSession> {
+  let profile: mcpProviders.MCPProviderProfile | null = null;
+  const loadProfile = async (): Promise<mcpProviders.MCPProviderProfile> => {
+    profile ??= await mcpProviders.findProfileById(input.providerId);
+    if (!profile || !profile.oauth_config) throw new McpOAuthReconnectRequiredError('Provider not available');
+    return profile;
+  };
   return getValidAccessTokenWithSessionCore(realDeps, {
     toolId: input.toolId,
     agentId: input.agentId,
     forceRefresh: input.forceRefresh,
     staleAccessToken: input.staleAccessToken,
-    getEndpoints: async () => {
-      const profile = await mcpProviders.findProfileById(input.providerId);
-      if (!profile || !profile.oauth_config) throw new McpOAuthReconnectRequiredError('Provider not available');
-      return endpointsFor(profile);
-    },
+    providerId: input.providerId,
+    getEndpoints: async () => tokenEndpointsFor(await loadProfile()),
+    rediscoverTokenEndpoint: async () => rediscoverTokenEndpoint(await loadProfile()),
   });
 }
 

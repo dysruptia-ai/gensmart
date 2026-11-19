@@ -74,6 +74,11 @@ export interface OAuthDeps {
     setNxPx(key: string, value: string, ms: number): Promise<boolean>;
     /** Delete key only if its value equals `value` (atomic). */
     delIfEquals(key: string, value: string): Promise<void>;
+    /**
+     * Atomic compare-and-extend: only if the key still holds `value`, make its TTL at least `ms`
+     * (never shortens it). True when the key is still ours.
+     */
+    extendIfEquals(key: string, value: string, ms: number): Promise<boolean>;
   };
   /** Reads `agent_tools.config.oauth` of a tool; null when the tool or oauth block does not exist. */
   loadOAuth(toolId: string, agentId: string): Promise<StoredOAuth | null>;
@@ -136,10 +141,46 @@ export const REFRESH_LOCK_PREFIX = 'mcp:oauth:refresh-lock:';
 export const STATE_TTL_SECONDS = 600;
 export const TICKET_KEY_PREFIX = 'mcp:oauth:ticket:';
 export const TICKET_TTL_SECONDS = 300;
-/** Must exceed the HTTP timeout (15 s) plus DB reads inside the lock, or a second process could replay a consumed refresh token. */
+/**
+ * Must exceed everything done inside the lock, or a second process could replay a consumed refresh token:
+ * refresh (15 s) + re-discovery (2 metadata GETs x 5 s, DNS included) = 25 s, plus DB/Redis reads.
+ * The optional retry runs only after the lock is confirmed ours and extended (RETRY_LOCK_EXTEND_MS).
+ */
 export const REFRESH_LOCK_TTL_MS = 60_000;
 export const LOCK_WAIT_POLL_MS = 250;
 export const LOCK_WAIT_MAX_MS = 20_000;
+/**
+ * Before the single refresh retry the lock is extended (only if still ours) to at least this TTL:
+ * it covers the retry POST (15 s timeout, body included) plus the DB write, with margin.
+ */
+export const RETRY_LOCK_EXTEND_MS = 30_000;
+/** Budget for the compare-and-extend Redis call; no answer in time = lock not confirmed = no retry. */
+export const LOCK_EXTEND_TIMEOUT_MS = 1_000;
+/** "token endpoint returned 404" ALERT: at most once per provider per 24 h. */
+export const TOKEN_404_ALERT_PREFIX = 'mcp:oauth:token-404-alert:';
+export const TOKEN_404_ALERT_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Resolves with `fallback` when `promise` does not settle within `ms` (or rejects). Never throws. */
+export async function settleWithin<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise.catch(() => fallback),
+      new Promise<T>((resolve) => { timer = setTimeout(() => resolve(fallback), ms); }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+/** `new URL(x).href` (so equal endpoints compare equal); the raw string when it does not parse. */
+export function normalizeEndpointUrl(raw: string): string {
+  try {
+    return new URL(raw).href;
+  } catch {
+    return raw;
+  }
+}
 export const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 const STATE_PATTERN = /^[a-f0-9]{48}$/;
 export const TICKET_PATTERN = /^[a-f0-9]{48}$/;
@@ -319,10 +360,14 @@ function parseTokenBody(body: unknown): TokenResponse | null {
   };
 }
 
-function oauthErrorCode(body: unknown): string {
+/**
+ * The OAuth `error` code of a token endpoint response, safe for logs: only [a-z0-9_.-], at most 64
+ * characters. Anything else (CR/LF, spaces, uppercase, longer strings, non-strings) → 'unknown'.
+ */
+export function oauthErrorCode(body: unknown): string {
   if (typeof body === 'object' && body !== null) {
     const e = (body as Record<string, unknown>)['error'];
-    if (typeof e === 'string') return e.slice(0, 64);
+    if (typeof e === 'string' && /^[a-z0-9_.-]{1,64}$/.test(e)) return e;
   }
   return 'unknown';
 }
@@ -386,6 +431,25 @@ export interface GetTokenInput {
    * replaced it, that newer token is returned instead of rotating the refresh token again.
    */
   staleAccessToken?: string;
+  /**
+   * Called (inside the refresh lock) when the token endpoint rejects a refresh in a way that suggests
+   * it moved (404, or 400/401 other than invalid_grant). Returns a freshly DISCOVERED and validated
+   * token endpoint, or null (discovery off, failed, or only fallback values available).
+   */
+  rediscoverTokenEndpoint?: () => Promise<string | null>;
+  /** Provider profile id: only used to deduplicate the "token endpoint returned 404" ALERT. */
+  providerId?: string;
+}
+
+/**
+ * A refresh rejection that may mean "wrong endpoint" rather than "bad token": 404, or 400/401 with an
+ * error other than invalid_grant (invalid_request, a non-JSON body...). invalid_grant is a reused or
+ * revoked token: retrying it elsewhere could only make things worse.
+ */
+export function refreshRejectionMayBeMovedEndpoint(res: HttpPostResult): boolean {
+  if (res.status === 404) return true;
+  if (res.status !== 400 && res.status !== 401) return false;
+  return oauthErrorCode(res.body) !== 'invalid_grant';
 }
 
 function sessionOf(o: Pick<StoredOAuth, 'session_id'> | Partial<StoredOAuth>): string | null {
@@ -513,6 +577,61 @@ export async function getValidAccessTokenWithSessionCore(
       // Network/timeout: we do not know whether Dropi consumed the token. Leave stored tokens alone.
       deps.log.error(`[mcp-oauth] Refresh network error for tool ${toolId}: ${(err as Error).message}`);
       throw new McpOAuthTransientError('Could not reach the authorization server');
+    }
+
+    // The endpoint may have moved (Dropi, 2026-11-19): re-discover and retry ONCE, still under the lock.
+    // Safe to resend the same refresh token: the old endpoint did not accept it (404 / non-invalid_grant).
+    let retried = false;
+    if (input.rediscoverTokenEndpoint && refreshRejectionMayBeMovedEndpoint(res)) {
+      let discovered: string | null = null;
+      try {
+        discovered = await input.rediscoverTokenEndpoint();
+      } catch {
+        discovered = null;
+      }
+      const current = normalizeEndpointUrl(endpoints.tokenEndpoint);
+      if (discovered && normalizeEndpointUrl(discovered) !== current) {
+        // Re-discovery may have taken a while: retry ONLY if the lock is confirmed ours (and extended
+        // to cover the retry). Otherwise another process may already hold it with this same refresh
+        // token, and sending it twice would make Dropi revoke the whole session.
+        const stillOurs = await settleWithin(
+          deps.kv.extendIfEquals(lockKey, lockValue, RETRY_LOCK_EXTEND_MS),
+          LOCK_EXTEND_TIMEOUT_MS,
+          false
+        );
+        if (!stillOurs) {
+          deps.log.warn(
+            `[mcp-oauth] Refresh for tool ${toolId} rejected (HTTP ${res.status}); refresh lock could not be confirmed, retry at discovered ${discovered} skipped`
+          );
+        } else {
+          deps.log.warn(
+            `[mcp-oauth] Refresh for tool ${toolId} rejected at ${current} (HTTP ${res.status}, error=${oauthErrorCode(res.body)}); retrying once at discovered ${discovered}`
+          );
+          retried = true;
+          try {
+            res = await deps.postForm(discovered, form);
+          } catch (err) {
+            deps.log.error(`[mcp-oauth] Refresh retry network error for tool ${toolId}: ${(err as Error).message}`);
+            throw new McpOAuthTransientError('Could not reach the authorization server');
+          }
+        }
+      } else {
+        deps.log.info(`[mcp-oauth] Refresh for tool ${toolId} rejected (HTTP ${res.status}); no other token endpoint available, no retry`);
+      }
+    }
+
+    if (res.status === 404 && !retried) {
+      // Still treated as transient (tokens untouched), but a persistent 404 must not go unnoticed.
+      const provider = input.providerId ?? 'unknown';
+      let first = true;
+      try {
+        first = await deps.kv.setNxPx(TOKEN_404_ALERT_PREFIX + provider, '1', TOKEN_404_ALERT_TTL_MS);
+      } catch {
+        first = true; // without Redis an extra alert is better than a silent outage
+      }
+      if (first) {
+        deps.log.error(`[mcp-oauth] ALERT token endpoint returned 404 for provider ${provider}; tools may stay disconnected`);
+      }
     }
 
     if (res.status >= 200 && res.status < 300) {
