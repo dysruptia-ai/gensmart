@@ -980,7 +980,9 @@ export async function updateTool(
 export async function deleteTool(orgId: string, agentId: string, toolId: string) {
   await verifyAgentOwnership(orgId, agentId);
   // MCP OAuth tools: best-effort revocation of the provider session before the row (and its tokens)
-  // disappears. Never throws; bounded by a 10 s timeout. Agent/account deletion: documented debt.
+  // disappears. Never throws. Worst case ~20 s: endpoint resolution (cached → no request; cold cache
+  // or Redis down → up to 2 metadata GETs x 5 s, DNS included) + the revocation POST (10 s timeout).
+  // Agent/account deletion: documented debt.
   await revokeToolOAuthBeforeDelete(toolId, agentId);
   await query('DELETE FROM agent_tools WHERE id = $1 AND agent_id = $2', [toolId, agentId]);
 }

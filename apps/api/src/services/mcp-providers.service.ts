@@ -33,6 +33,7 @@
 import { pool } from '../config/database';
 import { redis } from '../config/redis';
 import { getSettingValue } from './platform-settings.service';
+import { isValidHostSuffix } from './mcp-oauth-discovery.core';
 
 export interface UserConfigurableHeader {
   key: string;
@@ -76,6 +77,18 @@ export interface MCPOAuthConfig {
   client_id_ref: string;
   scope: string;
   resource?: string;
+  /**
+   * Endpoint discovery from the provider's metadata (RFC 9728 + RFC 8414). Only profiles with
+   * `enabled: true` use it; discovered endpoints are accepted only on https hosts that equal or are
+   * subdomains of one of `allowed_host_suffixes`. The static endpoints above stay as the fallback.
+   * See mcp-oauth-discovery.service.ts and migration 074. Not exposed by toPublicProfile.
+   */
+  discovery?: MCPOAuthDiscoveryConfig;
+}
+
+export interface MCPOAuthDiscoveryConfig {
+  enabled: boolean;
+  allowed_host_suffixes: string[];
 }
 
 export interface MCPProviderProfile {
@@ -173,6 +186,7 @@ function parseOAuthConfig(field: MCPOAuthConfig | string | null | undefined): MC
     try { obj = JSON.parse(field) as Partial<MCPOAuthConfig>; } catch { return null; }
   }
   if (!obj || !obj.authorization_endpoint || !obj.token_endpoint || !obj.client_id_ref || !obj.scope) return null;
+  const discovery = parseOAuthDiscoveryConfig((obj as { discovery?: unknown }).discovery);
   return {
     authorization_endpoint: obj.authorization_endpoint,
     token_endpoint: obj.token_endpoint,
@@ -180,7 +194,30 @@ function parseOAuthConfig(field: MCPOAuthConfig | string | null | undefined): MC
     client_id_ref: obj.client_id_ref,
     scope: obj.scope,
     resource: obj.resource,
+    ...(discovery ? { discovery } : {}),
   };
+}
+
+/**
+ * Validates `oauth_config.discovery`. Absent → undefined (discovery off, silently). Present but
+ * invalid → undefined (discovery off) and a log line: enabled must be a boolean and
+ * allowed_host_suffixes a non-empty array of lowercase domain names without wildcards.
+ */
+export function parseOAuthDiscoveryConfig(raw: unknown): MCPOAuthDiscoveryConfig | undefined {
+  if (raw == null) return undefined;
+  const invalid = (why: string): undefined => {
+    console.error(`[mcp-providers] Invalid oauth_config.discovery (${why}); discovery disabled`);
+    return undefined;
+  };
+  if (typeof raw !== 'object' || Array.isArray(raw)) return invalid('not an object');
+  const d = raw as Record<string, unknown>;
+  if (typeof d['enabled'] !== 'boolean') return invalid('enabled must be a boolean');
+  const suffixes = d['allowed_host_suffixes'];
+  if (!Array.isArray(suffixes) || suffixes.length === 0) return invalid('allowed_host_suffixes must be a non-empty array');
+  if (!suffixes.every((s) => typeof s === 'string' && isValidHostSuffix(s))) {
+    return invalid('allowed_host_suffixes must be lowercase domain names without wildcards');
+  }
+  return { enabled: d['enabled'], allowed_host_suffixes: [...(suffixes as string[])] };
 }
 
 function parseDefaultSelectedTools(field: string[] | string | null | undefined): string[] | null {

@@ -515,3 +515,34 @@ export function safeUndiciFetch(url: string, init: UndiciRequestInit = {}): Prom
   return undiciFetch(url, { ...init, dispatcher: sharedDispatcher, redirect: 'error' });
 }
 
+
+/** Error thrown by readBodyLimited when the body exceeds its cap. */
+export class BodyTooLargeError extends Error {
+  constructor() {
+    super('response too large');
+    this.name = 'BodyTooLargeError';
+  }
+}
+
+/**
+ * Reads at most `maxBytes` of a streaming body (counted AFTER content decoding, so a compressed
+ * response cannot inflate past the cap). Beyond that it cancels the stream and throws
+ * BodyTooLargeError. Time limits stay with the AbortSignal of the request.
+ */
+export async function readBodyLimited(body: ReadableStream<Uint8Array> | null, maxBytes: number): Promise<string> {
+  if (!body) return '';
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel().catch(() => {});
+      throw new BodyTooLargeError();
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}

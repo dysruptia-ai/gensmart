@@ -2,34 +2,64 @@
  * Best-effort revocation of MCP OAuth sessions (RFC 7009) at the provider's revocation_endpoint.
  *
  * Kept apart from mcp-oauth.service.ts so agent.service.ts (deleteTool) can use it without a
- * circular import. NEVER throws and never blocks longer than REVOKE_TIMEOUT_MS: a failed
+ * circular import. NEVER throws. Worst case: endpoint resolution (no request when cached; up to
+ * 2 metadata GETs x 5 s on a cold cache or with Redis down) + REVOKE_TIMEOUT_MS for the POST. A failed
  * revocation must not make a reconnection or a deletion fail. Logs never include tokens.
  */
 
 import { query } from '../config/database';
 import { decrypt } from '../config/encryption';
-import { safeUndiciFetch } from './safe-url';
+import { safeUndiciFetch, readBodyLimited } from './safe-url';
 import * as mcpProviders from './mcp-providers.service';
+import { resolveOAuthEndpoints, type ResolvedOAuthEndpoints } from './mcp-oauth-discovery.service';
 import type { StoredOAuth } from './mcp-oauth.core';
 
 const REVOKE_TIMEOUT_MS = 10_000;
 
+/** Injectable dependencies of revokeOAuthSession (real ones by default; fakes in tests). */
+export interface RevokeDeps {
+  resolveEndpoints: (profile: mcpProviders.MCPProviderProfile) => Promise<ResolvedOAuthEndpoints>;
+  resolveValueRef: (ref: string, context: string) => Promise<string | null>;
+  decrypt: (text: string) => string;
+  post: (url: string, body: string, signal: AbortSignal) => Promise<{ status: number }>;
+}
+
+const realRevokeDeps: RevokeDeps = {
+  resolveEndpoints: (profile) => resolveOAuthEndpoints(profile),
+  resolveValueRef: (ref, context) => mcpProviders.resolveValueRef(ref, context),
+  decrypt: (text) => decrypt(text),
+  post: async (url, body, signal) => {
+    const res = await safeUndiciFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+      body,
+      signal,
+    });
+    // The body is not used: drain at most 64 KB (bounded like every other OAuth response).
+    await readBodyLimited(res.body as ReadableStream<Uint8Array> | null, 64 * 1024).catch(() => '');
+    return { status: res.status };
+  },
+};
+
 export async function revokeOAuthSession(
   stored: Partial<StoredOAuth> | null | undefined,
-  profile: mcpProviders.MCPProviderProfile | null | undefined
+  profile: mcpProviders.MCPProviderProfile | null | undefined,
+  deps: RevokeDeps = realRevokeDeps
 ): Promise<void> {
   try {
-    const endpoint = profile?.oauth_config?.revocation_endpoint;
-    if (!profile || !endpoint || !stored?.refresh_token_encrypted) return;
+    if (!profile?.oauth_config || !stored?.refresh_token_encrypted) return;
+    // Discovered (allow-listed) or static revocation endpoint; resolution never throws.
+    const endpoint = (await deps.resolveEndpoints(profile)).revocationEndpoint;
+    if (!endpoint) return;
 
-    const clientId = await mcpProviders.resolveValueRef(profile.oauth_config!.client_id_ref, `profile ${profile.id}, oauth client_id`);
+    const clientId = await deps.resolveValueRef(profile.oauth_config.client_id_ref, `profile ${profile.id}, oauth client_id`);
     if (!clientId) {
       console.warn(`[mcp-oauth] Revocation skipped for provider ${profile.id}: client_id not configured`);
       return;
     }
 
     const form = new URLSearchParams({
-      token: decrypt(stored.refresh_token_encrypted),
+      token: deps.decrypt(stored.refresh_token_encrypted),
       token_type_hint: 'refresh_token',
       client_id: clientId,
     });
@@ -37,13 +67,7 @@ export async function revokeOAuthSession(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REVOKE_TIMEOUT_MS);
     try {
-      const res = await safeUndiciFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-        body: form.toString(),
-        signal: controller.signal,
-      });
-      await res.text().catch(() => '');
+      const res = await deps.post(endpoint, form.toString(), controller.signal);
       if (res.status >= 200 && res.status < 300) {
         console.log(`[mcp-oauth] Previous session revoked at provider ${profile.id}`);
       } else {
