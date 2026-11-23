@@ -16,11 +16,23 @@
   padding-inline: var(--gs-gutter);
 }
 
+/* design/web .hero-eyebrow */
+.eyebrow {
+  margin: 0 auto var(--gs-sp-5);
+  font: 600 13px/1.4 var(--gs-font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+  text-wrap: balance;
+}
+
 .title {
-  margin: 0 0 24px;
+  /* design/web .hero-c .h1: el título largo pide una escala menor que --gs-fs-h1 */
+  max-width: 22ch;
+  margin: 0 auto 24px;
   font-family: var(--gs-font-display);
   font-weight: 700;
-  font-size: var(--gs-fs-h1);
+  font-size: clamp(2.3rem, 1rem + 3.9vw, 4.3rem);
   line-height: 1;
   letter-spacing: -0.04em;
   text-wrap: balance;
@@ -92,19 +104,6 @@
 
 .channelIcon {
   color: var(--gs-brand-bright);
-}
-
-.soon {
-  margin-left: 4px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(240, 244, 242, 0.08);
-  border: 1px solid var(--gs-panel-line);
-  color: var(--gs-ink-300);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 @media (max-width: 640px) {

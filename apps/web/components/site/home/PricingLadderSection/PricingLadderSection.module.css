@@ -24,9 +24,42 @@ section.pricing {
   border: 1px solid var(--gs-panel-line);
 }
 
+/* design/web: .ladder .prow.feat (plan recomendado) */
 .featured {
-  background: color-mix(in oklab, var(--gs-brand-bright) 8%, var(--gs-panel));
-  border-color: rgba(61, 220, 132, 0.3);
+  background: color-mix(in oklab, var(--gs-brand) 14%, var(--gs-panel));
+  border-color: var(--gs-brand-bright);
+  box-shadow:
+    0 0 0 1px var(--gs-brand-bright),
+    0 18px 48px -18px color-mix(in oklab, var(--gs-brand) 55%, transparent);
+}
+
+/* Nombre y badge en fila: en el diseño el badge va en absoluto y choca con el nombre en tarjetas angostas */
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+}
+
+/* design/web: .pill.badge.rec */
+.badge {
+  padding: 7px 14px;
+  border-radius: var(--gs-r-pill);
+  background: var(--gs-brand-tint);
+  border: 1px solid var(--gs-brand-line);
+  color: var(--gs-brand-bright);
+  font: 500 0.875rem/1 var(--gs-font-sans);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* design/web: .ladder .prow .prow-cta */
+.planCta {
+  margin-top: auto;
+  align-self: stretch;
+  white-space: normal;
+  text-align: center;
 }
 
 .name {

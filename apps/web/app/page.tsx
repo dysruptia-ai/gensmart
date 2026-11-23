@@ -10,17 +10,15 @@ import PlatformSection from '@/components/site/home/PlatformSection';
 import CompareSection from '@/components/site/home/CompareSection';
 import TeamsSection from '@/components/site/home/TeamsSection';
 import HowItWorksSection from '@/components/site/home/HowItWorksSection';
-import HandoffSection from '@/components/site/home/HandoffSection';
 import IntegrationsSection from '@/components/site/home/IntegrationsSection';
-import FiguresSection from '@/components/site/home/FiguresSection';
 import PricingLadderSection from '@/components/site/home/PricingLadderSection';
-import FaqSection from '@/components/site/home/FaqSection';
 import FinalCtaSection from '@/components/site/home/FinalCtaSection';
 import SiteChatWidget from '@/components/site/SiteChatWidget';
 
-const TITLE = 'GenSmart | AI agents that sell and support, 24/7';
+const TITLE = 'GenSmart | Multichannel agentic platform for AI agents';
+// Igual que en design/web/en/index.html, pero con "Messenger" (como el paso 1 del constructor)
 const DESCRIPTION =
-  'Multichannel agentic platform. Create, connect and activate AI agents in 3 steps for WhatsApp, Instagram, Facebook, Telegram, email and your website.';
+  'Multichannel agentic platform. Create, connect and activate AI agents in 3 steps for WhatsApp, Instagram, Messenger, Telegram, email and your website.';
 const OG_IMAGE = '/site/img/hero-motion-poster-en.webp';
 
 export const metadata: Metadata = {
@@ -31,7 +29,7 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     url: 'https://www.gensmart.co',
     siteName: 'GenSmart',
-    images: [{ url: OG_IMAGE, alt: 'GenSmart: AI agents that sell and support, 24/7' }],
+    images: [{ url: OG_IMAGE, alt: 'GenSmart: multichannel agentic platform for AI agents' }],
     type: 'website',
   },
   twitter: {
@@ -95,14 +93,12 @@ export default function LandingPage() {
         <HeroSection />
         <ProblemSection />
         <PlatformSection />
-        <CompareSection />
+        {/* prompt-web-16: aquí va la sección de casos de uso ("Tú eliges el proceso…") */}
         <TeamsSection />
         <HowItWorksSection />
-        <HandoffSection />
+        <CompareSection />
         <IntegrationsSection />
-        <FiguresSection />
         <PricingLadderSection />
-        <FaqSection />
         <FinalCtaSection />
       </main>
       <SiteFooter />

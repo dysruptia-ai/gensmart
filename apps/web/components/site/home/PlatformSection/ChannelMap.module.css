@@ -107,10 +107,19 @@
 }
 
 .sideOut .list {
+  /* Cinco salidas: 3 arriba y 2 abajo (6 pistas; 2 por nodo arriba, 3 por nodo abajo) */
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 6px;
   width: 100%;
+}
+
+.sideOut .list > li {
+  grid-column: span 2;
+}
+
+.sideOut .list > li:nth-child(n + 4) {
+  grid-column: span 3;
 }
 
 .list {
@@ -137,10 +146,6 @@
   box-shadow: inset 0 0 0 1px var(--gs-panel-line);
   color: var(--gs-ink-300);
   font-size: 14px;
-}
-
-.itemIn.soon > * {
-  opacity: 0.58;
 }
 
 .itemOut {
@@ -315,6 +320,16 @@
   .sideOut .list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .sideOut .list > li,
+  .sideOut .list > li:nth-child(n + 4) {
+    grid-column: auto;
+  }
+
+  /* El quinto nodo ocupa la fila entera para no quedar huérfano */
+  .sideOut .list > li:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ---------- Horizontal (≥ 820 px): misma medida que WIRES_MIN_WIDTH en ChannelMap.tsx ---------- */
@@ -350,6 +365,17 @@
     gap: 6px;
     width: max-content;
     max-width: 100%;
+  }
+
+  .sideOut .list > li,
+  .sideOut .list > li:nth-child(n + 4) {
+    grid-column: auto;
+  }
+
+  /* Tope para que "Tus herramientas, por API, MCP o webhook" pase a dos líneas
+     en vez de ensanchar la columna y dejar los cables de salida sin recorrido */
+  .sideOut .list {
+    max-width: min(100%, 17rem);
   }
 
   .sideTitle {

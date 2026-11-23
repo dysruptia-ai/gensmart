@@ -1894,15 +1894,16 @@
     },
     "home": {
       "hero": {
-        "titleLine1": "Build the AI agent",
-        "titleAccent": "you need",
-        "lead": "Sales, support, bookings, collections or whatever process you define. You deploy them natively on six channels, with one memory and your CRM inside. No coding.",
+        "eyebrow": "GenSmart · The leading agentic platform in LATAM and the USA",
+        "titleBefore": "Build AI agents for",
+        "titleAccent": "any process",
+        "titleAfter": "in your business",
+        "lead": "Pick the process: sales, support, bookings, collections or HR. Your agent runs it on your channels and connects to the tools you already use. You set it up yourself, no coding.",
         "cta": "Start your free trial",
         "secondary": "See how it works",
         "channelsLabel": "Channels",
         "email": "Email",
         "website": "Your website",
-        "soon": "soon",
         "videoLabel": "Video: how GenSmart answers, qualifies and books inside the conversation",
         "trackLabel": "English",
         "soundOn": "Turn on sound",
@@ -1945,101 +1946,43 @@
         "listLabel": "Message log for the day"
       },
       "platform": {
-        "title": "A team of AI agents on the channels where they already write you",
-        "lead": "GenSmart is the platform where you create AI agents, teach them your business and connect them to your channels. Each agent answers, quotes, books and charges inside the conversation, and everything is logged in one place.",
-        "h3": "Native in the channel, not a link",
-        "copy": "The agent lives inside the app where your customer already writes. If they start on Instagram and continue on WhatsApp, it picks up where the conversation left off, without asking anything twice.",
-        "check1": "One memory and one history per customer",
-        "check2": "Connect WhatsApp Business in one click, no API keys",
+        "title": "Covers every channel and works with the tools you already use",
+        "lead": "One agent covers the channels where your customers write and connects with the systems your team already works in.",
+        "h3": "Inside the customer conversation and connected to your operation",
+        "copy": "The agent replies in the same chat where the customer already wrote, with no installs or links. And it connects directly with any tool that has an API, webhooks or another integration method, such as your CRM, your calendar or your online store.",
+        "check1": "Same information and same tone on every channel",
+        "check2": "Direct connection to your tools, no middlemen",
         "map": {
           "inTitle": "Where they write you",
-          "outTitle": "What you get",
+          "outTitle": "To your team and your systems",
           "email": "Email",
           "website": "Your website",
-          "tiktok": "TikTok, coming soon",
           "inbox": "Unified inbox",
           "crm": "CRM and pipeline",
           "calendar": "Appointment booking",
           "metrics": "Metrics and reports",
-          "hub": "One agent, one memory",
-          "runsOn": "Runs on"
-        }
-      },
-      "compare": {
-        "title": "Compared with a traditional chatbot",
-        "lead": "The difference is not the tone of the replies. It is that the agent reasons over your information instead of following a menu tree.",
-        "aspect": "Aspect",
-        "old": "Traditional chatbot",
-        "new": "GenSmart",
-        "rows": {
-          "r1": {
-            "aspect": "Replies",
-            "old": "Fixed text in a menu tree",
-            "new": "Uses your information and reasons out each reply"
-          },
-          "r2": {
-            "aspect": "Channels",
-            "old": "One tool per channel",
-            "new": "Six channels with a single memory"
-          },
-          "r3": {
-            "aspect": "CRM",
-            "old": "Separate, you have to connect it",
-            "new": "Included, with lead scoring and pipeline"
-          },
-          "r4": {
-            "aspect": "Scheduling",
-            "old": "Sends an external link",
-            "new": "Books inside the conversation"
-          },
-          "r5": {
-            "aspect": "Your team",
-            "old": "Gets the chat with no context",
-            "new": "Gets a summary and the full history"
-          },
-          "r6": {
-            "aspect": "Setup",
-            "old": "Flows built by hand",
-            "new": "Three steps, no code"
-          }
-        },
-        "cycleNote": "Every incoming message goes through the same cycle:",
-        "steps": {
-          "s1": {
-            "title": "Perceives",
-            "desc": "Reads the message and the history."
-          },
-          "s2": {
-            "title": "Reasons",
-            "desc": "Understands what they want and what stops them."
-          },
-          "s3": {
-            "title": "Plans",
-            "desc": "Decides: quote, book or escalate."
-          },
-          "s4": {
-            "title": "Acts",
-            "desc": "Acts and logs it in your CRM."
-          }
+          "tools": "Your tools, via API, MCP or webhook",
+          "hub": "One agent, all your channels",
+          "engines": "AI engines"
         }
       },
       "teams": {
-        "title": "One quotes. One collects. One hires.",
-        "lead": "Quoting, confirming, reminding, answering the same thing. That is the agent work. What needs judgement is still your people.",
+        "title": "What the agent does and what your team decides",
+        "lead": "The agent takes the repeated inquiries. Your team keeps negotiations, exceptions and sensitive cases. When the agent passes a case, your team receives the chat with the summary and history.",
         "agentTitle": "This is what the agent does",
         "agent1": "Answer in seconds, at any hour, on all six channels",
         "agent2": "Quote with your prices and your inventory",
         "agent3": "Book, confirm and remind appointments",
         "agent4": "Send the payment link and log the sale",
-        "agent5": "Answer the same question as many times as needed",
+        "agent5": "Answer the questions that keep coming back",
         "agent6": "Create the contact in your CRM and score it",
-        "humanTitle": "This is what your people keep doing",
-        "human1": "Closing the deal that is worth it",
-        "human2": "Deciding a discount or an exception",
-        "human3": "Handling the customer who arrived upset",
-        "human4": "Approving what has consequences",
+        "humanTitle": "This stays with your team",
+        "human1": "Negotiating and closing the larger sales",
+        "human2": "Approving discounts and exceptions",
+        "human3": "Handling complaints and upset customers",
+        "human4": "Authorizing refunds and out-of-policy payments",
         "human5": "Setting the agent rules and correcting it",
-        "linksLabel": "The six our customers set up most",
+        "linksLabel": "Choose where to start",
         "linksNav": "Teams",
         "teams": {
           "teamSales": "Sales",
@@ -2053,14 +1996,14 @@
       },
       "how": {
         "title": "Your agent, in three steps",
-        "lead": "This is the platform flow as you will see it. You can tap each step.",
+        "lead": "This is how the flow looks inside the platform. Tap each step.",
         "tablist": "Steps to create your agent",
         "step1Title": "Connect your channels",
-        "step1Desc": "WhatsApp, Instagram, Facebook, Telegram, email and web. No code.",
+        "step1Desc": "WhatsApp, Instagram, Messenger, Telegram, email and web. No code.",
         "step2Title": "Teach it your business",
         "step2Desc": "Upload your catalog, prices, policies and links. The agent learns and speaks in your tone.",
         "step3Title": "Activate and measure",
-        "step3Desc": "Switch the agent on and follow every conversation and sale in your CRM.",
+        "step3Desc": "Switch the agent on. You follow every conversation in the inbox, every sale in your CRM and every appointment or order in your tools.",
         "appLabel": "Simulated platform view",
         "appTitle": "GenSmart: New agent",
         "p1Title": "Choose where your agent will work",
@@ -2124,85 +2067,69 @@
         "ctaPrimary": "Start now",
         "ctaDemo": "I prefer a guided demo"
       },
-      "handoff": {
-        "title": "From the first question to the handoff",
-        "lead": "The same conversation, end to end. The agent answers, quotes and charges. When the case needs judgement, it hands it to a person with the full context.",
-        "r1Title": "Sells inside the conversation",
-        "r1Text": "The agent recommends products, answers questions, quotes and sends the payment link. It follows up on carts left unpaid.",
-        "r1Check1": "Integrates with your store and catalog",
-        "r1Check2": "Scores each lead and places it in your pipeline",
-        "r1Check3": "Books calls and appointments with your team",
-        "r1Cta": "See the e-commerce solution",
-        "r2Title": "Your team steps in when needed",
-        "r2Text": "If the case needs a person, the agent passes them the chat with the summary and history. Nobody asks again what the customer already answered.",
-        "r2Check1": "Handoff with full context",
-        "r2Check2": "CRM with lead scoring and summaries",
-        "r2Check3": "Metrics for every conversation and sale",
-        "chatLabel": "Example conversation",
-        "chatHead": "Sales agent · WhatsApp",
-        "b1": "Do you have the black jacket in size M?",
-        "b2": "Yes, 3 left. It arrives tomorrow in Bogotá. Shall I hold one for you?",
-        "b3": "Yes, how much is shipping?",
-        "b4": "Shipping to Bogotá is $12,000 and the total is $201,000. Here is your payment link.",
-        "chip1": "Payment sent",
-        "chip2": "Logged in the CRM",
-        "handLabel": "Example of a handoff to a person",
-        "handHead": "Handoff to a person",
-        "summary": "The customer asks for an invoice under their company name and a volume discount. The agent hands it to the team with the full context.",
-        "dtChannel": "Channel",
-        "ddChannel": "WhatsApp",
-        "dtStage": "Stage",
-        "ddStage": "Quote sent",
-        "dtScore": "Lead score",
-        "ddScore": "8.4 / 10",
-        "dtValue": "Estimated value",
-        "ddValue": "$2.400.000",
-        "who": "Camila M.",
-        "role": "Corporate sales",
-        "tag": "She takes it"
+      "compare": {
+        "title": "With GenSmart you don't build chatbots, you build agents",
+        "lead": "GenSmart is the platform where you build AI agents for each process in your business. A chatbot follows a script written in advance. An agent understands what the customer asks, checks your business information and does the work.",
+        "caption": "Comparison between a traditional chatbot and an agent built on GenSmart",
+        "aspect": "What it compares",
+        "old": "Traditional chatbot",
+        "new": "Agent built on GenSmart",
+        "rows": {
+          "r1": {
+            "aspect": "Understands the customer",
+            "old": "Only recognizes the options in its menu",
+            "new": "Understands what the customer writes in their own words"
+          },
+          "r2": {
+            "aspect": "Answers with",
+            "old": "Fixed text written in advance",
+            "new": "Your business information: catalog, prices and policies"
+          },
+          "r3": {
+            "aspect": "What it does",
+            "old": "Shows a link or asks the customer to call",
+            "new": "Quotes, books, sends the payment and logs the contact"
+          },
+          "r4": {
+            "aspect": "Channels",
+            "old": "A different bot for each channel",
+            "new": "The same agent on all six channels"
+          },
+          "r5": {
+            "aspect": "Your team",
+            "old": "Gets the chat with no context",
+            "new": "Gets the chat with the summary and the history"
+          },
+          "r6": {
+            "aspect": "How it is built",
+            "old": "Flows built by hand, one by one",
+            "new": "In three steps, no coding, with your information"
+          }
+        }
       },
       "integrations": {
-        "title": "Connected to your tools",
-        "lead": "E-commerce and dropshipping platforms, CRM, payments and calendar. If your platform has an API or webhooks, the agent connects to it. These are examples, not the full list.",
+        "title": "Connect your agent to more than 10,000 tools",
+        "lead": "Your CRM, your online store, your payments and your calendar. If the tool you use isn't listed, you connect it through an API, MCP or webhook.",
         "cta": "See all integrations",
         "listLabel": "Example integrations"
       },
-      "figures": {
-        "title": "What the industry numbers show",
-        "n1": "70.22%",
-        "t1": "of carts are abandoned before payment.",
-        "n2": "4x",
-        "t2": "more conversion among those who chat with an AI agent: 12.3% versus 3.1%.",
-        "n3": "53%",
-        "t3": "of store inquiries are resolved without human intervention.",
-        "n4": "60x",
-        "t4": "faster first reply: from 12 minutes to 12 seconds.",
-        "source": "Industry averages. The 70.22% figure is the documented average across 50 cart abandonment studies. These are not GenSmart customer results and they vary by business."
-      },
       "pricing": {
-        "title": "Pricing that grows with you",
+        "title": "Your first agent, from ${price} USD a month",
+        "lead": "{days} days free on any plan. Try it with your own customers and move up a plan when your operation needs it.",
         "perMonth": "USD/mo",
+        "recommended": "Recommended",
         "soloDesc": "{agents} agent, {messages} messages and {contacts} contacts",
         "starterDesc": "{agents} agents, {messages} messages and {contacts} contacts",
         "proDesc": "{agents} agents, {messages} messages and voice and images",
-        "enterpriseDesc": "Unlimited agents and your own key",
-        "cta": "See plans and pricing"
-      },
-      "faq": {
-        "title": "Frequent questions",
-        "q1": "Will it sound like a robot?",
-        "a1": "It speaks in your brand's tone, with your wording and policies.",
-        "q2": "What if it doesn't know the answer?",
-        "a2": "It hands the conversation to a person on your team, with the full history.",
-        "q3": "Does it replace my team?",
-        "a3": "It handles the repetitive work so your team can focus on what needs judgment.",
-        "q4": "Is it hard to set up?",
-        "a4": "You create and connect it yourself in three steps, no code and no tech team."
+        "enterpriseDesc": "Unlimited agents and your own API key",
+        "cta": "See plans and pricing",
+        "trialCta": "Try free for {days} days",
+        "salesCta": "Talk to sales"
       },
       "cta": {
         "titleBefore": "Create your first agent",
         "titleAccent": "today",
-        "lead": "Set it up yourself in three steps or we build it with you on a demo. Change plans whenever you want.",
+        "lead": "Set it up yourself in three steps or ask for a guided demo.",
         "primary": "Start your free trial",
         "demo": "Book a demo"
       }

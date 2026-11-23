@@ -27,7 +27,7 @@ export default function TeamsSection() {
   const { t } = useTranslation();
   const p = 'site.home.teams';
   return (
-    <Section surface="alt" className={styles.teams}>
+    <Section surface="light" className={styles.teams}>
       <Container>
         <SectionHead title={t(`${p}.title`)} lead={t(`${p}.lead`)} />
 

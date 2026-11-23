@@ -17,7 +17,7 @@ import {
   Globe,
   Inbox,
   Mail,
-  Sparkles,
+  Plug,
   type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -32,7 +32,6 @@ interface MapItem {
   labelKey: string;
   logo?: string;
   icon?: LucideIcon;
-  soon?: boolean;
 }
 
 const INPUTS: MapItem[] = [
@@ -42,7 +41,6 @@ const INPUTS: MapItem[] = [
   { id: 'telegram', labelKey: '', logo: '/site/img/logos/telegram.svg' },
   { id: 'email', labelKey: 'site.home.platform.map.email', icon: Mail },
   { id: 'website', labelKey: 'site.home.platform.map.website', icon: Globe },
-  { id: 'tiktok', labelKey: 'site.home.platform.map.tiktok', icon: Sparkles, soon: true },
 ];
 
 const BRAND_NAMES: Record<string, string> = {
@@ -57,6 +55,7 @@ const OUTPUTS: MapItem[] = [
   { id: 'crm', labelKey: 'site.home.platform.map.crm', icon: Filter },
   { id: 'calendar', labelKey: 'site.home.platform.map.calendar', icon: CalendarDays },
   { id: 'metrics', labelKey: 'site.home.platform.map.metrics', icon: ChartLine },
+  { id: 'tools', labelKey: 'site.home.platform.map.tools', icon: Plug },
 ];
 
 const WIRES_MIN_WIDTH = 820;
@@ -212,9 +211,7 @@ export default function ChannelMap() {
         key={item.id}
         data-cnode=""
         data-side={side}
-        className={[styles.item, side === 'in' ? styles.itemIn : styles.itemOut, item.soon ? styles.soon : '']
-          .filter(Boolean)
-          .join(' ')}
+        className={`${styles.item} ${side === 'in' ? styles.itemIn : styles.itemOut}`}
       >
         {item.logo ? (
           <Image src={item.logo} alt="" width={18} height={18} unoptimized className={styles.brandLogo} />
@@ -287,17 +284,18 @@ export default function ChannelMap() {
             <SiteLogo to={null} className={styles.nodeLogo} />
             <span className={styles.hubText}>{t('site.home.platform.map.hub')}</span>
             <span className={styles.engine}>
-              <b className={styles.srOnly}>{t('site.home.platform.map.runsOn')}</b>
+              {/* Rótulo y nombres de los proveedores solo para lectores de pantalla (como .cmap-run del diseño) */}
+              <b className={styles.srOnly}>{t('site.home.platform.map.engines')}</b>
               <span className={styles.brains}>
-                <i title="Anthropic" className={styles.brain}>
+                <i className={styles.brain}>
                   <AnthropicLogo className={styles.brainSvg} />
                   <em className={styles.srOnly}>Anthropic</em>
                 </i>
-                <i title="OpenAI" className={styles.brain}>
+                <i className={styles.brain}>
                   <OpenAILogo className={styles.brainSvg} />
                   <em className={styles.srOnly}>OpenAI</em>
                 </i>
-                <i title="OpenRouter" className={styles.brain}>
+                <i className={styles.brain}>
                   <OpenRouterLogo className={styles.brainSvg} />
                   <em className={styles.srOnly}>OpenRouter</em>
                 </i>

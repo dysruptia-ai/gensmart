@@ -62,7 +62,7 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   contact: { href: '/contact' },
   about: { href: '/about' },
   login: { href: '/login' },
-  register: { href: '/register?code=GENSMART-LAUNCH' },
+  register: { href: '/register' },
   legalTerms: { href: '/legal/terms-of-service' },
   legalPrivacy: { href: '/legal/privacy-policy' },
   legalCookies: { href: '/legal/cookie-policy' },
@@ -107,3 +107,19 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   socialFacebook: { href: 'https://facebook.com/gensmartai', external: true },
   partnersWhiteLabel: { href: null },
 };
+
+/**
+ * Ruta ya resuelta desde este archivo. El tipo marcado evita que `SiteLink`
+ * reciba strings armados a mano: solo los helpers de aquí pueden producirla.
+ */
+export type SiteHref = string & { readonly __siteHref: unique symbol };
+
+/** Planes con prueba autoservicio. Enterprise no está: va por ventas. */
+export type RegisterPlan = 'solo' | 'starter' | 'pro';
+
+/** Registro con el plan preseleccionado (`/register?plan=…`). */
+export function registerHref(plan: RegisterPlan): SiteHref {
+  const base = SITE_LINKS.register.href ?? '/register';
+  const params = new URLSearchParams({ plan });
+  return `${base}?${params.toString()}` as SiteHref;
+}

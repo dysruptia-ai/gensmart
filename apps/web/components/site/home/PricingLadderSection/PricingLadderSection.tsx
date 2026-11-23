@@ -1,18 +1,23 @@
 'use client';
 
+import { useState } from 'react';
 import { PLAN_LIMITS, PRICING } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
+import { registerHref, type RegisterPlan } from '@/lib/site-links';
+// Mismo modal que abre /pricing para Enterprise (trae su propio CSS Module, nada más de components/landing)
+import ContactSalesModal from '@/components/landing/ContactSalesModal/ContactSalesModal';
 import Container from '../../Container';
 import Reveal from '../../Reveal';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
-import SiteButton from '../../SiteButton';
+import SiteButton, { SiteActionButton } from '../../SiteButton';
+import { SITE_TRIAL_DAYS } from '../../siteTrial';
 import styles from './PricingLadderSection.module.css';
 
 const P = 'site.home.pricing';
 const STAGGER_MS = 80;
 
-type PlanId = 'solo' | 'starter' | 'pro' | 'enterprise';
+type PlanId = RegisterPlan | 'enterprise';
 const PLANS: Array<{ id: PlanId; name: string; featured?: boolean }> = [
   { id: 'solo', name: 'Solo' },
   { id: 'starter', name: 'Starter' },
@@ -22,6 +27,7 @@ const PLANS: Array<{ id: PlanId; name: string; featured?: boolean }> = [
 
 export default function PricingLadderSection() {
   const { t, language } = useTranslation();
+  const [salesOpen, setSalesOpen] = useState(false);
   // useGrouping 'always': en español 1.000 y 5.000 (por defecto 'es' no agrupa los 4 dígitos)
   const nf = new Intl.NumberFormat(language, { useGrouping: 'always' });
 
@@ -51,28 +57,54 @@ export default function PricingLadderSection() {
     }
   };
 
+  const trialCta = t(`${P}.trialCta`, { days: SITE_TRIAL_DAYS });
+
   return (
-    <Section surface="alt" className={styles.pricing}>
+    <Section surface="dark" className={styles.pricing}>
       <Container>
-        <SectionHead title={t(`${P}.title`)} />
+        <SectionHead
+          title={t(`${P}.title`, { price: PRICING.solo.monthly })}
+          lead={t(`${P}.lead`, { days: SITE_TRIAL_DAYS })}
+        />
         <div className={styles.ladder}>
           {PLANS.map((plan, i) => (
             <Reveal key={plan.id} delay={i * STAGGER_MS} className={styles.cell}>
               <div className={`${styles.plan} ${plan.featured ? styles.featured : ''}`}>
-                <span className={styles.name}>{plan.name}</span>
+                <div className={styles.head}>
+                  <span className={styles.name}>{plan.name}</span>
+                  {plan.featured ? <span className={styles.badge}>{t(`${P}.recommended`)}</span> : null}
+                </div>
                 <div className={styles.price}>
                   <i className={styles.dot} aria-hidden="true" />${PRICING[plan.id].monthly}
                   <small>{t(`${P}.perMonth`)}</small>
                 </div>
                 <p className={styles.desc}>{describe(plan.id)}</p>
+                {plan.id === 'enterprise' ? (
+                  // Enterprise no es autoservicio: va a ventas, igual que en /pricing
+                  <SiteActionButton
+                    size="sm"
+                    className={styles.planCta}
+                    aria-haspopup="dialog"
+                    onClick={() => setSalesOpen(true)}
+                  >
+                    {t(`${P}.salesCta`)}
+                  </SiteActionButton>
+                ) : (
+                  <SiteButton href={registerHref(plan.id)} size="sm" className={styles.planCta}>
+                    {trialCta}
+                  </SiteButton>
+                )}
               </div>
             </Reveal>
           ))}
         </div>
         <div className={styles.cta}>
-          <SiteButton to="pricing">{t(`${P}.cta`)}</SiteButton>
+          <SiteButton to="pricing" variant="ghost">
+            {t(`${P}.cta`)}
+          </SiteButton>
         </div>
       </Container>
+      <ContactSalesModal isOpen={salesOpen} onClose={() => setSalesOpen(false)} />
     </Section>
   );
 }

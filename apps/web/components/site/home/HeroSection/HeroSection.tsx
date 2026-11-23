@@ -32,10 +32,11 @@ export default function HeroSection() {
     <section className={styles.hero}>
       <GlowBackdrop variant="hero" />
       <div className={styles.content}>
+        <p className={styles.eyebrow}>{t('site.home.hero.eyebrow')}</p>
         <h1 className={styles.title}>
-          {t('site.home.hero.titleLine1')}
-          <br />
-          <span className={styles.accent}>{t('site.home.hero.titleAccent')}</span>
+          {t('site.home.hero.titleBefore')}{' '}
+          <span className={styles.accent}>{t('site.home.hero.titleAccent')}</span>{' '}
+          {t('site.home.hero.titleAfter')}
         </h1>
         <p className={styles.lead}>{t('site.home.hero.lead')}</p>
         <div className={styles.actions}>
@@ -61,11 +62,6 @@ export default function HeroSection() {
           <li className={styles.channel}>
             <Globe size={21} aria-hidden="true" className={styles.channelIcon} />
             {t('site.home.hero.website')}
-          </li>
-          <li className={styles.channel}>
-            <ChannelLogo src="/site/img/logos/tiktok-dark.svg" />
-            TikTok
-            <span className={styles.soon}>{t('site.home.hero.soon')}</span>
           </li>
         </ul>
 

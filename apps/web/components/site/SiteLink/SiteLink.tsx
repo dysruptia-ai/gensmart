@@ -1,12 +1,16 @@
 import Link from 'next/link';
 import type { AnchorHTMLAttributes, MouseEvent } from 'react';
 import styles from './SiteLink.module.css';
-import { SITE_LINKS, type SiteLinkKey } from '@/lib/site-links';
+import { SITE_LINKS, type SiteHref, type SiteLinkKey } from '@/lib/site-links';
 
-/** Destino: una clave de SITE_LINKS o un ancla dentro de la misma página (nunca ambos). */
+/**
+ * Destino (solo uno): una clave de SITE_LINKS, un ancla dentro de la misma página
+ * o una ruta interna ya resuelta por un helper de lib/site-links (p. ej. `registerHref`).
+ */
 export type SiteLinkTarget =
-  | { to: SiteLinkKey; anchor?: never }
-  | { anchor: `#${string}`; to?: never };
+  | { to: SiteLinkKey; anchor?: never; href?: never }
+  | { anchor: `#${string}`; to?: never; href?: never }
+  | { href: SiteHref; to?: never; anchor?: never };
 
 export type SiteLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> &
   SiteLinkTarget;
@@ -14,6 +18,7 @@ export type SiteLinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'href'
 export default function SiteLink({
   to,
   anchor,
+  href,
   className,
   children,
   onClick,
@@ -24,6 +29,14 @@ export default function SiteLink({
       <a {...rest} className={className} href={anchor} onClick={onClick}>
         {children}
       </a>
+    );
+  }
+
+  if (href !== undefined) {
+    return (
+      <Link {...rest} className={className} href={href} onClick={onClick}>
+        {children}
+      </Link>
     );
   }
 

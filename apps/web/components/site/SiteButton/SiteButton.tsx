@@ -1,10 +1,12 @@
 import SiteLink, { type SiteLinkProps } from '../SiteLink';
 import styles from './SiteButton.module.css';
 
-type SiteButtonProps = SiteLinkProps & {
+export interface SiteButtonLook {
   variant?: 'primary' | 'ghost';
   size?: 'md' | 'sm' | 'lg';
-};
+}
+
+type SiteButtonProps = SiteLinkProps & SiteButtonLook;
 
 export default function SiteButton({
   variant = 'primary',

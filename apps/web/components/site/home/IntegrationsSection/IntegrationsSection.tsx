@@ -34,7 +34,7 @@ export default function IntegrationsSection() {
   const { t } = useTranslation();
   const P = 'site.home.integrations';
   return (
-    <Section surface="alt" className={styles.integrations}>
+    <Section surface="light" className={styles.integrations}>
       <Container>
         <SectionHead title={t(`${P}.title`)} lead={t(`${P}.lead`)} />
         <ul className={styles.grid} aria-label={t(`${P}.listLabel`)}>
