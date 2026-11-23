@@ -2211,6 +2211,26 @@
         "title": "Integrations | Connect GenSmart to your tools",
         "description": "Connect your agent to {tools}+ tools: your store, CRM, payments and calendar. Anything not on the list, through API, MCP or webhook.",
         "ogAlt": "GenSmart integrations"
+      },
+      "productAgents": {
+        "title": "AI agents | Build, train and deploy them | GenSmart",
+        "description": "Create AI agents from a template or from scratch, load your information and deploy them to your channels. No code.",
+        "ogAlt": "GenSmart AI agents"
+      },
+      "productInbox": {
+        "title": "Unified inbox | Every conversation in one place | GenSmart",
+        "description": "One inbox with the conversations of all your agents and channels: status, lead score and human takeover when needed.",
+        "ogAlt": "GenSmart unified inbox"
+      },
+      "productCrm": {
+        "title": "CRM and pipeline | AI-scored contacts on a board | GenSmart",
+        "description": "Every conversation creates a contact that the AI scores, summarizes and places in your funnel. Three-stage board, contacts table and full record.",
+        "ogAlt": "GenSmart CRM and pipeline"
+      },
+      "productBooking": {
+        "title": "Appointment booking inside the conversation | GenSmart",
+        "description": "Customers book without leaving the conversation. The agent checks your calendar, offers open slots and books. Your team sees the appointment.",
+        "ogAlt": "GenSmart appointment booking"
       }
     },
     "langHint": {
@@ -2404,7 +2424,11 @@
       "home": "Home",
       "pricing": "Pricing",
       "product": "Product",
-      "integrations": "Integrations"
+      "integrations": "Integrations",
+      "productAgents": "AI agents",
+      "productInbox": "Unified inbox",
+      "productCrm": "CRM and pipeline",
+      "productBooking": "Appointment booking"
     },
     "channels": {
       "email": "Email",
@@ -2599,6 +2623,372 @@
         "talk": "Talk to the team",
         "docs": "Read the knowledge base",
         "listName": "Tools you can connect to GenSmart"
+      }
+    },
+    "productShared": {
+      "primary": "Start your free trial",
+      "valentina": {
+        "m1": "Hi, I saw the 2-bedroom apartment. How much is it?",
+        "m2": "Hi, Valentina. It costs $420 million and has 68 m². Shall I put together a quote with your down payment?",
+        "m3": "Yes, I have $80 million for the down payment",
+        "m4": "Done, Valentina, I sent the quote right here. Would you like to visit the apartment on Saturday?",
+        "last": "Would you like to visit the apartment on Saturday?"
+      },
+      "status": {
+        "active": "Active",
+        "human": "Human control",
+        "closed": "Closed"
+      },
+      "stage": {
+        "lead": "Lead",
+        "opportunity": "Opportunity",
+        "customer": "Customer"
+      },
+      "agent": {
+        "realEstate": "Real estate",
+        "sales": "Sales"
+      },
+      "ago": {
+        "m2": "2 min ago",
+        "m27": "27 min ago",
+        "m54": "54 min ago",
+        "h1": "1 h ago"
+      },
+      "rows": {
+        "andres": "Asks for an invoice in his company name",
+        "laura": "Visit confirmed",
+        "mateo": "Asks about the installment"
+      },
+      "fields": {
+        "stage": "Stage",
+        "score": "Score",
+        "agent": "Agent",
+        "downPayment": "Down payment",
+        "downPaymentValue": "$80 million",
+        "email": "Email",
+        "name": "Name"
+      },
+      "apt2": "2-bedroom apartment",
+      "apt3": "3-bedroom apartment"
+    },
+    "productAgents": {
+      "hero": {
+        "titleBefore": "One agent per process, trained with",
+        "titleAccent": "your information",
+        "lead": "You set the goal and the rules, load your information and connect it to a channel. From there it talks to your customers and runs actions inside the chat.",
+        "primary": "Create my first agent",
+        "secondary": "See the inbox",
+        "mockLabel": "Example of a GenSmart agent: its setup on the left and its conversation on the right",
+        "bar": "Agents / Real estate",
+        "initial": "A",
+        "name": "Real estate agent",
+        "role": "Job profile",
+        "live": "Live",
+        "tabInstructions": "Instructions",
+        "tabKnowledge": "Knowledge",
+        "tabActions": "Actions",
+        "tabChannels": "Channels",
+        "goal": "Goal",
+        "goalValue": "Quote and book a visit",
+        "tone": "Tone",
+        "toneValue": "Warm and clear",
+        "rule": "Rule",
+        "ruleValue": "If they ask to negotiate the price, hand over to an advisor",
+        "channels": "Connected channels",
+        "channelsLabel": "Channels connected to the agent",
+        "chatVia": "on WhatsApp",
+        "actsLabel": "What the agent did",
+        "act1": "Checked the inventory",
+        "act2": "Saved the lead in the CRM",
+        "act3": "Quote sent"
+      },
+      "start": {
+        "kicker": "How you start",
+        "title": "Start from a template or from scratch",
+        "text": "A template comes with the goal and rules set for a common case. You pick it, name it and adjust whatever does not fit your business. Or you define the goal, the tone, the rules and what it can and cannot do yourself. Either way you can change it all later.",
+        "mockLabel": "Example of choosing an agent template",
+        "sales": "Sales",
+        "support": "Customer support",
+        "bookings": "Bookings",
+        "template": "Template",
+        "scratch": "From scratch",
+        "scratchDesc": "You define everything",
+        "can": "Can",
+        "canValue": "Check the inventory · Create the lead in the CRM",
+        "cannot": "Cannot",
+        "cannotValue": "Negotiate the price"
+      },
+      "teach": {
+        "title": "What you teach it",
+        "lead": "The agent answers with the information you load, not with generic data. The examples below are illustrative.",
+        "kbTitle": "Knowledge base",
+        "kbDesc": "Documents and links with your prices, policies, catalog and FAQs.",
+        "kbLabel": "Example of files loaded in the knowledge base",
+        "ready": "Ready",
+        "files": {
+          "prices": "prices.pdf",
+          "policy": "exchange-policy.pdf",
+          "catalog": "catalog.pdf",
+          "faq": "your-site.com/faq"
+        },
+        "fnTitle": "Custom functions",
+        "fnDesc": "Your own actions to check inventory, create an order or whatever your operation needs.",
+        "fnLabel": "Example of custom functions",
+        "mcpTitle": "MCP servers",
+        "mcpDesc": "Connect external tools so the agent can query them during the conversation.",
+        "mcpLabel": "The agent connects to your tool through MCP",
+        "mcpAgent": "Agent",
+        "mcpTool": "Your tool",
+        "byo": "On the {plan} plan you can bring your own API key."
+      },
+      "steps": {
+        "title": "One message, four steps",
+        "lead": "With every message, the agent goes through these steps with the whole conversation in view. It continues until the goal is reached or the case goes to a person.",
+        "s1": "Perceives",
+        "s1Desc": "Reads the message, the history and the customer data.",
+        "s2": "Reasons",
+        "s2Desc": "Understands what the customer wants and what holds them back.",
+        "s3": "Plans",
+        "s3Desc": "Decides the step: reply, use a function or integrated tool, or escalate.",
+        "s4": "Acts",
+        "s4Desc": "Runs the action and logs it in your CRM or connected tool.",
+        "logLabel": "Example of the agent log",
+        "log": "Agent log",
+        "logWho": "Valentina writes",
+        "logQ": "How much is the 2-bedroom apartment?",
+        "log1": "She saw the 2-bedroom apartment on Instagram.",
+        "log2": "She wants the price and is considering buying.",
+        "log3": "Check the inventory and work out the quote.",
+        "log4": "Sends the quote and saves the lead in the CRM."
+      },
+      "guides": {
+        "title": "Two short guides to launch without mistakes",
+        "g1Kicker": "15 min",
+        "g1Title": "Test it with your own questions",
+        "g1Desc": "A test list of about fifteen minutes: greeting, knowledge, handoff, outside hours, channel and data.",
+        "g2Kicker": "With context",
+        "g2Title": "Hand off to a person when needed",
+        "g2Desc": "The person taking the case receives the conversation summary and the full history.",
+        "more": "Read the guide"
+      },
+      "where": {
+        "title": "Where each agent lives",
+        "lead": "The same agent answers on all {countWord} channels and connects with your tools.",
+        "label": "Channels where the agent answers",
+        "cta": "See the integrations"
+      }
+    },
+    "productInbox": {
+      "hero": {
+        "titleBefore": "{CountWord} channels,",
+        "titleAccent": "one inbox",
+        "lead": "The conversations of all your agents land on the same screen. You see which ones the agent handles, which ones your team took and step into the one that needs you.",
+        "secondary": "See the agents",
+        "mockLabel": "Example of the GenSmart inbox: the conversation list, the thread and the contact",
+        "bar": "Conversations",
+        "search": "Search conversations…",
+        "all": "All",
+        "active": "Active",
+        "closed": "Closed",
+        "take": "Take control",
+        "contact": "Contact",
+        "vars": "Captured variables",
+        "interest": "Interest",
+        "interestValue": "2-bed apt.",
+        "listLabel": "Conversations"
+      },
+      "status": {
+        "title": "Every conversation has a status, and you find it in seconds",
+        "lead": "Search by the contact's name, phone or email. Filter by status, channel or agent.",
+        "mockLabel": "Example of the inbox search and filters",
+        "search": "Search",
+        "status": "Status",
+        "allStatuses": "All statuses",
+        "channel": "Channel",
+        "allChannels": "All channels",
+        "agent": "Agent",
+        "allAgents": "All agents",
+        "activeDesc": "The AI agent is replying. You only watch if you want to.",
+        "humanDesc": "Someone from your team took control. The agent picks up again when you release it.",
+        "closedDesc": "The conversation is over and the agent stops replying. The history stays saved."
+      },
+      "handoff": {
+        "mockLabel": "Example of a conversation passed to a person",
+        "heading": "Passed to a person",
+        "summary": "The customer asks for an invoice in their company name and a volume discount. The agent passes it to your team with the summary.",
+        "channel": "Channel",
+        "messages": "Messages",
+        "role": "Sales advisor",
+        "tag": "She takes it",
+        "title": "When a person steps in, they see the whole conversation",
+        "lead": "When a case needs judgement, the agent hands it over with the summary, the history and the data it already captured during the conversation.",
+        "p1": "Intervention summary generated for your team",
+        "p2": "Variables captured during the conversation, in view",
+        "p3": "It logs who took it"
+      },
+      "channels": {
+        "title": "All {countWord} channels land here",
+        "lead": "You connect each channel once and its conversations land in the same inbox. Each one shows its channel, so you filter by WhatsApp, Instagram or whichever you need.",
+        "label": "Channels that land in the inbox"
+      }
+    },
+    "productCrm": {
+      "hero": {
+        "titleBefore": "Your CRM",
+        "titleAccent": "fills itself",
+        "titleAfter": "while the agent talks",
+        "lead": "When someone talks to your agent, a contact is created and the agent notes what they say. Then your agent scores them from 0 to 10, summarizes the conversation and places them in your funnel.",
+        "secondary": "See the inbox",
+        "mockLabel": "Example of a conversation and the contact record it creates",
+        "bar": "From conversation to record",
+        "m1": "Hi, I saw the [[2-bedroom apartment|1]]. How much is it?",
+        "m3": "Yes, I have [[$80 million|2]] for the down payment. My email is [[valentina@correo.com|3]]",
+        "record": "Contact record",
+        "created": "Created",
+        "interest": "Service interest",
+        "tagScored": "Scored by the agent",
+        "tagNoted": "Noted by the agent",
+        "funnelStage": "Funnel stage",
+        "summaryLabel": "AI summary",
+        "summary": "Asked about the 2-bedroom apartment and shared her down payment. Genuine interest, no visit date yet."
+      },
+      "auto": {
+        "title": "Three things happen without you lifting a finger",
+        "lead": "You run your business. Your agent leaves every contact ready for your team to act.",
+        "r1": "The agent takes notes",
+        "r1Desc": "While it talks, it saves what the person says: their name, email, phone and the variables you define, like a down payment or a budget.",
+        "r1Label": "Example of the data the agent notes",
+        "visit": "Visit",
+        "visitValue": "Saturday",
+        "noted": "Saved",
+        "r2": "The agent scores",
+        "r2Desc": "Your agent reads the conversation and returns a summary, a score from 0 to 10 and the service they care about. If the chat continues, you can ask it to analyze again from the record.",
+        "r2Label": "Example of a contact's score",
+        "service": "Service",
+        "summary": "Summary",
+        "summaryValue": "Shared her down payment and booked a visit for Saturday.",
+        "r3": "Your team finds out",
+        "r3Desc": "When a contact scores 8 or higher, every member of your team gets the alert in the dashboard and by email. Whoever gets there first takes it.",
+        "r3Label": "Example of a high-score lead alert",
+        "alert": "High-score lead",
+        "now": "now",
+        "alertText": "Laura scored 9/10. Interest: 2-bedroom apartment.",
+        "panel": "Dashboard",
+        "team": "Whole team"
+      },
+      "funnel": {
+        "title": "Every contact lands in one of three stages",
+        "lead": "Lead, opportunity and customer. You drag the card to move it and filter by agent to see what each one handles.",
+        "mockLabel": "Example of the sales funnel",
+        "bar": "Sales funnel",
+        "leads": "Leads",
+        "opps": "Opportunities",
+        "customers": "Customers",
+        "avg": "Avg. score",
+        "allAgents": "All agents",
+        "invoice": "Company invoice"
+      },
+      "record": {
+        "title": "Everything you know about the person, on one screen",
+        "lead": "Every contact has a record. There you see what the AI understood, what the agent noted and what your team adds by hand.",
+        "i1": "Summary and score",
+        "i1Desc": "With the option to re-analyze",
+        "i2": "Captured variables",
+        "i2Desc": "What they said in the conversation",
+        "i3": "Conversations",
+        "i3Desc": "From any channel, in one place",
+        "i4": "Timeline",
+        "i4Desc": "When each one started and closed",
+        "i5": "Notes and tags",
+        "i5Desc": "For your team",
+        "mockLabel": "Example of a contact record",
+        "move": "Move to Customer",
+        "timeline": "Timeline",
+        "tl1": "Conversation started via Instagram",
+        "tl2": "Conversation closed",
+        "notes": "Notes",
+        "note": "Prefers a Saturday morning visit.",
+        "tag1": "First home",
+        "tag2": "Visit",
+        "reanalyze": "Re-analyze with AI"
+      }
+    },
+    "productBooking": {
+      "hero": {
+        "titleBefore": "Let your customer book",
+        "titleAccent": "without leaving the conversation",
+        "lead": "Your customer asks for a time, the agent checks your calendar and offers the open slots. When they pick one, the appointment is booked and your team sees it in the calendar.",
+        "secondary": "See the CRM",
+        "mockLabel": "Example of a booking in the conversation and the day in the calendar",
+        "bar": "From conversation to your calendar",
+        "m1": "Hi, do you have an opening on Saturday?",
+        "m2": "Yes. On Saturday I have 10:20 a.m., 11:00 a.m. and 11:40 a.m. Which works for you?",
+        "m3": "The 11 one.",
+        "m4": "Done, Valentina, you are booked Saturday at 11:00 a.m.",
+        "day": "Saturday",
+        "service": "Initial consultation",
+        "completed": "Completed",
+        "cancelled": "Cancelled",
+        "free": "Open",
+        "scheduled": "Scheduled"
+      },
+      "steps": {
+        "title": "One appointment, four steps",
+        "lead": "This is how a booking goes, from the rules you set to the appointment in your team's calendar.",
+        "s1": "You set the calendar rules",
+        "s1Desc": "You choose the days, the hours, how long each slot lasts and the gap between them. You can have one calendar per service or per professional.",
+        "s1Label": "Example of a calendar's rules",
+        "s1Bar": "Calendar: General consultation",
+        "days": "Available days",
+        "daysValue": "M,T,W,T,F,S,S",
+        "daysSr": "Monday to Saturday",
+        "hours": "Hours",
+        "hoursValue": "9:00 to 17:00",
+        "length": "Length of each slot",
+        "lengthValue": "30 min",
+        "gap": "Gap between slots",
+        "gapValue": "10 min",
+        "notice": "Maximum notice",
+        "noticeValue": "30 days",
+        "tz": "Time zone",
+        "tzValue": "Bogotá",
+        "s2": "GenSmart builds the day's slots",
+        "s2Desc": "With 30 minutes per slot and a 10 minute gap, 9:00 to 17:00 gives 12 slots. The ones already booked, or already past, are not offered.",
+        "s2Label": "Example of the day's 12 slots, from 9:00 to 17:00, with three already booked",
+        "booked": "booked",
+        "leg1": "The agent offers it",
+        "leg2": "Already booked",
+        "leg3": "10 min gap",
+        "s3": "The agent offers only what is open",
+        "s3Desc": "When someone asks for an appointment, the agent picks the calendar based on what the person asks for, checks real availability and offers the open slots. The same slot is never booked twice.",
+        "s3Label": "Example of the agent's path to offering times",
+        "f1": "Asks for a slot",
+        "f2": "Picks the calendar",
+        "f3": "Checks what is open",
+        "f4": "Offers times",
+        "s4": "The appointment lands in the calendar and your team finds out",
+        "s4Desc": "The calendar owner gets an email with the appointment and, if the customer shared their email, they get a confirmation. About 30 minutes before, the dashboard alerts you. From the monthly view you filter by calendar or status, and create, move or cancel an appointment by hand.",
+        "s4Label": "Example of the calendar's monthly view",
+        "s4Bar": "Calendar",
+        "allCalendars": "All calendars",
+        "allStatuses": "All statuses",
+        "month": "November 2026",
+        "weekdays": "S,M,T,W,T,F,S"
+      },
+      "channels": {
+        "title": "Booking works from any channel",
+        "lead": "Your customer books in the channel where they already write to you: WhatsApp, Instagram, Messenger, Telegram, email or your website.",
+        "label": "Channels customers book from"
+      },
+      "calendars": {
+        "title": "Use your current calendar or GenSmart's",
+        "lead": "You do not have to change tools for the agent to book. You have two paths and you can combine them.",
+        "ownTitle": "With GenSmart calendars",
+        "ownText": "You create one calendar for each service, with its own length, time zone and the agent allowed to book in it.",
+        "currentTitle": "With the calendar you already use",
+        "currentText": "You connect Google Calendar, Calendly, your CRM or practically any tool you already use, through an integration, API, MCP or webhook. The appointment lands where your team already expects it.",
+        "toolsLabel": "Calendars and CRMs you can connect",
+        "more": "{tools}+ more tools"
       }
     }
   }

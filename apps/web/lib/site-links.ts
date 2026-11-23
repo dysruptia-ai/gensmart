@@ -37,6 +37,8 @@ export type SiteLinkKey =
   | 'resources'
   | 'docs'
   | 'docsWhatsappSetup'
+  | 'docsTestAgent'
+  | 'docsHandoff'
   | 'academy'
   | 'community'
   | 'partners'
@@ -72,10 +74,10 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
 
   // Con rutas por idioma: se resuelven en LOCALIZED_LINKS
   product: { href: '/en/product' },
-  productAgents: { href: null },
-  productInbox: { href: null },
-  productCrm: { href: null },
-  productBooking: { href: null },
+  productAgents: { href: '/en/product/ai-agents' },
+  productInbox: { href: '/en/product/inbox' },
+  productCrm: { href: '/en/product/crm' },
+  productBooking: { href: '/en/product/scheduling' },
   integrations: { href: '/en/integrations' },
 
   industries: { href: null },
@@ -97,6 +99,9 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   resources: { href: null },
   docs: { href: null },
   docsWhatsappSetup: { href: '/docs/whatsapp-setup' },
+  // Guías de la base de conocimiento: pendientes hasta migrarla
+  docsTestAgent: { href: null },
+  docsHandoff: { href: null },
   academy: { href: null },
   community: { href: null },
   partners: { href: null },
@@ -136,6 +141,10 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, SiteRouteId>> = {
   home: 'home',
   pricing: 'pricing',
   product: 'product',
+  productAgents: 'productAgents',
+  productInbox: 'productInbox',
+  productCrm: 'productCrm',
+  productBooking: 'productBooking',
   integrations: 'integrations',
 };
 

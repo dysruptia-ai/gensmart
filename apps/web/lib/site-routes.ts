@@ -14,7 +14,15 @@ export const DEFAULT_SITE_LANGUAGE: SiteLanguage = 'es';
 
 export const SITE_ORIGIN = 'https://www.gensmart.co';
 
-export type SiteRouteId = 'home' | 'pricing' | 'product' | 'integrations';
+export type SiteRouteId =
+  | 'home'
+  | 'pricing'
+  | 'product'
+  | 'productAgents'
+  | 'productInbox'
+  | 'productCrm'
+  | 'productBooking'
+  | 'integrations';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -33,13 +41,27 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
     internal: '/integrations',
     paths: { es: '/integraciones', en: '/en/integrations' },
   },
-  /*
-   * Reservadas para las subpáginas de Producto (rutas jerárquicas: mejores migas y SEO):
-   *   productAgents  /product/ai-agents   → /producto/agentes  ↔ /en/product/ai-agents
-   *   productInbox   /product/inbox       → /producto/bandeja  ↔ /en/product/inbox
-   *   productCrm     /product/crm         → /producto/crm      ↔ /en/product/crm
-   *   productBooking /product/scheduling  → /producto/agenda   ↔ /en/product/scheduling
-   */
+  // Subpáginas de Producto: rutas jerárquicas (mejores migas y SEO)
+  productAgents: {
+    id: 'productAgents',
+    internal: '/product/agents',
+    paths: { es: '/producto/agentes', en: '/en/product/ai-agents' },
+  },
+  productInbox: {
+    id: 'productInbox',
+    internal: '/product/inbox',
+    paths: { es: '/producto/bandeja', en: '/en/product/inbox' },
+  },
+  productCrm: {
+    id: 'productCrm',
+    internal: '/product/crm',
+    paths: { es: '/producto/crm', en: '/en/product/crm' },
+  },
+  productBooking: {
+    id: 'productBooking',
+    internal: '/product/scheduling',
+    paths: { es: '/producto/agenda', en: '/en/product/scheduling' },
+  },
 };
 
 const ROUTE_LIST: SiteRoute[] = Object.values(SITE_ROUTES);
@@ -99,17 +121,21 @@ export function matchInternalPath(internal: string): SiteRoute | null {
   return ROUTE_LIST.find((route) => route.internal === path) ?? null;
 }
 
-/** `/es{interna}` (la ruta reescrita por `proxy.ts`) como página en español. */
-function matchRewrittenEs(pathname: string): { route: SiteRoute; lang: SiteLanguage } | null {
+/** `/{idioma}{interna}` (la ruta reescrita por `proxy.ts`) como página de ese idioma. */
+function matchRewritten(pathname: string): { route: SiteRoute; lang: SiteLanguage } | null {
   const path = normalize(pathname);
-  if (path !== '/es' && !path.startsWith('/es/')) return null;
-  const route = matchInternalPath(path.slice(3));
-  return route ? { route, lang: 'es' } : null;
+  for (const lang of SITE_LANGUAGES) {
+    const prefix = `/${lang}`;
+    if (path !== prefix && !path.startsWith(`${prefix}/`)) continue;
+    const route = matchInternalPath(path.slice(prefix.length));
+    if (route) return { route, lang };
+  }
+  return null;
 }
 
 /** La misma página en el otro idioma, o `null` si la ruta no está en el registro. */
 export function counterpart(pathname: string): { lang: SiteLanguage; path: string } | null {
-  const match = matchPublicPath(pathname) ?? matchRewrittenEs(pathname);
+  const match = matchPublicPath(pathname) ?? matchRewritten(pathname);
   if (!match) return null;
   const lang = otherLanguage(match.lang);
   return { lang, path: match.route.paths[lang] };

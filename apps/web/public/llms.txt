@@ -35,6 +35,10 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Pricing (Spanish)](https://www.gensmart.co/precios): planes, límites y paquetes de mensajes.
 - [Product](https://www.gensmart.co/en/product): AI agents, unified inbox, CRM, scheduling and integrations, and how they work together.
 - [Product (Spanish)](https://www.gensmart.co/producto): agentes de IA, bandeja, CRM, agenda e integraciones.
+- [AI agents](https://www.gensmart.co/en/product/ai-agents): how to create an agent from a template or from scratch, train it with a knowledge base, custom functions and MCP servers, and deploy it to the six channels.
+- [Unified inbox](https://www.gensmart.co/en/product/inbox): every conversation from the six channels in one inbox, with statuses (active, human control, closed), search, filters and handoff to a person.
+- [CRM and pipeline](https://www.gensmart.co/en/product/crm): contacts created from conversations, captured variables, AI score from 0 to 10, summary and the three-stage funnel.
+- [Appointment booking](https://www.gensmart.co/en/product/scheduling): calendar rules, available slots and how the agent books appointments inside the conversation.
 - [Integrations](https://www.gensmart.co/en/integrations): the three ways to connect tools (ready integrations, custom functions, MCP servers), limits by plan and the tool directory.
 - [Integrations (Spanish)](https://www.gensmart.co/integraciones): formas de conectar tus herramientas, límites por plan y directorio.
 - [Blog](https://www.gensmart.co/blog): guides and articles.

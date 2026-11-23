@@ -24,10 +24,25 @@ export function proxy(req: NextRequest): NextResponse {
 
   // Sitio público con rutas por idioma (lib/site-routes): español en la raíz, inglés bajo /en
   const siteMatch = matchPublicPath(pathname);
-  if (siteMatch?.lang === 'es') {
-    const url = req.nextUrl.clone();
-    url.pathname = `/es${siteMatch.route.internal}`;
-    return NextResponse.rewrite(url);
+  if (siteMatch) {
+    // Se reescribe a `/{idioma}{interna}` si la ruta pública es otra: siempre en español
+    // (`/precios`) y en inglés cuando el segmento cambia (`/en/product/ai-agents`)
+    const internal = `/${siteMatch.lang}${siteMatch.route.internal}`;
+    const publicNormalized = siteMatch.route.paths[siteMatch.lang];
+    if (siteMatch.lang === 'es' || internal !== publicNormalized) {
+      const url = req.nextUrl.clone();
+      url.pathname = internal;
+      return NextResponse.rewrite(url);
+    }
+  }
+  // La ruta interna en inglés no se sirve directo si la pública es otra: 308 a la pública
+  if (!siteMatch && pathname.startsWith('/en/')) {
+    const route = matchInternalPath(pathname.slice(3));
+    if (route && route.paths.en !== `/en${route.internal}`) {
+      const url = req.nextUrl.clone();
+      url.pathname = publicPath(route.id, 'en');
+      return NextResponse.redirect(url, 308);
+    }
   }
   // /es y /es/… no se sirven directo: 308 a la ruta pública en español (sin contenido duplicado)
   if (pathname === '/es' || pathname.startsWith('/es/')) {

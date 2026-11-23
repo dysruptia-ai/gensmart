@@ -15,6 +15,8 @@ interface PageHeroProps {
   note?: ReactNode;
   /** Ilustración de la columna derecha (decorativa o con su propio rótulo). */
   aside?: ReactNode;
+  /** Ilustración a todo el ancho, debajo del texto (subpáginas de Producto). */
+  below?: ReactNode;
   /** `default`: `page-hero` de las páginas interiores. `feature`: `pr-hero` (título y aire mayores). */
   size?: 'default' | 'feature';
   className?: string;
@@ -28,10 +30,16 @@ export default function PageHero({
   actions,
   note,
   aside,
+  below,
   size = 'default',
   className,
 }: PageHeroProps) {
-  const classes = [styles.hero, size === 'feature' ? styles.feature : '', className]
+  const classes = [
+    styles.hero,
+    size === 'feature' ? styles.feature : '',
+    below ? styles.stacked : '',
+    className,
+  ]
     .filter(Boolean)
     .join(' ');
   return (
@@ -55,6 +63,7 @@ export default function PageHero({
           {note ? <p className={styles.note}>{note}</p> : null}
         </div>
         {aside ? <div className={styles.aside}>{aside}</div> : null}
+        {below ? <div className={styles.below}>{below}</div> : null}
       </Container>
     </section>
   );

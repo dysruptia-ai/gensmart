@@ -2211,6 +2211,26 @@
         "title": "Integraciones | Conecta GenSmart con tus herramientas",
         "description": "Conecta tu agente con más de {tools} herramientas: tu tienda, tu CRM, tus pagos y tu agenda. Lo que no esté en la lista, por API, MCP o webhook.",
         "ogAlt": "Integraciones de GenSmart"
+      },
+      "productAgents": {
+        "title": "Agentes de IA: créalos, entrénalos y despliégalos | GenSmart",
+        "description": "Crea agentes de IA desde una plantilla o desde cero, cárgales tu información y despliégalos en tus canales. Sin código.",
+        "ogAlt": "Agentes de IA de GenSmart"
+      },
+      "productInbox": {
+        "title": "Bandeja unificada: tus conversaciones en un lugar | GenSmart",
+        "description": "Una bandeja con las conversaciones de todos tus agentes y canales: estado, puntuación del lead y control humano cuando hace falta.",
+        "ogAlt": "Bandeja unificada de GenSmart"
+      },
+      "productCrm": {
+        "title": "CRM y embudo | Contactos puntuados por IA | GenSmart",
+        "description": "Cada conversación crea un contacto que la IA puntúa, resume y ubica en tu embudo. Tablero de tres etapas, tabla de contactos y ficha completa.",
+        "ogAlt": "CRM y embudo de GenSmart"
+      },
+      "productBooking": {
+        "title": "Agenda de citas: reserva en la conversación | GenSmart",
+        "description": "Tu cliente reserva sin salir de la conversación. El agente consulta tu calendario, ofrece horarios libres y agenda. Tu equipo ve la cita en el calendario.",
+        "ogAlt": "Agenda de citas de GenSmart"
       }
     },
     "langHint": {
@@ -2404,7 +2424,11 @@
       "home": "Inicio",
       "pricing": "Precios",
       "product": "Producto",
-      "integrations": "Integraciones"
+      "integrations": "Integraciones",
+      "productAgents": "Agentes de IA",
+      "productInbox": "Bandeja unificada",
+      "productCrm": "CRM y embudo",
+      "productBooking": "Agenda de citas"
     },
     "channels": {
       "email": "Correo",
@@ -2599,6 +2623,372 @@
         "talk": "Hablar con el equipo",
         "docs": "Leer la base de conocimiento",
         "listName": "Herramientas que puedes conectar con GenSmart"
+      }
+    },
+    "productShared": {
+      "primary": "Empieza la prueba gratis",
+      "valentina": {
+        "m1": "Hola, vi el apartamento de 2 alcobas. ¿Cuánto cuesta?",
+        "m2": "Hola, Valentina. Cuesta $420 millones y tiene 68 m². ¿Te armo una cotización con tu cuota inicial?",
+        "m3": "Sí, tengo $80 millones de cuota inicial",
+        "m4": "Listo, Valentina, te envié la cotización por aquí. ¿Quieres visitar el apartamento el sábado?",
+        "last": "¿Quieres visitar el apartamento el sábado?"
+      },
+      "status": {
+        "active": "Activa",
+        "human": "Control humano",
+        "closed": "Cerrada"
+      },
+      "stage": {
+        "lead": "Lead",
+        "opportunity": "Oportunidad",
+        "customer": "Cliente"
+      },
+      "agent": {
+        "realEstate": "Inmobiliario",
+        "sales": "Ventas"
+      },
+      "ago": {
+        "m2": "hace 2 min",
+        "m27": "hace 27 min",
+        "m54": "hace 54 min",
+        "h1": "hace 1 h"
+      },
+      "rows": {
+        "andres": "Pide factura a nombre de su empresa",
+        "laura": "Visita confirmada",
+        "mateo": "Pregunta por el valor de la cuota"
+      },
+      "fields": {
+        "stage": "Etapa",
+        "score": "Puntuación",
+        "agent": "Agente",
+        "downPayment": "Cuota inicial",
+        "downPaymentValue": "$80 millones",
+        "email": "Correo",
+        "name": "Nombre"
+      },
+      "apt2": "Apartamento de 2 alcobas",
+      "apt3": "Apartamento de 3 alcobas"
+    },
+    "productAgents": {
+      "hero": {
+        "titleBefore": "Un agente por proceso, entrenado con",
+        "titleAccent": "tu información",
+        "lead": "Defines el objetivo y las reglas, cargas tu información y lo conectas a un canal. Desde ahí conversa con tus clientes y ejecuta acciones dentro de la conversación.",
+        "primary": "Crear mi primer agente",
+        "secondary": "Ver la bandeja",
+        "mockLabel": "Ejemplo de un agente de GenSmart: su configuración a la izquierda y su conversación a la derecha",
+        "bar": "Agentes / Inmobiliario",
+        "initial": "A",
+        "name": "Agente inmobiliario",
+        "role": "Ficha del puesto",
+        "live": "Activo",
+        "tabInstructions": "Instrucciones",
+        "tabKnowledge": "Conocimiento",
+        "tabActions": "Acciones",
+        "tabChannels": "Canales",
+        "goal": "Objetivo",
+        "goalValue": "Cotizar y agendar una visita",
+        "tone": "Tono",
+        "toneValue": "Cercano y claro",
+        "rule": "Regla",
+        "ruleValue": "Si piden negociar el precio, pasa a un asesor",
+        "channels": "Canales conectados",
+        "channelsLabel": "Canales conectados al agente",
+        "chatVia": "por WhatsApp",
+        "actsLabel": "Lo que hizo el agente",
+        "act1": "Consultó el inventario",
+        "act2": "Guardó el lead en el CRM",
+        "act3": "Cotización enviada"
+      },
+      "start": {
+        "kicker": "Cómo empiezas",
+        "title": "Empieza desde una plantilla o desde cero",
+        "text": "La plantilla trae el objetivo y las reglas armados para un caso común. La eliges, le pones nombre y ajustas lo que no encaje con tu negocio. Si prefieres, defines tú el objetivo, el tono, las reglas y qué puede y qué no puede hacer. En los dos casos puedes cambiar lo que quieras después.",
+        "mockLabel": "Ejemplo de cómo se elige una plantilla de agente",
+        "sales": "Ventas",
+        "support": "Atención al cliente",
+        "bookings": "Reservas",
+        "template": "Plantilla",
+        "scratch": "Desde cero",
+        "scratchDesc": "Tú defines todo",
+        "can": "Puede",
+        "canValue": "Consultar el inventario · Crear el lead en el CRM",
+        "cannot": "No puede",
+        "cannotValue": "Negociar el precio"
+      },
+      "teach": {
+        "title": "Lo que le enseñas",
+        "lead": "El agente responde con la información que tú le cargas, no con datos genéricos. Los ejemplos de abajo son ilustrativos.",
+        "kbTitle": "Base de conocimiento",
+        "kbDesc": "Documentos y enlaces con tus precios, políticas, catálogo y preguntas frecuentes.",
+        "kbLabel": "Ejemplo de archivos cargados en la base de conocimiento",
+        "ready": "Listo",
+        "files": {
+          "prices": "precios.pdf",
+          "policy": "politica-de-cambios.pdf",
+          "catalog": "catalogo.pdf",
+          "faq": "tu-sitio.com/preguntas"
+        },
+        "fnTitle": "Funciones personalizadas",
+        "fnDesc": "Acciones propias para consultar tu inventario, crear un pedido o lo que tu operación necesite.",
+        "fnLabel": "Ejemplo de funciones personalizadas",
+        "mcpTitle": "Servidores MCP",
+        "mcpDesc": "Conectas herramientas externas para que el agente las consulte durante la conversación.",
+        "mcpLabel": "El agente se conecta a tu herramienta por MCP",
+        "mcpAgent": "Agente",
+        "mcpTool": "Tu herramienta",
+        "byo": "En el plan {plan} puedes usar tu propia llave de API."
+      },
+      "steps": {
+        "title": "Un mensaje, cuatro pasos",
+        "lead": "Con cada mensaje, el agente recorre estos pasos con toda la conversación a la vista. Sigue hasta lograr el objetivo o pasar el caso a una persona.",
+        "s1": "Percibe",
+        "s1Desc": "Lee el mensaje, el historial y los datos del cliente.",
+        "s2": "Razona",
+        "s2Desc": "Entiende qué quiere el cliente y qué lo frena.",
+        "s3": "Planea",
+        "s3Desc": "Decide el paso: responder, usar una función o herramienta integrada, o escalar.",
+        "s4": "Actúa",
+        "s4Desc": "Ejecuta la acción y la deja registrada en tu CRM o herramienta conectada.",
+        "logLabel": "Ejemplo del registro del agente",
+        "log": "Registro del agente",
+        "logWho": "Valentina escribe",
+        "logQ": "¿Cuánto cuesta el apartamento de 2 alcobas?",
+        "log1": "Vio el apartamento de 2 alcobas en Instagram.",
+        "log2": "Quiere el precio y está evaluando comprar.",
+        "log3": "Consultar el inventario y calcular la cotización.",
+        "log4": "Envía la cotización y guarda el lead en el CRM."
+      },
+      "guides": {
+        "title": "Dos guías cortas para estrenar sin errores",
+        "g1Kicker": "15 min",
+        "g1Title": "Pruébalo con tus propias preguntas",
+        "g1Desc": "Una lista de pruebas de unos quince minutos: saludo, conocimiento, traspaso, fuera de horario, canal y datos.",
+        "g2Kicker": "Con contexto",
+        "g2Title": "Pasa a una persona cuando hace falta",
+        "g2Desc": "Quien toma el caso recibe el resumen de la conversación y el historial completo.",
+        "more": "Leer la guía"
+      },
+      "where": {
+        "title": "Dónde vive cada agente",
+        "lead": "El mismo agente responde en los {countWord} canales y se conecta con tus herramientas.",
+        "label": "Canales donde responde el agente",
+        "cta": "Ver las integraciones"
+      }
+    },
+    "productInbox": {
+      "hero": {
+        "titleBefore": "{CountWord} canales,",
+        "titleAccent": "una sola bandeja",
+        "lead": "Las conversaciones de todos tus agentes llegan a la misma pantalla. Ves cuáles lleva el agente, cuáles tomó tu equipo y entras a la que haga falta.",
+        "secondary": "Ver los agentes",
+        "mockLabel": "Ejemplo de la bandeja de GenSmart: la lista de conversaciones, el hilo y el contacto",
+        "bar": "Conversaciones",
+        "search": "Buscar conversaciones…",
+        "all": "Todas",
+        "active": "Activas",
+        "closed": "Cerradas",
+        "take": "Tomar control",
+        "contact": "Contacto",
+        "vars": "Variables capturadas",
+        "interest": "Interés",
+        "interestValue": "Apto. 2 alcobas",
+        "listLabel": "Conversaciones"
+      },
+      "status": {
+        "title": "Cada conversación tiene estado, y la encuentras en segundos",
+        "lead": "Busca por nombre, teléfono o correo del contacto. Filtra por estado, canal o agente.",
+        "mockLabel": "Ejemplo de la búsqueda y los filtros de la bandeja",
+        "search": "Búsqueda",
+        "status": "Estado",
+        "allStatuses": "Todos los estados",
+        "channel": "Canal",
+        "allChannels": "Todos los canales",
+        "agent": "Agente",
+        "allAgents": "Todos los agentes",
+        "activeDesc": "El agente de IA está respondiendo. Tú solo miras si quieres.",
+        "humanDesc": "Alguien de tu equipo tomó el control. El agente retoma cuando lo liberas.",
+        "closedDesc": "La conversación terminó y el agente deja de responder. El historial queda guardado."
+      },
+      "handoff": {
+        "mockLabel": "Ejemplo de una conversación que pasa a una persona",
+        "heading": "Pasa a una persona",
+        "summary": "El cliente pide factura a nombre de su empresa y descuento por volumen. El agente se lo pasa a tu equipo con el resumen.",
+        "channel": "Canal",
+        "messages": "Mensajes",
+        "role": "Asesora comercial",
+        "tag": "Lo toma ella",
+        "title": "Cuando entra una persona, ve toda la conversación",
+        "lead": "Cuando el caso necesita criterio, el agente lo pasa con el resumen, el historial y los datos que ya capturó durante la conversación.",
+        "p1": "Resumen de la intervención generado para tu equipo",
+        "p2": "Variables capturadas durante la conversación, a la vista",
+        "p3": "Queda registrado quién la tomó"
+      },
+      "channels": {
+        "title": "Los {countWord} canales llegan aquí",
+        "lead": "Conectas cada canal una vez y sus conversaciones entran a la misma bandeja. Cada una muestra su canal, así que filtras por WhatsApp, Instagram o el que necesites.",
+        "label": "Canales que llegan a la bandeja"
+      }
+    },
+    "productCrm": {
+      "hero": {
+        "titleBefore": "Tu CRM",
+        "titleAccent": "se llena solo",
+        "titleAfter": "mientras el agente conversa",
+        "lead": "Cuando alguien habla con tu agente, se crea su contacto y el agente anota lo que va diciendo. Después, tu agente lo puntúa de 0 a 10, resume la conversación y lo ubica en tu embudo.",
+        "secondary": "Ver la bandeja",
+        "mockLabel": "Ejemplo de una conversación y la ficha de contacto que genera",
+        "bar": "De la conversación a la ficha",
+        "m1": "Hola, vi el [[apartamento de 2 alcobas|1]]. ¿Cuánto cuesta?",
+        "m3": "Sí, tengo [[$80 millones|2]] de cuota inicial. Mi correo es [[valentina@correo.com|3]]",
+        "record": "Ficha de contacto",
+        "created": "Creada",
+        "interest": "Interés en servicio",
+        "tagScored": "Lo puntúa el agente",
+        "tagNoted": "Lo anota el agente",
+        "funnelStage": "Etapa del embudo",
+        "summaryLabel": "Resumen de IA",
+        "summary": "Preguntó por el apartamento de 2 alcobas y compartió su cuota inicial. Interés genuino, todavía sin fecha de visita."
+      },
+      "auto": {
+        "title": "Tres cosas pasan sin que muevas un dedo",
+        "lead": "Tú atiendes tu negocio. Tu agente deja cada contacto listo para que tu equipo actúe.",
+        "r1": "El agente anota",
+        "r1Desc": "Mientras conversa, guarda lo que la persona va diciendo: su nombre, su correo, su teléfono y las variables que tú definas, como la cuota inicial o el presupuesto.",
+        "r1Label": "Ejemplo de los datos que anota el agente",
+        "visit": "Visita",
+        "visitValue": "Sábado",
+        "noted": "Anotado",
+        "r2": "El agente puntúa",
+        "r2Desc": "Tu agente lee la conversación y entrega un resumen, una puntuación de 0 a 10 y el servicio que le interesa. Si la charla sigue, puedes pedirle que la analice de nuevo desde la ficha.",
+        "r2Label": "Ejemplo de la puntuación de un contacto",
+        "service": "Servicio",
+        "summary": "Resumen",
+        "summaryValue": "Compartió su cuota inicial y agendó visita para el sábado.",
+        "r3": "Tu equipo se entera",
+        "r3Desc": "Cuando un contacto puntúa 8 o más, todos los miembros de tu equipo reciben el aviso en el panel y por correo. Quien llega primero, lo atiende.",
+        "r3Label": "Ejemplo del aviso de un lead de alta puntuación",
+        "alert": "Lead de alta puntuación",
+        "now": "ahora",
+        "alertText": "Laura puntuó 9/10. Interés: apartamento de 2 alcobas.",
+        "panel": "Panel",
+        "team": "Todo el equipo"
+      },
+      "funnel": {
+        "title": "Cada contacto cae en una de tres etapas",
+        "lead": "Lead, oportunidad y cliente. Arrastras la tarjeta para moverla y filtras por agente para ver qué conversa cada uno.",
+        "mockLabel": "Ejemplo del embudo de ventas",
+        "bar": "Embudo de ventas",
+        "leads": "Leads",
+        "opps": "Oportunidades",
+        "customers": "Clientes",
+        "avg": "Punt. promedio",
+        "allAgents": "Todos los agentes",
+        "invoice": "Factura a nombre de empresa"
+      },
+      "record": {
+        "title": "Todo lo que sabes de la persona, en una sola pantalla",
+        "lead": "Cada contacto tiene su ficha. Ahí ves lo que la IA entendió, lo que el agente anotó y lo que tu equipo agrega a mano.",
+        "i1": "Resumen y puntuación",
+        "i1Desc": "Con la opción de analizar de nuevo",
+        "i2": "Variables capturadas",
+        "i2Desc": "Lo que dijo en la conversación",
+        "i3": "Conversaciones",
+        "i3Desc": "Las de cualquier canal, en un solo lugar",
+        "i4": "Línea de tiempo",
+        "i4Desc": "Cuándo empezó y cuándo se cerró cada una",
+        "i5": "Notas y etiquetas",
+        "i5Desc": "Para tu equipo",
+        "mockLabel": "Ejemplo de la ficha de un contacto",
+        "move": "Mover a Cliente",
+        "timeline": "Línea de tiempo",
+        "tl1": "Conversación iniciada por Instagram",
+        "tl2": "Conversación cerrada",
+        "notes": "Notas",
+        "note": "Prefiere visita el sábado por la mañana.",
+        "tag1": "Primera vivienda",
+        "tag2": "Visita",
+        "reanalyze": "Re-analizar con IA"
+      }
+    },
+    "productBooking": {
+      "hero": {
+        "titleBefore": "Que tu cliente agende",
+        "titleAccent": "sin salir de la conversación",
+        "lead": "Tu cliente pide un horario, el agente revisa tu calendario y le ofrece los que están libres. Cuando elige uno, la cita queda reservada y tu equipo la ve en el calendario.",
+        "secondary": "Ver el CRM",
+        "mockLabel": "Ejemplo de una reserva en la conversación y el día en la agenda",
+        "bar": "De la conversación a tu agenda",
+        "m1": "Hola, ¿tienen cita para el sábado?",
+        "m2": "Sí. El sábado tengo 10:20 a.m., 11:00 a.m. y 11:40 a.m. ¿Cuál te sirve?",
+        "m3": "La de las 11.",
+        "m4": "Listo, Valentina, quedaste el sábado a las 11:00 a.m.",
+        "day": "Sábado",
+        "service": "Valoración inicial",
+        "completed": "Completada",
+        "cancelled": "Cancelada",
+        "free": "Libre",
+        "scheduled": "Programada"
+      },
+      "steps": {
+        "title": "Una cita, cuatro pasos",
+        "lead": "Así pasa una reserva, desde las reglas que defines hasta la cita en el calendario de tu equipo.",
+        "s1": "Defines las reglas del calendario",
+        "s1Desc": "Eliges los días, el horario, cuánto dura cada cita y el margen entre una y otra. Puedes tener un calendario por servicio o por profesional.",
+        "s1Label": "Ejemplo de las reglas de un calendario",
+        "s1Bar": "Calendario: Consulta general",
+        "days": "Días disponibles",
+        "daysValue": "L,M,M,J,V,S,D",
+        "daysSr": "De lunes a sábado",
+        "hours": "Horario",
+        "hoursValue": "9:00 a 17:00",
+        "length": "Duración de cada cita",
+        "lengthValue": "30 min",
+        "gap": "Margen entre citas",
+        "gapValue": "10 min",
+        "notice": "Anticipación máxima",
+        "noticeValue": "30 días",
+        "tz": "Zona horaria",
+        "tzValue": "Bogotá",
+        "s2": "GenSmart arma los espacios del día",
+        "s2Desc": "Con 30 minutos por cita y 10 de margen, de 9:00 a 17:00 salen 12 espacios. Los que ya tienen cita, o ya pasaron, no se ofrecen.",
+        "s2Label": "Ejemplo de los 12 espacios del día, de 9:00 a 17:00, con tres ya ocupados",
+        "booked": "ocupado",
+        "leg1": "El agente lo ofrece",
+        "leg2": "Ya tiene cita",
+        "leg3": "Margen de 10 min",
+        "s3": "El agente ofrece solo lo que está libre",
+        "s3Desc": "Cuando alguien pide una cita, el agente elige el calendario según lo que la persona pide, consulta la disponibilidad real y propone los horarios abiertos. Un mismo espacio no se reserva dos veces.",
+        "s3Label": "Ejemplo del recorrido del agente hasta proponer horarios",
+        "f1": "Pide una cita",
+        "f2": "Elige el calendario",
+        "f3": "Consulta lo libre",
+        "f4": "Propone horarios",
+        "s4": "La cita queda en el calendario y tu equipo se entera",
+        "s4Desc": "El responsable del calendario recibe un correo con la cita y, si el cliente dejó su correo, él recibe una confirmación. Unos 30 minutos antes, el panel te avisa. Desde la vista mensual filtras por calendario o por estado, y creas, mueves o cancelas una cita a mano.",
+        "s4Label": "Ejemplo de la vista mensual del calendario",
+        "s4Bar": "Calendario",
+        "allCalendars": "Todos los calendarios",
+        "allStatuses": "Todos los estados",
+        "month": "Noviembre 2026",
+        "weekdays": "D,L,M,M,J,V,S"
+      },
+      "channels": {
+        "title": "Se agenda desde cualquier canal",
+        "lead": "Tu cliente reserva en el canal donde ya te escribe: WhatsApp, Instagram, Messenger, Telegram, correo o tu sitio web.",
+        "label": "Canales desde los que se agenda"
+      },
+      "calendars": {
+        "title": "Usa tu agenda actual o la de GenSmart",
+        "lead": "No tienes que cambiar de herramienta para que el agente agende. Tienes dos caminos y puedes combinarlos.",
+        "ownTitle": "Con los calendarios de GenSmart",
+        "ownText": "Creas un calendario por cada servicio, con su duración, su zona horaria y el agente que puede reservar en él.",
+        "currentTitle": "Con la agenda que ya usas",
+        "currentText": "Conectas Google Calendar, Calendly, tu CRM o prácticamente cualquier herramienta que ya uses, por integración, API, MCP o webhook. La cita queda donde tu equipo ya la espera.",
+        "toolsLabel": "Agendas y CRM que puedes conectar",
+        "more": "+{tools} herramientas más"
       }
     }
   }

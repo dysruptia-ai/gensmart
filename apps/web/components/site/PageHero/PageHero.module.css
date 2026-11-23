@@ -79,6 +79,15 @@
   min-width: 0;
 }
 
+.below {
+  min-width: 0;
+}
+
+/* Con ilustración debajo (subpáginas): el título no ocupa todo el ancho */
+.stacked .title {
+  max-width: 18ch;
+}
+
 @media (max-width: 980px) {
   .split,
   .feature .split {
