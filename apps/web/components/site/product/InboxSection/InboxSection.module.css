@@ -1,0 +1,33 @@
+/* design/web: .trio */
+.trio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gs-sp-6);
+  margin: clamp(28px, 4vw, 56px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trio li {
+  padding-top: var(--gs-sp-4);
+  border-top: 1px solid var(--gs-line);
+}
+
+.trio h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.trio p {
+  max-width: 38ch;
+  margin: 0;
+  font-size: var(--gs-fs-sm);
+  color: var(--gs-ink-300);
+}
+
+@media (max-width: 760px) {
+  .trio {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--gs-sp-5);
+  }
+}

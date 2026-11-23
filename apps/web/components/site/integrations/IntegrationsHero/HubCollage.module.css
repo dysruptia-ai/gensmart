@@ -1,0 +1,127 @@
+/* design/web: .hub, .hub-core, .hub-node, .hub-dot */
+.hub {
+  position: relative;
+  width: min(100%, 520px);
+  aspect-ratio: 1;
+  margin-inline: auto;
+}
+
+.lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.lines line {
+  stroke: color-mix(in oklab, var(--gs-brand) 38%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.core {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 22%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--gs-brand);
+  box-shadow:
+    0 0 0 10px color-mix(in oklab, var(--gs-brand) 16%, transparent),
+    0 0 0 22px color-mix(in oklab, var(--gs-brand) 7%, transparent);
+  transform: translate(-50%, -50%);
+}
+
+.mark {
+  font-size: clamp(28px, 5vw, 44px);
+}
+
+.node {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 16%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+.wide {
+  width: 25%;
+  aspect-ratio: 2.1;
+}
+
+.node .tile {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border-radius: 16px;
+  opacity: 1;
+}
+
+.node .tile img {
+  width: auto;
+  height: auto;
+  max-width: 58%;
+  max-height: 58%;
+  object-fit: contain;
+}
+
+.node.wide .tile img {
+  max-width: 84%;
+}
+
+.dot {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 2.3%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--gs-brand-bright);
+  box-shadow: 0 0 6px var(--gs-brand-bright);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+
+.n1 { --x: 50%; --y: 12%; --d: 0s; }
+.n2 { --x: 76.87%; --y: 23.13%; --d: 0.37s; }
+.n3 { --x: 88%; --y: 50%; --d: 0.74s; }
+.n4 { --x: 76.87%; --y: 76.87%; --d: 1.11s; }
+.n5 { --x: 50%; --y: 88%; --d: 1.48s; }
+.n6 { --x: 23.13%; --y: 76.87%; --d: 1.85s; }
+.n7 { --x: 12%; --y: 50%; --d: 2.22s; }
+.n8 { --x: 23.13%; --y: 23.13%; --d: 2.59s; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dot {
+    animation: flow 2.6s linear infinite;
+    animation-delay: var(--d);
+  }
+}
+
+@keyframes flow {
+  from {
+    left: var(--x);
+    top: var(--y);
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  to {
+    left: 50%;
+    top: 50%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .node .tile {
+    border-radius: 12px;
+  }
+}

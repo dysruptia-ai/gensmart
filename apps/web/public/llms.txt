@@ -21,7 +21,7 @@ GenSmart does not send WhatsApp templates or bulk messages. The agent replies to
 
 Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with sales. Prices in USD per month.
 
-- Solo: 1 agent, 200 messages/month, 150 contacts, web and WhatsApp. $20/month.
+- Solo: 1 agent, 200 messages/month, 150 contacts, all six channels. $20/month.
 - Starter: 3 agents, 1,000 messages/month, 500 contacts, all six channels. $29/month.
 - Pro: 10 agents, 5,000 messages/month, 2,000 contacts, all six channels. $79/month.
 - Enterprise: unlimited agents, 25,000 messages/month, unlimited contacts, all six channels. $199/month.
@@ -33,6 +33,10 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Home (English)](https://www.gensmart.co/en): overview of the platform.
 - [Pricing](https://www.gensmart.co/en/pricing): plans, limits and add-ons.
 - [Pricing (Spanish)](https://www.gensmart.co/precios): planes, límites y paquetes de mensajes.
+- [Product](https://www.gensmart.co/en/product): AI agents, unified inbox, CRM, scheduling and integrations, and how they work together.
+- [Product (Spanish)](https://www.gensmart.co/producto): agentes de IA, bandeja, CRM, agenda e integraciones.
+- [Integrations](https://www.gensmart.co/en/integrations): the three ways to connect tools (ready integrations, custom functions, MCP servers), limits by plan and the tool directory.
+- [Integrations (Spanish)](https://www.gensmart.co/integraciones): formas de conectar tus herramientas, límites por plan y directorio.
 - [Blog](https://www.gensmart.co/blog): guides and articles.
 - [WhatsApp setup guide](https://www.gensmart.co/docs/whatsapp-setup): how to connect a WhatsApp number.
 - [Contact](https://www.gensmart.co/contact): talk to the team.

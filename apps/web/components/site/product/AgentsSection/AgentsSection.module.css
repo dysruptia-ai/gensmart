@@ -1,0 +1,121 @@
+/* design/web: .split + .rail (Percibe, Razona, Planea, Actúa) */
+.split {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: var(--gs-sp-6);
+  align-items: center;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--gs-font-display);
+  font-size: var(--gs-fs-h2);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: var(--gs-ls-h2);
+  text-wrap: balance;
+}
+
+.lead {
+  margin: var(--gs-sp-4) 0 0;
+  max-width: 56ch;
+  font-size: clamp(18px, 1rem + 0.4vw, 21px);
+  color: var(--gs-ink-300);
+}
+
+.intro {
+  max-width: 62ch;
+  margin: var(--gs-sp-7) 0 0;
+  color: var(--gs-ink-300);
+}
+
+.rail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: clamp(28px, 4vw, 56px) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: r;
+}
+
+.rail li {
+  position: relative;
+  padding: 30px var(--gs-sp-5) 0 0;
+  border-top: 1px solid var(--gs-line);
+  counter-increment: r;
+}
+
+.rail li::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--gs-ink-950);
+  border: 2px solid var(--gs-brand-bright);
+}
+
+.rail li:last-child::before {
+  background: var(--gs-brand-bright);
+}
+
+/* Numeración visual; la lista ordenada ya da el orden a los lectores de pantalla */
+.rail li::after {
+  content: counter(r, decimal-leading-zero);
+  content: counter(r, decimal-leading-zero) / '';
+  position: absolute;
+  top: 10px;
+  left: 0;
+  font: 500 11px var(--gs-font-sans);
+  letter-spacing: 0.08em;
+  color: var(--gs-brand-bright);
+}
+
+.rail h3 {
+  margin: 12px 0 0;
+  font-family: var(--gs-font-display);
+  font-size: clamp(1.2rem, 1rem + 0.7vw, 1.55rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.rail p {
+  max-width: 26ch;
+  margin: 6px 0 0;
+  font-size: var(--gs-fs-sm);
+  color: var(--gs-ink-300);
+}
+
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .rail {
+    grid-template-columns: minmax(0, 1fr);
+    margin-left: 4px;
+    border-left: 1px solid var(--gs-line);
+  }
+
+  .rail li {
+    padding: 0 0 var(--gs-sp-5) 26px;
+    border-top: 0;
+  }
+
+  .rail li::before {
+    top: 4px;
+    left: -5px;
+  }
+
+  .rail li::after {
+    display: none;
+  }
+
+  .rail h3 {
+    margin-top: 0;
+  }
+}

@@ -14,7 +14,7 @@ export const DEFAULT_SITE_LANGUAGE: SiteLanguage = 'es';
 
 export const SITE_ORIGIN = 'https://www.gensmart.co';
 
-export type SiteRouteId = 'home' | 'pricing';
+export type SiteRouteId = 'home' | 'pricing' | 'product' | 'integrations';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -27,6 +27,19 @@ export interface SiteRoute {
 export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   home: { id: 'home', internal: '', paths: { es: '/', en: '/en' } },
   pricing: { id: 'pricing', internal: '/pricing', paths: { es: '/precios', en: '/en/pricing' } },
+  product: { id: 'product', internal: '/product', paths: { es: '/producto', en: '/en/product' } },
+  integrations: {
+    id: 'integrations',
+    internal: '/integrations',
+    paths: { es: '/integraciones', en: '/en/integrations' },
+  },
+  /*
+   * Reservadas para las subpáginas de Producto (rutas jerárquicas: mejores migas y SEO):
+   *   productAgents  /product/ai-agents   → /producto/agentes  ↔ /en/product/ai-agents
+   *   productInbox   /product/inbox       → /producto/bandeja  ↔ /en/product/inbox
+   *   productCrm     /product/crm         → /producto/crm      ↔ /en/product/crm
+   *   productBooking /product/scheduling  → /producto/agenda   ↔ /en/product/scheduling
+   */
 };
 
 const ROUTE_LIST: SiteRoute[] = Object.values(SITE_ROUTES);

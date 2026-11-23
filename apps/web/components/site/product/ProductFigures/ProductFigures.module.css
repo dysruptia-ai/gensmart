@@ -1,0 +1,59 @@
+/* design/web: .is-product .pr-figs, .pr-fig */
+.figs {
+  border-block: 1px solid var(--gs-line);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: 0.8fr 1.45fr 1fr 0.85fr;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list li {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: clamp(16px, 2vw, 32px);
+  border-left: 1px solid var(--gs-line);
+}
+
+.list li:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.list strong {
+  font: 800 clamp(2.6rem, 1.4rem + 3.6vw, 4.4rem) / 0.95 var(--gs-font-display);
+  letter-spacing: -0.05em;
+  color: var(--gs-brand-bright);
+}
+
+.list span {
+  max-width: 22ch;
+  font-size: var(--gs-fs-sm);
+  color: var(--gs-ink-300);
+}
+
+@media (max-width: 980px) {
+  .list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .list li:nth-child(3) {
+    border-left: 0;
+    padding-left: 0;
+  }
+}
+
+@media (max-width: 420px) {
+  .list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .list li {
+    border-left: 0;
+    padding-left: 0;
+  }
+}

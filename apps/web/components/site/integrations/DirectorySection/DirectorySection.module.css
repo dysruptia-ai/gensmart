@@ -1,0 +1,66 @@
+/* design/web: .int-dir, .int-grp, .int-more */
+.dir {
+  border-top: 1px solid var(--gs-line);
+}
+
+.group {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.7fr);
+  gap: clamp(20px, 4vw, 56px);
+  align-items: start;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--gs-line);
+}
+
+.copy h3 {
+  margin: 0 0 8px;
+  font-family: var(--gs-font-display);
+  font-size: var(--gs-fs-h3);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.copy p {
+  max-width: 36ch;
+  margin: 0;
+  color: var(--gs-ink-300);
+}
+
+.logos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  box-shadow: 0 0 0 1px var(--gs-line);
+}
+
+.more {
+  max-width: 62ch;
+  margin: 24px 0 0;
+  color: var(--gs-ink-100);
+}
+
+.more strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 1.25rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 760px) {
+  .group {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}

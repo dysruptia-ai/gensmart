@@ -16,9 +16,12 @@ import AgencyBanner from '@/components/site/pricing/AgencyBanner';
 import {
   PLAN_IDS,
   PLAN_NAMES,
+  PRICING_CRUMBS,
   YEARLY_DISCOUNT_PERCENT,
   faqItems,
 } from '@/components/site/pricing/pricingData';
+import { breadcrumbJsonLd } from '@/components/site/Breadcrumbs/crumbs';
+import { faqPageJsonLd } from '@/components/site/FaqList/faq';
 import { SITE_TRIAL_DAYS } from '@/components/site/siteTrial';
 import { PRICING } from '@gensmart/shared';
 import { siteT } from '@/lib/site-i18n';
@@ -92,31 +95,12 @@ export const viewport: Viewport = {
 function buildJsonLd(lang: SiteLanguage) {
   const t = siteT(lang);
   const url = absoluteUrl(publicPath('pricing', lang));
-  const homeUrl = absoluteUrl(publicPath('home', lang));
   const { description } = meta(lang);
   return {
     '@context': 'https://schema.org',
     '@graph': [
-      {
-        '@type': 'BreadcrumbList',
-        '@id': `${url}#breadcrumb`,
-        inLanguage: lang,
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: t('site.pricing.crumbHome'), item: homeUrl },
-          { '@type': 'ListItem', position: 2, name: t('site.pricing.crumbCurrent'), item: url },
-        ],
-      },
-      {
-        '@type': 'FAQPage',
-        '@id': `${url}#faq`,
-        url,
-        inLanguage: lang,
-        mainEntity: faqItems(t, lang).map((item) => ({
-          '@type': 'Question',
-          name: item.question,
-          acceptedAnswer: { '@type': 'Answer', text: item.answer },
-        })),
-      },
+      breadcrumbJsonLd(PRICING_CRUMBS, t, lang),
+      faqPageJsonLd(faqItems(t, lang), url, lang),
       {
         '@type': 'SoftwareApplication',
         '@id': `${url}#app`,

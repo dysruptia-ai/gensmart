@@ -1,0 +1,56 @@
+/* design/web: .steps.steps-3, .step */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gs-sp-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: s;
+}
+
+.step {
+  position: relative;
+  padding-top: 56px;
+  counter-increment: s;
+}
+
+/* Número visual; la lista ordenada ya da el orden a los lectores de pantalla */
+.step::before {
+  content: counter(s);
+  content: counter(s) / '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--gs-brand-line);
+  border-radius: 50%;
+  background: var(--gs-brand-tint);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--gs-brand-bright);
+}
+
+.step h3 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+}
+
+.step p {
+  margin: 0;
+  font-size: var(--gs-fs-sm);
+  color: var(--gs-ink-300);
+}
+
+.actions {
+  margin-top: var(--gs-sp-6);
+}
+
+@media (max-width: 760px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

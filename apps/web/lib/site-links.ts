@@ -70,12 +70,13 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   legalPrivacy: { href: '/legal/privacy-policy' },
   legalCookies: { href: '/legal/cookie-policy' },
 
-  product: { href: null },
+  // Con rutas por idioma: se resuelven en LOCALIZED_LINKS
+  product: { href: '/en/product' },
   productAgents: { href: null },
   productInbox: { href: null },
   productCrm: { href: null },
   productBooking: { href: null },
-  integrations: { href: null },
+  integrations: { href: '/en/integrations' },
 
   industries: { href: null },
   industryEcommerce: { href: null },
@@ -134,6 +135,8 @@ export function registerHref(plan: RegisterPlan): SiteHref {
 const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, SiteRouteId>> = {
   home: 'home',
   pricing: 'pricing',
+  product: 'product',
+  integrations: 'integrations',
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

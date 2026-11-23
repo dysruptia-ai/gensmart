@@ -6,7 +6,7 @@ import Reveal from '../../Reveal';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
 import SiteButton from '../../SiteButton';
-import AgentConsole from './AgentConsole';
+import AgentConsole from '../../AgentConsole';
 import StepBuilder from './StepBuilder';
 import styles from './HowItWorksSection.module.css';
 

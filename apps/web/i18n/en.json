@@ -1918,8 +1918,6 @@
         "cta": "Start your free trial",
         "secondary": "See how it works",
         "channelsLabel": "Channels",
-        "email": "Email",
-        "website": "Your website",
         "videoLabel": "Video: how GenSmart answers, qualifies and books inside the conversation",
         "trackLabel": "English",
         "soundOn": "Turn on sound",
@@ -2203,6 +2201,16 @@
         "title": "Pricing | GenSmart plans",
         "description": "Solo, Starter, Pro and Enterprise plans. Annual billing {discount}% off and a {days} day free trial.",
         "ogAlt": "GenSmart plans and pricing"
+      },
+      "product": {
+        "title": "AI agents with inbox, CRM and scheduling | GenSmart",
+        "description": "Create AI agents, connect them to your channels and tools, and handle it all from one inbox with CRM and scheduling. No code. {days}-day free trial.",
+        "ogAlt": "GenSmart: AI agents with inbox, CRM and scheduling"
+      },
+      "integrations": {
+        "title": "Integrations | Connect GenSmart to your tools",
+        "description": "Connect your agent to {tools}+ tools: your store, CRM, payments and calendar. Anything not on the list, through API, MCP or webhook.",
+        "ogAlt": "GenSmart integrations"
       }
     },
     "langHint": {
@@ -2212,9 +2220,6 @@
       "dismiss": "Dismiss language suggestion"
     },
     "pricing": {
-      "crumbsLabel": "Breadcrumb",
-      "crumbHome": "Home",
-      "crumbCurrent": "Pricing",
       "titleBefore": "Every unanswered message is",
       "titleAccent": "a sale going cold",
       "leadBefore": "An AI agent replies right away on six channels and scores every prospect from 0 to 10, so your team talks first to the people ready to buy. From ${price} USD a month.",
@@ -2393,6 +2398,208 @@
       "error": "We could not send your message. Please try again in a moment.",
       "close": "Close",
       "done": "Done"
+    },
+    "crumbs": {
+      "label": "Breadcrumb",
+      "home": "Home",
+      "pricing": "Pricing",
+      "product": "Product",
+      "integrations": "Integrations"
+    },
+    "channels": {
+      "email": "Email",
+      "website": "Your website"
+    },
+    "product": {
+      "hero": {
+        "titleBefore": "One message comes in.",
+        "titleAccent": "Four layers",
+        "titleAfter": "get to work.",
+        "lead": "You create the agent with your information and rules. You connect it to your channels and tools. Your team follows every conversation from one inbox, with CRM and calendar.",
+        "primary": "Start your free trial",
+        "demo": "Book a demo",
+        "note": "{days} days free on the {plans} plans.",
+        "layersLabel": "The four layers that work on every message",
+        "l1": "Channel",
+        "l1Value": "WhatsApp",
+        "l1Msg": "Hi, I want to book a dental cleaning.",
+        "l2": "Agent",
+        "l2Value": "Bookings",
+        "l2a": "Reads the history",
+        "l2b": "Checks your calendar",
+        "l2c": "Replies in your tone",
+        "l3": "CRM",
+        "l3Value": "Valentina Ruiz",
+        "l3Score": "Lead score",
+        "l3Chip": "Appointment booked",
+        "l4": "Calendar",
+        "l4Value": "Confirmed",
+        "l4Day": "Tuesday",
+        "l4Time": "10:00 a.m."
+      },
+      "bento": {
+        "title": "Five pieces, one conversation",
+        "lead": "What the agent talks about lands in the inbox, the CRM and the calendar, with no copying data between tools.",
+        "agentsTitle": "AI agents",
+        "agentsDesc": "You create the agent with its goal, tone and your rules. It talks, decides and acts inside the conversation.",
+        "specGoal": "Goal",
+        "specGoalValue": "Book appointments",
+        "specTone": "Tone",
+        "specToneValue": "Warm and professional",
+        "specRule": "Rule",
+        "specRuleValue": "If they ask for a discount, hand over to a person",
+        "inboxTitle": "Unified inbox",
+        "inboxDesc": "The conversations of all your channels in one inbox, with statuses, filters and human control.",
+        "crmTitle": "CRM and pipeline",
+        "crmDesc": "Every contact is saved with its score, stage and what they asked for, with nobody typing it in.",
+        "crm1": "New",
+        "crm2": "Qualified",
+        "crm3": "Booked",
+        "crm4": "Customer",
+        "bookingTitle": "Appointment scheduling",
+        "bookingDesc": "The agent checks your availability and confirms the appointment inside the conversation.",
+        "week": "M,T,W,T,F",
+        "integrationsTitle": "Integrations",
+        "integrationsDesc": "Your store, CRM, payments and calendar. {tools}+ tools, or through API, MCP or webhook."
+      },
+      "figs": {
+        "label": "GenSmart in numbers",
+        "channels": "channels answered by one agent",
+        "tools": "tools you can connect",
+        "steps": "steps to activate your agent, no code",
+        "days": "free days to try it with your customers"
+      },
+      "agents": {
+        "title": "Each agent handles one process, with your tone and your rules",
+        "lead": "You set the goal, load your information and the agent talks like your business. AI generates the replies; your information and rules guide them.",
+        "f1": "Goal, tone and rules for each agent",
+        "f2": "Knowledge base with documents and links",
+        "f3": "Custom functions and MCP servers",
+        "railIntro": "With every message, the agent goes through these four steps with the whole conversation in view. It continues until the goal is reached or the case goes to a person.",
+        "s1": "Perceives",
+        "s1Desc": "Reads the message, the history and the customer data.",
+        "s2": "Reasons",
+        "s2Desc": "Understands what the customer wants and what holds them back.",
+        "s3": "Plans",
+        "s3Desc": "Decides the step: reply, use a function or integrated tool, or escalate.",
+        "s4": "Acts",
+        "s4Desc": "Runs the action and logs it in your CRM or connected tool."
+      },
+      "inbox": {
+        "title": "You see what the agent said and why it did it",
+        "lead": "Every conversation arrives with its summary, the lead score and the steps the agent took. If a person is needed, they step in with the full context.",
+        "name": "Valentina Ruiz",
+        "meta": "WhatsApp · Booking agent · Appointment booked",
+        "summary": "Handled the whole inquiry and left the lead ready. Stage: appointment booked.",
+        "b1": "Hi, I'd like to book a dental cleaning.",
+        "b2": "Happy to help. I have Tuesday at 10:00 a.m. or Wednesday at 4:00 p.m. Which works?",
+        "b3": "Tuesday.",
+        "b4": "Done, your appointment is booked for Tuesday at 10:00 a.m. I'm sending the confirmation to your email, with a link to save it to Google Calendar.",
+        "stageValue": "Appointment booked",
+        "did1": "Reads the request and the history",
+        "did2": "Checks your team's calendar",
+        "did3": "Offers two slots and confirms the chosen one",
+        "did4": "Saves the appointment to your calendar and emails the confirmation",
+        "t1": "Agent summary",
+        "t1Desc": "What the customer asked for and where it ended, without reading the whole thread.",
+        "t2": "Score and stage",
+        "t2Desc": "The lead is scored and placed in your pipeline while it chats.",
+        "t3": "Handoff with context",
+        "t3Desc": "Your team takes the case and nobody asks the customer the same thing again."
+      },
+      "connect": {
+        "title": "Your agent replies where they write to you and connects with what you already use",
+        "channelsTitle": "One agent, {count} channels",
+        "channelsText": "WhatsApp, Instagram, Messenger, Telegram, email and your website. The same agent answers on all of them.",
+        "channelsLabel": "Channels",
+        "toolsTitle": "{tools}+ tools",
+        "toolsText": "Your store, CRM, payments and calendar. If the tool you use isn't listed, you connect it through API, MCP or webhook.",
+        "toolsLabel": "Some tools you can connect",
+        "toolsCta": "See all integrations"
+      },
+      "steps": {
+        "title": "Your agent, in three steps",
+        "lead": "No code and no dependency on a technical team.",
+        "s1": "Connect your channels and tools",
+        "s1Desc": "Choose where your agent will work and which tools it can use, like your store or your calendar.",
+        "s2": "Teach it your business",
+        "s2Desc": "Upload your catalog, prices, policies and links. The agent learns and speaks in your tone.",
+        "s3": "Activate and measure",
+        "s3Desc": "Switch the agent on. You follow every conversation in the inbox, every sale in your CRM and every appointment or order in your tools.",
+        "cta": "See plans from ${price} USD a month"
+      },
+      "faq": {
+        "kicker": "FAQ",
+        "titleBefore": "Questions?",
+        "titleAccent": "Get answers before you start",
+        "helpBefore": "Can't find yours? Write to us and",
+        "helpAccent": "we will answer",
+        "helpAfter": "soon.",
+        "cta": "Talk to the team",
+        "items": {
+          "q1": "Will it sound like a robot?",
+          "a1": "It speaks in your brand's tone, with your wording and policies.",
+          "q2": "What if it doesn't know the answer?",
+          "a2": "It hands the conversation to a person on your team, with the full history.",
+          "q3": "Does it replace my team?",
+          "a3": "It handles the repetitive work so your team can focus on what needs judgment.",
+          "q4": "Is it hard to set up?",
+          "a4": "You create and connect it yourself in three steps, no code and no tech team.",
+          "q5": "Which channels does it work on?",
+          "a5": "On WhatsApp, Instagram, Messenger, Telegram, email and your website chat. One agent answers on all of them.",
+          "q6": "Can I try it before paying?",
+          "a6": "Yes. You get {days} days free on the {plans} plans, with your own customers. Enterprise is arranged with sales."
+        }
+      }
+    },
+    "integrations": {
+      "hero": {
+        "titleBefore": "Connect your agent to",
+        "titleAccent": "{tools}+ tools",
+        "lead": "Your store, CRM, payments and calendar. If the tool you use is not on the list, you connect it through API, MCP or webhook.",
+        "primary": "See the integrations",
+        "secondary": "Tell us which one you use"
+      },
+      "ways": {
+        "title": "Three ways to connect your tools",
+        "lead": "Which one you pick depends on the tool you want to connect and what the agent should do with it.",
+        "when": "Use it when",
+        "byPlan": "Available by plan",
+        "no": "No",
+        "unlimitedF": "Unlimited",
+        "unlimitedM": "Unlimited",
+        "w1": "Ready integration",
+        "w1Desc": "Your tool is already in the directory. You pick it and connect it.",
+        "w1When": "your store, CRM or calendar appears in the list below.",
+        "w1How": "How it connects",
+        "w1HowValue": "From the directory",
+        "w2": "Custom functions",
+        "w2Desc": "You connect an external API so the agent does what your operation needs, like checking inventory or creating an order.",
+        "w2When": "you have your own API, or a provider's, that is not in the directory.",
+        "w3": "MCP servers",
+        "w3Desc": "You connect an MCP server and the agent gains new tools to use during the conversation.",
+        "w3When": "your tool's provider already offers an MCP server."
+      },
+      "dir": {
+        "title": "Tools you can connect",
+        "lead": "These are some of them. What each one allows depends on what its API provides; if yours is not here, we look at it in the demo.",
+        "stores": "Stores and dropshipping",
+        "storesDesc": "Let the agent check products, stock and orders while it talks with the customer.",
+        "crm": "CRM, ERP and accounting",
+        "crmDesc": "Let every contact and conversation reach the systems where your team already works.",
+        "productivity": "Scheduling and productivity",
+        "productivityDesc": "Let appointments, spreadsheets and documents update without anyone copying data by hand.",
+        "payments": "Payments",
+        "paymentsDesc": "Let the agent send the customer to the gateway you already charge with, without switching provider. The gateway takes the payment.",
+        "comms": "Communication and support",
+        "commsDesc": "Let your team get conversation alerts in the tools it already uses.",
+        "toolsLabel": "{category} tools",
+        "moreTitle": "Can't see yours?",
+        "moreText": "There are {tools}+ tools that connect through API or MCP. Tell us which one your team uses and we will tell you which of the three ways fits.",
+        "talk": "Talk to the team",
+        "docs": "Read the knowledge base",
+        "listName": "Tools you can connect to GenSmart"
+      }
     }
   }
 }

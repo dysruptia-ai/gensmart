@@ -2,10 +2,11 @@
 
 import { PRICING } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
+import Breadcrumbs from '../../Breadcrumbs';
 import Container from '../../Container';
 import GlowBackdrop from '../../GlowBackdrop';
-import SiteLink from '../../SiteLink';
 import { SITE_TRIAL_DAYS } from '../../siteTrial';
+import { PRICING_CRUMBS } from '../pricingData';
 import styles from './PricingHero.module.css';
 
 const P = 'site.pricing';
@@ -16,14 +17,7 @@ export default function PricingHero() {
     <section className={styles.hero}>
       <GlowBackdrop />
       <Container className={styles.inner}>
-        <nav aria-label={t(`${P}.crumbsLabel`)}>
-          <ol className={styles.crumbs}>
-            <li>
-              <SiteLink to="home">{t(`${P}.crumbHome`)}</SiteLink>
-            </li>
-            <li aria-current="page">{t(`${P}.crumbCurrent`)}</li>
-          </ol>
-        </nav>
+        <Breadcrumbs crumbs={PRICING_CRUMBS} />
         <h1 className={styles.title}>
           {t(`${P}.titleBefore`)} <span className={styles.accent}>{t(`${P}.titleAccent`)}</span>
         </h1>

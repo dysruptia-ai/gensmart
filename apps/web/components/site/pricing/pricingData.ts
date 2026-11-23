@@ -4,6 +4,8 @@
  * Son funciones puras: las usan los componentes (cliente) y la página (metadatos y JSON-LD),
  * así el texto visible y el JSON-LD de las preguntas frecuentes son el mismo.
  */
+import type { Crumb } from '../Breadcrumbs/crumbs';
+import type { FaqItem } from '../FaqList/faq';
 import {
   MESSAGE_ADDONS,
   PLAN_LIMITS,
@@ -14,6 +16,12 @@ import type { RegisterPlan } from '@/lib/site-links';
 import type { SiteLanguage } from '@/lib/site-routes';
 import type { SiteT } from '@/lib/site-i18n';
 import { SITE_TRIAL_DAYS } from '../siteTrial';
+
+/** Migas de Precios: las usan el hero y el JSON-LD `BreadcrumbList`. */
+export const PRICING_CRUMBS: readonly Crumb[] = [
+  { id: 'home', labelKey: 'site.crumbs.home' },
+  { id: 'pricing', labelKey: 'site.crumbs.pricing' },
+];
 
 export type PlanId = RegisterPlan | 'enterprise';
 
@@ -235,11 +243,6 @@ export function packs(t: SiteT, lang: SiteLanguage): Pack[] {
 
 export function packsNote(t: SiteT): string {
   return t(`${P}.packs.note`, { warn: USAGE_WARNING_PERCENT });
-}
-
-export interface FaqItem {
-  question: string;
-  answer: string;
 }
 
 function firstPlanWith(predicate: (id: PlanId) => boolean): string {

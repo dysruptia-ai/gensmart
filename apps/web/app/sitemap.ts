@@ -61,7 +61,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     SITE_LANGUAGES.map((lang) => ({
       url: absoluteUrl(route.paths[lang]),
       changeFrequency: 'weekly' as const,
-      priority: route.id === 'home' ? 1.0 : route.id === 'pricing' ? 0.9 : 0.8,
+      priority: route.id === 'home' ? 1.0 : route.id === 'pricing' || route.id === 'product' ? 0.9 : 0.8,
       alternates: { languages: alternates(route.id) },
     }))
   );

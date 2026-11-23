@@ -18,15 +18,17 @@ export default function LogoTile({ logo, size = 'md', interactive = false, class
     .join(' ');
   return (
     <span className={classes}>
-      <Image
-        src={logo.src}
-        alt={logo.wordmark ? logo.name : ''}
-        width={logo.width}
-        height={logo.height}
-        unoptimized
-        className={logo.wordmark ? styles.word : styles.mark}
-      />
-      {logo.wordmark ? null : logo.name}
+      {logo.src ? (
+        <Image
+          src={logo.src}
+          alt={logo.wordmark ? logo.name : ''}
+          width={logo.width}
+          height={logo.height}
+          unoptimized
+          className={logo.wordmark ? styles.word : styles.mark}
+        />
+      ) : null}
+      {logo.src && logo.wordmark ? null : logo.name}
     </span>
   );
 }
