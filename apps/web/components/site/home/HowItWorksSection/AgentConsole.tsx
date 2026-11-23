@@ -1,26 +1,22 @@
 'use client';
 
-import {
-  ArrowRight,
-  CalendarDays,
-  ChartLine,
-  Check,
-  Eye,
-  Lightbulb,
-  MessageCircle,
-  SlidersHorizontal,
-  type LucideIcon,
-} from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import ChatBubble from '../../ChatBubble';
 import styles from './AgentConsole.module.css';
 
 const P = 'site.home.how';
 
-const AGENTS: Array<{ nameKey: string; channelKey: string | null; channel: string; icon: LucideIcon; on?: boolean }> = [
-  { nameKey: 'agentSales', channelKey: null, channel: 'WhatsApp', icon: ChartLine, on: true },
-  { nameKey: 'agentSupport', channelKey: 'chWeb', channel: '', icon: MessageCircle },
-  { nameKey: 'agentBookings', channelKey: null, channel: 'Instagram', icon: CalendarDays },
+const FILTERS: Array<{ key: string; count: number; on?: boolean }> = [
+  { key: 'fAll', count: 14, on: true },
+  { key: 'fNeed', count: 5 },
+  { key: 'fMine', count: 2 },
+  { key: 'fClosed', count: 4 },
+];
+
+const AGENTS: Array<{ key: string; count: number; tone: 'green' | 'blue' | 'amber' }> = [
+  { key: 'agentSales', count: 8, tone: 'green' },
+  { key: 'agentSupport', count: 4, tone: 'blue' },
+  { key: 'agentBookings', count: 2, tone: 'amber' },
 ];
 
 const BUBBLES: Array<{ key: string; out: boolean }> = [
@@ -30,13 +26,10 @@ const BUBBLES: Array<{ key: string; out: boolean }> = [
   { key: 'b4', out: true },
 ];
 
-const STEPS: Array<{ n: number; icon: LucideIcon }> = [
-  { n: 1, icon: Eye },
-  { n: 2, icon: Lightbulb },
-  { n: 3, icon: SlidersHorizontal },
-  { n: 4, icon: Check },
-];
+const DID = ['did1', 'did2', 'did3', 'did4'] as const;
+const SCORE = 8.4;
 
+/** Vista de la bandeja de la plataforma (riel, hilo y contexto del lead). */
 export default function AgentConsole() {
   const { t } = useTranslation();
   return (
@@ -52,72 +45,64 @@ export default function AgentConsole() {
       </div>
 
       <div className={styles.cols}>
-        <aside className={styles.rail}>
-          <h4 className={styles.h4}>{t(`${P}.agentsTitle`)}</h4>
-          {AGENTS.map((a) => {
-            const Icon = a.icon;
-            return (
-              <div key={a.nameKey} className={`${styles.agent} ${a.on ? styles.agentOn : ''}`}>
-                <span className={styles.agentIcon}>
-                  <Icon size={13} aria-hidden="true" />
-                </span>
-                <span className={styles.agentName}>{t(`${P}.${a.nameKey}`)}</span>
-                <span className={styles.agentChannel}>
-                  {a.channelKey ? t(`${P}.${a.channelKey}`) : a.channel}
-                </span>
-              </div>
-            );
-          })}
-        </aside>
-
-        <section className={styles.chat}>
-          <div className={styles.chatHead}>
-            <span className={styles.avatar}>LG</span>
-            <b className={styles.chatName}>{t(`${P}.chatName`)}</b>
-            <span className={styles.chatChannel}>
-              <MessageCircle size={12} aria-hidden="true" />
-              {t(`${P}.chatChannel`)}
-            </span>
-          </div>
-          {BUBBLES.map((b) => (
-            <ChatBubble key={b.key} direction={b.out ? 'out' : 'in'}>
-              {t(`${P}.${b.key}`)}
-            </ChatBubble>
-          ))}
-          <div className={styles.input}>
-            <span className={styles.typing} aria-hidden="true">
-              <i />
-              <i />
-              <i />
-            </span>
-            <span className={styles.typingText}>{t(`${P}.typing`)}</span>
-            <span className={styles.send} aria-hidden="true">
-              <ArrowRight size={14} />
-            </span>
-          </div>
-        </section>
-
-        <aside className={styles.trace}>
-          <h4 className={styles.h4}>{t(`${P}.insideTitle`)}</h4>
-          <ol className={styles.loop}>
-            {STEPS.map(({ n, icon: Icon }) => (
-              <li key={n}>
-                <span className={styles.stepIcon}>
-                  <Icon size={12} aria-hidden="true" />
-                </span>
-                <div>
-                  <b>{t(`${P}.i${n}Title`)}</b>
-                  <span>{t(`${P}.i${n}Desc`)}</span>
-                </div>
+        <div className={styles.rail}>
+          <h4 className={styles.h6}>{t(`${P}.inboxTitle`)}</h4>
+          <ul className={styles.railList}>
+            {FILTERS.map((f) => (
+              <li key={f.key} className={f.on ? styles.on : undefined}>
+                {t(`${P}.${f.key}`)}
+                <em>{f.count}</em>
               </li>
             ))}
-          </ol>
-          <div className={styles.lead}>
-            <div className={styles.leadTop}>
-              <span>{t(`${P}.leadTitle`)}</span>
-              <b className={styles.score}>8.4</b>
+          </ul>
+          <h4 className={styles.h6}>{t(`${P}.agentsHeading`)}</h4>
+          <ul className={styles.railList}>
+            {AGENTS.map((a) => (
+              <li key={a.key}>
+                <i className={`${styles.agentDot} ${styles[a.tone]}`} aria-hidden="true" />
+                {t(`${P}.${a.key}`)}
+                <em>{a.count}</em>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className={styles.thread}>
+          <div className={styles.threadTop}>
+            <span className={styles.avatar} aria-hidden="true">
+              LG
+            </span>
+            <div>
+              <b>{t(`${P}.chatName`)}</b>
+              <small>{t(`${P}.chatMeta`)}</small>
             </div>
-            <dl className={styles.leadData}>
+          </div>
+          <p className={styles.summary}>
+            <span>{t(`${P}.summaryLabel`)}</span> {t(`${P}.summary`)}
+          </p>
+          <div className={styles.msgs}>
+            {BUBBLES.map((b) => (
+              <ChatBubble key={b.key} direction={b.out ? 'out' : 'in'} className={styles.bubble}>
+                {t(`${P}.${b.key}`)}
+              </ChatBubble>
+            ))}
+          </div>
+          <p className={styles.composer}>{t(`${P}.composer`)}</p>
+        </div>
+
+        <div className={styles.ctx}>
+          <div className={styles.ctxLead}>
+            <h4 className={styles.h6}>{t(`${P}.leadStatus`)}</h4>
+            <div className={styles.score}>
+              <strong>
+                <span className={styles.srOnly}>{t(`${P}.scoreLabel`)}: </span>
+                {SCORE}
+              </strong>
+              <span className={styles.bar} aria-hidden="true">
+                <i />
+              </span>
+            </div>
+            <dl className={styles.data}>
               <dt>{t(`${P}.leadChannel`)}</dt>
               <dd>{t(`${P}.leadChannelValue`)}</dd>
               <dt>{t(`${P}.leadStage`)}</dt>
@@ -126,20 +111,15 @@ export default function AgentConsole() {
               <dd>{t(`${P}.leadValueValue`)}</dd>
             </dl>
           </div>
-        </aside>
-      </div>
-
-      <div className={styles.foot}>
-        <span>
-          <b>4</b> {t(`${P}.foot1`)}
-        </span>
-        <span>
-          <b>12 s</b> {t(`${P}.foot2`)}
-        </span>
-        <span>
-          <b>0</b> {t(`${P}.foot3`)}
-        </span>
-        <span className={styles.footNote}>{t(`${P}.footNote`)}</span>
+          <div className={styles.ctxDid}>
+            <h4 className={styles.h6}>{t(`${P}.didTitle`)}</h4>
+            <ol className={styles.did}>
+              {DID.map((k) => (
+                <li key={k}>{t(`${P}.${k}`)}</li>
+              ))}
+            </ol>
+          </div>
+        </div>
       </div>
     </div>
   );

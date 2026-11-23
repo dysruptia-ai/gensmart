@@ -24,6 +24,11 @@
   --gs-panel-2: #1e262d;
   --gs-panel-line: rgba(240, 244, 242, 0.09);
 
+  /* Acentos de estado (home: carrera de respuesta y bandeja) */
+  --gs-wait: #e8b765;
+  --gs-accent-blue: #4c8dff;
+  --gs-accent-amber: #f5a524;
+
   /* Superficies claras */
   --gs-light-bg: #f4f6f5;
   --gs-light-raised: #ffffff;

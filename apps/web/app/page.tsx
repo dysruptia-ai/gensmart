@@ -8,6 +8,7 @@ import HeroSection from '@/components/site/home/HeroSection';
 import ProblemSection from '@/components/site/home/ProblemSection';
 import PlatformSection from '@/components/site/home/PlatformSection';
 import CompareSection from '@/components/site/home/CompareSection';
+import UseCasesSection from '@/components/site/home/UseCasesSection';
 import TeamsSection from '@/components/site/home/TeamsSection';
 import HowItWorksSection from '@/components/site/home/HowItWorksSection';
 import IntegrationsSection from '@/components/site/home/IntegrationsSection';
@@ -93,7 +94,7 @@ export default function LandingPage() {
         <HeroSection />
         <ProblemSection />
         <PlatformSection />
-        {/* prompt-web-16: aquí va la sección de casos de uso ("Tú eliges el proceso…") */}
+        <UseCasesSection />
         <TeamsSection />
         <HowItWorksSection />
         <CompareSection />

@@ -1910,40 +1910,52 @@
         "soundOff": "Silenciar"
       },
       "problem": {
-        "title": "No es que no te escriban. Es que escriben a las once de la noche.",
-        "lead": "Los mensajes no llegan en horario de oficina. Llegan cuando tu cliente tiene tiempo, por el canal que ya tiene abierto, y esperan respuesta ahí mismo.",
-        "ch": {
-          "instagram": "Instagram",
-          "whatsapp": "WhatsApp",
-          "messenger": "Messenger",
-          "email": "Correo"
+        "title": "Mientras duermes, tus clientes siguen escribiendo.",
+        "lead": "Lo que pasa con el mismo mensaje, con y sin agente.",
+        "race": {
+          "msgLabel": "Un cliente escribe por WhatsApp a las 11:48 p.m.",
+          "msgText": "Hola, ¿cuánto cuesta un ramo de lirios?",
+          "rowsLabel": "Tiempo de respuesta, con y sin agente",
+          "waitWho": "Sin agente",
+          "waitDesc": "Responde una persona cuando abre el celular",
+          "waitFrom": "11:48 p.m.",
+          "waitTo": "9:05 a.m.",
+          "waitRange": "De 11:48 p.m. a 9:05 a.m.",
+          "waitBig": "9 h 17 min",
+          "fastWho": "Con GenSmart",
+          "fastDesc": "El agente responde con opciones y precios",
+          "fastFrom": "11:48 p.m.",
+          "fastBig": "Segundos",
+          "unit": "de espera"
         },
-        "rows": {
-          "r1": {
-            "time": "7:42 p.m.",
-            "msg": "¿Hacen envíos a Medellín?"
-          },
-          "r2": {
-            "time": "9:15 p.m.",
-            "msg": "Quiero dos. ¿Cuánto me queda el total?"
-          },
-          "r3": {
-            "time": "11:48 p.m.",
-            "msg": "¿Les queda cita para el sábado?"
-          },
-          "r4": {
-            "time": "6:20 a.m.",
-            "msg": "¿Sigue disponible lo que vi ayer?"
-          },
-          "r5": {
-            "time": "8:05 a.m.",
-            "msg": "Necesito cotización para 40 unidades."
+        "proof": {
+          "title": "Un cliente pregunta el precio. Esto hace el agente.",
+          "lead": "Alguien le escribe a una floristería. El agente le responde, le pregunta para cuándo lo necesita, le muestra dos opciones con precio y guarda sus datos.",
+          "phoneLabel": "Conversación entre un cliente y el agente de una floristería",
+          "name": "Rosa de Hebrón",
+          "status": "Xiomara · en línea",
+          "b1": "Hola, buenas tardes. ¿Cuánto cuesta un ramo de lirios?",
+          "b2": "¡Hola! Buenas tardes, bienvenido a Rosa de Hebrón 🌹 Soy Xiomara y con gusto te cuento sobre nuestros ramos de lirios.\n\nPara recomendarte la mejor opción, ¿es para alguna ocasión especial y para cuándo necesitas la entrega?",
+          "b3": "Es para una despedida de soltera, para este sábado.",
+          "b4": "¡Qué buena ocasión! 🎉 Ahora mismo no tengo un ramo solo de lirios, pero te muestro dos opciones que van muy bien para una despedida de soltera:\n\n1. **Elegancia Orquídea**: $248.000 COP. Un ramo fino y delicado, ideal para un evento especial entre amigas.\n2. **Romance Primavera**: $367.000 COP. Más grande y colorido, con un toque romántico que alegra cualquier celebración.\n\n¿Cuál te gusta más?",
+          "t1": "2:50 p.m.",
+          "t2": "2:50 p.m.",
+          "t3": "2:51 p.m.",
+          "brand": "agente creado en la plataforma",
+          "c1Title": "Respondió en el mismo minuto",
+          "c1Text": "El cliente escribió a las 2:50 p.m. y la respuesta llegó en ese mismo minuto.",
+          "c2Title": "Preguntó lo que hacía falta",
+          "c2Text": "Antes de ofrecer algo, pidió la ocasión y la fecha de entrega. Con la respuesta, entendió que era una despedida de soltera y mostró dos opciones con precio.",
+          "c3Title": "Dejó el contacto registrado",
+          "c3Text": "Guardó los datos del cliente en su ficha, sin que nadie los escribiera.",
+          "varsLabel": "Datos guardados en la ficha",
+          "vars": {
+            "ocasion": "despedida de soltera",
+            "producto_interes": "Ramo de Flores Elegancia Orquídea",
+            "etapa": "Oportunidad",
+            "puntaje": "6"
           }
-        },
-        "status": "sin responder",
-        "footBold": "A las 9:00 a.m. alguien abre el celular y empieza a responder desde arriba. Más de trece horas después del primer mensaje.",
-        "footNote": "Ejemplo ilustrativo de un día cualquiera.",
-        "listLabel": "Registro de mensajes del día"
+        }
       },
       "platform": {
         "title": "Atiende en cada canal y trabaja con las herramientas que ya usas",
@@ -1964,6 +1976,38 @@
           "tools": "Tus herramientas, por API, MCP o webhook",
           "hub": "Un agente, todos tus canales",
           "engines": "Motores de IA"
+        }
+      },
+      "useCases": {
+        "title": "Tú eliges el proceso, GenSmart crea el agente",
+        "lead": "Cada negocio crea el suyo. Estos son cuatro de los procesos que puedes poner a trabajar.",
+        "clinic": {
+          "industry": "Clínica",
+          "task": "Agenda citas",
+          "in": "Quiero agendar una valoración esta semana.",
+          "out": "Tengo el jueves a las 10:00 a. m. o el viernes a las 3:00 p. m. ¿Cuál te sirve?",
+          "chip": "Cita en tu agenda"
+        },
+        "store": {
+          "industry": "Tienda",
+          "task": "Cotiza y vende",
+          "in": "¿Tienen los tenis blancos en talla 38?",
+          "out": "Sí, quedan 2 a $259.000. Con el envío a Medellín, el total queda en $273.000. Te dejo el enlace de pago.",
+          "chip": "Enlace de pago enviado"
+        },
+        "realEstate": {
+          "industry": "Inmobiliaria",
+          "task": "Califica interesados",
+          "in": "Vi el apartamento de 2 alcobas en Chapinero. ¿Sigue disponible?",
+          "out": "Sí, sigue disponible. Para ayudarte mejor, ¿buscas comprar o arrendar, y para cuándo piensas mudarte?",
+          "chip": "Puntaje y datos en tu CRM"
+        },
+        "restaurant": {
+          "industry": "Restaurante",
+          "task": "Gestiona reservas",
+          "in": "Quiero una mesa para 6 personas este sábado a las 8 p. m.",
+          "out": "Tengo mesa para 6 el sábado a las 8:00 p. m. ¿A nombre de quién la dejo?",
+          "chip": "Reserva en tu agenda"
         }
       },
       "teams": {
@@ -2029,43 +2073,42 @@
         "p3Toggle": "Encendido",
         "p3In": "Hola, ¿tienen la chaqueta en talla M?",
         "p3Out": "Sí, quedan 3. $189.000. ¿Te envío el link de pago?",
-        "consoleLabel": "Conversación de ejemplo en la plataforma",
-        "consoleUrl": "app.gensmart.co",
+        "consoleLabel": "Bandeja de ejemplo en la plataforma",
+        "consoleUrl": "app.gensmart.co/bandeja",
         "consoleLive": "Agente activo",
-        "agentsTitle": "Tus agentes",
         "agentSales": "Agente de ventas",
         "agentSupport": "Atención al cliente",
         "agentBookings": "Reservas",
-        "chWeb": "Web",
-        "chatName": "Laura G.",
-        "chatChannel": "WhatsApp",
+        "chatName": "Laura Gómez",
         "b1": "¿Tienen la chaqueta negra en talla M?",
-        "b2": "Sí, quedan 3. Llega mañana a Bogotá. ¿Te la separo?",
+        "b2": "Sí, quedan 3 en talla M, a $189.000. ¿Te separo una?",
         "b3": "Sí, ¿cuánto cuesta el envío?",
         "b4": "El envío a Bogotá cuesta $12.000 y el total queda en $201.000. Te dejo el link de pago.",
-        "typing": "Laura está escribiendo",
-        "insideTitle": "El agente por dentro",
-        "i1Title": "Percibe",
-        "i1Desc": "Lee el mensaje y el historial de Laura.",
-        "i2Title": "Razona",
-        "i2Desc": "Consulta tu inventario: quedan 3 en talla M.",
-        "i3Title": "Planea",
-        "i3Desc": "Cotiza el envío a Bogotá y arma el total.",
-        "i4Title": "Actúa",
-        "i4Desc": "Envía el link de pago y lo registra en tu CRM.",
-        "leadTitle": "Lead en tu CRM",
         "leadChannel": "Canal",
         "leadChannelValue": "WhatsApp",
         "leadStage": "Etapa",
         "leadStageValue": "Pago enviado",
         "leadValue": "Valor",
         "leadValueValue": "$201.000",
-        "foot1": "pasos del agente",
-        "foot2": "de respuesta",
-        "foot3": "personas de tu equipo",
-        "footNote": "Conversación de ejemplo con datos ilustrativos.",
         "ctaPrimary": "Empieza ahora",
-        "ctaDemo": "Prefiero una demo guiada"
+        "ctaDemo": "Prefiero una demo guiada",
+        "inboxTitle": "Bandeja",
+        "fAll": "Todas",
+        "fNeed": "Necesitan a alguien",
+        "fMine": "Mías",
+        "fClosed": "Cerradas",
+        "agentsHeading": "Agentes",
+        "chatMeta": "WhatsApp · Agente de ventas · Pago enviado",
+        "summaryLabel": "RESUMEN DEL AGENTE",
+        "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: pago enviado.",
+        "composer": "El agente está respondiendo. Toma la conversación para intervenir.",
+        "leadStatus": "Estado del lead",
+        "scoreLabel": "Puntaje del lead",
+        "didTitle": "Lo que hizo el agente",
+        "did1": "Lee el mensaje y el historial de Laura",
+        "did2": "Consulta tu inventario: quedan 3 en talla M",
+        "did3": "Cotiza el envío a Bogotá y arma el total",
+        "did4": "Envía el link de pago y lo registra en tu CRM"
       },
       "compare": {
         "title": "Con GenSmart no creas chatbots, creas agentes",
