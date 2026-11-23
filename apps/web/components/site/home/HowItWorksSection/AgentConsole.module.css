@@ -31,6 +31,7 @@
 
 .dots {
   display: inline-flex;
+  flex: none;
   gap: 6px;
 }
 
@@ -48,6 +49,11 @@
   border: 1px solid var(--gs-line);
   border-radius: 999px;
   padding: 4px 14px;
+  /* En angosto la URL cede espacio (elipsis) para que "Agente activo" se vea completo */
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .live {
@@ -58,6 +64,7 @@
   font-size: 13px;
   color: var(--gs-brand-bright);
   white-space: nowrap;
+  flex: none;
 }
 
 .live::before {
@@ -358,5 +365,16 @@
 @media (max-width: 640px) {
   .frame {
     margin-top: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .top {
+    gap: 10px;
+    padding: 10px 12px;
+  }
+
+  .url {
+    padding: 4px 10px;
   }
 }

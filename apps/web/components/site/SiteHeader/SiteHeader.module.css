@@ -506,7 +506,8 @@
   }
 }
 
-@media (max-width: 479px) {
+/* Hasta 514px: con "Empieza la prueba gratis" (ES) la hamburguesa se salía hasta 510px (barrido de 1px) */
+@media (max-width: 514px) {
   .trialWrap {
     display: none;
   }
