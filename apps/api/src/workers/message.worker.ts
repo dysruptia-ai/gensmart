@@ -1,7 +1,7 @@
 import { Worker, Job } from 'bullmq';
 import { createBullConnection } from '../config/queues';
 import { query } from '../config/database';
-import { PLAN_LIMITS, injectConfigVariablesDeep, getMinimumPlanForChannel, getMinimumPlanForTool } from '@gensmart/shared';
+import { PLAN_LIMITS, injectConfigVariablesDeep, getMinimumPlanForChannel, getMinimumPlanForTool, isChannelAllowedOnPlan } from '@gensmart/shared';
 import { chat, ChatMessage, ToolDefinition, ToolCall, type ContentPart, supportsVision } from '../services/llm.service';
 import { flushBuffer } from '../services/message-buffer.service';
 import { checkLimit, incrementMessages, incrementWhatsAppMessages } from '../services/usage.service';
@@ -300,7 +300,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // Centralized channel gate for all 6 channels — defense in depth, runs before the usage check
   // so a disallowed channel is rejected even if the org still has message quota left.
-  const channelAllowed = conv.channel === 'web' || (planLimits.channels as readonly string[]).includes(conv.channel);
+  const channelAllowed = conv.channel === 'web' || isChannelAllowedOnPlan(plan, conv.channel);
   if (!channelAllowed) {
     console.log(`[msg-worker] Channel '${conv.channel}' not allowed on plan '${plan}' for org ${organizationId} — skipping`);
     try {
