@@ -1,0 +1,75 @@
+/* design/web: .is-pricing .page-hero (hero corto, va al grano) */
+.hero {
+  position: relative;
+  overflow: clip;
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+  padding-top: clamp(42px, 5vw, 84px);
+  padding-bottom: var(--gs-sp-5);
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 var(--gs-sp-4);
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gs-ink-300);
+}
+
+.crumbs li + li::before {
+  content: '/';
+  margin-right: 8px;
+}
+
+.crumbs a {
+  color: var(--gs-brand-bright);
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.crumbs a:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--gs-font-display);
+  font-size: clamp(2.1rem, 4vw, 3.3rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: var(--gs-ls-h2);
+  text-wrap: balance;
+}
+
+.accent {
+  color: var(--gs-brand-bright);
+}
+
+.lead {
+  margin: var(--gs-sp-4) 0 0;
+  max-width: 60ch;
+  font-size: clamp(18px, 1rem + 0.4vw, 21px);
+  line-height: 1.55;
+  color: var(--gs-ink-300);
+}
+
+@media (min-width: 900px) {
+  .lead {
+    max-width: none;
+  }
+}

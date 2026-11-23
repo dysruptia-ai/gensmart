@@ -1,6 +1,6 @@
 import { redis } from '../config/redis';
 import { query } from '../config/database';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { PLAN_LIMITS, USAGE_WARNING_PERCENT } from '@gensmart/shared';
 import { createNotification } from './notification.service';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -102,8 +102,8 @@ async function checkUsageThresholds(orgId: string, newCount: number): Promise<vo
 
   const percent = Math.round((newCount / limit) * 100);
 
-  // Notify at 80% (in-app only, once per billing period)
-  if (percent >= 80 && percent < 100) {
+  // Notify at USAGE_WARNING_PERCENT (80%, in-app only, once per billing period)
+  if (percent >= USAGE_WARNING_PERCENT && percent < 100) {
     const notifKey = `notif:usage80:${orgId}:${monthSuffix}`;
     const already = await redis.get(notifKey);
     if (!already) {

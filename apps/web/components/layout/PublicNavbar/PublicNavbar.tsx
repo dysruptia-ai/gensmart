@@ -7,13 +7,14 @@ import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pricingHref } from '@/lib/site-routes';
 import styles from './PublicNavbar.module.css';
 
 export function PublicNavbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -70,7 +71,7 @@ export function PublicNavbar() {
               {link.label}
             </button>
           ))}
-          <Link className={styles.navLink} href="/pricing">
+          <Link className={styles.navLink} href={pricingHref(language)}>
             {t('landing.nav.pricing')}
           </Link>
           <Link className={styles.navLink} href="/blog">
@@ -129,7 +130,7 @@ export function PublicNavbar() {
               {link.label}
             </button>
           ))}
-          <Link className={styles.mobileLink} href="/pricing" onClick={closeMobile}>
+          <Link className={styles.mobileLink} href={pricingHref(language)} onClick={closeMobile}>
             {t('landing.nav.pricing')}
           </Link>
           <Link className={styles.mobileLink} href="/blog" onClick={closeMobile}>

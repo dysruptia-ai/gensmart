@@ -14,6 +14,7 @@ import Input from '@/components/ui/Input';
 import Toggle from '@/components/ui/Toggle';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pricingHref } from '@/lib/site-routes';
 import styles from './HandoffConfigurator.module.css';
 
 interface HandoffConfiguratorProps {
@@ -261,7 +262,7 @@ export default function HandoffConfigurator({ agentId, orgPlan, initialConfig, o
       {isFreePlan && (
         <p className={styles.planNotice}>
           {t('agents.editor.handoff.freePlanNotice')}{' '}
-          <Link href="/pricing" target="_blank" className={styles.link}>
+          <Link href={pricingHref(language)} target="_blank" className={styles.link}>
             {t('agents.editor.handoff.viewPlans')}
           </Link>
         </p>

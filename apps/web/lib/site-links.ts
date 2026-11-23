@@ -59,7 +59,8 @@ export interface SiteLinkTarget {
 
 export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   home: { href: '/' },
-  pricing: { href: '/pricing' },
+  // Con rutas por idioma: se resuelve en LOCALIZED_LINKS (`/precios` o `/en/pricing`)
+  pricing: { href: '/en/pricing' },
   blog: { href: '/blog' },
   contact: { href: '/contact' },
   about: { href: '/about' },
@@ -132,6 +133,7 @@ export function registerHref(plan: RegisterPlan): SiteHref {
  */
 const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, SiteRouteId>> = {
   home: 'home',
+  pricing: 'pricing',
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

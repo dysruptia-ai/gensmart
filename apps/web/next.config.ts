@@ -36,6 +36,13 @@ const nextConfig: NextConfig = {
   experimental: {
     globalNotFound: true,
   },
+  async redirects() {
+    return [
+      // Precios vive en /precios (es) y /en/pricing (en). La URL vieja era inglesa: va a /en/pricing.
+      // Next conserva el query string (/pricing?plan=pro → /en/pricing?plan=pro).
+      { source: '/pricing', destination: '/en/pricing', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

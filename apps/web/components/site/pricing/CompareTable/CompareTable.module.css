@@ -1,0 +1,214 @@
+/* design/web: table.cmp, .cmp-ctl, .cmp-all, .cg-* (grupos plegables) */
+.section {
+  position: relative;
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+  padding-block: var(--gs-y-m);
+  --gs-fg: var(--gs-ink-100);
+  --gs-fg-soft: var(--gs-ink-300);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--gs-sp-3);
+}
+
+.all {
+  padding: 10px 18px;
+  border: 1px solid var(--gs-panel-line);
+  border-radius: var(--gs-r-pill);
+  background: none;
+  color: var(--gs-brand-bright);
+  font: 600 16px/1 var(--gs-font-sans);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.all:hover {
+  background: color-mix(in srgb, var(--gs-brand-bright) 8%, transparent);
+  border-color: var(--gs-brand-bright);
+}
+
+.all:focus-visible,
+.groupBtn:focus-visible,
+.wrap:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+/* Desplazamiento horizontal contenido: la página nunca se ensancha.
+   position: relative para que los textos solo-lectores (absolute) queden dentro de la caja */
+.wrap {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 16px;
+}
+
+.table th,
+.table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--gs-panel-line);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table thead th {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gs-ink-300);
+}
+
+.table thead th:first-child,
+.table th[scope='row'] {
+  text-align: left;
+}
+
+.table th[scope='row'] {
+  font-weight: 500;
+  color: var(--gs-ink-100);
+}
+
+.table td {
+  color: var(--gs-ink-200);
+}
+
+.yes {
+  color: var(--gs-brand-bright);
+  font-weight: 700;
+}
+
+.table td.no {
+  color: var(--gs-ink-300);
+}
+
+.table td.no > span[aria-hidden] {
+  opacity: 0.6;
+}
+
+.feat {
+  background: color-mix(in srgb, var(--gs-brand-bright) 7%, transparent);
+}
+
+.group th {
+  padding-block: 15px;
+  background: var(--gs-ink-800);
+  color: var(--gs-brand-bright);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.groupBtn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+/* Sin JS el botón no hace nada: se ve como un título */
+.groupBtn:disabled {
+  cursor: default;
+}
+
+.count {
+  margin-left: auto;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--gs-ink-300);
+}
+
+.chev {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--gs-brand-bright);
+  border-bottom: 2px solid var(--gs-brand-bright);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.2s ease;
+}
+
+.enhanced tbody.open .chev {
+  transform: rotate(-135deg) translateY(-2px);
+}
+
+.enhanced tbody.open .count {
+  visibility: hidden;
+}
+
+.enhanced tbody:not(.open) .row {
+  display: none;
+}
+
+.enhanced .group:hover th {
+  background: color-mix(in srgb, var(--gs-brand-bright) 10%, var(--gs-ink-800));
+}
+
+/* Móvil: la tabla se desplaza dentro de su caja y la primera columna queda fija */
+@media (max-width: 760px) {
+  .table {
+    min-width: 600px;
+    font-size: 15px;
+  }
+
+  .table th,
+  .table td {
+    padding: 10px 12px;
+  }
+
+  .table thead th:first-child,
+  .table th[scope='row'] {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 150px;
+    max-width: 170px;
+    background: var(--gs-ground);
+    box-shadow: 1px 0 0 var(--gs-panel-line);
+  }
+
+  .groupBtn {
+    position: sticky;
+    left: 12px;
+    width: calc(100vw - 2 * var(--gs-gutter) - 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chev,
+  .all {
+    transition: none;
+  }
+}

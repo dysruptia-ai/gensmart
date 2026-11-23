@@ -31,7 +31,8 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 
 - [Home (Spanish)](https://www.gensmart.co/): overview of the platform.
 - [Home (English)](https://www.gensmart.co/en): overview of the platform.
-- [Pricing](https://www.gensmart.co/pricing): plans, limits and add-ons.
+- [Pricing](https://www.gensmart.co/en/pricing): plans, limits and add-ons.
+- [Pricing (Spanish)](https://www.gensmart.co/precios): planes, límites y paquetes de mensajes.
 - [Blog](https://www.gensmart.co/blog): guides and articles.
 - [WhatsApp setup guide](https://www.gensmart.co/docs/whatsapp-setup): how to connect a WhatsApp number.
 - [Contact](https://www.gensmart.co/contact): talk to the team.

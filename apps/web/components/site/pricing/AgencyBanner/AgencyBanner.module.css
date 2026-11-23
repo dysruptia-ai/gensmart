@@ -1,0 +1,45 @@
+/* design/web: .card.hl-card (marca blanca) */
+.section {
+  position: relative;
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+  padding-block: var(--gs-y-s);
+  --gs-btn-bg: var(--gs-brand-bright);
+  --gs-btn-fg: var(--gs-brand-ink);
+}
+
+.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gs-sp-5);
+  padding: var(--gs-sp-6);
+  border-radius: var(--gs-r-lg);
+  background: color-mix(in oklab, var(--gs-brand) 9%, var(--gs-panel));
+}
+
+.pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: var(--gs-r-pill);
+  background: var(--gs-brand-tint);
+  color: var(--gs-brand-bright);
+  font: 600 13px/1 var(--gs-font-sans);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 8px 0 0;
+  font-family: var(--gs-font-display);
+  font-size: var(--gs-fs-h3);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.text {
+  max-width: 60ch;
+  margin: 8px 0 0;
+  color: var(--gs-ink-300);
+}

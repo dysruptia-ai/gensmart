@@ -1,0 +1,142 @@
+/* design/web: .faq-split, .faq-side, .faq-kick, .faq details */
+.section {
+  position: relative;
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+  padding-block: var(--gs-y-m);
+  --gs-fg: var(--gs-ink-100);
+  --gs-fg-soft: var(--gs-ink-300);
+  --gs-line-strong: rgba(240, 244, 242, 0.16);
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(32px, 6vw, 96px);
+  align-items: start;
+}
+
+.side {
+  position: sticky;
+  top: calc(var(--gs-header-h) + 24px);
+}
+
+.kicker {
+  margin: 0 0 var(--gs-sp-4);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
+.title {
+  margin: 0 0 var(--gs-sp-5);
+  font-family: var(--gs-font-display);
+  font-size: var(--gs-fs-h2);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: var(--gs-ls-h2);
+  text-wrap: balance;
+}
+
+.accent {
+  color: var(--gs-brand-bright);
+}
+
+.help {
+  max-width: 34ch;
+  margin: 0 0 var(--gs-sp-5);
+  color: var(--gs-ink-300);
+}
+
+.faq {
+  display: grid;
+  gap: 8px;
+}
+
+.item {
+  padding: var(--gs-sp-4) var(--gs-sp-5);
+  border-left: 3px solid transparent;
+  border-radius: var(--gs-r-md);
+  background: var(--gs-ink-900);
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
+}
+
+.item[open] {
+  border-left-color: var(--gs-brand-bright);
+}
+
+.summary {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding-block: 4px;
+  font-family: var(--gs-font-display);
+  font-size: clamp(1rem, 0.95rem + 0.35vw, 1.15rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  list-style: none;
+  cursor: pointer;
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary::after {
+  content: '+';
+  flex: none;
+  margin-left: auto;
+  font-size: 1.3em;
+  line-height: 1;
+  color: var(--gs-brand-bright);
+  transition: transform 0.2s;
+}
+
+.item[open] .summary {
+  color: var(--gs-brand-bright);
+}
+
+.item[open] .summary::after {
+  transform: rotate(45deg);
+}
+
+.summary:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 4px;
+}
+
+.num {
+  flex: none;
+  font-family: var(--gs-font-sans);
+  font-size: 13px;
+  color: var(--gs-brand-bright);
+}
+
+.answer {
+  max-width: 70ch;
+  margin: 10px 0 0;
+  font-size: 16px;
+  color: var(--gs-ink-300);
+}
+
+@media (max-width: 900px) {
+  .split {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .side {
+    position: static;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item,
+  .summary::after {
+    transition: none;
+  }
+}

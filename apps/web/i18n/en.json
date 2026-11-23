@@ -1740,18 +1740,6 @@
       }
     }
   },
-  "contactSales": {
-    "title": "Contact Sales",
-    "subtitle": "Tell us about your needs and we'll get back to you within 24 hours.",
-    "company": "Company",
-    "message": "Message",
-    "namePlaceholder": "Your name",
-    "emailPlaceholder": "your@email.com",
-    "companyPlaceholder": "Your company name",
-    "messagePlaceholder": "Tell us about your team size, use case, and any questions...",
-    "send": "Send Message",
-    "success": "Thank you! We'll get back to you within 24 hours."
-  },
   "site": {
     "a11y": {
       "skip": "Skip to content",
@@ -2186,7 +2174,7 @@
       },
       "pricing": {
         "title": "Your first agent, from ${price} USD a month",
-        "lead": "{days} days free on any plan. Try it with your own customers and move up a plan when your operation needs it.",
+        "lead": "{days} days free on the Solo, Starter and Pro plans. Try it with your own customers and move up a plan when your operation needs it.",
         "perMonth": "USD/mo",
         "recommended": "Recommended",
         "soloDesc": "{agents} agent, {messages} messages and {contacts} contacts",
@@ -2210,6 +2198,11 @@
         "title": "GenSmart | Multichannel agentic platform for AI agents",
         "description": "Multichannel agentic platform. Create, connect and activate AI agents in 3 steps for WhatsApp, Instagram, Messenger, Telegram, email and your website.",
         "ogAlt": "GenSmart: multichannel agentic platform for AI agents"
+      },
+      "pricing": {
+        "title": "Pricing | GenSmart plans",
+        "description": "Solo, Starter, Pro and Enterprise plans. Annual billing {discount}% off and a {days} day free trial.",
+        "ogAlt": "GenSmart plans and pricing"
       }
     },
     "langHint": {
@@ -2217,6 +2210,189 @@
       "text": "This page is also available in English.",
       "link": "View in English",
       "dismiss": "Dismiss language suggestion"
+    },
+    "pricing": {
+      "crumbsLabel": "Breadcrumb",
+      "crumbHome": "Home",
+      "crumbCurrent": "Pricing",
+      "titleBefore": "Every unanswered message is",
+      "titleAccent": "a sale going cold",
+      "leadBefore": "An AI agent replies right away on six channels and scores every prospect from 0 to 10, so your team talks first to the people ready to buy. From ${price} USD a month.",
+      "leadAccent": "Start your {days} free days today and watch it handle your own customers.",
+      "plansHeading": "Plans and prices",
+      "billingLabel": "Billing period",
+      "monthly": "Monthly",
+      "yearly": "Yearly, save {discount}%",
+      "perMonth": "USD/mo",
+      "yearlyNote": "Billed annually, {discount}% off",
+      "recommended": "Recommended",
+      "meterLabel": "{agents} and {messages}",
+      "meterAgents": "Agents",
+      "meterMessages": "Messages",
+      "who": {
+        "solo": "For the one-person shop that cannot keep up.",
+        "starter": "For the business already selling by chat every day.",
+        "pro": "For the team running several fronts at once.",
+        "enterprise": "For operations with volume and their own rules."
+      },
+      "feat": {
+        "agentsOne": "{n} AI agent",
+        "agentsMany": "{n} AI agents",
+        "agentsUnlimited": "Unlimited agents",
+        "messages": "{n} messages per month",
+        "contacts": "{n} contacts",
+        "contactsUnlimited": "Unlimited contacts",
+        "channelsAll": "All {n} channels included",
+        "channelsSome": "{n} channels included",
+        "voiceAndImages": "Voice and images",
+        "voice": "Voice messages",
+        "images": "Image analysis",
+        "filesOne": "{n} knowledge file",
+        "filesMany": "{n} knowledge files",
+        "filesUnlimited": "Unlimited files",
+        "byoKey": "Bring your own API key"
+      },
+      "support": {
+        "solo": "Community support",
+        "starter": "Email support",
+        "pro": "Priority support",
+        "enterprise": "Dedicated support"
+      },
+      "supportShort": {
+        "solo": "Community",
+        "starter": "Email",
+        "pro": "Priority",
+        "enterprise": "Dedicated"
+      },
+      "trialCta": "Try free for {days} days",
+      "salesCta": "Talk to sales",
+      "noteTrial": "{days} day free trial on the {plans} plans.",
+      "noteChange": "Change plans whenever you want and it applies immediately; the difference is prorated on your next invoice.",
+      "noteYearly": "The yearly price is shown per month, with {discount}% off the monthly price.",
+      "noteChannels": "The {n} channels are {list}.",
+      "noteHelp": "Questions?",
+      "noteHelpLink": "Write to a consultant",
+      "and": "and",
+      "or": "or",
+      "channels": {
+        "whatsapp": "WhatsApp",
+        "web": "web",
+        "instagram": "Instagram",
+        "facebook": "Messenger",
+        "telegram": "Telegram",
+        "email": "email"
+      },
+      "compare": {
+        "title": "Everything in each plan",
+        "lead": "The six channels are in all four plans. What changes is the volume and the advanced features.",
+        "caption": "Feature comparison by plan",
+        "feature": "Feature",
+        "expandAll": "Expand all",
+        "collapseAll": "Collapse all",
+        "count": "{n} features",
+        "included": "Included",
+        "notIncluded": "Not included",
+        "unlimitedM": "Unlimited",
+        "unlimitedF": "Unlimited",
+        "groups": {
+          "core": "Core",
+          "channels": "Channels",
+          "ai": "AI",
+          "crm": "CRM and advanced"
+        },
+        "rows": {
+          "agents": "AI agents",
+          "messages": "Messages / month",
+          "contacts": "Contacts",
+          "support": "Support",
+          "web": "Web widget",
+          "whatsapp": "WhatsApp Business",
+          "email": "Email",
+          "telegram": "Telegram",
+          "facebook": "Messenger",
+          "instagram": "Instagram",
+          "voice": "Voice messages",
+          "images": "Image analysis",
+          "memory": "Conversation memory",
+          "length": "Length of each reply",
+          "byoKey": "Your own AI key (API)",
+          "files": "Knowledge base files",
+          "functions": "Custom functions",
+          "mcp": "External tools (MCP)",
+          "emailAlerts": "Email alerts",
+          "subAccounts": "Sub-accounts",
+          "takeover": "Human takeover"
+        },
+        "memory": "Last {n} messages",
+        "length": {
+          "short": "Short",
+          "medium": "Medium",
+          "long": "Long",
+          "veryLong": "Very long"
+        }
+      },
+      "packs": {
+        "title": "Ran short one month?",
+        "lead": "You buy a one-off pack and keep going. They do not accumulate and expire at month end.",
+        "messages": "{n} messages",
+        "oneTime": "one-time",
+        "note": "Agents pause on their own when they hit the limit and we warn you at {warn}%. The counter resets on the first of each month."
+      },
+      "faq": {
+        "kicker": "Plan questions",
+        "titleBefore": "Questions?",
+        "titleAccent": "Get answers before you pay",
+        "helpBefore": "Can't find yours? Write to us and",
+        "helpAccent": "we will answer",
+        "helpAfter": "soon.",
+        "cta": "Talk to the team",
+        "packItemFirst": "{n} messages for ${price}",
+        "packItem": "{n} for ${price}",
+        "items": {
+          "q1": "What do all plans include?",
+          "a1": "All six channels (WhatsApp, web, Instagram, Messenger, Telegram and email), the CRM and scheduling. What changes is agents, messages and contacts. Handover to a person starts on the {takeoverPlan} plan.",
+          "q2": "Can I try it before paying?",
+          "a2": "Yes. {plans} have a {days} day free trial. Enterprise is contracted through sales.",
+          "q3": "Can I change plans at any time?",
+          "a3": "Yes. The change applies immediately whether you upgrade or downgrade, and the difference is prorated on your next invoice.",
+          "q4": "What happens if I reach the message limit?",
+          "a4": "Your agents pause on their own. We warn you at {warn}% so you can upgrade or buy a single pack ({packs}) before you run out.",
+          "q5": "Do unused messages roll over?",
+          "a5": "No. The counter resets on the first of each month. Single packs do not roll over either and expire at month end.",
+          "q6": "Are there refunds?",
+          "a6": "Refunds are reviewed case by case. Write to us and we will look at it.",
+          "q7": "What payment methods do you accept?",
+          "a7": "Credit cards (Visa, Mastercard and American Express) through Stripe. The Enterprise plan can also be paid by invoice.",
+          "q8": "Can I use my own API key?",
+          "a8": "Yes, on the {byoPlan} plan."
+        }
+      },
+      "agency": {
+        "pill": "White label",
+        "title": "Agency plan, custom",
+        "text": "Offer AI agents under your own brand and sell your service. Fully custom with a consultant.",
+        "cta": "Learn about the program"
+      }
+    },
+    "sales": {
+      "title": "Talk to sales",
+      "subtitle": "Tell us what you need and we will reply within 24 hours.",
+      "name": "Name",
+      "namePlaceholder": "Your name",
+      "email": "Email",
+      "emailPlaceholder": "you@company.com",
+      "company": "Company",
+      "optional": "optional",
+      "companyPlaceholder": "Your company name",
+      "message": "Message",
+      "messagePlaceholder": "Tell us about your team size, use case and any questions.",
+      "required": "required",
+      "send": "Send message",
+      "sending": "Sending…",
+      "success": "Thank you! We will reply within 24 hours.",
+      "error": "We could not send your message. Please try again in a moment.",
+      "close": "Close",
+      "done": "Done"
     }
   }
 }

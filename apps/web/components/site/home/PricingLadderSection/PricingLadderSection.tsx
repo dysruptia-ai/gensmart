@@ -4,10 +4,9 @@ import { useState } from 'react';
 import { PLAN_LIMITS, PRICING } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
 import { registerHref, type RegisterPlan } from '@/lib/site-links';
-// Mismo modal que abre /pricing para Enterprise (trae su propio CSS Module, nada más de components/landing)
-import ContactSalesModal from '@/components/landing/ContactSalesModal/ContactSalesModal';
 import Container from '../../Container';
 import Reveal from '../../Reveal';
+import SalesDialog from '../../SalesDialog';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
 import SiteButton, { SiteActionButton } from '../../SiteButton';
@@ -80,7 +79,7 @@ export default function PricingLadderSection() {
                 </div>
                 <p className={styles.desc}>{describe(plan.id)}</p>
                 {plan.id === 'enterprise' ? (
-                  // Enterprise no es autoservicio: va a ventas, igual que en /pricing
+                  // Enterprise no es autoservicio: va a ventas, igual que en la página de precios
                   <SiteActionButton
                     size="sm"
                     className={styles.planCta}
@@ -104,7 +103,7 @@ export default function PricingLadderSection() {
           </SiteButton>
         </div>
       </Container>
-      <ContactSalesModal isOpen={salesOpen} onClose={() => setSalesOpen(false)} />
+      <SalesDialog open={salesOpen} onClose={() => setSalesOpen(false)} />
     </Section>
   );
 }

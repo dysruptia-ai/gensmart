@@ -1,0 +1,51 @@
+/* design/web: .packs, .pack, .pprice */
+.section {
+  position: relative;
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+  padding-block: var(--gs-y-m);
+  --gs-fg: var(--gs-ink-100);
+  --gs-fg-soft: var(--gs-ink-300);
+}
+
+.packs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: var(--gs-sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pack {
+  display: grid;
+  gap: 6px;
+  padding: var(--gs-sp-5);
+  border-radius: var(--gs-r-md);
+  background: var(--gs-ink-800);
+  box-shadow: inset 0 0 0 1px var(--gs-panel-line);
+}
+
+.pack b {
+  font-family: var(--gs-font-display);
+  font-size: 20px;
+}
+
+.price {
+  font-family: var(--gs-font-display);
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--gs-brand-bright);
+}
+
+.pack small {
+  font-size: 14px;
+  color: var(--gs-ink-300);
+}
+
+.note {
+  margin: var(--gs-sp-4) 0 0;
+  font-size: 16px;
+  color: var(--gs-ink-300);
+}

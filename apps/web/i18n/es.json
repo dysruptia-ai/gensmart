@@ -1740,18 +1740,6 @@
       }
     }
   },
-  "contactSales": {
-    "title": "Contactar Ventas",
-    "subtitle": "Cuéntanos sobre tus necesidades y te responderemos en 24 horas.",
-    "company": "Empresa",
-    "message": "Mensaje",
-    "namePlaceholder": "Tu nombre",
-    "emailPlaceholder": "tu@email.com",
-    "companyPlaceholder": "Nombre de tu empresa",
-    "messagePlaceholder": "Cuéntanos sobre el tamaño de tu equipo, caso de uso y cualquier pregunta...",
-    "send": "Enviar Mensaje",
-    "success": "¡Gracias! Te responderemos en un plazo de 24 horas."
-  },
   "site": {
     "a11y": {
       "skip": "Saltar al contenido",
@@ -2186,7 +2174,7 @@
       },
       "pricing": {
         "title": "Tu primer agente, desde ${price} USD al mes",
-        "lead": "{days} días gratis en cualquiera de los planes. Pruébalo con tus propios clientes y sube de plan cuando tu operación lo pida.",
+        "lead": "{days} días gratis en los planes Solo, Starter y Pro. Pruébalo con tus propios clientes y sube de plan cuando tu operación lo pida.",
         "perMonth": "USD/mes",
         "recommended": "Recomendado",
         "soloDesc": "{agents} agente, {messages} mensajes y {contacts} contactos",
@@ -2210,6 +2198,11 @@
         "title": "GenSmart | Plataforma agéntica multicanal para agentes de IA",
         "description": "Plataforma agéntica multicanal. Crea, conecta y activa agentes de IA en 3 pasos para WhatsApp, Instagram, Messenger, Telegram, correo y tu sitio web.",
         "ogAlt": "GenSmart: plataforma agéntica multicanal para agentes de IA"
+      },
+      "pricing": {
+        "title": "Precios | Planes de GenSmart",
+        "description": "Planes Solo, Starter, Pro y Enterprise. Pago anual con {discount}% de descuento y prueba gratis de {days} días.",
+        "ogAlt": "Planes y precios de GenSmart"
       }
     },
     "langHint": {
@@ -2217,6 +2210,189 @@
       "text": "Esta página también está en español.",
       "link": "Ver en español",
       "dismiss": "Cerrar la sugerencia de idioma"
+    },
+    "pricing": {
+      "crumbsLabel": "Ruta de navegación",
+      "crumbHome": "Inicio",
+      "crumbCurrent": "Precios",
+      "titleBefore": "Cada mensaje sin respuesta es",
+      "titleAccent": "una venta que se enfría",
+      "leadBefore": "Un agente de IA responde en el momento, en seis canales, y califica a cada prospecto de 0 a 10 para que tu equipo hable primero con quien está listo para comprar. Desde ${price} USD al mes.",
+      "leadAccent": "Empieza hoy tus {days} días gratis y míralo atender a tus propios clientes.",
+      "plansHeading": "Planes y precios",
+      "billingLabel": "Periodo de facturación",
+      "monthly": "Mensual",
+      "yearly": "Anual, ahorra {discount}%",
+      "perMonth": "USD/mes",
+      "yearlyNote": "Facturado anualmente, {discount}% de descuento",
+      "recommended": "Recomendado",
+      "meterLabel": "{agents} y {messages}",
+      "meterAgents": "Agentes",
+      "meterMessages": "Mensajes",
+      "who": {
+        "solo": "Para quien atiende solo y ya no da abasto.",
+        "starter": "Para el negocio que ya vende todos los días en conversaciones.",
+        "pro": "Para el equipo que ya tiene varios frentes abiertos.",
+        "enterprise": "Para operaciones con volumen y reglas propias."
+      },
+      "feat": {
+        "agentsOne": "{n} agente de IA",
+        "agentsMany": "{n} agentes de IA",
+        "agentsUnlimited": "Agentes ilimitados",
+        "messages": "{n} mensajes al mes",
+        "contacts": "{n} contactos",
+        "contactsUnlimited": "Contactos ilimitados",
+        "channelsAll": "Los {n} canales incluidos",
+        "channelsSome": "{n} canales incluidos",
+        "voiceAndImages": "Voz e imágenes",
+        "voice": "Mensajes de voz",
+        "images": "Análisis de imágenes",
+        "filesOne": "{n} archivo de conocimiento",
+        "filesMany": "{n} archivos de conocimiento",
+        "filesUnlimited": "Archivos ilimitados",
+        "byoKey": "Trae tu propia llave de API"
+      },
+      "support": {
+        "solo": "Soporte de la comunidad",
+        "starter": "Soporte por correo",
+        "pro": "Soporte prioritario",
+        "enterprise": "Soporte dedicado"
+      },
+      "supportShort": {
+        "solo": "Comunidad",
+        "starter": "Correo",
+        "pro": "Prioritario",
+        "enterprise": "Dedicado"
+      },
+      "trialCta": "Prueba {days} días gratis",
+      "salesCta": "Hablar con ventas",
+      "noteTrial": "Prueba gratis de {days} días en los planes {plans}.",
+      "noteChange": "Cambias de plan cuando quieras y el cambio aplica de inmediato; la diferencia se prorratea en tu siguiente factura.",
+      "noteYearly": "El precio anual se muestra por mes, con {discount}% de descuento sobre el mensual.",
+      "noteChannels": "Los {n} canales son {list}.",
+      "noteHelp": "¿Dudas?",
+      "noteHelpLink": "Escríbele a un consultor",
+      "and": "y",
+      "or": "o",
+      "channels": {
+        "whatsapp": "WhatsApp",
+        "web": "web",
+        "instagram": "Instagram",
+        "facebook": "Messenger",
+        "telegram": "Telegram",
+        "email": "correo"
+      },
+      "compare": {
+        "title": "Todo lo que trae cada plan",
+        "lead": "Los seis canales están en los cuatro planes. Lo que cambia es el volumen y las funciones avanzadas.",
+        "caption": "Comparación de funciones por plan",
+        "feature": "Función",
+        "expandAll": "Ver todo",
+        "collapseAll": "Contraer todo",
+        "count": "{n} funciones",
+        "included": "Incluido",
+        "notIncluded": "No incluido",
+        "unlimitedM": "Ilimitados",
+        "unlimitedF": "Ilimitadas",
+        "groups": {
+          "core": "Núcleo",
+          "channels": "Canales",
+          "ai": "IA",
+          "crm": "CRM y avanzado"
+        },
+        "rows": {
+          "agents": "Agentes de IA",
+          "messages": "Mensajes al mes",
+          "contacts": "Contactos",
+          "support": "Soporte",
+          "web": "Widget web",
+          "whatsapp": "WhatsApp Business",
+          "email": "Correo",
+          "telegram": "Telegram",
+          "facebook": "Messenger",
+          "instagram": "Instagram",
+          "voice": "Mensajes de voz",
+          "images": "Análisis de imágenes",
+          "memory": "Memoria de la conversación",
+          "length": "Largo de cada respuesta",
+          "byoKey": "Tu propia llave de IA (API)",
+          "files": "Archivos de conocimiento",
+          "functions": "Funciones personalizadas",
+          "mcp": "Herramientas externas (MCP)",
+          "emailAlerts": "Avisos por correo",
+          "subAccounts": "Subcuentas",
+          "takeover": "Traspaso a una persona"
+        },
+        "memory": "Últimos {n} mensajes",
+        "length": {
+          "short": "Corta",
+          "medium": "Media",
+          "long": "Larga",
+          "veryLong": "Muy larga"
+        }
+      },
+      "packs": {
+        "title": "¿Te quedaste corto un mes?",
+        "lead": "Compras un paquete suelto y sigues. No se acumulan y vencen al cierre del mes.",
+        "messages": "{n} mensajes",
+        "oneTime": "pago único",
+        "note": "Los agentes se pausan solos al llegar al límite y te avisamos al {warn}%. El contador vuelve a cero el primero de cada mes."
+      },
+      "faq": {
+        "kicker": "Preguntas sobre planes",
+        "titleBefore": "¿Dudas?",
+        "titleAccent": "Resuélvelas antes de pagar",
+        "helpBefore": "¿No ves la tuya? Escríbenos y",
+        "helpAccent": "te respondemos",
+        "helpAfter": "pronto.",
+        "cta": "Hablar con el equipo",
+        "packItemFirst": "{n} mensajes por ${price}",
+        "packItem": "{n} por ${price}",
+        "items": {
+          "q1": "¿Qué incluyen todos los planes?",
+          "a1": "Los seis canales (WhatsApp, web, Instagram, Messenger, Telegram y correo), el CRM y la agenda. Cambian los agentes, los mensajes y los contactos. El traspaso a una persona empieza en el plan {takeoverPlan}.",
+          "q2": "¿Puedo probar antes de pagar?",
+          "a2": "Sí. {plans} tienen {days} días de prueba gratis. Enterprise se contrata con ventas.",
+          "q3": "¿Puedo cambiar de plan en cualquier momento?",
+          "a3": "Sí. El cambio aplica de inmediato, tanto si subes como si bajas de plan, y la diferencia se prorratea en tu siguiente factura.",
+          "q4": "¿Qué pasa si llego al límite de mensajes?",
+          "a4": "Tus agentes se pausan solos. Te avisamos al llegar al {warn}% para que subas de plan o compres un paquete suelto ({packs}) antes de quedarte sin ellos.",
+          "q5": "¿Los mensajes que no uso se acumulan?",
+          "a5": "No. El contador vuelve a cero el primero de cada mes. Los paquetes sueltos tampoco se acumulan y vencen al cierre del mes.",
+          "q6": "¿Hay reembolsos?",
+          "a6": "Los reembolsos se revisan caso por caso. Escríbenos y lo vemos.",
+          "q7": "¿Qué medios de pago aceptan?",
+          "a7": "Tarjetas de crédito Visa, Mastercard y American Express, a través de Stripe. El plan Enterprise también se puede pagar con factura.",
+          "q8": "¿Puedo usar mi propia llave de API?",
+          "a8": "Sí, en el plan {byoPlan}."
+        }
+      },
+      "agency": {
+        "pill": "Marca blanca",
+        "title": "Plan Agencia, a medida",
+        "text": "Ofrece agentes de IA con tu propia marca y vende tu servicio. Todo a medida con un consultor.",
+        "cta": "Conocer el programa"
+      }
+    },
+    "sales": {
+      "title": "Hablar con ventas",
+      "subtitle": "Cuéntanos qué necesitas y te respondemos en menos de 24 horas.",
+      "name": "Nombre",
+      "namePlaceholder": "Tu nombre",
+      "email": "Correo",
+      "emailPlaceholder": "tu@empresa.com",
+      "company": "Empresa",
+      "optional": "opcional",
+      "companyPlaceholder": "Nombre de tu empresa",
+      "message": "Mensaje",
+      "messagePlaceholder": "Cuéntanos el tamaño de tu equipo, tu caso de uso y tus preguntas.",
+      "required": "obligatorio",
+      "send": "Enviar mensaje",
+      "sending": "Enviando…",
+      "success": "¡Gracias! Te respondemos en menos de 24 horas.",
+      "error": "No pudimos enviar tu mensaje. Inténtalo de nuevo en un momento.",
+      "close": "Cerrar",
+      "done": "Listo"
     }
   }
 }

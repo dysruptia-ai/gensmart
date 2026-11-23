@@ -14,7 +14,7 @@ export const DEFAULT_SITE_LANGUAGE: SiteLanguage = 'es';
 
 export const SITE_ORIGIN = 'https://www.gensmart.co';
 
-export type SiteRouteId = 'home';
+export type SiteRouteId = 'home' | 'pricing';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -26,6 +26,7 @@ export interface SiteRoute {
 
 export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   home: { id: 'home', internal: '', paths: { es: '/', en: '/en' } },
+  pricing: { id: 'pricing', internal: '/pricing', paths: { es: '/precios', en: '/en/pricing' } },
 };
 
 const ROUTE_LIST: SiteRoute[] = Object.values(SITE_ROUTES);
@@ -40,6 +41,14 @@ export function otherLanguage(lang: SiteLanguage): SiteLanguage {
 
 export function publicPath(id: SiteRouteId, lang: SiteLanguage): string {
   return SITE_ROUTES[id].paths[lang];
+}
+
+/**
+ * Página de precios en el idioma del usuario. Para el dashboard, los componentes viejos
+ * y cualquier enlace fuera de `SiteLink`: así nadie escribe `/precios` o `/en/pricing` a mano.
+ */
+export function pricingHref(language: SupportedLanguage): string {
+  return publicPath('pricing', isSiteLanguage(language) ? language : DEFAULT_SITE_LANGUAGE);
 }
 
 export function absoluteUrl(path: string): string {

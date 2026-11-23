@@ -6,11 +6,6 @@ const BASE_URL = 'https://www.gensmart.co';
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
     {
-      url: `${BASE_URL}/pricing`,
-      changeFrequency: 'monthly',
-      priority: 0.9,
-    },
-    {
       url: `${BASE_URL}/blog`,
       changeFrequency: 'weekly',
       priority: 0.8,
@@ -66,7 +61,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     SITE_LANGUAGES.map((lang) => ({
       url: absoluteUrl(route.paths[lang]),
       changeFrequency: 'weekly' as const,
-      priority: route.id === 'home' ? 1.0 : 0.8,
+      priority: route.id === 'home' ? 1.0 : route.id === 'pricing' ? 0.9 : 0.8,
       alternates: { languages: alternates(route.id) },
     }))
   );

@@ -11,6 +11,7 @@ import Input from '@/components/ui/Input';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pricingHref } from '@/lib/site-routes';
 import styles from './TelegramConfig.module.css';
 
 interface TelegramStatus {
@@ -49,7 +50,7 @@ const DISCONNECTED_STATUS: TelegramStatus = {
 
 export default function TelegramConfig({ agentId, orgPlan }: TelegramConfigProps) {
   const { success, error: toastError } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const tm = (key: string, values?: Record<string, string | number>) => t('agents.channels.telegramConfig.' + key, values);
 
   const planKey = (orgPlan in PLAN_LIMITS ? orgPlan : 'solo') as keyof typeof PLAN_LIMITS;
@@ -173,7 +174,7 @@ export default function TelegramConfig({ agentId, orgPlan }: TelegramConfigProps
         </div>
         <Button
           size="sm"
-          onClick={() => window.open('/pricing', '_blank')}
+          onClick={() => window.open(pricingHref(language), '_blank')}
         >
           {tm('upgrade')}
         </Button>

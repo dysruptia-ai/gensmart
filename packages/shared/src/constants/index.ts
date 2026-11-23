@@ -143,3 +143,6 @@ export const MESSAGE_ADDONS = [
   { messages: 2000, price: 30 },
   { messages: 5000, price: 60 },
 ] as const;
+
+/** Porcentaje del límite mensual de mensajes en el que se avisa al usuario (usage.service y página de precios). */
+export const USAGE_WARNING_PERCENT = 80;

@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pricingHref } from '@/lib/site-routes';
 import { fbLoginEmbeddedSignup } from '../WhatsAppConfig/fbLogin';
 import styles from './MessengerConfig.module.css';
 
@@ -41,7 +42,7 @@ interface MessengerConfigProps {
 
 export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigProps) {
   const { success, error: toastError } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const tm = (key: string, values?: Record<string, string | number>) => t('agents.channels.messengerConfig.' + key, values);
 
   const [status, setStatus] = useState<MessengerStatus | null>(null);
@@ -253,7 +254,7 @@ export default function MessengerConfig({ agentId, orgPlan }: MessengerConfigPro
           <div className={styles.gateTitle}>{tm('gateTitle')}</div>
           <p className={styles.gateDesc}>{tm('gateDesc')}</p>
         </div>
-        <Button size="sm" onClick={() => window.open('/pricing', '_blank')}>
+        <Button size="sm" onClick={() => window.open(pricingHref(language), '_blank')}>
           {tm('upgrade')}
         </Button>
       </div>

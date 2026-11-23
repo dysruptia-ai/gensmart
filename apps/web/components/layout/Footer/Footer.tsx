@@ -6,11 +6,13 @@ import { Facebook, Globe } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pricingHref } from '@/lib/site-routes';
 import styles from './Footer.module.css';
 
-const PRODUCT_LINKS = [
+// `href: null` = precios: se resuelve con el idioma actual (pricingHref)
+const PRODUCT_LINKS: Array<{ labelKey: string; href: string | null }> = [
   { labelKey: 'landing.footer.features', href: '/#features' },
-  { labelKey: 'landing.footer.pricing', href: '/pricing' },
+  { labelKey: 'landing.footer.pricing', href: null },
   { labelKey: 'landing.footer.blog', href: '/blog' },
   { labelKey: 'landing.footer.docs', href: '/docs/whatsapp-setup' },
 ];
@@ -50,8 +52,8 @@ export function Footer() {
             <h3 className={styles.columnTitle}>{t('landing.footer.product')}</h3>
             <ul className={styles.linkList}>
               {PRODUCT_LINKS.map((l) => (
-                <li key={l.href}>
-                  <Link href={l.href} className={styles.link}>
+                <li key={l.labelKey}>
+                  <Link href={l.href ?? pricingHref(language)} className={styles.link}>
                     {t(l.labelKey)}
                   </Link>
                 </li>

@@ -11,6 +11,7 @@ import Spinner from '@/components/ui/Spinner';
 import Toggle from '@/components/ui/Toggle';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { pricingHref } from '@/lib/site-routes';
 import styles from './EmailConfig.module.css';
 
 type FormFieldSeparator = 'colon' | 'equals' | 'both';
@@ -37,7 +38,7 @@ const MAX_SIGNATURE = 1000;
 
 export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
   const { success, error: toastError } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const tm = (key: string, values?: Record<string, string | number>) => t('agents.channels.emailConfig.' + key, values);
 
   const [status, setStatus] = useState<EmailStatus | null>(null);
@@ -160,7 +161,7 @@ export default function EmailConfig({ agentId, orgPlan }: EmailConfigProps) {
           <div className={styles.gateTitle}>{tm('gateTitle')}</div>
           <p className={styles.gateDesc}>{tm('gateDesc')}</p>
         </div>
-        <Button size="sm" onClick={() => window.open('/pricing', '_blank')}>
+        <Button size="sm" onClick={() => window.open(pricingHref(language), '_blank')}>
           {tm('upgrade')}
         </Button>
       </div>
