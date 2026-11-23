@@ -64,8 +64,8 @@ export default function WhatsAppSetupPage() {
           <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer">
             Meta Business Account
           </a>{' '}
-          and a phone number not currently registered with WhatsApp. GenSmart requires a{' '}
-          <strong>Starter plan or higher</strong> to use WhatsApp.
+          and a phone number not currently registered with WhatsApp. WhatsApp is{' '}
+          <strong>included in every GenSmart plan</strong>.
         </p>
       </div>
 

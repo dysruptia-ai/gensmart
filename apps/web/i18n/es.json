@@ -915,7 +915,7 @@
           "noPhone": "No se encontró ningún número de teléfono en tu cuenta de WhatsApp Business. Primero completa la configuración de WhatsApp Business en Meta Business Manager.",
           "sessionExpired": "La sesión de conexión expiró. Haz clic en \"{button}\" para empezar de nuevo.",
           "sessionUnavailable": "No pudimos iniciar la sesión de conexión. Inténtalo de nuevo.",
-          "planLimit": "WhatsApp requiere el plan Starter o superior.",
+          "planLimit": "WhatsApp no está disponible en tu plan actual.",
           "phoneNotAdded": "Tu cuenta de WhatsApp Business se creó, pero no se agregó ningún número de teléfono. Haz clic en \"{button}\" de nuevo y agrega un número para terminar.",
           "phoneNotVerified": "Tu número de teléfono se agregó, pero aún no está verificado. Haz clic en \"{button}\" de nuevo y completa el paso del código de verificación.",
           "phoneAlreadyConnected": "Este número o esta cuenta de WhatsApp ya está conectado a otro agente. Elige uno diferente.",
@@ -926,8 +926,8 @@
         }
       },
       "messengerConfig": {
-        "gateTitle": "Messenger requiere el plan Starter",
-        "gateDesc": "Conecta tu página de Facebook para desplegar este agente en Messenger. Disponible en los planes Starter, Pro y Enterprise.",
+        "gateTitle": "Messenger no está disponible en tu plan",
+        "gateDesc": "Conecta tu página de Facebook para desplegar este agente en Messenger. Mejora tu plan para activar este canal.",
         "upgrade": "Mejorar plan",
         "statusLabel": "Estado de Messenger",
         "connected": "Conectado",
@@ -958,7 +958,7 @@
           "pageListFailed": "No pudimos listar tus páginas de Facebook. Inténtalo de nuevo.",
           "sessionExpired": "La sesión de conexión expiró. Haz clic en \"{button}\" para empezar de nuevo.",
           "sessionUnavailable": "No pudimos iniciar la sesión de conexión. Inténtalo de nuevo.",
-          "planLimit": "Messenger requiere el plan Starter o superior.",
+          "planLimit": "Messenger no está disponible en tu plan actual.",
           "pageAlreadyConnected": "Esta página de Facebook ya está conectada a otro agente. Elige una diferente.",
           "invalidSelection": "La página de Facebook seleccionada no es válida. Haz clic en \"{button}\" para empezar de nuevo.",
           "invalidFbToken": "Tu sesión de Facebook no es válida o expiró. Haz clic en \"{button}\" para intentarlo de nuevo.",
@@ -968,8 +968,8 @@
         }
       },
       "instagramConfig": {
-        "gateTitle": "Instagram requiere el plan Starter",
-        "gateDesc": "Conecta tu cuenta profesional de Instagram para desplegar este agente en los mensajes directos de Instagram. Disponible en los planes Starter, Pro y Enterprise.",
+        "gateTitle": "Instagram no está disponible en tu plan",
+        "gateDesc": "Conecta tu cuenta profesional de Instagram para desplegar este agente en los mensajes directos de Instagram. Mejora tu plan para activar este canal.",
         "upgrade": "Mejorar plan",
         "statusLabel": "Estado de Instagram",
         "connected": "Conectado",
@@ -1000,7 +1000,7 @@
           "accountListFailed": "No pudimos listar tus cuentas de Instagram. Inténtalo de nuevo.",
           "sessionExpired": "La sesión de conexión expiró. Haz clic en \"{button}\" para empezar de nuevo.",
           "sessionUnavailable": "No pudimos iniciar la sesión de conexión. Inténtalo de nuevo.",
-          "planLimit": "Instagram requiere el plan Starter o superior.",
+          "planLimit": "Instagram no está disponible en tu plan actual.",
           "accountAlreadyConnected": "Esta cuenta de Instagram ya está conectada a otro agente. Elige una diferente.",
           "invalidSelection": "La cuenta de Instagram seleccionada no es válida. Haz clic en \"{button}\" para empezar de nuevo.",
           "invalidFbToken": "Tu sesión de Facebook no es válida o expiró. Haz clic en \"{button}\" para intentarlo de nuevo.",
@@ -1011,8 +1011,8 @@
         }
       },
       "telegramConfig": {
-        "gateTitle": "Telegram requiere el plan Starter",
-        "gateDesc": "Conecta un bot de Telegram para desplegar este agente en Telegram. Disponible en los planes Starter, Pro y Enterprise.",
+        "gateTitle": "Telegram no está disponible en tu plan",
+        "gateDesc": "Conecta un bot de Telegram para desplegar este agente en Telegram. Mejora tu plan para activar este canal.",
         "upgrade": "Mejorar plan",
         "statusLabel": "Estado de Telegram",
         "connected": "Conectado",
@@ -1049,8 +1049,8 @@
         }
       },
       "emailConfig": {
-        "gateTitle": "Email requiere el plan Starter",
-        "gateDesc": "Deja que este agente responda los correos de tus clientes. Disponible en los planes Starter, Pro y Enterprise.",
+        "gateTitle": "Email no está disponible en tu plan",
+        "gateDesc": "Deja que este agente responda los correos de tus clientes. Mejora tu plan para activar este canal.",
         "upgrade": "Mejorar plan",
         "statusLabel": "Estado del email",
         "connected": "Activo",
@@ -1098,7 +1098,7 @@
         },
         "errors": {
           "generic": "Algo salió mal con el canal de email. Inténtalo de nuevo.",
-          "planLimit": "Email requiere el plan Starter o superior.",
+          "planLimit": "Email no está disponible en tu plan actual.",
           "notConfigured": "El email no está configurado en este servidor. Contacta a soporte.",
           "copyFailed": "No se pudo copiar la dirección. Selecciónala y cópiala manualmente."
         }
