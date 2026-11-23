@@ -3,11 +3,11 @@ import { getAllPosts } from '@/lib/blog';
 import BlogContent from './BlogContent';
 
 export const metadata: Metadata = {
-  title: 'Blog — GenSmart',
+  title: 'Blog',
   description:
     'Insights on AI agents, WhatsApp automation, CRM, and business growth from the GenSmart team.',
   openGraph: {
-    title: 'Blog — GenSmart',
+    title: 'Blog | GenSmart',
     description:
       'Insights on AI agents, WhatsApp automation, CRM, and business growth.',
     url: 'https://www.gensmart.co/blog',

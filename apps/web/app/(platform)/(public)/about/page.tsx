@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import styles from './about.module.css';
 
 export const metadata: Metadata = {
-  title: 'About — GenSmart',
+  title: 'About',
   description: 'Learn about the team and mission behind GenSmart.',
 };
 

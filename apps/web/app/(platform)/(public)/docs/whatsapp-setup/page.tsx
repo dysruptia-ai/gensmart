@@ -4,7 +4,7 @@ import { MessageSquare, CheckCircle, ExternalLink, ArrowRight, Info } from 'luci
 import styles from './whatsapp-setup.module.css';
 
 export const metadata: Metadata = {
-  title: 'WhatsApp Setup Guide — GenSmart',
+  title: 'WhatsApp Setup Guide',
   description: 'Step-by-step guide to connect your WhatsApp Business account to GenSmart and deploy AI agents on WhatsApp.',
 };
 

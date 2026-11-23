@@ -1,21 +1,14 @@
-# GenSmart — AI Agent Builder for WhatsApp & Web
+# GenSmart
 # https://www.gensmart.co
 
 User-agent: *
 Allow: /
 Disallow: /dashboard
-Disallow: /dashboard/*
 Disallow: /admin
-Disallow: /admin/*
 Disallow: /api
-Disallow: /api/*
 Disallow: /widget/
 Disallow: /design-system
-Disallow: /docs
-Disallow: /docs/*
 
-# Sitemaps
 Sitemap: https://www.gensmart.co/sitemap.xml
 
-# LLMs.txt — AI agent & chatbot discovery
-# See: https://www.gensmart.co/llms.txt
+# LLMs.txt: https://www.gensmart.co/llms.txt

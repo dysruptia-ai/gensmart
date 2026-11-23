@@ -13,6 +13,7 @@ import LogoTile from '../LogoTile';
 import SiteButton from '../SiteButton';
 import SiteLogo from '../SiteLogo';
 import SiteLink from '../SiteLink';
+import LanguageSuggestion from '../LanguageSuggestion';
 import {
   INDUSTRY_ITEMS,
   PLATFORM_LOGOS,
@@ -454,6 +455,7 @@ export default function SiteHeader() {
           </div>
         </div>
       </header>
+      <LanguageSuggestion />
     </>
   );
 }

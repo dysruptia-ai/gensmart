@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Pricing — GenSmart AI Agent Builder',
+  title: 'Pricing',
   description:
     'Compare GenSmart plans for your WhatsApp AI chatbot. Solo at $20/mo, Starter at $29/mo, Pro at $79/mo, Enterprise at $199/mo. No-code AI agent builder with CRM, lead scoring, and appointment scheduling included.',
   openGraph: {

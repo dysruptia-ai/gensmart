@@ -1,64 +1,43 @@
 # GenSmart
 
-> No-code AI agent builder for WhatsApp & Web. The best WhatsApp chatbot platform for businesses that want to deploy AI chatbots in minutes — with built-in CRM, AI lead scoring, sales funnel automation, and appointment scheduling.
+> GenSmart is a multichannel agentic platform for creating AI agents that answer, sell and book appointments in your customers' conversations. It is built for small and medium businesses, freelancers and agencies, and is available in Spanish and English.
 
-## About
+## What it does
 
-GenSmart is a SaaS platform by Dysruptia LLC that enables businesses, freelancers, and automation agencies to build and deploy AI conversational agents on WhatsApp and Web channels — without complex tools like N8N, Zapier, or custom code. Deploy an AI chatbot in minutes, not weeks.
+- Six channels: WhatsApp, Instagram, Messenger, Telegram, email and your website.
+- Unified inbox for every conversation, across channels.
+- CRM with a sales funnel (lead, opportunity, customer). The agent scores each lead from 0 to 10 once a conversation reaches 6 messages; a score of 7 or higher moves the contact to customer.
+- Appointment booking: the agent checks calendar availability and books during the conversation.
+- Knowledge base for each agent, built from files and web pages.
+- Handoff to a person with a summary and the full history (Starter plan and up).
+- Integrations through API calls (custom functions) and MCP servers, including webhook-triggered integrations.
+- Voice notes (Starter and up) and image understanding (Pro and up).
 
-GenSmart is a no-code AI agent builder designed for small and medium businesses in Latin America and worldwide. It combines WhatsApp AI chatbot capabilities with a smart CRM, AI lead capture, AI-powered lead scoring, visual sales funnel, and an AI appointment scheduling chatbot — all in one platform.
+## What it does not do
 
-## Core Capabilities
-
-- AI Agent Builder (No-Code): Create intelligent WhatsApp and web chatbots with custom prompts, configurable variables, and knowledge base (RAG). No programming required.
-- WhatsApp AI Chatbot for Business: Deploy AI agents on WhatsApp Business API via Meta Embedded Signup. One-click connection.
-- Web Chat Widget: Embeddable, customizable chat widget for any website. Copy-paste snippet deployment.
-- WhatsApp CRM with AI Scoring: AI-powered lead scoring (0-10) analyzes conversation intent, urgency, and fit. Automatic contact management.
-- AI Lead Capture on WhatsApp: Smart variable capture extracts names, emails, phone numbers, and custom data from conversations automatically.
-- AI Sales Funnel Automation: Visual Kanban board (Lead → Opportunity → Customer) with automatic stage movement based on AI score.
-- AI Appointment Scheduling Chatbot: Agents check calendar availability and book appointments during conversations. Multi-calendar support.
-- Human Takeover: Seamlessly transfer conversations from AI to human agents with full context preservation.
-- Knowledge Base (RAG): Upload PDFs, documents, and URLs. Retrieval-Augmented Generation provides contextual answers.
-- Custom Functions: Connect agents to external APIs for real-time data retrieval (e.g., check order status, query databases).
-- MCP Integration: Connect to Model Context Protocol servers for extended tool capabilities.
-- Multi-LLM Support: GPT-4o, GPT-4o-mini, Claude Sonnet, Claude Haiku. Model access gated by plan.
-- Image Vision: Agents analyze images sent via WhatsApp and web widget (GPT-4o, Claude Sonnet).
-- Voice Messages: Whisper STT transcribes voice notes to text for AI processing.
-- AI Customer Service Automation: 24/7 automated responses, lead qualification, and intelligent routing.
+GenSmart does not send WhatsApp templates or bulk messages. The agent replies to people who wrote first, within WhatsApp's 24-hour window.
 
 ## Plans
 
-- Solo: 1 agent, 200 messages/month, web + WhatsApp — $20/mo
-- Starter: 3 agents, 1,000 messages/month, WhatsApp + web, voice messages — $29/mo
-- Pro: 10 agents, 5,000 messages/month, all AI models, voice + image analysis — $79/mo
-- Enterprise: Unlimited agents, 25,000 messages/month, BYO API key, voice + image analysis — $199/mo
-- Quarterly: 10% discount on all paid plans
-- Yearly: 20% discount on all paid plans
+Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with sales. Prices in USD per month.
 
-## Use Cases
+- Solo: 1 agent, 200 messages/month, 150 contacts, web and WhatsApp. $20/month.
+- Starter: 3 agents, 1,000 messages/month, 500 contacts, all six channels. $29/month.
+- Pro: 10 agents, 5,000 messages/month, 2,000 contacts, all six channels. $79/month.
+- Enterprise: unlimited agents, 25,000 messages/month, unlimited contacts, all six channels. $199/month.
+- Quarterly billing: 10% off. Yearly billing: 20% off.
 
-- Lead capture and qualification for SMBs via WhatsApp
-- Automated customer support for clinics, real estate, e-commerce, and SaaS
-- Appointment scheduling for healthcare providers and service businesses
-- Sales pipeline automation with AI-powered CRM
-- No-code WhatsApp chatbot builder for agencies and freelancers
+## Key pages
 
-## Technical Stack
+- [Home (Spanish)](https://www.gensmart.co/): overview of the platform.
+- [Home (English)](https://www.gensmart.co/en): overview of the platform.
+- [Pricing](https://www.gensmart.co/pricing): plans, limits and add-ons.
+- [Blog](https://www.gensmart.co/blog): guides and articles.
+- [WhatsApp setup guide](https://www.gensmart.co/docs/whatsapp-setup): how to connect a WhatsApp number.
+- [Contact](https://www.gensmart.co/contact): talk to the team.
+- [Terms of service](https://www.gensmart.co/legal/terms-of-service)
+- [Privacy policy](https://www.gensmart.co/legal/privacy-policy)
 
-- Frontend: Next.js 16 (App Router)
-- Backend: Express.js 5 (REST API)
-- Database: PostgreSQL 16 + pgvector
-- AI Providers: OpenAI (GPT-4o, GPT-4o-mini, Whisper) + Anthropic (Claude Sonnet, Claude Haiku)
-- WhatsApp: Meta Cloud API with Embedded Signup
-- Billing: Stripe (subscriptions + customer portal)
+## Company
 
-## Links
-
-- Website: https://www.gensmart.co
-- Pricing: https://www.gensmart.co/pricing
-- Blog: https://www.gensmart.co/blog
-- Contact: hello@gensmart.co
-
-## Keywords
-
-WhatsApp AI chatbot for business, AI agent builder no-code, deploy AI chatbot in minutes, AI lead capture WhatsApp, AI customer service automation, WhatsApp CRM with AI scoring, no-code chatbot builder WhatsApp, AI appointment scheduling chatbot, best WhatsApp chatbot platform 2026, AI sales funnel automation
+GenSmart is a product of Dysruptia LLC. Contact: hello@gensmart.co

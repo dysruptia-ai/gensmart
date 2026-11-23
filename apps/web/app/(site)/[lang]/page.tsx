@@ -17,7 +17,6 @@ import FinalCtaSection from '@/components/site/home/FinalCtaSection';
 import SiteChatWidget from '@/components/site/SiteChatWidget';
 import { notFound } from 'next/navigation';
 import { PRICING } from '@gensmart/shared';
-import LanguageSuggestion from '@/components/site/LanguageSuggestion';
 import { SITE_LINKS } from '@/lib/site-links';
 import {
   SITE_ORIGIN,
@@ -155,7 +154,6 @@ export default async function LandingPage({ params }: PageProps) {
       <SkipLink />
       <AnnounceBar />
       <SiteHeader />
-      <LanguageSuggestion />
       <main id="main" suppressHydrationWarning>
         <HeroSection />
         <ProblemSection />

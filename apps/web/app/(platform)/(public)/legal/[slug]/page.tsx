@@ -39,7 +39,7 @@ export async function generateMetadata({
   const page = getLegalPage(slug);
   if (!page) return {};
   return {
-    title: `${page.title} — GenSmart`,
+    title: page.title,
     description: page.description,
   };
 }
