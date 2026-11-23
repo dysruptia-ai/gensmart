@@ -13,18 +13,17 @@ import SiteLogo from '../SiteLogo';
 import SiteLink from '../SiteLink';
 import {
   INDUSTRY_ITEMS,
-  PARTNERS_ITEMS,
   PLATFORM_LOGOS,
   PRODUCT_ITEMS,
   RESOURCES_ITEMS,
   TEAM_ITEMS,
   type DropItem,
-  type IconItem,
+  type MegaItem,
 } from './menuData';
 import { DESKTOP_NAV_MIN_WIDTH } from './breakpoints';
 import styles from './SiteHeader.module.css';
 
-type MenuId = 'product' | 'solutions' | 'resources' | 'partners';
+type MenuId = 'product' | 'solutions' | 'resources';
 type OpenedBy = 'hover' | 'click' | 'focus';
 
 const CLOSE_DELAY_MS = 120;
@@ -228,13 +227,11 @@ export default function SiteHeader() {
     </div>
   );
 
-  const renderIconItems = (items: IconItem[], iconSize: number) =>
-    items.map(({ key, icon: Icon }) => (
+  const renderMegaItems = (items: MegaItem[]) =>
+    items.map(({ key }) => (
       <SiteLink key={key} to={key} className={styles.megaLink}>
-        <span className={styles.megaIcon}>
-          <Icon size={iconSize} aria-hidden="true" />
-        </span>
-        <span className={styles.megaName}>{t(`site.mega.${key}`)}</span>
+        <span className={styles.megaName}>{t(`site.mega.items.${key}.name`)}</span>
+        <span className={styles.megaDesc}>{t(`site.mega.items.${key}.desc`)}</span>
       </SiteLink>
     ));
 
@@ -312,17 +309,20 @@ export default function SiteHeader() {
                 <div id="site-panel-solutions" className={panelClass('solutions', true)}>
                   <div className={styles.megaCol}>
                     <h3 className={styles.megaTitle}>{t('site.mega.byTeam')}</h3>
-                    {renderIconItems(TEAM_ITEMS, 16)}
+                    {renderMegaItems(TEAM_ITEMS)}
+                    <SiteLink to="cases" className={styles.megaAll}>
+                      {t('site.mega.seeAgent')}
+                    </SiteLink>
                   </div>
                   <div className={styles.megaCol}>
                     <h3 className={styles.megaTitle}>{t('site.mega.byIndustry')}</h3>
-                    {renderIconItems(INDUSTRY_ITEMS, 16)}
+                    {renderMegaItems(INDUSTRY_ITEMS)}
                     <SiteLink to="industries" className={styles.megaAll}>
                       {t('site.mega.allIndustries')}
                     </SiteLink>
                   </div>
                   <div className={styles.megaCol}>
-                    <h3 className={styles.megaTitle}>{t('site.mega.byPlatform')}</h3>
+                    <h3 className={styles.megaTitle}>{t('site.mega.connectsWith')}</h3>
                     <div className={styles.logos}>
                       {PLATFORM_LOGOS.map((logo) => (
                         <LogoTile key={logo.name} logo={logo} size="sm" />
@@ -335,11 +335,7 @@ export default function SiteHeader() {
                   <SiteLink to="pricing" className={styles.feat}>
                     <span className={styles.featPill}>{t('site.mega.featPill')}</span>
                     <span className={styles.featTitle}>{t('site.mega.featTitle')}</span>
-                    <span className={styles.featList}>
-                      <span>{t('site.mega.feat1')}</span>
-                      <span>{t('site.mega.feat2')}</span>
-                      <span>{t('site.mega.feat3')}</span>
-                    </span>
+                    <span className={styles.featText}>{t('site.mega.featText')}</span>
                     <span className={styles.featMore}>{t('site.mega.featMore')}</span>
                   </SiteLink>
                 </div>
@@ -363,13 +359,6 @@ export default function SiteHeader() {
                 {renderDrop('resources', RESOURCES_ITEMS)}
               </li>
 
-              <li {...itemProps('partners')}>
-                <button {...triggerProps('partners')}>
-                  {t('site.nav.partners')}
-                  {chevron('partners')}
-                </button>
-                {renderDrop('partners', PARTNERS_ITEMS)}
-              </li>
             </ul>
           </nav>
 
@@ -426,9 +415,12 @@ export default function SiteHeader() {
             t('site.nav.solutions'),
             <>
               <h3 className={styles.mSub}>{t('site.mega.byTeam')}</h3>
-              {renderIconItems(TEAM_ITEMS, 16)}
+              {renderMegaItems(TEAM_ITEMS)}
+              <SiteLink to="cases" className={styles.megaAll}>
+                {t('site.mega.seeAgent')}
+              </SiteLink>
               <h3 className={styles.mSub}>{t('site.mega.byIndustry')}</h3>
-              {renderIconItems(INDUSTRY_ITEMS, 16)}
+              {renderMegaItems(INDUSTRY_ITEMS)}
               <SiteLink to="industries" className={styles.megaAll}>
                 {t('site.mega.allIndustries')}
               </SiteLink>
@@ -438,7 +430,6 @@ export default function SiteHeader() {
             {t('site.nav.pricing')}
           </SiteLink>
           {mobileGroupBlock('resources', t('site.nav.resources'), mobileDrop(RESOURCES_ITEMS))}
-          {mobileGroupBlock('partners', t('site.nav.partners'), mobileDrop(PARTNERS_ITEMS))}
           <div className={styles.mActions}>
             <SiteButton to="register" className={styles.fullBtn}>
               {t('site.nav.trial')}

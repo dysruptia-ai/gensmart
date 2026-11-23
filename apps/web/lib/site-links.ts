@@ -40,7 +40,6 @@ export type SiteLinkKey =
   | 'academy'
   | 'community'
   | 'partners'
-  | 'referrals'
   | 'cases'
   | 'status'
   | 'ecommerce'
@@ -48,7 +47,8 @@ export type SiteLinkKey =
   | 'socialTiktok'
   | 'socialYoutube'
   | 'socialFacebook'
-  | 'partnersWhiteLabel';
+  | 'partnersTiers'
+  | 'partnersDirectory';
 
 export interface SiteLinkTarget {
   href: string | null;
@@ -96,7 +96,6 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   academy: { href: null },
   community: { href: null },
   partners: { href: null },
-  referrals: { href: null },
   cases: { href: null },
   status: { href: null },
   ecommerce: { href: null },
@@ -105,7 +104,8 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   socialTiktok: { href: 'https://www.tiktok.com/@gensmart.co', external: true },
   socialYoutube: { href: 'https://www.youtube.com/@gensmartco', external: true },
   socialFacebook: { href: 'https://facebook.com/gensmartai', external: true },
-  partnersWhiteLabel: { href: null },
+  partnersTiers: { href: null },
+  partnersDirectory: { href: null },
 };
 
 /**

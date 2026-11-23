@@ -1,17 +1,3 @@
-import {
-  CalendarDays,
-  ChartLine,
-  GraduationCap,
-  Heart,
-  House,
-  Landmark,
-  MessageCircle,
-  ShoppingCart,
-  Sparkles,
-  UtensilsCrossed,
-  Users,
-  type LucideIcon,
-} from 'lucide-react';
 import type { SiteLinkKey } from '@/lib/site-links';
 import { BRAND_LOGOS, type BrandLogo } from '../LogoTile';
 
@@ -19,9 +5,9 @@ export interface DropItem {
   key: SiteLinkKey;
 }
 
-export interface IconItem {
+/** Ítem del mega menú: nombre y una línea de contexto (`site.mega.items.<key>`). */
+export interface MegaItem {
   key: SiteLinkKey;
-  icon: LucideIcon;
 }
 
 export const PRODUCT_ITEMS: DropItem[] = [
@@ -36,29 +22,29 @@ export const PRODUCT_ITEMS: DropItem[] = [
 export const RESOURCES_ITEMS: DropItem[] = [
   { key: 'resources' },
   { key: 'blog' },
+  // Base de conocimiento: hoy la única guía en Next es la de WhatsApp.
+  // Cuando migremos la base de conocimiento, cambiar a `docs`.
   { key: 'docsWhatsappSetup' },
   { key: 'academy' },
   { key: 'community' },
 ];
 
-export const PARTNERS_ITEMS: DropItem[] = [{ key: 'partners' }, { key: 'referrals' }];
-
-export const TEAM_ITEMS: IconItem[] = [
-  { key: 'teamSales', icon: ChartLine },
-  { key: 'teamCustomerSupport', icon: MessageCircle },
-  { key: 'teamMarketing', icon: Sparkles },
-  { key: 'teamOperationsBooking', icon: CalendarDays },
-  { key: 'teamHumanResources', icon: Users },
-  { key: 'teamCollections', icon: Landmark },
+export const TEAM_ITEMS: MegaItem[] = [
+  { key: 'teamSales' },
+  { key: 'teamCustomerSupport' },
+  { key: 'teamMarketing' },
+  { key: 'teamOperationsBooking' },
+  { key: 'teamHumanResources' },
+  { key: 'teamCollections' },
 ];
 
-export const INDUSTRY_ITEMS: IconItem[] = [
-  { key: 'industryEcommerce', icon: ShoppingCart },
-  { key: 'industryClinics', icon: Heart },
-  { key: 'industryRealEstate', icon: House },
-  { key: 'industryRestaurants', icon: UtensilsCrossed },
-  { key: 'industryEducation', icon: GraduationCap },
-  { key: 'industryFinanceInsurance', icon: Landmark },
+export const INDUSTRY_ITEMS: MegaItem[] = [
+  { key: 'industryEcommerce' },
+  { key: 'industryClinics' },
+  { key: 'industryRealEstate' },
+  { key: 'industryRestaurants' },
+  { key: 'industryEducation' },
+  { key: 'industryFinanceInsurance' },
 ];
 
 export const PLATFORM_LOGOS: BrandLogo[] = [
@@ -68,7 +54,7 @@ export const PLATFORM_LOGOS: BrandLogo[] = [
   'HubSpot',
   'Zoho',
   'Odoo',
-  'Google Calendar',
+  'Calendly',
   'Stripe',
 ].map((name) => {
   const logo = BRAND_LOGOS[name];

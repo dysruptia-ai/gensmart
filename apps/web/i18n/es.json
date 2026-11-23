@@ -1774,7 +1774,6 @@
       "solutions": "Soluciones",
       "pricing": "Precios",
       "resources": "Recursos",
-      "partners": "Partners",
       "login": "Iniciar sesión",
       "trial": "Empieza la prueba gratis"
     },
@@ -1789,7 +1788,7 @@
       },
       "productInbox": {
         "title": "Bandeja unificada",
-        "desc": "Seis canales en un solo hilo"
+        "desc": "Seis canales en una sola bandeja"
       },
       "productCrm": {
         "title": "CRM y embudo",
@@ -1797,7 +1796,7 @@
       },
       "productBooking": {
         "title": "Agenda de citas",
-        "desc": "Reservas dentro del chat"
+        "desc": "Reservas en la conversación"
       },
       "integrations": {
         "title": "Integraciones",
@@ -1805,60 +1804,89 @@
       },
       "resources": {
         "title": "Centro de recursos",
-        "desc": "Blog, documentación, Academy y casos de uso"
+        "desc": "Elige por lo que necesitas hoy"
       },
       "blog": {
-        "title": "Blog",
-        "desc": "Estrategia y novedades"
+        "title": "Guías y blog",
+        "desc": "Cómo montar, probar y medir tu agente"
       },
       "docsWhatsappSetup": {
-        "title": "Documentación ↗",
-        "desc": "Configuración paso a paso"
+        "title": "Base de conocimiento",
+        "desc": "Guías para configurar y operar"
       },
       "academy": {
-        "title": "Academy ↗",
-        "desc": "Cursos y certificación"
+        "title": "Academy",
+        "desc": "Rutas de aprendizaje gratis"
       },
       "community": {
         "title": "Comunidad",
-        "desc": "Aprende con otros usuarios"
-      },
-      "partners": {
-        "title": "Programa de partners",
-        "desc": "Agencias y marca blanca"
-      },
-      "referrals": {
-        "title": "Referidos",
-        "desc": "Recomienda y gana comisión"
+        "desc": "Pregunta y aprende con otros usuarios"
       }
     },
     "mega": {
       "byTeam": "Por equipo",
       "byIndustry": "Por industria",
-      "byPlatform": "Por plataforma",
-      "teamSales": "Ventas",
-      "teamCustomerSupport": "Atención al cliente",
-      "teamMarketing": "Marketing",
-      "teamOperationsBooking": "Operaciones y reservas",
-      "teamHumanResources": "Recursos humanos",
-      "teamCollections": "Cobranzas",
-      "industryEcommerce": "E-commerce y dropshipping",
-      "industryClinics": "Clínicas y salud",
-      "industryRealEstate": "Inmobiliarias y real estate",
-      "industryRestaurants": "Restaurantes y hospitalidad",
-      "industryEducation": "Educación y formación",
-      "industryFinanceInsurance": "Finanzas y seguros",
-      "allIndustries": "Ver las 12 industrias →",
+      "connectsWith": "Se conecta con",
+      "items": {
+        "teamSales": {
+          "name": "Ventas",
+          "desc": "Responde a cada prospecto en segundos, califica y agenda."
+        },
+        "teamCustomerSupport": {
+          "name": "Atención al cliente",
+          "desc": "Resuelve las preguntas repetidas y deja a tu equipo los casos que importan."
+        },
+        "teamMarketing": {
+          "name": "Marketing",
+          "desc": "Atiende a quien responde a tus campañas y lo entrega a ventas calificado, con su canal de origen."
+        },
+        "teamOperationsBooking": {
+          "name": "Operaciones y reservas",
+          "desc": "Llena tu agenda sin que nadie conteste: el agente reserva la cita en la conversación."
+        },
+        "teamHumanResources": {
+          "name": "Recursos humanos",
+          "desc": "Atiende a cada persona que escribe por una vacante y le agenda la entrevista."
+        },
+        "teamCollections": {
+          "name": "Cobranzas",
+          "desc": "Atiende a los clientes que escriben por un pago, aclara el saldo y comparte cómo pagar."
+        },
+        "industryEcommerce": {
+          "name": "E-commerce y dropshipping",
+          "desc": "Responde por producto, stock y envío, y lleva al cliente al checkout."
+        },
+        "industryClinics": {
+          "name": "Clínicas y salud",
+          "desc": "Responde dudas, agenda la cita y la confirma por correo, sin saturar a tu recepción."
+        },
+        "industryRealEstate": {
+          "name": "Inmobiliarias y constructoras",
+          "desc": "Responde por cada inmueble, califica al interesado y agenda la visita con tu asesor."
+        },
+        "industryRestaurants": {
+          "name": "Restaurantes y hospitalidad",
+          "desc": "Atiende reservas, pedidos y cotizaciones de eventos en todos tus canales y sedes."
+        },
+        "industryEducation": {
+          "name": "Educación y formación",
+          "desc": "Atiende a cada aspirante, lo califica y agenda la llamada con admisiones."
+        },
+        "industryFinanceInsurance": {
+          "name": "Finanzas y seguros",
+          "desc": "Reúne los datos de cada consulta y agenda con tu asesor."
+        }
+      },
+      "seeAgent": "Ver cómo trabaja un agente →",
+      "allIndustries": "Encuentra tu industria →",
       "allIntegrations": "Ver integraciones →",
       "featPill": "Prueba gratis",
-      "featTitle": "Elige el plan por tamaño de operación",
-      "feat1": "Cambias de plan cuando quieras",
-      "feat2": "Seis canales incluidos",
-      "feat3": "CRM y agenda adentro",
+      "featTitle": "Crea tu primer agente hoy",
+      "featText": "Elige el plan según el tamaño de tu operación. Cambias de plan cuando quieras.",
       "featMore": "Ver planes →"
     },
     "footer": {
-      "description": "Plataforma de agéntica multicanal. Agentes de IA que ayudan a vender y atender, 24/7.",
+      "description": "Plataforma agéntica multicanal. Agentes de IA que ayudan a vender y atender, 24/7.",
       "cols": {
         "product": "Producto",
         "solutions": "Soluciones",
@@ -1878,12 +1906,12 @@
         "cases": "Casos de uso",
         "resources": "Centro de recursos",
         "blog": "Blog",
-        "docs": "Documentación",
+        "docs": "Base de conocimiento",
         "academy": "Academy",
         "community": "Comunidad",
         "partners": "Programa de partners",
-        "referrals": "Referidos",
-        "whiteLabel": "Marca blanca",
+        "partnersTiers": "Niveles de agencia",
+        "partnersDirectory": "Directorio de partners",
         "contact": "Contacto y demo",
         "privacy": "Privacidad",
         "terms": "Términos",

@@ -1774,7 +1774,6 @@
       "solutions": "Solutions",
       "pricing": "Pricing",
       "resources": "Resources",
-      "partners": "Partners",
       "login": "Log in",
       "trial": "Start your free trial"
     },
@@ -1789,7 +1788,7 @@
       },
       "productInbox": {
         "title": "Unified inbox",
-        "desc": "Six channels in one thread"
+        "desc": "Six channels in one inbox"
       },
       "productCrm": {
         "title": "CRM and pipeline",
@@ -1797,7 +1796,7 @@
       },
       "productBooking": {
         "title": "Appointment booking",
-        "desc": "Bookings inside the chat"
+        "desc": "Bookings in the conversation"
       },
       "integrations": {
         "title": "Integrations",
@@ -1805,56 +1804,85 @@
       },
       "resources": {
         "title": "Resource center",
-        "desc": "Blog, documentation, Academy and use cases"
+        "desc": "Pick by what you need today"
       },
       "blog": {
-        "title": "Blog",
-        "desc": "Strategy and news"
+        "title": "Guides and blog",
+        "desc": "How to build, test and measure your agent"
       },
       "docsWhatsappSetup": {
-        "title": "Documentation ↗",
-        "desc": "Step by step setup"
+        "title": "Knowledge base",
+        "desc": "Guides to set up and run"
       },
       "academy": {
-        "title": "Academy ↗",
-        "desc": "Courses and certification"
+        "title": "Academy",
+        "desc": "Free learning paths"
       },
       "community": {
         "title": "Community",
-        "desc": "Learn with other users"
-      },
-      "partners": {
-        "title": "Partner program",
-        "desc": "Agencies and white label"
-      },
-      "referrals": {
-        "title": "Referrals",
-        "desc": "Recommend and earn commission"
+        "desc": "Ask and learn with other users"
       }
     },
     "mega": {
       "byTeam": "By team",
       "byIndustry": "By industry",
-      "byPlatform": "By platform",
-      "teamSales": "Sales",
-      "teamCustomerSupport": "Customer support",
-      "teamMarketing": "Marketing",
-      "teamOperationsBooking": "Operations and bookings",
-      "teamHumanResources": "Human resources",
-      "teamCollections": "Collections",
-      "industryEcommerce": "E-commerce and dropshipping",
-      "industryClinics": "Clinics and health",
-      "industryRealEstate": "Real estate",
-      "industryRestaurants": "Restaurants and hospitality",
-      "industryEducation": "Education and training",
-      "industryFinanceInsurance": "Finance and insurance",
-      "allIndustries": "See all 12 industries →",
+      "connectsWith": "Connects with",
+      "items": {
+        "teamSales": {
+          "name": "Sales",
+          "desc": "Answers every lead in seconds, qualifies and books."
+        },
+        "teamCustomerSupport": {
+          "name": "Customer support",
+          "desc": "Resolves repeated questions and leaves the cases that matter to your team."
+        },
+        "teamMarketing": {
+          "name": "Marketing",
+          "desc": "Looks after anyone who replies to your campaigns and hands them to sales qualified, with their source channel."
+        },
+        "teamOperationsBooking": {
+          "name": "Operations and bookings",
+          "desc": "Fill your calendar without anyone answering: the agent books the appointment in the conversation."
+        },
+        "teamHumanResources": {
+          "name": "Human resources",
+          "desc": "Looks after everyone who writes about an opening and books their interview."
+        },
+        "teamCollections": {
+          "name": "Collections",
+          "desc": "Looks after customers who write about a payment, clarifies the balance and shares how to pay."
+        },
+        "industryEcommerce": {
+          "name": "E-commerce and dropshipping",
+          "desc": "Answers product, stock and shipping questions, and takes the customer to checkout."
+        },
+        "industryClinics": {
+          "name": "Clinics and health",
+          "desc": "Answers questions, books the appointment and confirms it by email, without overloading reception."
+        },
+        "industryRealEstate": {
+          "name": "Real estate and developers",
+          "desc": "Answers about each property, qualifies the lead and books the viewing with your advisor."
+        },
+        "industryRestaurants": {
+          "name": "Restaurants and hospitality",
+          "desc": "Handles bookings, orders and event quotes across all your channels and locations."
+        },
+        "industryEducation": {
+          "name": "Education and training",
+          "desc": "Handles every applicant, scores them and books the call with admissions."
+        },
+        "industryFinanceInsurance": {
+          "name": "Finance and insurance",
+          "desc": "Gathers the details of each inquiry and books with your advisor."
+        }
+      },
+      "seeAgent": "See how an agent works →",
+      "allIndustries": "Find your industry →",
       "allIntegrations": "See integrations →",
       "featPill": "Free trial",
-      "featTitle": "Pick the plan that fits your operation",
-      "feat1": "Change plans whenever you want",
-      "feat2": "Six channels included",
-      "feat3": "CRM and scheduling inside",
+      "featTitle": "Create your first agent today",
+      "featText": "Pick the plan that fits your operation. Change plans whenever you want.",
       "featMore": "See plans →"
     },
     "footer": {
@@ -1878,12 +1906,12 @@
         "cases": "Use cases",
         "resources": "Resource center",
         "blog": "Blog",
-        "docs": "Documentation",
+        "docs": "Knowledge base",
         "academy": "Academy",
         "community": "Community",
         "partners": "Partner program",
-        "referrals": "Referrals",
-        "whiteLabel": "White label",
+        "partnersTiers": "Agency tiers",
+        "partnersDirectory": "Partner directory",
         "contact": "Contact and demo",
         "privacy": "Privacy",
         "terms": "Terms",

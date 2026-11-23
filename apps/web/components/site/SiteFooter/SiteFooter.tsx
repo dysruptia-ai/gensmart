@@ -51,8 +51,8 @@ const COLUMNS: FooterColumn[] = [
     id: 'partners',
     links: [
       { to: 'partners', label: 'partners' },
-      { to: 'referrals', label: 'referrals' },
-      { to: 'partnersWhiteLabel', label: 'whiteLabel' },
+      { to: 'partnersTiers', label: 'partnersTiers' },
+      { to: 'partnersDirectory', label: 'partnersDirectory' },
     ],
   },
   {
@@ -102,7 +102,7 @@ export default function SiteFooter() {
 
           {COLUMNS.map((col) => (
             <div key={col.id}>
-              <h3 className={styles.colTitle}>{t(`site.footer.cols.${col.id}`)}</h3>
+              <h2 className={styles.colTitle}>{t(`site.footer.cols.${col.id}`)}</h2>
               <ul className={styles.list}>
                 {col.links.map((l) => (
                   <li key={`${col.id}-${l.to}`}>
