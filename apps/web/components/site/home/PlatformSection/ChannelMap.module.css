@@ -334,8 +334,11 @@
 
 /* ---------- Horizontal (≥ 820 px): misma medida que WIRES_MIN_WIDTH en ChannelMap.tsx ---------- */
 @container (min-width: 820px) {
+  /* Como el diseño final (.cmap.has-wires): las columnas laterales miden lo que su
+     contenido y el hub se centra en el espacio del medio, así los cables de entrada y
+     de salida quedan de largo parecido aunque las salidas sean más anchas */
   .map {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: clamp(24px, 6vw, 110px);
     justify-items: stretch;
   }
@@ -363,8 +366,12 @@
     flex: 1;
     align-content: space-between;
     gap: 6px;
-    width: max-content;
+    /* La lista llena su columna: si el título es más ancho que los nodos (p. ej. "Where
+       they write you"), los nodos llegan igual al borde y los cables quedan en espejo */
+    width: auto;
     max-width: 100%;
+    /* Anula el `justify-content: center` de la entrada en móvil: aquí la pista llega al borde */
+    justify-content: stretch;
   }
 
   .sideOut .list > li,
@@ -372,10 +379,11 @@
     grid-column: auto;
   }
 
-  /* Tope para que "Tus herramientas, por API, MCP o webhook" pase a dos líneas
-     en vez de ensanchar la columna y dejar los cables de salida sin recorrido */
+  /* Tope para que "Tus herramientas, por API, MCP o webhook" pase a dos líneas.
+     En rem y no en %: un porcentaje no cuenta al calcular el ancho de la columna `auto`
+     y la columna se ensanchaba al largo de la etiqueta sin partir */
   .sideOut .list {
-    max-width: min(100%, 17rem);
+    max-width: 17rem;
   }
 
   .sideTitle {

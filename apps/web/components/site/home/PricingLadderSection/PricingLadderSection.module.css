@@ -58,7 +58,8 @@ section.pricing {
 .planCta {
   margin-top: auto;
   align-self: stretch;
-  white-space: normal;
+  /* Red de seguridad: el breakpoint de 4 columnas ya deja ancho para una línea */
+  white-space: nowrap;
   text-align: center;
 }
 
@@ -111,13 +112,16 @@ section.pricing {
   margin-top: 40px;
 }
 
-@media (max-width: 900px) {
+/* 4 columnas solo desde 1200px: por debajo "Prueba 15 días gratis" no cabe en una línea */
+@media (max-width: 1199px) {
   .ladder {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 480px) {
+/* Una columna hasta 560px: en 2 columnas más angostas "Prueba 15 días gratis" (nowrap)
+   ensancha la tarjeta y aparece scroll horizontal */
+@media (max-width: 560px) {
   .ladder {
     grid-template-columns: 1fr;
   }
