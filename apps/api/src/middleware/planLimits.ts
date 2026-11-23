@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../config/database';
-import { PLAN_LIMITS, getMinimumPlanForChannel } from '@gensmart/shared';
+import { PLAN_LIMITS, getMinimumPlanForChannel, isChannelAllowedOnPlan } from '@gensmart/shared';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -87,10 +87,9 @@ export function checkKnowledgeLimit() {
 export function checkChannelAccess(channel: string) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const plan = (req.org?.plan ?? 'solo') as PlanKey;
-      const allowedChannels = PLAN_LIMITS[plan]?.channels as readonly string[];
+      const plan = req.org?.plan ?? 'solo';
 
-      if (!allowedChannels.includes(channel)) {
+      if (!isChannelAllowedOnPlan(plan, channel)) {
         const requiredPlan = getMinimumPlanForChannel(channel);
         res.status(403).json({
           error: {

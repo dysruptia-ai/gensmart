@@ -3,7 +3,7 @@ export const PLAN_LIMITS = {
     agents: 1,
     messagesPerMonth: 200,
     contacts: 150,
-    channels: ['web', 'whatsapp'] as const,
+    channels: ['web', 'whatsapp', 'email', 'telegram', 'facebook', 'instagram'] as const,
     knowledgeFiles: 1,
     customFunctions: 0,
     mcpServers: 0,
@@ -72,6 +72,12 @@ export const PLAN_LIMITS = {
     emailNotificationTools: Infinity,
   },
 } as const;
+
+/** Single source for the per-plan channel gate (API middleware + message worker). Unknown plans fall back to solo. */
+export function isChannelAllowedOnPlan(plan: string, channel: string): boolean {
+  const key = (Object.prototype.hasOwnProperty.call(PLAN_LIMITS, plan) ? plan : 'solo') as keyof typeof PLAN_LIMITS;
+  return (PLAN_LIMITS[key].channels as readonly string[]).includes(channel);
+}
 
 export function getMinimumPlanForChannel(channel: string): string | null {
   const planOrder: Array<keyof typeof PLAN_LIMITS> = ['solo', 'starter', 'pro', 'enterprise'];

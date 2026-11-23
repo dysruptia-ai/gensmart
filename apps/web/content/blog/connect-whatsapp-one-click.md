@@ -71,7 +71,7 @@ With the old process, reconnecting would have taken 30+ minutes of manual creden
 
 ## Getting Started
 
-Embedded Signup is available now for all GenSmart users on Starter plans and above.
+Embedded Signup is available now for all GenSmart users, on every plan.
 
 1. Log into your GenSmart dashboard at [www.gensmart.co](https://www.gensmart.co)
 2. Create an agent (or open an existing one)
