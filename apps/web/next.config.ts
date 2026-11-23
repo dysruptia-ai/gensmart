@@ -32,6 +32,10 @@ const WIDGET_CSP = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Hay dos layouts raíz ((platform) y (site)/[lang]): las URL sin ruta usan app/global-not-found.tsx
+  experimental: {
+    globalNotFound: true,
+  },
   async headers() {
     return [
       {

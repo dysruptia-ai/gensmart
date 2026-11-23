@@ -7,7 +7,9 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { counterpart } from '@/lib/site-routes';
 import { useAuth } from '@/contexts/AuthContext';
 
 export type SupportedLanguage = 'en' | 'es';
@@ -95,4 +97,40 @@ export function useLanguage(): LanguageContextValue {
   const ctx = useContext(LanguageContext);
   if (!ctx) throw new Error('useLanguage must be used inside <LanguageProvider>');
   return ctx;
+}
+
+/**
+ * Idioma fijo para el sitio público con rutas por idioma (`app/(site)/[lang]`).
+ * El idioma sale de la URL: está resuelto desde el primer render (también en el servidor)
+ * y no depende de AuthProvider. `setLanguage` navega a la misma página en el otro idioma.
+ */
+export function FixedLanguageProvider({
+  language,
+  children,
+}: {
+  language: SupportedLanguage;
+  children: React.ReactNode;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // El registro y las páginas viejas abren en el idioma que el visitante estaba leyendo
+  useEffect(() => {
+    localStorage.setItem(LS_KEY, language);
+  }, [language]);
+
+  const setLanguage = useCallback(
+    (lang: SupportedLanguage) => {
+      if (lang === language) return;
+      const target = counterpart(pathname);
+      if (target) router.push(target.path);
+    },
+    [language, pathname, router]
+  );
+
+  return (
+    <LanguageContext.Provider value={{ language, setLanguage, isLanguageResolved: true }}>
+      {children}
+    </LanguageContext.Provider>
+  );
 }

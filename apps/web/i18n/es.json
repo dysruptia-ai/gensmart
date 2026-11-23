@@ -2204,6 +2204,19 @@
         "primary": "Empieza la prueba gratis",
         "demo": "Agenda una demo"
       }
+    },
+    "meta": {
+      "home": {
+        "title": "GenSmart | Plataforma agéntica multicanal para agentes de IA",
+        "description": "Plataforma agéntica multicanal. Crea, conecta y activa agentes de IA en 3 pasos para WhatsApp, Instagram, Messenger, Telegram, correo y tu sitio web.",
+        "ogAlt": "GenSmart: plataforma agéntica multicanal para agentes de IA"
+      }
+    },
+    "langHint": {
+      "region": "Sugerencia de idioma",
+      "text": "Esta página también está en español.",
+      "link": "Ver en español",
+      "dismiss": "Cerrar la sugerencia de idioma"
     }
   }
 }

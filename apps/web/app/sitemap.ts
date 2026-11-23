@@ -1,15 +1,10 @@
 import { MetadataRoute } from 'next';
+import { SITE_LANGUAGES, SITE_ROUTES, absoluteUrl, alternates } from '@/lib/site-routes';
 
 const BASE_URL = 'https://www.gensmart.co';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: BASE_URL,
-      lastModified: new Date(),
-      changeFrequency: 'weekly',
-      priority: 1.0,
-    },
     {
       url: `${BASE_URL}/pricing`,
       lastModified: new Date(),
@@ -86,5 +81,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  return [...staticRoutes, ...blogRoutes, ...legalRoutes];
+  // Páginas con rutas por idioma: una entrada por idioma, con sus alternas (es, en, x-default)
+  const siteRoutes: MetadataRoute.Sitemap = Object.values(SITE_ROUTES).flatMap((route) =>
+    SITE_LANGUAGES.map((lang) => ({
+      url: absoluteUrl(route.paths[lang]),
+      lastModified: new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: route.id === 'home' ? 1.0 : 0.8,
+      alternates: { languages: alternates(route.id) },
+    }))
+  );
+
+  return [...siteRoutes, ...staticRoutes, ...blogRoutes, ...legalRoutes];
 }

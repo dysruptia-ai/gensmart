@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
+import { counterpart, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import Container from '../Container';
 import LogoTile from '../LogoTile';
 import SiteButton from '../SiteButton';
@@ -36,8 +38,20 @@ function cx(...parts: Array<string | false | undefined>): string {
 
 export default function SiteHeader() {
   const { t } = useTranslation();
-  const { language, setLanguage } = useLanguage();
+  const { language } = useLanguage();
   const pathname = usePathname();
+
+  // Selector de idioma: la misma página en cada idioma (o el home si no está en el registro)
+  const other = counterpart(pathname);
+  const langHrefs: Record<SiteLanguage, string> = {
+    es: publicPath('home', 'es'),
+    en: publicPath('home', 'en'),
+  };
+  if (other) {
+    langHrefs[other.lang] = other.path;
+    const self = counterpart(other.path);
+    if (self) langHrefs[self.lang] = self.path;
+  }
 
   const headerRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -365,16 +379,16 @@ export default function SiteHeader() {
           <div className={styles.right}>
             <div className={styles.lang} role="group" aria-label={t('site.a11y.language')}>
               {(['es', 'en'] as const).map((code) => (
-                <button
+                <Link
                   key={code}
-                  type="button"
+                  href={langHrefs[code]}
+                  hrefLang={code}
                   lang={code}
                   className={cx(styles.langBtn, language === code && styles.langActive)}
-                  aria-pressed={language === code}
-                  onClick={() => setLanguage(code)}
+                  aria-current={language === code ? 'true' : undefined}
                 >
                   {code.toUpperCase()}
-                </button>
+                </Link>
               ))}
             </div>
             <span className={styles.loginWrap}>

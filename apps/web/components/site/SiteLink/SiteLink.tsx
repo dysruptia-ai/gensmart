@@ -1,7 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 import type { AnchorHTMLAttributes, MouseEvent } from 'react';
 import styles from './SiteLink.module.css';
-import { SITE_LINKS, type SiteHref, type SiteLinkKey } from '@/lib/site-links';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { SITE_LINKS, resolveSiteHref, type SiteHref, type SiteLinkKey } from '@/lib/site-links';
 
 /**
  * Destino (solo uno): una clave de SITE_LINKS, un ancla dentro de la misma página
@@ -24,6 +27,8 @@ export default function SiteLink({
   onClick,
   ...rest
 }: SiteLinkProps) {
+  const { language } = useLanguage();
+
   if (anchor !== undefined) {
     return (
       <a {...rest} className={className} href={anchor} onClick={onClick}>
@@ -40,7 +45,7 @@ export default function SiteLink({
     );
   }
 
-  const target = SITE_LINKS[to];
+  const target = { ...SITE_LINKS[to], href: resolveSiteHref(to, language) };
 
   if (target.href === null) {
     const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {

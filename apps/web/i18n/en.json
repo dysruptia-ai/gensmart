@@ -2204,6 +2204,19 @@
         "primary": "Start your free trial",
         "demo": "Book a demo"
       }
+    },
+    "meta": {
+      "home": {
+        "title": "GenSmart | Multichannel agentic platform for AI agents",
+        "description": "Multichannel agentic platform. Create, connect and activate AI agents in 3 steps for WhatsApp, Instagram, Messenger, Telegram, email and your website.",
+        "ogAlt": "GenSmart: multichannel agentic platform for AI agents"
+      }
+    },
+    "langHint": {
+      "region": "Language suggestion",
+      "text": "This page is also available in English.",
+      "link": "View in English",
+      "dismiss": "Dismiss language suggestion"
     }
   }
 }

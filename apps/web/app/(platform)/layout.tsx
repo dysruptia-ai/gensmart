@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, Handjet, Sora, Geist } from 'next/font/google';
-import './globals.css';
+import '../globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ToastProvider } from '@/components/ui/Toast';
@@ -96,9 +96,6 @@ export const metadata: Metadata = {
     images: ['/twitter-card.png'],
     creator: '@gaborgenner',
   },
-  alternates: {
-    canonical: 'https://www.gensmart.co',
-  },
   category: 'SaaS',
 };
 
@@ -110,62 +107,6 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${handjet.variable} ${sora.variable} ${geist.variable}`}>
       <body>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'SoftwareApplication',
-              name: 'GenSmart',
-              applicationCategory: 'BusinessApplication',
-              operatingSystem: 'Web',
-              description:
-                'No-code AI agent builder for WhatsApp and Web. Create and deploy AI chatbots with built-in CRM, lead scoring, sales funnel, and appointment scheduling.',
-              url: 'https://www.gensmart.co',
-              offers: [
-                {
-                  '@type': 'Offer',
-                  price: '0',
-                  priceCurrency: 'USD',
-                  name: 'Free',
-                  description: '1 agent, 50 messages/month, web only',
-                },
-                {
-                  '@type': 'Offer',
-                  price: '29',
-                  priceCurrency: 'USD',
-                  name: 'Starter',
-                  description: '3 agents, 1,000 messages/month, WhatsApp + web',
-                },
-                {
-                  '@type': 'Offer',
-                  price: '79',
-                  priceCurrency: 'USD',
-                  name: 'Pro',
-                  description: '10 agents, 5,000 messages/month, all AI models',
-                },
-                {
-                  '@type': 'Offer',
-                  price: '199',
-                  priceCurrency: 'USD',
-                  name: 'Enterprise',
-                  description: 'Unlimited agents, 25,000 messages/month, BYO API key',
-                },
-              ],
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: '4.8',
-                ratingCount: '124',
-                bestRating: '5',
-              },
-              creator: {
-                '@type': 'Organization',
-                name: 'Dysruptia LLC',
-                url: 'https://www.gensmart.co',
-              },
-            }),
-          }}
-        />
         <AuthProvider>
           <LanguageProvider>
             <ToastProvider>

@@ -50,6 +50,8 @@ export type SiteLinkKey =
   | 'partnersTiers'
   | 'partnersDirectory';
 
+import { publicPath, type SiteLanguage, type SiteRouteId } from './site-routes';
+
 export interface SiteLinkTarget {
   href: string | null;
   external?: boolean;
@@ -122,4 +124,18 @@ export function registerHref(plan: RegisterPlan): SiteHref {
   const base = SITE_LINKS.register.href ?? '/register';
   const params = new URLSearchParams({ plan });
   return `${base}?${params.toString()}` as SiteHref;
+}
+
+/**
+ * Claves que apuntan a páginas con rutas por idioma (lib/site-routes).
+ * Se resuelven con el idioma actual: `home` → `/` o `/en`.
+ */
+const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, SiteRouteId>> = {
+  home: 'home',
+};
+
+/** `href` de una clave en el idioma dado (`null` = enlace pendiente). */
+export function resolveSiteHref(key: SiteLinkKey, lang: SiteLanguage): string | null {
+  const routeId = LOCALIZED_LINKS[key];
+  return routeId ? publicPath(routeId, lang) : SITE_LINKS[key].href;
 }
