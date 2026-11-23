@@ -20,6 +20,7 @@ import {
 } from '../services/whatsapp.service';
 import { createSignupSession, loadSignupSession, deleteSignupSession } from '../services/whatsapp-signup-session.service';
 import { pushToBuffer } from '../services/message-buffer.service';
+import { whatsappWebhookSignaturePolicy } from '../services/whatsapp-webhook-policy';
 import type { BufferItem } from '../services/message-buffer.service';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import { checkContactLimit } from '../services/contact.service';
@@ -104,17 +105,24 @@ router.post(
       // req.body is a Buffer (express.raw registered before express.json in index.ts)
       const rawBuffer: Buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
       const appSecret = env.WHATSAPP_APP_SECRET || env.META_APP_SECRET;
-      if (appSecret) {
+      const policy = whatsappWebhookSignaturePolicy({
+        appSecret,
+        nodeEnv: env.NODE_ENV,
+        allowUnsigned: env.WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS,
+      });
+      if (policy === 'verify') {
         const signature = req.headers['x-hub-signature-256'] as string;
         if (!signature || !verifyWebhookSignature(rawBuffer, signature, appSecret)) {
           console.warn('[whatsapp] Invalid webhook signature — ignoring');
           return;
         }
-      } else if (process.env['NODE_ENV'] === 'production') {
-        console.error('[whatsapp] No app secret configured in production — rejecting webhook');
+      } else if (policy === 'reject') {
+        console.error(
+          '[whatsapp] No app secret configured — rejecting unsigned webhook (local testing: WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS=true, never in production)'
+        );
         return;
       } else {
-        console.warn('[whatsapp] No app secret configured — skipping signature validation');
+        console.warn('[whatsapp] No app secret configured — accepting UNSIGNED webhook (WHATSAPP_ALLOW_UNSIGNED_WEBHOOKS, development only)');
       }
 
       // Parse body from raw buffer
@@ -344,13 +352,18 @@ router.post(
           .catch((err) => console.error('[contacts] Failed to check contact limit:', err));
       }
 
-      // Find or create active conversation
+      // Find or create active conversation.
+      // channel_metadata.wa_from is the conversation's immutable sender identity: fromPhone comes from
+      // Meta's signed webhook body (message.from), never from the customer's text or the LLM. A
+      // conversation is never reused for a different sender, even when the phone-based contact
+      // lookup above merged two numbers into one contact (contacts.phone can be overwritten).
       const existingConv = await query<{ id: string; status: string }>(
         `SELECT id, status FROM conversations
          WHERE agent_id = $1 AND contact_id = $2 AND channel = 'whatsapp' AND status != 'closed'
+           AND (channel_metadata->>'wa_from' IS NULL OR channel_metadata->>'wa_from' = $3)
          ORDER BY created_at DESC
          LIMIT 1`,
-        [agent.id, contactId]
+        [agent.id, contactId, fromPhone]
       );
 
       let convId: string;
@@ -360,6 +373,15 @@ router.post(
         convId = existingConv.rows[0].id;
         convStatus = existingConv.rows[0].status;
 
+        // Backfill wa_from on conversations created before it existed (or by other paths): only if
+        // missing, never overwritten.
+        await query(
+          `UPDATE conversations
+              SET channel_metadata = COALESCE(channel_metadata, '{}'::jsonb) || jsonb_build_object('wa_from', $1::text)
+            WHERE id = $2 AND (channel_metadata->>'wa_from') IS NULL`,
+          [fromPhone, convId]
+        );
+
         // If this is the first message with a referral on an existing conv, update channel_metadata
         if (referral) {
           await query(
@@ -368,7 +390,7 @@ router.post(
           );
         }
       } else {
-        const channelMeta: Record<string, unknown> = {};
+        const channelMeta: Record<string, unknown> = { wa_from: fromPhone };
         if (referral) {
           channelMeta['referral'] = referral;
           if (referredProduct) channelMeta['referredProduct'] = referredProduct;
@@ -444,18 +466,23 @@ router.post(
         return;
       }
 
+      // Receipt time = when the buyer sent it (Meta's signed message.timestamp, seconds → ms), not
+      // when the download / transcription finished; pushToBuffer clamps it to now. Missing → now.
+      const metaTs = Number(message.timestamp);
+      const sentAtMs = Number.isFinite(metaTs) && metaTs > 0 ? metaTs * 1000 : undefined;
+
       // Push to message buffer — image, voice transcription, or text
       if (imageBufferItem?.data) {
-        await pushToBuffer(convId, agent.id, agent.organization_id, imageBufferItem, agent.message_buffer_seconds);
+        await pushToBuffer(convId, agent.id, agent.organization_id, imageBufferItem, agent.message_buffer_seconds, sentAtMs);
       } else if (audioTranscription) {
         const voiceItem: BufferItem = {
           type: 'text',
           content: audioTranscription,
           mimeType: 'audio/voice-transcription',
         };
-        await pushToBuffer(convId, agent.id, agent.organization_id, voiceItem, agent.message_buffer_seconds);
+        await pushToBuffer(convId, agent.id, agent.organization_id, voiceItem, agent.message_buffer_seconds, sentAtMs);
       } else {
-        await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds);
+        await pushToBuffer(convId, agent.id, agent.organization_id, messageText, agent.message_buffer_seconds, sentAtMs);
       }
     } catch (err) {
       console.error('[whatsapp] Webhook processing error:', err);
@@ -1146,6 +1173,53 @@ router.post(
         console.log(`[embedded-signup] Health status for WABA ${wabaId}:`, JSON.stringify(healthData));
       } catch (healthErr) {
         console.log(`[embedded-signup] Health status for WABA ${wabaId}:`, JSON.stringify({ error: (healthErr as Error).message }));
+      }
+
+      // Idempotency: a retry after the browser dropped the previous request (while the
+      // backend finished it) must not re-subscribe the webhook nor re-register the number
+      // with a fresh PIN. Only the newly exchanged customer token is refreshed, so a
+      // reconnect still repairs an expired/revoked stored token.
+      const currentCfg = await query<{ whatsapp_config: Record<string, unknown> | null }>(
+        'SELECT whatsapp_config FROM agents WHERE id = $1',
+        [agentId]
+      );
+      const existingCfg = currentCfg.rows[0]?.whatsapp_config ?? {};
+      const existingVerifyToken = existingCfg['verify_token'];
+      if (
+        existingCfg['connected'] === true &&
+        existingCfg['phone_number_id'] === phoneNumberId &&
+        existingCfg['waba_id'] === wabaId &&
+        typeof existingVerifyToken === 'string'
+      ) {
+        const idemExpiresAtSec = debugData.data.expires_at ?? 0;
+        await query(
+          `UPDATE agents
+           SET whatsapp_config = whatsapp_config || $1::jsonb,
+               updated_at = NOW()
+           WHERE id = $2`,
+          [
+            JSON.stringify({
+              access_token_encrypted: encryptAccessToken(fbAccessToken),
+              token_expires_at: idemExpiresAtSec > 0 ? new Date(idemExpiresAtSec * 1000).toISOString() : null,
+              token_type: debugData.data.type ?? null,
+              token_checked_at: new Date().toISOString(),
+            }),
+            agentId,
+          ]
+        );
+        if (signupSessionId) {
+          void deleteSignupSession(signupSessionId);
+        }
+        console.log(`[embedded-signup] Agent ${agentId} already connected to ${phoneNumberId} (WABA ${wabaId}) — skipping webhook subscribe and phone register`);
+        res.json({
+          success: true,
+          phoneNumber: displayPhone,
+          phoneNumberId,
+          wabaId,
+          verifyToken: existingVerifyToken,
+          webhookUrl: `${env.API_URL}/api/whatsapp/webhook`,
+        });
+        return;
       }
 
       // Steps 6-9 use the customer's own business token (fbAccessToken, obtained by

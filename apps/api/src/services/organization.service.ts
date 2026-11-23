@@ -4,6 +4,7 @@ import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { sendInvitationEmail } from '../config/email';
 import { canInviteRole } from './access-rules';
+import { visibleTrialEndsAt } from './trial-banner';
 import { disconnectUserFromOrg } from '../config/websocket';
 
 export interface OrgMember {
@@ -28,18 +29,26 @@ export interface OrganizationData {
 }
 
 export async function getOrganization(orgId: string): Promise<OrganizationData> {
-  const result = await query<OrganizationData>(
+  const result = await query<OrganizationData & { has_stripe_subscription: boolean }>(
     `SELECT o.id, o.name, o.slug, o.plan, o.subscription_status,
             COALESCE(o.settings, '{}')::json as settings, o.created_at,
             o.trial_ends_at,
+            (o.stripe_subscription_id IS NOT NULL) AS has_stripe_subscription,
             (SELECT COUNT(*)::int FROM user_organizations uo WHERE uo.organization_id = o.id) as member_count
      FROM organizations o
      WHERE o.id = $1`,
     [orgId]
   );
-  const org = result.rows[0];
-  if (!org) throw new AppError(404, 'Organization not found', 'ORG_NOT_FOUND');
-  return org;
+  const row = result.rows[0];
+  if (!row) throw new AppError(404, 'Organization not found', 'ORG_NOT_FOUND');
+  // The boolean is only used here (not returned); trial_ends_at is null when the org pays with Stripe.
+  const { has_stripe_subscription, ...org } = row;
+  const trialEndsAt = visibleTrialEndsAt({
+    trial_ends_at: org.trial_ends_at,
+    has_stripe_subscription,
+    subscription_status: org.subscription_status,
+  });
+  return { ...org, trial_ends_at: trialEndsAt };
 }
 
 export async function updateOrganization(

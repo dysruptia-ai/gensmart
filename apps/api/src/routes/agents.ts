@@ -1,5 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import type { ChatMessage } from '../services/llm.service';
+import type { ChatMessage, ToolCall } from '../services/llm.service';
+import {
+  runToolLoop,
+  buildHistory,
+  buildCapturedValuesBlock,
+  MAX_TOOL_ITERATIONS,
+  type TraceIteration,
+} from '../services/tool-loop.service';
 import { z } from 'zod';
 import multer from 'multer';
 import path from 'path';
@@ -15,6 +22,21 @@ import { validateUUID } from '../middleware/validateUUID';
 import { checkAgentLimit, checkKnowledgeLimit } from '../middleware/planLimits';
 import * as agentService from '../services/agent.service';
 import { serverUrlMatchesProfile } from '../services/mcp-provider-url';
+import * as mcpOAuth from '../services/mcp-oauth.service';
+import { rateLimiter } from '../middleware/rateLimiter';
+import type { StoredOAuth } from '../services/mcp-oauth.core';
+import {
+  buildDropiSalesContext,
+  dropiSummaryFallback,
+  dropiSalesToolDefinitions,
+  executeDropiSalesTool,
+  isDropiSalesToolName,
+  markDropiSummaryDelivered,
+  mcpToolExposure,
+  requiresSelectedTools,
+  type DropiSalesBinding,
+} from '../services/dropi-sales/tools';
+import { env } from '../config/env';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
@@ -29,7 +51,7 @@ import {
 } from '../services/mcp-headers.service';
 import * as mcpProviders from '../services/mcp-providers.service';
 import { createConnectSession } from '../services/tiendanube-connect-session.service';
-import { encrypt, decrypt } from '../config/encryption';
+import { encrypt } from '../config/encryption';
 import {
   buildEmailNotificationToolDef,
   type EmailNotificationToolConfig,
@@ -182,9 +204,9 @@ function validateProviderHeaders(
 // GET /api/agents/templates — must be before /:id routes
 router.get(
   '/templates',
-  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const templates = await agentService.getTemplates();
+      const templates = await agentService.getTemplates(req.org!.id);
       res.json({ templates });
     } catch (err) {
       next(err);
@@ -373,7 +395,7 @@ router.post(
         // rotated centrally.
         if (validated.providerId) {
           const profile = await mcpProviders.findProfileById(validated.providerId);
-          if (!profile || !profile.is_active) {
+          if (!profile || !profile.is_active || !mcpProviders.isProfileVisibleToOrg(profile, req.org!.id)) {
             res.status(400).json({
               error: { message: `Unknown or inactive MCP provider: ${validated.providerId}`, code: 'INVALID_PROVIDER' },
             });
@@ -514,7 +536,7 @@ router.post(
       let profileAutoHeaders: Record<string, string> = {};
       if (providerId) {
         profile = await mcpProviders.findProfileById(providerId);
-        if (profile && profile.is_active) {
+        if (profile && profile.is_active && mcpProviders.isProfileVisibleToOrg(profile, req.org!.id)) {
           if (!serverUrlMatchesProfile(profile, server_url)) {
             res.status(400).json({
               success: false,
@@ -533,17 +555,58 @@ router.post(
       // Test isn't tied to a real conversation/tool, so we use a fresh session
       // UUID and an ephemeral webhook secret. Real secrets are persisted only
       // on tool creation. System headers always win the merge.
-      const systemAutoHeaders: Record<string, string> = {
-        'X-Agent-ID': String(req.params['id']),
-        'X-Session-ID': randomUUID(),
-        'X-Webhook-Secret': generateWebhookSecret(),
-      };
+      // OAuth providers without webhook events (e.g. Dropi) get none of them (same policy as buildMcpToolHeaders).
+      const systemAutoHeaders: Record<string, string> = mcpOAuth.profileOmitsGenSmartHeaders(profile)
+        ? {}
+        : {
+            'X-Agent-ID': String(req.params['id']),
+            'X-Session-ID': randomUUID(),
+            'X-Webhook-Secret': generateWebhookSecret(),
+          };
 
-      const extraHeaders = {
+      const extraHeaders: Record<string, string> = {
         ...profileAutoHeaders,
         ...userExtraHeaders,
         ...systemAutoHeaders,
       };
+
+      // OAuth providers: the Bearer of the saved connection is the final layer (wins over everything).
+      let oauthSessionId: string | null = null;
+      if (profile && profile.oauth_config) {
+        let oauthState: Partial<{ status: string }> | null = null;
+        if (toolId && /^[0-9a-f-]{36}$/i.test(toolId)) {
+          const r = await query<{ oauth: { status?: string } | null; provider_id: string | null }>(
+            `SELECT config->'oauth' AS oauth, config->>'providerId' AS provider_id
+               FROM agent_tools WHERE id = $1 AND agent_id = $2`,
+            [toolId, String(req.params['id'])]
+          );
+          // The tool must belong to the provider in the body: never send its tokens to another provider.
+          const row = r.rows[0];
+          oauthState = row && row.provider_id === profile.id ? row.oauth ?? null : null;
+        }
+        if (!oauthState) {
+          res.json({ success: false, errorCode: 'AUTH_FAILED', error: 'Connect your account first', providerName: profile.name });
+          return;
+        }
+        try {
+          const tok = await mcpOAuth.getValidAccessTokenWithSession({
+            toolId: String(toolId),
+            agentId: String(req.params['id']),
+            providerId: profile.id,
+          });
+          oauthSessionId = tok.sessionId;
+          extraHeaders['Authorization'] = `Bearer ${tok.accessToken}`;
+        } catch (err) {
+          const reconnect = err instanceof mcpOAuth.McpOAuthReconnectRequiredError;
+          res.json({
+            success: false,
+            errorCode: 'AUTH_FAILED',
+            error: reconnect ? 'The connection expired; reconnect your account' : 'Could not refresh the connection; try again',
+            providerName: profile.name,
+          });
+          return;
+        }
+      }
 
       // Step 1: MCP handshake (tools/list). A failure here means we couldn't
       // even reach the MCP — return a handshake-specific error.
@@ -590,6 +653,9 @@ router.post(
             extraHeaders
           );
           if (result.isError) {
+            if (profile.oauth_config && toolId && mcpOAuth.isRevokedToolResult(result.content)) {
+              await mcpOAuth.markNeedsReconnect(String(toolId), String(req.params['id']), oauthSessionId).catch(() => {});
+            }
             console.error(
               `[agents] MCP test-connection health-check tool "${hc.name}" returned error:`,
               result.content
@@ -643,9 +709,12 @@ router.post(
 router.get(
   '/:id/tools/mcp/providers',
   validateUUID('id'),
-  async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const profiles = await mcpProviders.listActiveProfiles();
+      // Beta gating is applied per org here: the cached active list is global.
+      const profiles = (await mcpProviders.listActiveProfiles()).filter((p) =>
+        mcpProviders.isProfileVisibleToOrg(p, req.org!.id)
+      );
       res.json({ providers: profiles.map(mcpProviders.toPublicProfile) });
     } catch (err) {
       next(err);
@@ -675,6 +744,78 @@ router.post(
   }
 );
 
+// POST /api/agents/:id/tools/mcp/:providerId/oauth/start
+// Starts the MCP OAuth 2.1 (PKCE) flow for providers with oauth_config (e.g. Dropi). Returns the
+// authorize URL; the provider redirects back to GET /api/oauth/:providerId/callback.
+router.post(
+  '/:id/tools/mcp/:providerId/oauth/start',
+  validateUUID('id'),
+  rateLimiter({ windowSeconds: 60, maxRequests: 20, keyPrefix: 'mcp-oauth-start', keyFn: (req) => req.org?.id ?? null }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const providerId = String(req.params['providerId']);
+      // Throws 404 if the agent does not belong to this org.
+      await agentService.getAgentById(req.org!.id, agentId);
+      const profile = await mcpOAuth.findOAuthProfileForOrg(providerId, req.org!.id);
+      if (!profile) {
+        res.status(404).json({ error: { message: 'Provider not found', code: 'PROVIDER_NOT_FOUND' } });
+        return;
+      }
+      const authorizeUrl = await mcpOAuth.startAuthorization({
+        organizationId: req.org!.id,
+        agentId,
+        userId: req.user!.userId,
+        profile,
+        redirectUri: `${env.API_URL}/api/oauth/${encodeURIComponent(profile.id)}/callback`,
+      });
+      res.status(200).json({ authorizeUrl });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/agents/:id/tools/mcp/:providerId/oauth/complete
+// Step 2 of the OAuth flow (authenticated). The public callback only parks {state, code} in a
+// single-use ticket; here the code is exchanged ONLY if the state was started by this same user,
+// org, agent and provider. Errors are generic on purpose.
+const oauthCompleteSchema = z.object({ ticket: z.string().regex(/^[a-f0-9]{48}$/) });
+router.post(
+  '/:id/tools/mcp/:providerId/oauth/complete',
+  validateUUID('id'),
+  rateLimiter({ windowSeconds: 60, maxRequests: 20, keyPrefix: 'mcp-oauth-complete', keyFn: (req) => req.org?.id ?? null }),
+  validate(oauthCompleteSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = String(req.params['id']);
+      const providerId = String(req.params['providerId']);
+      try {
+        const done = await mcpOAuth.completeAuthorizationWithTicket({
+          ticket: (req.body as { ticket: string }).ticket,
+          organizationId: req.org!.id,
+          agentId,
+          providerId,
+          userId: req.user!.userId,
+        });
+        res.status(200).json({ success: true, toolId: done.toolId });
+      } catch (err) {
+        if (err instanceof mcpOAuth.McpOAuthForbiddenError) {
+          res.status(403).json({ error: { message: 'Not allowed', code: 'FORBIDDEN' } });
+        } else if (err instanceof mcpOAuth.McpOAuthStateError) {
+          res.status(400).json({ error: { message: 'Connection session expired', code: 'CONNECT_SESSION_EXPIRED' } });
+        } else if (err instanceof mcpOAuth.McpOAuthCompletionError) {
+          res.status(502).json({ error: { message: 'Could not complete the connection', code: err.reason.toUpperCase() } });
+        } else {
+          throw err;
+        }
+      }
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // GET /api/agents/:id/tools/mcp/resolve-profile?url=...
 // Returns the matching provider profile for a pasted URL (or { profile: null }).
 router.get(
@@ -687,7 +828,8 @@ router.get(
         res.status(400).json({ error: { message: 'Invalid url parameter', code: 'INVALID_URL' } });
         return;
       }
-      const profile = await mcpProviders.findProfileByUrl(url);
+      const found = await mcpProviders.findProfileByUrl(url);
+      const profile = found && mcpProviders.isProfileVisibleToOrg(found, req.org!.id) ? found : null;
       res.json({ profile: profile ? mcpProviders.toPublicProfile(profile) : null });
     } catch (err) {
       next(err);
@@ -768,7 +910,15 @@ router.put(
 
           if (effectiveProviderId) {
             const profile = await mcpProviders.findProfileById(effectiveProviderId);
-            if (!profile || !profile.is_active) {
+            // Beta gating (allowed_org_ids) only when the request SETS a provider other than the stored
+            // one: an org removed from a beta keeps editing/using the tools it already created
+            // (product decision; usage in worker/preview/refresh is not gated either).
+            const settingNewProvider = !!validated.providerId && validated.providerId !== existingCfg.providerId;
+            if (
+              !profile ||
+              !profile.is_active ||
+              (settingNewProvider && !mcpProviders.isProfileVisibleToOrg(profile, req.org!.id))
+            ) {
               res.status(400).json({
                 error: { message: `Unknown or inactive MCP provider: ${effectiveProviderId}`, code: 'INVALID_PROVIDER' },
               });
@@ -819,6 +969,7 @@ router.put(
             // Preserve secret — rotation is explicit via /regenerate-webhook-secret
             webhookSecret_encrypted: existingCfg.webhookSecret_encrypted,
             ...(effectiveProviderId ? { providerId: effectiveProviderId } : {}),
+            // config.oauth is not handled here: agentService.updateTool always keeps the DB's copy.
           };
         }
       }
@@ -872,14 +1023,12 @@ router.post(
       }
 
       const newSecret = generateWebhookSecret();
-      const newConfig = {
-        ...existing.rows[0].config,
-        webhookSecret_encrypted: encrypt(newSecret),
-      };
-
+      // Atomic single-key update: never rewrites the whole config (config.oauth may be rotated concurrently).
       await query(
-        'UPDATE agent_tools SET config = $1, updated_at = NOW() WHERE id = $2 AND agent_id = $3',
-        [JSON.stringify(newConfig), toolId, agentId]
+        `UPDATE agent_tools
+            SET config = jsonb_set(config, '{webhookSecret_encrypted}', to_jsonb($1::text), true), updated_at = NOW()
+          WHERE id = $2 AND agent_id = $3`,
+        [encrypt(newSecret), toolId, agentId]
       );
 
       // Invalidate MCP tool cache so the worker picks up the new secret on next call
@@ -1528,6 +1677,8 @@ router.post(
   '/:id/preview',
   validateUUID('id'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    // Server receipt time of this preview message (dropi_confirmar_pedido time rule).
+    const receivedAt = Date.now();
     try {
       const agentId = String(req.params['id']);
       const { message, systemPrompt } = req.body as {
@@ -1571,8 +1722,14 @@ router.post(
 
       // Load stored history
       const rawHistory = await redis.get(previewKey);
-      const history: { role: 'user' | 'assistant'; content: string }[] =
-        rawHistory ? (JSON.parse(rawHistory) as { role: 'user' | 'assistant'; content: string }[]) : [];
+      const history: Array<{ role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown> }> =
+        rawHistory
+          ? (JSON.parse(rawHistory) as Array<{ role: 'user' | 'assistant'; content: string; metadata?: Record<string, unknown> }>)
+          : [];
+      // Captured variables persist across preview turns (parity with conversations.captured_variables).
+      const previewVarsKey = `preview-vars:${agentId}:${req.user!.userId}`;
+      const rawVars = await redis.get(previewVarsKey);
+      const capturedVars: Record<string, string> = rawVars ? (JSON.parse(rawVars) as Record<string, string>) : {};
 
       // Build system prompt
       // Day 21: inject {{config.X}} placeholders BEFORE appending variable
@@ -1591,6 +1748,11 @@ router.post(
       const rawPrompt = systemPrompt ?? agentResult.systemPrompt ?? '';
       let fullSystemPrompt = await injectConfig(agentId, rawPrompt);
       if (variableInstructions) fullSystemPrompt += '\n\n' + variableInstructions;
+      const capturedValuesBlock = buildCapturedValuesBlock(
+        capturedVars,
+        (variables as Array<{ name: string }>).map((v) => v.name)
+      );
+      if (capturedValuesBlock) fullSystemPrompt += '\n\n' + capturedValuesBlock;
 
       // RAG context
       const hasRAG = await hasKnowledgeBase(agentId);
@@ -1719,8 +1881,11 @@ router.post(
         originalToolName: string;
         transport: 'sse' | 'streamable-http';
         extraHeaders: Record<string, string>;
+        oauth: mcpOAuth.McpOAuthContext | null;
       }> = {};
       const MCP_TOOLS_CACHE_TTL = 3600;
+      // Dropi with a valid OAuth connection: sales tools instead of the raw ones (same rule as the worker).
+      let dropiBinding: DropiSalesBinding | null = null;
 
       for (const tool of toolsResult.rows) {
         if (tool.type !== 'mcp' || !tool.is_enabled) continue;
@@ -1735,6 +1900,7 @@ router.post(
           headers?: EncryptedHeader[];
           webhookSecret_encrypted?: string;
           providerId?: string;
+          oauth?: Partial<StoredOAuth>;
         };
 
         const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
@@ -1742,37 +1908,35 @@ router.post(
         const selectedTools = cfg.selected_tools ?? [];
         const mcpTransport = (cfg.transport === 'streamable-http' ? 'streamable-http' : 'sse') as 'sse' | 'streamable-http';
 
-        if (!serverUrl || selectedTools.length === 0) continue;
+        if (!serverUrl || (selectedTools.length === 0 && requiresSelectedTools(cfg))) continue;
 
-        // Same 3-layer merge as message.worker.ts (profile → user → system).
-        let profileAutoHeaders: Record<string, string> = {};
-        if (cfg.providerId) {
-          try {
-            const profile = await mcpProviders.findProfileById(cfg.providerId);
-            if (profile && profile.is_active) {
-              if (serverUrlMatchesProfile(profile, serverUrl)) {
-                profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
-              } else {
-                console.error(`[preview] Tool ${tool.id} server_url does not match provider ${cfg.providerId}; provider headers not sent`);
-              }
-            }
-          } catch (err) {
-            console.error(`[preview] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);
-          }
+        // Same 3-layer merge as message.worker.ts (profile → user → system) + OAuth Bearer as final layer.
+        let built: mcpOAuth.BuiltMcpHeaders;
+        try {
+          built = await mcpOAuth.buildMcpToolHeaders({
+            logPrefix: '[preview]',
+            toolId: tool.id,
+            agentId,
+            sessionId: previewSessionId,
+            serverUrl,
+            cfg,
+          });
+        } catch (err) {
+          console.error(`[preview] Failed to build MCP headers for tool ${tool.id}:`, (err as Error).message);
+          continue;
         }
-        const userHeaders = decryptHeaders(cfg.headers);
-        const autoHeaders: Record<string, string> = {
-          'X-Agent-ID': agentId,
-          'X-Session-ID': previewSessionId,
-        };
-        if (cfg.webhookSecret_encrypted) {
-          try {
-            autoHeaders['X-Webhook-Secret'] = decrypt(cfg.webhookSecret_encrypted);
-          } catch (err) {
-            console.error(`[preview] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
+        if (built.needsReconnect) continue;
+        const allHeaders = built.headers;
+        const toolOAuth = built.oauth;
+
+        const exposure = mcpToolExposure(cfg, built);
+        if (exposure !== 'raw') {
+          if (exposure === 'dropi_sales' && toolOAuth && !dropiBinding) {
+            dropiBinding = { toolId: tool.id, serverUrl, transport: mcpTransport, headers: allHeaders, oauth: toolOAuth };
+            llmTools.push(...dropiSalesToolDefinitions);
           }
+          continue;
         }
-        const allHeaders = { ...profileAutoHeaders, ...userHeaders, ...autoHeaders };
 
         try {
           const cacheKey = `mcp:tools:${tool.id}`;
@@ -1801,6 +1965,7 @@ router.post(
               originalToolName: toolDef.name,
               transport: mcpTransport,
               extraHeaders: allHeaders,
+              oauth: toolOAuth,
             };
           }
         } catch (err) {
@@ -1833,66 +1998,68 @@ router.post(
 
       // LLM call
       const startTime = Date.now();
-      const capturedVars: Record<string, string> = {};
       const toolsCalledLog: string[] = [];
       const previewMedia: Array<{ type: string; url: string; caption?: string; valid: boolean; error?: string }> = [];
       let finalResponse = '';
       let totalTokens = 0;
 
+      const previewContextWindow = Math.min(
+        agentResult.contextWindowMessages,
+        (PLAN_LIMITS[req.org!.plan as PlanKey]?.contextWindowMessages ?? agentResult.contextWindowMessages)
+      );
       const messages: ChatMessage[] = [
-        ...history.map((h: { role: string; content: string }) => ({
-          role: h.role as 'user' | 'assistant',
-          content: h.content,
-        })),
+        ...buildHistory(history, previewContextWindow),
         { role: 'user' as const, content: message.trim() },
       ];
 
-      const currentMessages = [...messages];
+      let currentMessages = [...messages];
+      const deliveredIntermediates: string[] = [];
+      let toolTrace: TraceIteration[] = [];
       let sawEmptyShippingZones = false;
       // 8 en vez de 5: flujos multi-tool reales (ej. search_products -> get_product ->
       // varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
       // cortaban dejando un texto interino como respuesta final. Mantener en sync
       // con `MAX_TOOL_ITERATIONS` en workers/message.worker.ts.
-      const maxIter = 8;
+      const maxIter = MAX_TOOL_ITERATIONS;
       const planLimits = PLAN_LIMITS[req.org!.plan as PlanKey];
       const effectiveMaxTokens = Math.min(agentResult.maxTokens, planLimits?.maxTokensPerResponse ?? 512);
 
-      try {
-      for (let i = 0; i < maxIter; i++) {
-        const response = await chat({
-          provider: agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
-          model: agentResult.llmModel,
-          system: fullSystemPrompt,
-          messages: currentMessages,
-          tools: llmTools.length > 0 ? llmTools : undefined,
-          temperature: agentResult.temperature,
-          maxTokens: effectiveMaxTokens,
-        });
+      // Dropi sales tools in preview create REAL Dropi orders (same as Mastershop's create_order in
+      // preview): the user is testing end to end. There is no conversations row, so the scope is the
+      // preview session (reset clears it) and orders are recorded with conversation_id/contact_id NULL.
+      const dropiSales = dropiBinding
+        ? buildDropiSalesContext({
+            binding: dropiBinding,
+            execute: mcpOAuth.executeMCPToolWithOAuth,
+            agentId,
+            organizationId: req.org!.id,
+            scopeId: previewSessionId,
+            conversationId: null,
+            previewSessionId,
+            contactId: null,
+            channel: 'preview',
+            waFrom: null,
+            ipHash: null,
+            humanVerified: false, // channel 'preview': the web verification does not apply
+            // Confirmation rule: user turns already in the preview history + the one being processed,
+            // received (this request) after the summary turn finished, saying yes.
+            currentUserTurn: history.filter((h) => h.role === 'user').length + 1,
+            currentMessageReceivedAt: receivedAt,
+            lastBuyerMessage: message.trim(),
+          })
+        : null;
 
-        totalTokens += response.usage.totalTokens;
-
-        if (!response.toolCalls?.length) {
-          const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
-
-          // Preview: recover leaked captures into capturedVars (no DB writes in preview).
-          for (const ec of extractedCaptures) {
-            capturedVars[ec.variableName] = ec.variableValue;
-            toolsCalledLog.push(`capture_variable[recovered]`);
+      // Preview executor: same contract as the worker's executeTool (always a string).
+      const executePreviewTool = async (tc: ToolCall): Promise<string> => {
+        toolsCalledLog.push(tc.name);
+          if (dropiSales && isDropiSalesToolName(tc.name)) {
+            return executeDropiSalesTool(tc.name, tc.arguments, dropiSales);
           }
-
-          finalResponse = cleaned;
-          break;
-        }
-
-        const previewToolResults: Array<{ toolCallId: string; content: string }> = [];
-
-        for (const tc of response.toolCalls) {
-          toolsCalledLog.push(tc.name);
           if (tc.name === 'capture_variable') {
             const name = String(tc.arguments['variable_name'] ?? '');
             const val = String(tc.arguments['variable_value'] ?? '');
             capturedVars[name] = val;
-            previewToolResults.push({ toolCallId: tc.id, content: `Variable '${name}' captured: ${val}` });
+            return `Variable '${name}' captured: ${val}`;
           } else if (tc.name === 'check_availability') {
             const { getAvailableSlots, resolveCalendarIds, pickAllowedCalendarId } = await import('../services/calendar.service');
             const date = String(tc.arguments['date'] ?? '');
@@ -1916,7 +2083,7 @@ router.post(
                 slotResult = `Could not check availability for ${date}.`;
               }
             }
-            previewToolResults.push({ toolCallId: tc.id, content: slotResult });
+            return slotResult;
           } else if (tc.name === 'book_appointment') {
             const { createAppointment } = await import('../services/appointment.service');
             const { localTimeToUTC, resolveCalendarIds, pickAllowedCalendarId } = await import('../services/calendar.service');
@@ -1956,13 +2123,10 @@ router.post(
                 bookResult = `Could not book appointment: ${(err as Error).message}`;
               }
             }
-            previewToolResults.push({ toolCallId: tc.id, content: bookResult });
+            return bookResult;
           } else if (tc.name === 'request_human_handoff') {
             // Simulated: nothing is sent, stored or notified.
-            previewToolResults.push({
-              toolCallId: tc.id,
-              content: '[Preview] The handoff button would be sent. The customer must TAP the button to start the chat with the team; nobody will contact them on their own. Write ONE short sentence in the customer\'s language reminding them to tap the button from the previous message; do not say where the button is (never above or below). Do not promise a callback or that someone will reach out, do not repeat the link, and do not offer the handoff again.',
-            });
+            return '[Preview] The handoff button would be sent. The customer must TAP the button to start the chat with the team; nobody will contact them on their own. Write ONE short sentence in the customer\'s language reminding them to tap the button from the previous message; do not say where the button is (never above or below). Do not promise a callback or that someone will reach out, do not repeat the link, and do not offer the handoff again.';
           } else if (tc.name === 'send_media') {
             // In preview mode: validate URL but do NOT actually send to WhatsApp/widget.
             const mediaType = String(tc.arguments['type'] ?? 'image');
@@ -2003,23 +2167,20 @@ router.post(
               error: mediaError,
             });
 
-            previewToolResults.push({ toolCallId: tc.id, content: previewResult });
+            return previewResult;
           } else if (tc.name.startsWith('mcp_') && mcpToolMap[tc.name]) {
             // MCP tool — executes against the real server (e.g. create_order
             // creates a real Mastershop order). Acceptable in preview because
             // the user is testing E2E. Reset clears the session/cart.
-            const { serverUrl, originalToolName, transport, extraHeaders } = mcpToolMap[tc.name];
+            const { serverUrl, originalToolName, transport, extraHeaders, oauth: mcpOauthCtx } = mcpToolMap[tc.name];
             try {
-              const result = await executeMCPTool(serverUrl, originalToolName, tc.arguments, transport, extraHeaders);
-              previewToolResults.push({ toolCallId: tc.id, content: result.content });
+              const result = await mcpOAuth.executeMCPToolWithOAuth(serverUrl, originalToolName, tc.arguments, transport, extraHeaders, mcpOauthCtx);
               if (isEmptyShippingZonesResult(tc.name, result.content)) {
                 sawEmptyShippingZones = true;
               }
+              return result.content;
             } catch (err) {
-              previewToolResults.push({
-                toolCallId: tc.id,
-                content: `MCP tool execution failed: ${(err as Error).message}`,
-              });
+              return `MCP tool execution failed: ${(err as Error).message}`;
             }
           } else {
             // Check if this is an email_notification tool
@@ -2045,15 +2206,9 @@ router.post(
               }
 
               if (missingParams.length > 0) {
-                previewToolResults.push({
-                  toolCallId: tc.id,
-                  content: `[Preview] Missing required parameters: ${missingParams.join(', ')}`,
-                });
+                return `[Preview] Missing required parameters: ${missingParams.join(', ')}`;
               } else {
-                previewToolResults.push({
-                  toolCallId: tc.id,
-                  content: `[Preview] Email notification would be sent to ${cfg.recipientEmail}. Subject: "${cfg.subject}". Parameters captured: ${JSON.stringify(tc.arguments)}`,
-                });
+                return `[Preview] Email notification would be sent to ${cfg.recipientEmail}. Subject: "${cfg.subject}". Parameters captured: ${JSON.stringify(tc.arguments)}`;
               }
             } else {
               const toolDef = toolsResult.rows.find(
@@ -2071,32 +2226,49 @@ router.post(
                   resolvedConfig as unknown as Parameters<typeof executeCustomFunction>[0],
                   tc.arguments
                 );
-                previewToolResults.push({ toolCallId: tc.id, content: result });
+                return result;
               }
             }
           }
-        }
+        return `Unknown tool: ${tc.name}`;
+      };
 
-        // Append structured assistant + tool result messages (Anthropic-compatible)
-        currentMessages.push({
-          role: 'assistant' as const,
-          content: response.content || '',
-          toolCalls: response.toolCalls,
-        });
-        currentMessages.push({
-          role: 'user' as const,
-          content: '',
-          toolResults: previewToolResults,
-        });
-
-        if (response.content.trim()) {
-          const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
-          for (const ec of extractedCaptures) {
+      try {
+      const loop = await runToolLoop({
+        messages,
+        maxIterations: maxIter,
+        callLLM: (msgs) =>
+          chat({
+            provider: agentResult.llmProvider as 'openai' | 'anthropic' | 'openrouter',
+            model: agentResult.llmModel,
+            system: fullSystemPrompt,
+            messages: msgs,
+            tools: llmTools.length > 0 ? llmTools : undefined,
+            temperature: agentResult.temperature,
+            maxTokens: effectiveMaxTokens,
+          }),
+        executeTool: executePreviewTool,
+        // Preview: delivered in the response (before the media/final), no channel to send to.
+        onIntermediateText: async (text) => {
+          deliveredIntermediates.push(text);
+        },
+        // Preview: recover leaked captures into capturedVars (no DB writes in preview).
+        onLeakedCaptures: async (captures) => {
+          for (const ec of captures) {
             capturedVars[ec.variableName] = ec.variableValue;
             toolsCalledLog.push(`capture_variable[recovered]`);
           }
-          finalResponse = cleaned;
-        }
+        },
+      });
+      finalResponse = loop.finalResponse;
+      totalTokens = loop.totalTokens;
+      currentMessages = loop.messages;
+      toolTrace = loop.trace;
+      if (
+        finalResponse.replace(/[\s\p{P}]/gu, '').length < 5 &&
+        deliveredIntermediates.length > 0
+      ) {
+        finalResponse = deliveredIntermediates.pop()!;
       }
       } catch (err) {
         // Retry once without tools — replica worker pattern (hotfix #57-60)
@@ -2165,18 +2337,42 @@ router.post(
         }
       }
 
+      // Dropi: same summary guarantee as the worker (fixed line when the reply omits the total).
+      const dropiSummaryLine = dropiSummaryFallback(dropiSales, [...deliveredIntermediates, finalResponse]);
+      if (dropiSummaryLine) {
+        finalResponse = finalResponse.trim() ? `${finalResponse}\n\n${dropiSummaryLine}` : dropiSummaryLine;
+      }
+
       // Persist updated history
       const updatedHistory = [
         ...history,
         { role: 'user' as const, content: message.trim() },
-        { role: 'assistant' as const, content: finalResponse },
+        // Same shape as the worker: intermediate rows (text sent before tools) + final row with toolTrace.
+        ...deliveredIntermediates.map((text) => ({
+          role: 'assistant' as const,
+          content: text,
+          metadata: { intermediate: true } as Record<string, unknown>,
+        })),
+        {
+          role: 'assistant' as const,
+          content: finalResponse,
+          metadata: (toolTrace.length > 0 ? { toolTrace } : undefined) as Record<string, unknown> | undefined,
+        },
       ];
       await redis.set(previewKey, JSON.stringify(updatedHistory), 'EX', TTL);
+      await markDropiSummaryDelivered(dropiSales);
+      await redis.set(previewVarsKey, JSON.stringify(capturedVars), 'EX', TTL);
+      // The MCP session id must live exactly as long as the history: renew it every turn
+      // (it used to expire 30 min after creation while the history stayed alive, so the MCP
+      // cart was lost mid-conversation). set (not expire) so it is recreated if it lapsed mid-turn.
+      await redis.set(previewSessionKey, previewSessionId, 'EX', TTL);
 
       const latencyMs = Date.now() - startTime;
 
       res.json({
         message: finalResponse,
+        // Text the model wrote before running tools; shown before the media/final message.
+        intermediateMessages: deliveredIntermediates,
         metadata: {
           tokensUsed: totalTokens,
           toolsCalled: toolsCalledLog,
@@ -2207,6 +2403,7 @@ router.post(
       await Promise.all([
         redis.del(previewKey).catch(() => {}),
         redis.del(previewSessionKey).catch(() => {}),
+        redis.del(`preview-vars:${agentId}:${req.user!.userId}`).catch(() => {}),
       ]);
       res.json({ message: 'Preview history cleared' });
     } catch (err) {

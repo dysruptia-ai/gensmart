@@ -4,6 +4,7 @@ import { query, getClient } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { resolveCalendarIds } from './calendar.service';
 import { unlinkInside } from './upload-paths';
+import { TEMPLATE_VISIBLE_TO_ORG_SQL } from './agent-template-visibility';
 import {
   replacePlaceholders,
   applyCustomFunctionAuth,
@@ -11,6 +12,7 @@ import {
   buildRequestBody,
 } from './custom-function-auth';
 import { safeFetch, UnsafeUrlError } from './safe-url';
+import { revokeToolOAuthBeforeDelete } from './mcp-oauth-revoke.service';
 import { loadAgentConfigForDeepInject } from './agent-config.service';
 import {
   protectCustomFunctionConfig,
@@ -92,9 +94,23 @@ interface ToolRow {
 }
 
 /** Credentials of custom_function tools never leave the API: they are returned masked. */
-function clientToolConfig(type: string, config: ToolRow['config']): ToolRow['config'] {
-  if (type !== 'custom_function' || typeof config !== 'object' || config === null) return config;
-  return maskCustomFunctionConfig(config as Record<string, unknown>) as ToolRow['config'];
+export function clientToolConfig(type: string, config: ToolRow['config']): ToolRow['config'] {
+  if (typeof config !== 'object' || config === null) return config;
+  if (type === 'custom_function') {
+    return maskCustomFunctionConfig(config as Record<string, unknown>) as ToolRow['config'];
+  }
+  return stripOAuthFromConfig(config);
+}
+
+/**
+ * MCP OAuth tokens (`config.oauth.*_encrypted`) never go to the frontend: the block is removed and
+ * only `oauth_status` ('connected' | 'needs_reconnect') is exposed.
+ */
+export function stripOAuthFromConfig<T extends Record<string, unknown>>(config: T): T {
+  if (!('oauth' in config)) return config;
+  const { oauth, ...rest } = config as Record<string, unknown> & { oauth?: { status?: unknown } };
+  const status = oauth && typeof oauth === 'object' && oauth.status === 'needs_reconnect' ? 'needs_reconnect' : 'connected';
+  return { ...rest, oauth_status: status } as unknown as T;
 }
 
 function formatTool(row: ToolRow) {
@@ -126,6 +142,15 @@ interface TemplateRow {
   integrations?: string[];
   default_llm_provider: string;
   default_llm_model: string;
+  /** Beta gating (migration 072). Never sent to clients (see toPublicTemplate). */
+  allowed_org_ids?: unknown;
+}
+
+/** Template as returned to clients: the beta list (other organizations' ids) is never exposed. */
+function toPublicTemplate(row: TemplateRow): Omit<TemplateRow, 'allowed_org_ids'> {
+  const { allowed_org_ids: _hidden, ...rest } = row;
+  void _hidden;
+  return rest;
 }
 
 function makeInitials(name: string): string {
@@ -495,7 +520,15 @@ export async function publishAgent(orgId: string, agentId: string, userId: strin
         agent.max_tokens,
         agent.context_window_messages,
         JSON.stringify(agent.variables ?? []),
-        JSON.stringify(toolsResult.rows),
+        // OAuth sessions are never snapshotted: the stored refresh token would be stale after rotation.
+        JSON.stringify(
+          toolsResult.rows.map((t) => {
+            if (typeof t.config !== 'object' || t.config === null || !('oauth' in t.config)) return t;
+            const { oauth: _omit, ...rest } = t.config as Record<string, unknown>;
+            void _omit;
+            return { ...t, config: rest };
+          })
+        ),
         userId,
       ]
     );
@@ -533,9 +566,13 @@ export async function getVersions(orgId: string, agentId: string) {
     tools: Array.isArray(version.tools)
       ? version.tools.map((tool) => {
           const t = tool as { type?: unknown; config?: unknown };
-          return t && t.type === 'custom_function' && typeof t.config === 'object' && t.config !== null
-            ? { ...t, config: maskCustomFunctionConfig(t.config as Record<string, unknown>) }
-            : tool;
+          if (t && t.type === 'custom_function' && typeof t.config === 'object' && t.config !== null) {
+            return { ...t, config: maskCustomFunctionConfig(t.config as Record<string, unknown>) };
+          }
+          if (t && typeof t.config === 'object' && t.config !== null) {
+            return { ...t, config: stripOAuthFromConfig(t.config as Record<string, unknown>) };
+          }
+          return tool;
         })
       : version.tools,
   }));
@@ -573,18 +610,19 @@ export async function rollbackAgent(orgId: string, agentId: string, versionId: s
   return formatAgent(result.rows[0]!);
 }
 
-export async function getTemplates() {
+export async function getTemplates(orgId: string) {
   const result = await query<TemplateRow>(
-    'SELECT * FROM agent_templates WHERE is_active = true ORDER BY category, name',
-    []
+    `SELECT * FROM agent_templates WHERE is_active = true AND ${TEMPLATE_VISIBLE_TO_ORG_SQL} ORDER BY category, name`,
+    [orgId]
   );
-  return result.rows;
+  return result.rows.map(toPublicTemplate);
 }
 
 export async function createFromTemplate(orgId: string, plan: string, templateId: string) {
+  // A template hidden by the beta gating answers exactly like a nonexistent one (same 404).
   const templateResult = await query<TemplateRow>(
-    'SELECT * FROM agent_templates WHERE id = $1 AND is_active = true',
-    [templateId]
+    `SELECT * FROM agent_templates WHERE id = $2 AND is_active = true AND ${TEMPLATE_VISIBLE_TO_ORG_SQL}`,
+    [orgId, templateId]
   );
   const template = templateResult.rows[0];
   if (!template) throw new AppError(404, 'Template not found', 'TEMPLATE_NOT_FOUND');
@@ -606,14 +644,22 @@ export async function createFromTemplate(orgId: string, plan: string, templateId
     : [];
   const initialValues = initialConfigVariableValues(templateSchema);
 
+  // agents.web_config defaults to English texts (migration 007). Spanish templates
+  // start with Spanish widget texts; everything else in web_config is untouched.
+  const spanishWebTexts =
+    template.language === 'es'
+      ? { welcome_message: '¡Hola! ¿En qué te puedo ayudar?', bubble_text: 'Chatea con nosotros' }
+      : {};
+
   const updated = await query<AgentRow>(
     `UPDATE agents
      SET template_id = $1,
          config_variables_values = $2::jsonb,
+         web_config = COALESCE(web_config, '{}'::jsonb) || $5::jsonb,
          updated_at = NOW()
      WHERE id = $3 AND organization_id = $4
      RETURNING *`,
-    [template.id, JSON.stringify(initialValues), agent.id, orgId]
+    [template.id, JSON.stringify(initialValues), agent.id, orgId, JSON.stringify(spanishWebTexts)]
   );
   return updated.rows[0] ? formatAgent(updated.rows[0]) : agent;
 }
@@ -901,7 +947,15 @@ export async function updateTool(
   }
   if (configToStore !== undefined) {
     params.push(JSON.stringify(configToStore));
-    setClauses.push(`config = $${params.length}`);
+    const n = params.length;
+    // `config.oauth` is written ONLY by the MCP OAuth service. Any `oauth` in the incoming object is
+    // ignored and the one stored in the DB AT THIS MOMENT is kept (a stale copy would restore an
+    // already-rotated refresh token and make the provider revoke the session).
+    setClauses.push(
+      `config = CASE WHEN config ? 'oauth'
+                     THEN ($${n}::jsonb - 'oauth') || jsonb_build_object('oauth', config->'oauth')
+                     ELSE ($${n}::jsonb - 'oauth') END`
+    );
   }
   if (data.isEnabled !== undefined) {
     params.push(data.isEnabled);
@@ -925,6 +979,11 @@ export async function updateTool(
 
 export async function deleteTool(orgId: string, agentId: string, toolId: string) {
   await verifyAgentOwnership(orgId, agentId);
+  // MCP OAuth tools: best-effort revocation of the provider session before the row (and its tokens)
+  // disappears. Never throws. Worst case ~20 s: endpoint resolution (cached → no request; cold cache
+  // or Redis down → up to 2 metadata GETs x 5 s, DNS included) + the revocation POST (10 s timeout).
+  // Agent/account deletion: documented debt.
+  await revokeToolOAuthBeforeDelete(toolId, agentId);
   await query('DELETE FROM agent_tools WHERE id = $1 AND agent_id = $2', [toolId, agentId]);
 }
 
@@ -952,10 +1011,19 @@ export async function duplicateAgent(orgId: string, agentId: string, plan: strin
     [agentId]
   );
   for (const tool of sourceTools.rows) {
+    // MCP OAuth sessions are NOT cloned: the refresh token rotates and reusing it from a second tool
+    // would make the provider revoke the original session. The copy must be reconnected (disabled).
+    const hasOAuth = typeof tool.config === 'object' && tool.config !== null && 'oauth' in tool.config;
+    const { oauth: _omit, ...configWithoutOAuth } = (tool.config ?? {}) as Record<string, unknown>;
+    void _omit;
     await query(
       `INSERT INTO agent_tools (agent_id, type, name, description, config, is_enabled, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,NOW(),NOW())`,
-      [newAgent.id, tool.type, tool.name, tool.description, JSON.stringify(tool.config), tool.is_enabled]
+      [
+        newAgent.id, tool.type, tool.name, tool.description,
+        JSON.stringify(hasOAuth ? configWithoutOAuth : tool.config),
+        hasOAuth ? false : tool.is_enabled,
+      ]
     );
   }
 

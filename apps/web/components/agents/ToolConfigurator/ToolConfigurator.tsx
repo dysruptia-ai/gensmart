@@ -1615,6 +1615,11 @@ export default function ToolConfigurator({ agentId, orgPlan, orgPlanLoaded = tru
       <MCPConfigurator
         agentId={agentId}
         toolId={editTool?.id}
+        oauthStatus={
+          (editTool?.config as Record<string, unknown> | undefined)?.['oauth_status'] === 'needs_reconnect'
+            ? 'needs_reconnect'
+            : 'connected'
+        }
         config={mcpConfig}
         onChange={(patch) => {
           if (patch.server_url !== undefined) setField('mcpServerUrl', patch.server_url);

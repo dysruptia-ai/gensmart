@@ -322,6 +322,30 @@ function decodeBody(body: Buffer, encoding: string, maxBytes: number): Promise<B
   return Promise.resolve(body);
 }
 
+/** User-Agent sent when the caller sets none (some CDNs, e.g. Dropi's CloudFront, answer 403 without one). */
+export const DEFAULT_USER_AGENT = 'GenSmart/1.0 (+https://gensmart.co)';
+
+/**
+ * Headers of one request: Accept-Encoding (unless the caller sets it), the caller's headers, a
+ * default User-Agent when the caller sets none (case-insensitive), and Content-Length for a body.
+ */
+export function buildRequestHeaders(
+  callerHeaders: Record<string, string>,
+  truncate: boolean,
+  body?: string
+): Record<string, string> {
+  const has = (name: string): boolean => Object.keys(callerHeaders).some((k) => k.toLowerCase() === name);
+  // A truncated read keeps raw bytes (no decompression), so it asks for an uncompressed body
+  // unless the caller sets its own Accept-Encoding.
+  const headers: Record<string, string> = {
+    ...(has('accept-encoding') ? {} : { 'Accept-Encoding': truncate ? 'identity' : 'gzip, deflate, br' }),
+    ...callerHeaders,
+  };
+  if (!has('user-agent')) headers['User-Agent'] = DEFAULT_USER_AGENT;
+  if (body !== undefined) headers['Content-Length'] = String(Buffer.byteLength(body));
+  return headers;
+}
+
 function requestOnce(
   url: URL,
   init: { method: string; headers: Record<string, string>; body?: string },
@@ -337,14 +361,7 @@ function requestOnce(
     }
 
     const isHttps = url.protocol === 'https:';
-    // A truncated read keeps raw bytes (no decompression), so it asks for an uncompressed body
-    // unless the caller sets its own Accept-Encoding.
-    const callerSetsEncoding = Object.keys(init.headers).some((k) => k.toLowerCase() === 'accept-encoding');
-    const headers: Record<string, string> = {
-      ...(callerSetsEncoding ? {} : { 'Accept-Encoding': truncate ? 'identity' : 'gzip, deflate, br' }),
-      ...init.headers,
-    };
-    if (init.body !== undefined) headers['Content-Length'] = String(Buffer.byteLength(init.body));
+    const headers = buildRequestHeaders(init.headers, truncate, init.body);
 
     let settled = false;
     const finish = (fn: () => void): void => {
@@ -498,3 +515,34 @@ export function safeUndiciFetch(url: string, init: UndiciRequestInit = {}): Prom
   return undiciFetch(url, { ...init, dispatcher: sharedDispatcher, redirect: 'error' });
 }
 
+
+/** Error thrown by readBodyLimited when the body exceeds its cap. */
+export class BodyTooLargeError extends Error {
+  constructor() {
+    super('response too large');
+    this.name = 'BodyTooLargeError';
+  }
+}
+
+/**
+ * Reads at most `maxBytes` of a streaming body (counted AFTER content decoding, so a compressed
+ * response cannot inflate past the cap). Beyond that it cancels the stream and throws
+ * BodyTooLargeError. Time limits stay with the AbortSignal of the request.
+ */
+export async function readBodyLimited(body: ReadableStream<Uint8Array> | null, maxBytes: number): Promise<string> {
+  if (!body) return '';
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > maxBytes) {
+      await reader.cancel().catch(() => {});
+      throw new BodyTooLargeError();
+    }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}

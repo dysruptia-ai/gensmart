@@ -275,6 +275,7 @@ export async function updateOrgSubscription(params: {
          current_period_start = $4,
          current_period_end = $5,
          is_suspended = CASE WHEN $7 THEN false ELSE is_suspended END,
+         trial_ends_at = CASE WHEN $7 THEN NULL ELSE trial_ends_at END,
          updated_at = NOW()
      WHERE id = $6`,
     [

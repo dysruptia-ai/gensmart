@@ -18,12 +18,14 @@ const BASE_CSP = [
 
 const WIDGET_CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // Cloudflare Turnstile (per-session human check before web Dropi orders): script, iframe and calls
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
-  "connect-src 'self' https://api.gensmart.co wss://api.gensmart.co",
+  "connect-src 'self' https://api.gensmart.co wss://api.gensmart.co https://challenges.cloudflare.com",
+  "frame-src https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",
 ].join('; ');

@@ -137,6 +137,8 @@ app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), asyn
 //
 // Registered inline BEFORE express.json() so express.raw() preserves the body
 // bytes for signature verification. Same pattern as the Stripe webhook above.
+const KNOWN_MCP_SOURCES = new Set(['mastershop-mcp', 'venndelo-mcp']);
+
 const VALID_MCP_EVENTS = new Set([
   'order.created',
   'order.status_changed',
@@ -160,7 +162,7 @@ app.post('/api/webhooks/mcp', express.raw({ type: 'application/json' }), async (
       return;
     }
 
-    if (source && source !== 'mastershop-mcp') {
+    if (source && !KNOWN_MCP_SOURCES.has(source)) {
       // Don't reject — keep room for additional MCP providers in the future,
       // but log so unexpected sources are visible.
       console.warn(`[mcp-webhook] Unknown source: ${source}`);
@@ -312,11 +314,13 @@ async function expireTrials(): Promise<void> {
       `UPDATE organizations
        SET is_suspended = true, trial_ends_at = NULL, updated_at = NOW()
        WHERE trial_ends_at IS NOT NULL AND trial_ends_at < NOW() AND is_suspended = false
+         AND NOT (stripe_subscription_id IS NOT NULL AND subscription_status IN ('active', 'trialing'))
        RETURNING id, name`
     );
     if (result.rows.length > 0) {
+      // Ids only: organization names are not logged.
       console.log(`[trial-cron] Suspended ${result.rows.length} orgs with expired trials:`,
-        result.rows.map(r => r.name).join(', '));
+        result.rows.map(r => r.id).join(', '));
       for (const org of result.rows) {
         try {
           getIO().to(`org:${org.id}`).emit('org:suspended', { reason: 'trial_expired' });

@@ -266,7 +266,8 @@ router.post(
           const { stripe } = await import('../config/stripe');
           await stripe.subscriptions.cancel(stripeSubId);
           await query(
-            `UPDATE organizations SET subscription_status = 'cancelled', updated_at = NOW() WHERE id = $1`,
+            // Stripe's spelling, same as stripe.service suspendOrgOnCancellation
+            `UPDATE organizations SET subscription_status = 'canceled', updated_at = NOW() WHERE id = $1`,
             [orgId]
           );
         }

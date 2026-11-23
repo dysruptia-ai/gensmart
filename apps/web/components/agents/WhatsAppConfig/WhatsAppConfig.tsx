@@ -221,6 +221,33 @@ export default function WhatsAppConfig({ agentId }: WhatsAppConfigProps) {
     toastError(msg);
   }
 
+  // A network failure (fetch threw before any response, so not an ApiError) does not mean
+  // the signup failed: the backend may have finished the connection after the browser
+  // dropped the request. Poll the status for a while before reporting an error, since
+  // the backend may still be talking to Meta when the connection drops.
+  async function recoverSignupError(err: unknown): Promise<void> {
+    if (!(err instanceof ApiError)) {
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          const data = await api.get<WhatsAppStatus>(`/api/whatsapp/status/${agentId}`);
+          if (data.connected) {
+            setSignupStep(null);
+            success(tw('toast.signupConnected', { phone: data.phoneNumberId ?? '' }));
+            setShowManual(false);
+            setPendingSessionId(null);
+            setPendingWabaId(null);
+            await loadStatus();
+            return;
+          }
+        } catch {
+          // Status check failed too — keep trying until the attempts run out
+        }
+        await new Promise<void>((resolve) => setTimeout(resolve, 5000));
+      }
+    }
+    handleSignupError(err);
+  }
+
   function handleEmbeddedSignup() {
     if (!fbAppId) return;
 
@@ -298,7 +325,7 @@ export default function WhatsAppConfig({ agentId }: WhatsAppConfigProps) {
         setShowManual(false);
         return loadStatus();
       })
-      .catch(handleSignupError)
+      .catch(recoverSignupError)
       .finally(function() {
         setConnecting(false);
         setSignupStep(null);
@@ -341,7 +368,7 @@ export default function WhatsAppConfig({ agentId }: WhatsAppConfigProps) {
         setPendingWabaId(null);
         return loadStatus();
       })
-      .catch(handleSignupError)
+      .catch(recoverSignupError)
       .finally(function() {
         setConnecting(false);
       });

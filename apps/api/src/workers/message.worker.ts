@@ -12,14 +12,31 @@ import {
   AgentVariable,
   extractedCapturesToToolCalls,
 } from '../services/variable-capture.service';
+import {
+  runToolLoop,
+  buildHistory,
+  buildCapturedValuesBlock,
+  MAX_TOOL_ITERATIONS,
+  type TraceIteration,
+} from '../services/tool-loop.service';
 import { queryKnowledgeBase, hasKnowledgeBase } from '../services/rag.service';
 import { executeCustomFunction } from '../services/custom-function.service';
 import { revealCustomFunctionConfig } from '../services/secret-fields';
-import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
-import { decryptHeaders } from '../services/mcp-headers.service';
-import * as mcpProviders from '../services/mcp-providers.service';
-import { serverUrlMatchesProfile } from '../services/mcp-provider-url';
-import { decrypt } from '../config/encryption';
+import { connectAndListTools, sanitizeName } from '../services/mcp-client.service';
+import * as mcpOAuth from '../services/mcp-oauth.service';
+import type { StoredOAuth } from '../services/mcp-oauth.core';
+import {
+  buildDropiSalesContext,
+  dropiSummaryFallback,
+  dropiSalesToolDefinitions,
+  executeDropiSalesTool,
+  isDropiSalesToolName,
+  markDropiSummaryDelivered,
+  mcpToolExposure,
+  requiresSelectedTools,
+  type DropiSalesBinding,
+} from '../services/dropi-sales/tools';
+import type { DropiSalesContext } from '../services/dropi-sales/service';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { sendTextMessage, resolveAccessToken } from '../services/whatsapp.service';
@@ -155,7 +172,6 @@ interface OrgRow {
 // varias capture_variable -> create_order) necesitaban mas de 5 rondas y se
 // cortaban dejando un texto interino como respuesta final. Mantener en sync
 // con `maxIter` en routes/agents.ts (ruta de preview).
-const MAX_TOOL_ITERATIONS = 8;
 
 interface MCPToolMapping {
   serverUrl: string;
@@ -163,6 +179,8 @@ interface MCPToolMapping {
   transport: 'sse' | 'streamable-http';
   /** Decrypted user headers + auto-injected (X-Agent-ID, X-Session-ID, X-Webhook-Secret). */
   extraHeaders: Record<string, string>;
+  /** Set for MCP OAuth tools: enables 401 refresh+retry and revocation handling. */
+  oauth: mcpOAuth.McpOAuthContext | null;
 }
 
 async function processMessage(job: Job<MessageJobData>): Promise<void> {
@@ -399,6 +417,14 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   if (variableInstructions) {
     fullSystemPrompt += '\n\n' + variableInstructions;
   }
+  // Current captured values (A2b): the model sees state, not only definitions.
+  const capturedValuesBlock = buildCapturedValuesBlock(
+    conv.captured_variables,
+    variables.map((v) => v.name)
+  );
+  if (capturedValuesBlock) {
+    fullSystemPrompt += '\n\n' + capturedValuesBlock;
+  }
 
   // 7b. RAG context
   const hasRAG = await hasKnowledgeBase(agentId);
@@ -428,24 +454,18 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
      WHERE conversation_id = $1 AND role IN ('user', 'assistant', 'human', 'system')
      ORDER BY created_at DESC
      LIMIT $2`,
-    [conversationId, contextWindowMessages * 2] // fetch more to account for system messages
+    [conversationId, contextWindowMessages * 4] // fetch more: system + intermediate rows are filtered/folded
   );
-  const history: ChatMessage[] = historyResult.rows
-    .reverse()
-    // cart_action: orden interna al widget (add_to_cart_widget), no es parte de lo que dijo el agente.
-    .filter((m) => !(m.metadata as Record<string, unknown> | null)?.['cart_action'])
-    .filter((m) => !(m.metadata as Record<string, unknown> | null)?.['cart_query'])
-    .filter((m) => m.role === 'user' || m.role === 'assistant' || m.role === 'human' ||
-      (m.role === 'system' && (m.metadata as Record<string, unknown>)?.['type'] === 'intervention_summary'))
-    .slice(-contextWindowMessages)
-    .map((m) => ({
-      role: m.role === 'human' ? ('assistant' as const) : (m.role === 'system' ? ('assistant' as const) : (m.role as 'user' | 'assistant')),
-      content: m.role === 'human'
-        ? `[Human agent responded]: ${m.content}`
-        : m.role === 'system'
-          ? `[Intervention summary]: ${m.content}`
-          : m.content,
-    }));
+  const history: ChatMessage[] = buildHistory(
+    historyResult.rows
+      .reverse()
+      // cart_action: orden interna al widget (add_to_cart_widget), no es parte de lo que dijo el agente.
+      .filter((m) => !(m.metadata as Record<string, unknown> | null)?.['cart_action'])
+      .filter((m) => !(m.metadata as Record<string, unknown> | null)?.['cart_query'])
+      .filter((m) => m.role === 'user' || m.role === 'assistant' || m.role === 'human' ||
+        (m.role === 'system' && (m.metadata as Record<string, unknown>)?.['type'] === 'intervention_summary')),
+    contextWindowMessages
+  );
 
   // Step 8: Build tools list for LLM
   const llmTools: ToolDefinition[] = [];
@@ -578,6 +598,8 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
   // MCP tools — load definitions (with Redis cache) and add to llmTools
   const mcpToolMap: Record<string, MCPToolMapping> = {};
+  // Dropi with a valid OAuth connection: sales tools instead of the raw Dropi tools (services/dropi-sales).
+  let dropiBinding: DropiSalesBinding | null = null;
 
   for (const tool of agentTools) {
     if (tool.type !== 'mcp' || !tool.is_enabled) continue;
@@ -592,6 +614,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       headers?: Array<{ key: string; value_encrypted: string }>;
       webhookSecret_encrypted?: string;
       providerId?: string;
+      oauth?: Partial<StoredOAuth>;
     };
 
     const serverUrl = cfg.server_url ?? cfg.serverUrl ?? '';
@@ -599,44 +622,38 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     const selectedTools = cfg.selected_tools ?? [];
     const mcpTransport = (cfg.transport === 'streamable-http' ? 'streamable-http' : 'sse') as 'sse' | 'streamable-http';
 
-    if (!serverUrl || selectedTools.length === 0) continue;
+    if (!serverUrl || (selectedTools.length === 0 && requiresSelectedTools(cfg))) continue;
 
-    // Build effective headers in 3 layers (left → right wins):
-    //   1. profile auto-injected headers (master keys, fixed webhook URL,
-    //      resolved on every call from platform_settings — never persisted)
-    //   2. user-configured headers (encrypted in agent_tools.config.headers,
-    //      can override profile in advanced mode)
-    //   3. system auto-headers (X-Agent-ID, X-Session-ID, X-Webhook-Secret —
-    //      identity & HMAC, always win)
-    // See docs/INTEGRATION.md §3 + MCP-INT-2 design.
-    let profileAutoHeaders: Record<string, string> = {};
-    if (cfg.providerId) {
-      try {
-        const profile = await mcpProviders.findProfileById(cfg.providerId);
-        if (profile && profile.is_active) {
-          if (serverUrlMatchesProfile(profile, serverUrl)) {
-            profileAutoHeaders = await mcpProviders.resolveAutoHeaders(profile);
-          } else {
-            console.error(`[msg-worker] Tool ${tool.id} server_url does not match provider ${cfg.providerId}; provider headers not sent`);
-          }
-        }
-      } catch (err) {
-        console.error(`[msg-worker] Failed to resolve provider ${cfg.providerId} for tool ${tool.id}:`, (err as Error).message);
-      }
+    // Effective headers in 3 layers (left → right wins): profile auto-injected → user → system
+    // (X-Agent-ID, X-Session-ID, X-Webhook-Secret), plus the MCP OAuth Bearer as the FINAL layer.
+    // See docs/INTEGRATION.md §3 + MCP-INT-2 design. Shared with preview in mcp-oauth.service.ts.
+    let built: mcpOAuth.BuiltMcpHeaders;
+    try {
+      built = await mcpOAuth.buildMcpToolHeaders({
+        logPrefix: '[msg-worker]',
+        toolId: tool.id,
+        agentId,
+        sessionId: conversationId,
+        serverUrl,
+        cfg,
+      });
+    } catch (err) {
+      // Graceful degradation (e.g. transient OAuth refresh failure): skip this MCP, keep the rest.
+      console.error(`[msg-worker] Failed to build MCP headers for tool ${tool.id}:`, (err as Error).message);
+      continue;
     }
-    const userHeaders = decryptHeaders(cfg.headers);
-    const autoHeaders: Record<string, string> = {
-      'X-Agent-ID': agentId,
-      'X-Session-ID': conversationId,
-    };
-    if (cfg.webhookSecret_encrypted) {
-      try {
-        autoHeaders['X-Webhook-Secret'] = decrypt(cfg.webhookSecret_encrypted);
-      } catch (err) {
-        console.error(`[msg-worker] Failed to decrypt webhookSecret for tool ${tool.id}:`, (err as Error).message);
+    if (built.needsReconnect) continue;
+    const allHeaders = built.headers;
+
+    // Dropi: never the raw tools; the sales tools when the OAuth connection is valid.
+    const exposure = mcpToolExposure(cfg, built);
+    if (exposure !== 'raw') {
+      if (exposure === 'dropi_sales' && built.oauth && !dropiBinding) {
+        dropiBinding = { toolId: tool.id, serverUrl, transport: mcpTransport, headers: allHeaders, oauth: built.oauth };
+        llmTools.push(...dropiSalesToolDefinitions);
       }
+      continue;
     }
-    const allHeaders = { ...profileAutoHeaders, ...userHeaders, ...autoHeaders };
 
     const cacheKey = `mcp:tools:${tool.id}`;
 
@@ -680,12 +697,51 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           originalToolName: toolDef.name,
           transport: mcpTransport,
           extraHeaders: allHeaders,
+          oauth: built.oauth,
         };
       }
     } catch (err) {
       // Graceful degradation: log but continue without MCP tools
       console.error(`[msg-worker] Failed to load MCP tools for tool ${tool.id}:`, (err as Error).message);
     }
+  }
+
+  let dropiSales: DropiSalesContext | null = null;
+  if (dropiBinding) {
+    // Confirmation rule turn counter: user messages already saved + the one being processed
+    // (it is saved after the tool loop, in saveMessages).
+    const turns = await query<{ n: string }>(
+      `SELECT COUNT(*)::text AS n FROM messages WHERE conversation_id = $1 AND role = 'user'`,
+      [conversationId]
+    );
+    // Server receipt time of the newest buffered message (set by pushToBuffer) and the buyer's last
+    // text: dropi_confirmar_pedido needs a message received after the summary turn that says yes.
+    const receipts = bufferedItems
+      .map((item) => item.receivedAt)
+      .filter((t): t is number => typeof t === 'number' && Number.isFinite(t));
+    const lastText = [...textItems].reverse().find((item) => item.content)?.content ?? '';
+    const waFrom = conv.channel === 'whatsapp' ? conv.channel_metadata?.['wa_from'] : undefined;
+    // Web widget network (HMAC written by routes/widget.ts at session creation): order cap per network.
+    const ipHash = conv.channel === 'web' ? conv.channel_metadata?.['ip_hash'] : undefined;
+    // Web widget Turnstile (POST /api/widget/:agentId/session/:sessionId/verify): required to confirm orders.
+    const humanVerifiedAt = conv.channel === 'web' ? conv.channel_metadata?.['human_verified_at'] : undefined;
+    dropiSales = buildDropiSalesContext({
+      binding: dropiBinding,
+      execute: mcpOAuth.executeMCPToolWithOAuth,
+      agentId,
+      organizationId,
+      scopeId: conversationId,
+      conversationId,
+      previewSessionId: null,
+      contactId: conv.contact_id,
+      channel: conv.channel,
+      waFrom: typeof waFrom === 'string' ? waFrom : null,
+      ipHash: typeof ipHash === 'string' ? ipHash : null,
+      humanVerified: typeof humanVerifiedAt === 'string',
+      currentUserTurn: Number(turns.rows[0]?.n ?? 0) + 1,
+      currentMessageReceivedAt: receipts.length > 0 ? Math.max(...receipts) : null,
+      lastBuyerMessage: lastText,
+    });
   }
 
   // Add scheduling instructions if a scheduling tool is enabled
@@ -758,65 +814,42 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   let finalResponse = '';
   let totalTokensUsed = 0;
   const toolsCalledLog: string[] = [];
-  let iterationCount = 0;
   let sawEmptyShippingZones = false;
-  const currentMessages = [...messages];
+  let currentMessages = [...messages];
+  // Intermediate texts already delivered to the channel (before their tools ran).
+  const deliveredIntermediates: string[] = [];
+  let toolTrace: TraceIteration[] = [];
+  let finalAlreadyDelivered = false;
+
+  const recoverLeakedCaptures = async (
+    captures: Parameters<typeof extractedCapturesToToolCalls>[0]
+  ): Promise<void> => {
+    console.warn(
+      `[msg-worker] Recovered ${captures.length} leaked capture_variable call(s) from LLM text. Conversation ${conversationId}.`
+    );
+    for (const tc of extractedCapturesToToolCalls(captures)) {
+      // Side effects only; results are not fed back to the LLM.
+      await executeTool(tc, agentTools, variables, conversationId, organizationId, agentId, mcpToolMap, dropiSales);
+      toolsCalledLog.push(`${tc.name}(${JSON.stringify(tc.arguments)})[recovered]`);
+    }
+  };
 
   try {
-
-    while (iterationCount < MAX_TOOL_ITERATIONS) {
-      iterationCount++;
-
-      const response = await chat({
-        provider: agent.llm_provider as 'openai' | 'anthropic' | 'openrouter',
-        model: agent.llm_model,
-        system: fullSystemPrompt,
-        messages: currentMessages,
-        tools: llmTools.length > 0 ? llmTools : undefined,
-        temperature: parseFloat(agent.temperature),
-        maxTokens,
-        byoApiKey: resolvedByoKey,
-      });
-
-      totalTokensUsed += response.usage.totalTokens;
-
-      if (!response.toolCalls || response.toolCalls.length === 0) {
-        // Final text response — strip artifacts AND recover any leaked capture_variable calls.
-        const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
-
-        if (extractedCaptures.length > 0) {
-          console.warn(
-            `[msg-worker] Recovered ${extractedCaptures.length} leaked capture_variable call(s) from LLM text. Conversation ${conversationId}.`
-          );
-          const syntheticCalls = extractedCapturesToToolCalls(extractedCaptures);
-          const syntheticResults: Array<{ toolCallId: string; content: string }> = [];
-
-          for (const tc of syntheticCalls) {
-            const result = await executeTool(
-              tc,
-              agentTools,
-              variables,
-              conversationId,
-              organizationId,
-              agentId,
-              mcpToolMap
-            );
-            toolsCalledLog.push(`${tc.name}(${JSON.stringify(tc.arguments)})[recovered]`);
-            syntheticResults.push({ toolCallId: tc.id, content: result });
-          }
-
-          // Side effects ran; results not fed back to LLM since this is the final response.
-          void syntheticResults;
-        }
-
-        finalResponse = cleaned;
-        break;
-      }
-
-      // Process tool calls
-      const toolResults: Array<{ toolCallId: string; content: string }> = [];
-
-      for (const toolCall of response.toolCalls) {
+    const loop = await runToolLoop({
+      messages,
+      maxIterations: MAX_TOOL_ITERATIONS,
+      callLLM: (msgs) =>
+        chat({
+          provider: agent.llm_provider as 'openai' | 'anthropic' | 'openrouter',
+          model: agent.llm_model,
+          system: fullSystemPrompt,
+          messages: msgs,
+          tools: llmTools.length > 0 ? llmTools : undefined,
+          temperature: parseFloat(agent.temperature),
+          maxTokens,
+          byoApiKey: resolvedByoKey,
+        }),
+      executeTool: async (toolCall) => {
         const result = await executeTool(
           toolCall,
           agentTools,
@@ -824,59 +857,37 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
           conversationId,
           organizationId,
           agentId,
-          mcpToolMap
+          mcpToolMap,
+          dropiSales
         );
         toolsCalledLog.push(`${toolCall.name}(${JSON.stringify(toolCall.arguments)})`);
-        toolResults.push({ toolCallId: toolCall.id, content: result });
         if (isEmptyShippingZonesResult(toolCall.name, result)) {
           sawEmptyShippingZones = true;
         }
-      }
-
-      // Append the assistant's tool call message with structured tool call data
-      currentMessages.push({
-        role: 'assistant' as const,
-        content: response.content || '',
-        toolCalls: response.toolCalls,
-      });
-
-      // Add tool results as a single structured message
-      currentMessages.push({
-        role: 'user' as const,
-        content: '',
-        toolResults: toolResults.map((r) => ({
-          toolCallId: r.toolCallId,
-          content: r.content,
-        })),
-      });
-
-      // If LLM also returned text alongside tool calls, keep it (cleaned).
-      // Recover any capture_variable artifacts that leaked into the text.
-      if (response.content.trim()) {
-        const { cleaned, extractedCaptures } = stripAndExtractToolCallArtifacts(response.content);
-
-        if (extractedCaptures.length > 0) {
-          console.warn(
-            `[msg-worker] Recovered ${extractedCaptures.length} leaked capture_variable call(s) in mixed response. Conversation ${conversationId}.`
-          );
-          const syntheticCalls = extractedCapturesToToolCalls(extractedCaptures);
-          for (const tc of syntheticCalls) {
-            const result = await executeTool(
-              tc,
-              agentTools,
-              variables,
-              conversationId,
-              organizationId,
-              agentId,
-              mcpToolMap
-            );
-            toolsCalledLog.push(`${tc.name}(${JSON.stringify(tc.arguments)})[recovered]`);
-            void result;
-          }
+        return result;
+      },
+      onIntermediateText: async (text) => {
+        deliveredIntermediates.push(text);
+        // Email replies are one message: intermediates are folded into it at send time.
+        if (conv.channel !== 'email') {
+          await sendToChannel(conv, conversationId, agentId, text);
         }
-
-        finalResponse = cleaned;
-      }
+      },
+      onLeakedCaptures: recoverLeakedCaptures,
+    });
+    finalResponse = loop.finalResponse;
+    totalTokensUsed = loop.totalTokens;
+    currentMessages = loop.messages;
+    toolTrace = loop.trace;
+    // Loop cut by the iteration cap (or an empty closing answer) after text was
+    // already delivered: that text IS the answer; do not send it twice.
+    if (
+      finalResponse.replace(/[\s\p{P}]/gu, '').length < 5 &&
+      deliveredIntermediates.length > 0 &&
+      conv.channel !== 'email'
+    ) {
+      finalResponse = deliveredIntermediates.pop()!;
+      finalAlreadyDelivered = true;
     }
   } catch {
     // Retry once
@@ -907,7 +918,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   // Guard against invented shipping costs when check_shipping_zones returned
   // zones: [] (no fixed rate to quote — e.g. a dynamic carrier-calculated
   // rate). Prompt rules alone weren't reliable enough in production testing.
-  if (sawEmptyShippingZones && mentionsShippingCost(finalResponse)) {
+  if (sawEmptyShippingZones && !finalAlreadyDelivered && mentionsShippingCost(finalResponse)) {
     console.warn(`[shipping-guard] Corrected invented shipping cost in conversation ${conversationId}`);
     try {
       finalResponse = await correctShippingHallucination(
@@ -952,6 +963,20 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     }
   }
 
+  // Dropi: the buyer must see the summary they will confirm. If this turn prepared an order and no
+  // text of the turn shows its total, the server adds the fixed summary line to the reply.
+  const dropiSummaryLine = dropiSummaryFallback(dropiSales, [...deliveredIntermediates, finalResponse]);
+  if (dropiSummaryLine) {
+    if (finalAlreadyDelivered) {
+      // The final text already went out as an intermediate: keep it as such and send the line alone.
+      deliveredIntermediates.push(finalResponse);
+      finalResponse = dropiSummaryLine;
+      finalAlreadyDelivered = false;
+    } else {
+      finalResponse = finalResponse.trim() ? `${finalResponse}\n\n${dropiSummaryLine}` : dropiSummaryLine;
+    }
+  }
+
   // Step 10: Save messages
   const msgMetadata: Record<string, unknown> = {
     tokensUsed: totalTokensUsed,
@@ -959,6 +984,10 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     model: agent.llm_model,
     latencyMs: 0,
   };
+  // Provider-neutral record of this turn's tool exchanges (re-sent to the LLM for the last turns).
+  if (toolTrace.length > 0) {
+    msgMetadata['toolTrace'] = toolTrace;
+  }
 
   const userMsgMeta: Record<string, unknown> = {};
   if (hasImages) {
@@ -979,11 +1008,15 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     userMessageText,
     finalResponse,
     msgMetadata,
-    Object.keys(userMsgMeta).length > 0 ? userMsgMeta : undefined
+    Object.keys(userMsgMeta).length > 0 ? userMsgMeta : undefined,
+    deliveredIntermediates
   );
 
+  // The summary shown in this turn is now saved (and is sent below, in Step 14).
+  await markDropiSummaryDelivered(dropiSales);
+
   // Step 11: Update conversation stats
-  await updateConversation(conversationId, bufferedItems.length + 1);
+  await updateConversation(conversationId, bufferedItems.length + 1 + deliveredIntermediates.length);
 
   // Step 12: Increment usage counter (skip for Enterprise BYO key users)
   if (!hasByoKey) {
@@ -998,10 +1031,13 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   }
 
   // Step 13: Emit WebSocket events
-  notifyClients(organizationId, conversationId, userMessageText, finalResponse, savedMessages, msgMetadata);
+  // toolTrace is engine-internal (up to ~3 KB per call): keep it out of the socket payload.
+  const { toolTrace: _omitTrace, ...wsMetadata } = msgMetadata;
+  void _omitTrace;
+  notifyClients(organizationId, conversationId, userMessageText, finalResponse, savedMessages, wsMetadata, deliveredIntermediates);
 
   // Step 14b: Trigger AI scoring after enough messages (threshold: 6)
-  const updatedMessageCount = (conv.message_count ?? 0) + bufferedItems.length + 1;
+  const updatedMessageCount = (conv.message_count ?? 0) + bufferedItems.length + 1 + deliveredIntermediates.length;
   if (updatedMessageCount >= 6) {
     try {
       const scoreCheck = await query<{ ai_score: number | null }>(
@@ -1022,6 +1058,23 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
   }
 
   // Step 14: Send via channel
+  if (!finalAlreadyDelivered) {
+    const sendText = conv.channel === 'email' ? [...deliveredIntermediates, finalResponse].join('\n\n') : finalResponse;
+    await sendToChannel(conv, conversationId, agentId, sendText);
+  }
+}
+
+/**
+ * Delivers one assistant text block to the conversation channel. Used for the
+ * final answer AND for the intermediate text the model writes before tools run
+ * (order: intermediate text -> media -> final text).
+ */
+async function sendToChannel(
+  conv: ConversationRow,
+  conversationId: string,
+  agentId: string,
+  text: string
+): Promise<void> {
   if (conv.channel === 'whatsapp') {
     try {
       const agentWaResult = await query<{ whatsapp_config: Record<string, unknown> }>(
@@ -1039,7 +1092,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
         if (phone) {
           const accessToken = await resolveAccessToken(waConfig);
-          await sendTextMessage(String(waConfig.phone_number_id), accessToken, phone, finalResponse);
+          await sendTextMessage(String(waConfig.phone_number_id), accessToken, phone, text);
           console.log(`[msg-worker] WhatsApp message sent to ${phone.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
           console.warn(`[msg-worker] No phone for contact — conv: ${conversationId}`);
@@ -1067,7 +1120,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
 
         if (psid) {
           const pageToken = resolveMessengerAccessToken(fbConfig);
-          await sendMessengerTextMessage(pageToken, psid, finalResponse);
+          await sendMessengerTextMessage(pageToken, psid, text);
           console.log(`[msg-worker] Messenger message sent to ${psid.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
           console.warn(`[msg-worker] No PSID for contact — conv: ${conversationId}`);
@@ -1098,7 +1151,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
             resolveInstagramAccessToken(igConfig),
             resolveInstagramId(igConfig),
             igsid,
-            finalResponse
+            text
           );
           console.log(`[msg-worker] Instagram message sent to ${igsid.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
@@ -1130,7 +1183,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
         const chatId = contactResult.rows[0]?.telegram_chat_id;
 
         if (chatId) {
-          await sendTelegramMessage(resolveTelegramBotToken(tgConfig), chatId, finalResponse);
+          await sendTelegramMessage(resolveTelegramBotToken(tgConfig), chatId, text);
           console.log(`[msg-worker] Telegram message sent to ${chatId.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
           console.warn(`[msg-worker] No chat_id for contact — conv: ${conversationId}`);
@@ -1143,7 +1196,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     }
   } else if (conv.channel === 'email') {
     try {
-      await sendEmailToConversation(conversationId, agentId, finalResponse);
+      await sendEmailToConversation(conversationId, agentId, text);
       console.log(`[msg-worker] Email reply sent — conv: ${conversationId}`);
     } catch (err) {
       console.error(`[msg-worker] Email send error for conv ${conversationId}:`, (err as Error).message);
@@ -1154,7 +1207,7 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       getIO().to(`conv:${conversationId}`).emit('message:new', {
         conversationId,
         role: 'assistant',
-        content: finalResponse,
+        content: text,
       });
     } catch {
       // WebSocket might not be initialized
@@ -1169,14 +1222,20 @@ async function executeTool(
   conversationId: string,
   organizationId: string,
   agentId: string,
-  mcpToolMap: Record<string, MCPToolMapping> = {}
+  mcpToolMap: Record<string, MCPToolMapping> = {},
+  dropiSales: DropiSalesContext | null = null
 ): Promise<string> {
   const { name, arguments: args } = toolCall;
 
+  // Dropi sales tools: prices, carrier, confirmation and order ownership are enforced server side.
+  if (dropiSales && isDropiSalesToolName(name)) {
+    return executeDropiSalesTool(name, args, dropiSales);
+  }
+
   // MCP tools (prefixed with mcp_)
   if (name.startsWith('mcp_') && mcpToolMap[name]) {
-    const { serverUrl, originalToolName, transport, extraHeaders } = mcpToolMap[name];
-    const result = await executeMCPTool(serverUrl, originalToolName, args, transport, extraHeaders);
+    const { serverUrl, originalToolName, transport, extraHeaders, oauth } = mcpToolMap[name];
+    const result = await mcpOAuth.executeMCPToolWithOAuth(serverUrl, originalToolName, args, transport, extraHeaders, oauth);
     return result.content;
   }
 
@@ -1657,6 +1716,7 @@ interface SavedMessages {
   assistantMsgId: string;
   userCreatedAt: string;
   assistantCreatedAt: string;
+  intermediates: Array<{ id: string; createdAt: string }>;
 }
 
 async function saveMessages(
@@ -1664,7 +1724,8 @@ async function saveMessages(
   userMessage: string,
   assistantMessage: string,
   metadata: Record<string, unknown>,
-  userMetadata?: Record<string, unknown>
+  userMetadata?: Record<string, unknown>,
+  intermediateTexts: string[] = []
 ): Promise<SavedMessages> {
   const userResult = await query<{ id: string; created_at: string }>(
     `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
@@ -1672,6 +1733,17 @@ async function saveMessages(
      RETURNING id, created_at`,
     [conversationId, userMessage, JSON.stringify(userMetadata ?? {})]
   );
+  // Text the model wrote before running tools (already delivered to the channel), in order.
+  const intermediates: Array<{ id: string; createdAt: string }> = [];
+  for (const text of intermediateTexts) {
+    const r = await query<{ id: string; created_at: string }>(
+      `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
+       VALUES ($1, 'assistant', $2, $3, NOW())
+       RETURNING id, created_at`,
+      [conversationId, text, JSON.stringify({ intermediate: true })]
+    );
+    intermediates.push({ id: r.rows[0]!.id, createdAt: r.rows[0]!.created_at });
+  }
   const assistantResult = await query<{ id: string; created_at: string }>(
     `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
      VALUES ($1, 'assistant', $2, $3, NOW())
@@ -1683,6 +1755,7 @@ async function saveMessages(
     assistantMsgId: assistantResult.rows[0]!.id,
     userCreatedAt: userResult.rows[0]!.created_at,
     assistantCreatedAt: assistantResult.rows[0]!.created_at,
+    intermediates,
   };
 }
 
@@ -1703,7 +1776,8 @@ function notifyClients(
   userMessage: string,
   assistantMessage: string,
   savedMessages?: SavedMessages,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  intermediateTexts: string[] = []
 ): void {
   try {
     const io = getIO();
@@ -1716,6 +1790,13 @@ function notifyClients(
           content: userMessage,
           createdAt: savedMessages?.userCreatedAt,
         },
+        ...intermediateTexts.map((content, i) => ({
+          id: savedMessages?.intermediates[i]?.id,
+          role: 'assistant',
+          content,
+          metadata: { intermediate: true },
+          createdAt: savedMessages?.intermediates[i]?.createdAt,
+        })),
         {
           id: savedMessages?.assistantMsgId,
           role: 'assistant',
