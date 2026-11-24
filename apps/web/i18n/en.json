@@ -2122,7 +2122,9 @@
         "did1": "Reads Laura's message and history",
         "did2": "Checks your inventory: 3 left in size M",
         "did3": "Quotes shipping to Bogota and builds the total",
-        "did4": "Sends the payment link and logs it in your CRM"
+        "did4": "Sends the payment link and logs it in your CRM",
+        "conversationStatus": "Conversation status",
+        "capturedVars": "Captured variables"
       },
       "compare": {
         "title": "With GenSmart you don't build chatbots, you build agents",
@@ -2236,6 +2238,36 @@
         "title": "Contact and demo | GenSmart",
         "description": "Tell us your case: a GenSmart consultant reviews it and shows you how your AI agent would answer, on which channels and under which rules.",
         "ogAlt": "GenSmart contact and demo"
+      },
+      "teamSales": {
+        "title": "AI agents for sales: answer and qualify leads | GenSmart",
+        "description": "An AI agent answers every lead in seconds, scores it from 0 to 10, logs it in your CRM and books the call. You decide who closes the sale.",
+        "ogAlt": "GenSmart AI agents for sales"
+      },
+      "teamCustomerSupport": {
+        "title": "AI agents for customer support | GenSmart",
+        "description": "An AI agent resolves repeated questions on WhatsApp, Instagram and your website, and hands the cases that matter to your team with a summary.",
+        "ogAlt": "GenSmart AI agents for customer support"
+      },
+      "teamMarketing": {
+        "title": "AI agents for marketing and campaigns | GenSmart",
+        "description": "An AI agent replies to everyone who answers your ads, qualifies them and hands them to sales with their source channel and details.",
+        "ogAlt": "GenSmart AI agents for marketing"
+      },
+      "teamOperationsBooking": {
+        "title": "AI agents for bookings and appointments | GenSmart",
+        "description": "An AI agent books the appointment inside the conversation, with your hours and rules, and sends the confirmation. Your calendar fills itself.",
+        "ogAlt": "GenSmart AI agents for bookings and appointments"
+      },
+      "teamHumanResources": {
+        "title": "AI agents for recruiting and screening | GenSmart",
+        "description": "An AI agent answers every candidate who writes about an opening, asks your screening questions and books the interview with your team.",
+        "ogAlt": "GenSmart AI agents for recruiting"
+      },
+      "teamCollections": {
+        "title": "AI agents for collections | GenSmart",
+        "description": "An AI agent helps customers who write about a payment: it clarifies the balance, shares how to pay and logs the commitment for your team.",
+        "ogAlt": "GenSmart AI agents for collections"
       }
     },
     "langHint": {
@@ -2435,7 +2467,14 @@
       "productInbox": "Unified inbox",
       "productCrm": "CRM and pipeline",
       "productBooking": "Appointment booking",
-      "contact": "Contact"
+      "contact": "Contact",
+      "teamSales": "Sales",
+      "teamCustomerSupport": "Customer support",
+      "teamMarketing": "Marketing",
+      "teamOperationsBooking": "Operations and bookings",
+      "teamHumanResources": "Human resources",
+      "teamCollections": "Collections",
+      "solutions": "Solutions"
     },
     "channels": {
       "email": "Email",
@@ -3105,6 +3144,762 @@
         "primary": "Try free for {days} days"
       },
       "jsonLdName": "GenSmart contact and demo"
+    },
+    "teams": {
+      "common": {
+        "solutions": "Solutions",
+        "primary": "Start your free trial",
+        "demo": "Book a demo",
+        "chatLabel": "Example conversation: {agent}",
+        "result": "Result",
+        "youConfigure": "You configure it",
+        "talk": "Talk to a person",
+        "inboxTitle": "What your team sees in the inbox",
+        "inboxLeadScore": "The agent leaves the summary, the captured data and the score. You see what it did and can take over the conversation whenever you want.",
+        "inboxLeadNoScore": "The agent leaves the summary and the captured data. You see what it did and can take over the conversation whenever you want.",
+        "consoleLabel": "Example inbox view: conversation with {name}",
+        "defaultSummary": "Handled the whole inquiry and left the lead ready. Stage: {stage}.",
+        "intsTitle": "Connects to the tools you already use",
+        "intsLead": "While it talks, the agent queries and writes in your team's tools: the CRM, the calendar, the store.",
+        "intsListLabel": "Integrations for {team}",
+        "intsOther": "If you use another one, you connect it through API, MCP or webhook.",
+        "intsLink": "See the integrations",
+        "channelsTitle": "The same conversation on any channel",
+        "channelsText": "If the customer writes on WhatsApp and later on your website, the agent recognizes them and picks up where it left off. Your team sees everything in the same inbox.",
+        "channelsLabel": "Channels",
+        "faqKicker": "FAQ · {team}",
+        "faqTitleBefore": "Questions?",
+        "faqTitleAccent": "Get answers here",
+        "faqHelpBefore": "Can't find yours? Write to us and",
+        "faqHelpAccent": "we will answer",
+        "faqHelpAfter": "soon.",
+        "faqCta": "Talk to the team",
+        "moreTitle": "Explore more solutions",
+        "moreSaidBy": "Said by: {agent}"
+      },
+      "teamSales": {
+        "name": "Sales",
+        "short": "Answers every lead in seconds, qualifies and books.",
+        "h1": {
+          "before": "The agent answers and qualifies.",
+          "accent": "You decide who closes.",
+          "after": ""
+        },
+        "lead": "When a customer writes to you, on any channel, the agent answers, advises them with your catalog, asks the qualifying questions and logs them in your CRM. By the time your salesperson steps in, the customer has already said what they want.",
+        "label": "Sales assistant",
+        "chat": {
+          "m1": "I'm looking for a voltage regulator.",
+          "m2": "I want to be upfront: we don't sell that equipment on its own. Tell me what problem you want to solve and I'll guide you.",
+          "chip1": "Line: three-phase UPS",
+          "chip2": "Opportunity"
+        },
+        "storyH": "What the agent does with every customer who writes to you",
+        "storyLead": "Today a customer writes and waits. When someone answers, they have to ask the basics, look the person up in the CRM and copy the details by hand. The agent does all of that before your salesperson steps in, always in the same order.",
+        "methodClose": "Up to here the agent leaves the sale prepared. Who closes it is up to you: your salesperson, or the agent itself if you set it up to close.",
+        "method": {
+          "s1": {
+            "title": "Answers and opens the conversation",
+            "text": "It answers right away and asks what the customer is looking for. With your catalog and documents at hand, it guides them and says clearly what you do offer.",
+            "result": "A customer attended from the first message"
+          },
+          "s2": {
+            "title": "Finds out what they need",
+            "text": "It asks open questions, one at a time: their situation, what is urgent, the size of their business and what they use today. You define what it must ask before passing the case on.",
+            "result": "A concrete need, not an “I want information”"
+          },
+          "s3": {
+            "title": "Explains how you solve it",
+            "text": "With what the customer shared, it explains how your product or service solves their case. It talks about benefits and doesn't promise more than you offer.",
+            "result": "A customer who understands why your offer fits"
+          },
+          "s4": {
+            "title": "Asks for details without sounding like a form",
+            "text": "Name and email first, then phone and company. It asks about budget last, once there is trust. Everything is saved in your CRM.",
+            "result": "A complete contact, with nobody typing it in"
+          },
+          "s5": {
+            "title": "Qualifies and sets the next step",
+            "text": "It gives the customer an interest score from 0 to 10 and places them in your pipeline. If interest is high, it proposes a call or a demo with your team, and with the GenSmart agenda it books it in the same conversation. If it is low, it offers resources by email.",
+            "result": "Your salesperson sees who to call first and opens the full conversation"
+          }
+        },
+        "control": {
+          "title": "You define how far the agent goes",
+          "lead": "What the agent does with a customer who wants to buy is set in its instructions and in the tools you connect. You set the rules.",
+          "r1": {
+            "title": "Negotiate",
+            "text": "You tell it what it can offer and up to what discount. Anything above that cap, it hands to your salesperson."
+          },
+          "r2": {
+            "title": "Quote",
+            "text": "With your prices loaded or by querying your system through API, it builds the quote under the rules you define."
+          },
+          "r3": {
+            "title": "Close",
+            "text": "With your store or API connected, it creates the order in the same conversation. Without a connection, it leaves the close to your salesperson."
+          },
+          "r4": {
+            "title": "Hand over to a person",
+            "text": "You decide when: a bigger discount, a large quote or a customer who asks to talk to someone. They get the full conversation."
+          }
+        },
+        "console": {
+          "name": "Marco",
+          "channel": "Web",
+          "stage": "Opportunity",
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity.",
+          "m1": "I'm looking for a voltage regulator",
+          "m2": "I want to be upfront: we don't sell voltage regulators as a standalone product. Our main lines are power generators, three-phase UPS, solar panels and electrical project engineering. Tell me, what problem are you trying to solve?",
+          "m3": "Three-phase UPS",
+          "m4": "To guide the request well: what application is it for, what power (kVA) and how much autonomy in case of an outage?",
+          "m5": "I'd say around 10 kva",
+          "did1": "Looks the contact up by phone",
+          "did2": "Creates the contact in the CRM",
+          "did3": "Creates the opportunity",
+          "did4": "Says an advisor will contact them",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Marco"
+            },
+            "v2": {
+              "name": "phone",
+              "value": "+57 321 ••• ••••"
+            },
+            "v3": {
+              "name": "city",
+              "value": "Cundinamarca"
+            },
+            "v4": {
+              "name": "inquiry_type",
+              "value": "sale"
+            },
+            "v5": {
+              "name": "product_line",
+              "value": "UPS"
+            },
+            "v6": {
+              "name": "technical_spec",
+              "value": "approx. 10 kVA"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Who closes the sale?",
+            "answer": "You define it. Your salesperson can close using the conversation and the data the agent left, or you can set the agent up to close. You can take over the conversation at any time."
+          },
+          "q2": {
+            "question": "What if they ask for something I don't sell?",
+            "answer": "The agent says so clearly and suggests what you do offer, using the catalog you loaded."
+          },
+          "q3": {
+            "question": "Can it ask technical questions?",
+            "answer": "You define what it must ask before passing the request, such as application, power or city."
+          },
+          "q4": {
+            "question": "How does the request reach my team?",
+            "answer": "As a contact and opportunity in your CRM, with the conversation and the data it captured."
+          },
+          "q5": {
+            "question": "Can I step into the conversation?",
+            "answer": "Yes. You take control whenever you want and the full history stays in view."
+          }
+        }
+      },
+      "teamCustomerSupport": {
+        "name": "Customer support",
+        "short": "Resolves repeated questions and leaves the cases that matter to your team.",
+        "h1": {
+          "before": "The agent handles the repetitive.",
+          "accent": "Your team, what matters.",
+          "after": ""
+        },
+        "lead": "When a customer writes with a question or a problem, on any channel, the agent answers with your business information and guides them until it is solved. If the case needs a person, it passes it to your team with the summary already written.",
+        "label": "Support assistant",
+        "chat": {
+          "m1": "Where is my order 4821?",
+          "m2": "It shipped yesterday and arrives tomorrow before 6 pm. Here is the tracking link.",
+          "chip1": "Resolved",
+          "chip2": "Hand off to a person"
+        },
+        "storyH": "What the agent does with every customer who needs help",
+        "storyLead": "Today your team answers the same questions all day. Meanwhile, the customer with a serious problem waits behind those who only wanted a detail. The agent solves the simple ones and passes to your team only the cases that require a person.",
+        "methodClose": "The repetitive solves itself. What calls for judgment reaches your team with the full context.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the customer",
+            "text": "It greets them warmly, introduces itself as a support assistant and asks how it can help.",
+            "result": "A customer attended without waiting in line"
+          },
+          "s2": {
+            "title": "Understands the problem",
+            "text": "If information is missing, it asks clarifying questions before answering.",
+            "result": "A clear problem, not a loose complaint"
+          },
+          "s3": {
+            "title": "Looks for the answer in your information",
+            "text": "It checks your knowledge base, with the documents, policies and links you loaded. If it can't find the answer, it says so and doesn't make one up.",
+            "result": "Answers based on what you said"
+          },
+          "s4": {
+            "title": "Guides until it is solved",
+            "text": "It gives the solution step by step. For a technical problem, it walks them through the diagnosis one step at a time. It acknowledges the customer's frustration and, before closing, confirms they are satisfied.",
+            "result": "A customer who solves their problem without waiting for anyone"
+          },
+          "s5": {
+            "title": "Passes the case to a person",
+            "text": "If it can't solve it in two attempts or the customer asks to talk to someone, it sends a button to open the conversation with your team and leaves the case summary. It doesn't promise refunds or credits: it explains that a person will review the case.",
+            "result": "Your team gets the case summarized and the customer repeats nothing"
+          }
+        },
+        "control": {
+          "title": "You define how far the agent goes",
+          "lead": "What the agent solves with a customer is set in its instructions and in the tools you connect. You set the rules.",
+          "r1": {
+            "title": "What information it answers with",
+            "text": "Only with what you load: documents, policies and links. If it can't find the answer, it says so and doesn't make one up."
+          },
+          "r2": {
+            "title": "Check the status",
+            "text": "With your store, calendar or API connected, it tells where an order or appointment stands. Without a connection, it passes the question to your team."
+          },
+          "r3": {
+            "title": "Refunds and credits",
+            "text": "On its own it doesn't promise them. If you want it to apply one, you allow it through a tool in your system and set the cap."
+          },
+          "r4": {
+            "title": "Hand over to a person",
+            "text": "You decide when: after two attempts without solving or when the customer asks. On WhatsApp, web and Facebook it sends a button to talk to your team and leaves the summary."
+          }
+        },
+        "console": {
+          "name": "Andrea",
+          "channel": "WhatsApp",
+          "stage": "Needs someone",
+          "summary": "Duplicate charge. It asked for the email and dates, promised no refund and passed the case to a person.",
+          "m1": "I was charged twice for the monthly fee",
+          "m2": "I'm sorry about that. To look into it properly, can you confirm your account email and the date of both charges?",
+          "m3": "andrea.r@correo.com, both on November 3",
+          "m4": "Thanks, Andrea. I can't promise a refund myself, but a person on the team can review your case. Here is a button to talk to them, and I'm passing along the summary.",
+          "did1": "Asks for the email and the dates of the charges",
+          "did2": "Doesn't promise the refund",
+          "did3": "Sends the button to talk to a person",
+          "did4": "Leaves the summary for your team",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Andrea"
+            },
+            "v2": {
+              "name": "email",
+              "value": "andrea.r@correo.com"
+            },
+            "v3": {
+              "name": "inquiry_type",
+              "value": "billing"
+            },
+            "v4": {
+              "name": "reason",
+              "value": "duplicate charge"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "What if the agent doesn't know the answer?",
+            "answer": "It doesn't make one up. It says so clearly and passes the case to a person on your team."
+          },
+          "q2": {
+            "question": "When does a case go to a person?",
+            "answer": "When the customer asks or when the agent can't solve it in two attempts. The customer gets a button to open the conversation with your team and the case summary stays in view."
+          },
+          "q3": {
+            "question": "Can it promise refunds or credits?",
+            "answer": "No. It explains that a person on the team will review the case."
+          },
+          "q4": {
+            "question": "Can I step into a conversation?",
+            "answer": "Yes. You take control whenever you want and the agent pauses. When you release the conversation, it picks up again with a summary of what you discussed."
+          },
+          "q5": {
+            "question": "What information does it answer with?",
+            "answer": "With what you load into its knowledge base: documents, policies and links."
+          }
+        }
+      },
+      "teamMarketing": {
+        "name": "Marketing",
+        "short": "Looks after anyone who replies to your campaigns and hands them to sales qualified, with their source channel.",
+        "h1": {
+          "before": "You paid for the click.",
+          "accent": "The agent looks after whoever arrived.",
+          "after": ""
+        },
+        "lead": "When someone writes in from your campaigns or social media, the agent replies instantly, finds out what they are looking for and leaves the contact qualified in your CRM, with the channel they came through. Your sales team gets people ready to talk.",
+        "label": "Marketing agent",
+        "chat": {
+          "m1": "Saw your ad on Instagram, how much is the plan?",
+          "m2": "Happy to help. To recommend the right plan, how many people would it be?",
+          "chip1": "Qualified lead"
+        },
+        "storyH": "What the agent does with every person who replies to your campaigns",
+        "storyLead": "Today interest lasts minutes. If nobody replies in time, the click you paid for is lost. And when someone does reply, sales gets a name with no context. The agent responds right away and hands over contacts with the full picture.",
+        "methodClose": "Your campaigns bring the people. The agent looks after them, qualifies them and saves which channel they came through.",
+        "method": {
+          "s1": {
+            "title": "Replies right away",
+            "text": "It greets the person on the channel they wrote from and asks how it can help. That can be WhatsApp, Instagram, Messenger, your website or email.",
+            "result": "Nobody who comes in from your campaigns goes unanswered"
+          },
+          "s2": {
+            "title": "Finds out what they want",
+            "text": "It asks open questions, one at a time, to understand the need. You define what it must ask before passing the contact to sales.",
+            "result": "A concrete interest in every contact"
+          },
+          "s3": {
+            "title": "Asks for details without sounding like a form",
+            "text": "Name and email first, then phone and company. Budget comes last. Everything is saved in your CRM.",
+            "result": "A complete contact, with nobody typing it in"
+          },
+          "s4": {
+            "title": "Scores it and places it in your funnel",
+            "text": "It gives it a score from 0 to 10 based on what they said and places it in its stage: lead or opportunity.",
+            "result": "You know which contacts are worth a call today"
+          },
+          "s5": {
+            "title": "Records the source channel",
+            "text": "Every contact keeps the channel it came through. With that you see which one brings the most contacts and which score best.",
+            "result": "You know which channel brings the most and the best contacts"
+          }
+        },
+        "control": {
+          "title": "You define how far the agent goes",
+          "lead": "What the agent asks and saves about each person who arrives from your campaigns is set in its instructions. You set the rules.",
+          "r1": {
+            "title": "What it asks and in what order",
+            "text": "You define the questions it must ask before passing the contact to sales, and which ones it leaves for the end, like budget."
+          },
+          "r2": {
+            "title": "What data it saves",
+            "text": "You choose the variables it captures from each person: name, email, phone, company, interest. They stay on the contact, visible to your team."
+          },
+          "r3": {
+            "title": "What it knows about the ad",
+            "text": "If the person arrives from a Meta ad that opens WhatsApp, the agent receives the ad's title, description and link. In its instructions you define how to use them."
+          },
+          "r4": {
+            "title": "When it passes to sales",
+            "text": "You decide when someone from your team steps in. When a contact scores high, your team gets notified and sees the full conversation."
+          }
+        },
+        "console": {
+          "name": "Julián",
+          "channel": "Instagram",
+          "stage": "Lead",
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: lead.",
+          "m1": "Saw your ad on Instagram, how much is the plan?",
+          "m2": "Hi, Julián. Happy to help. To recommend the right plan, how many people would it be?",
+          "m3": "There are three of us",
+          "m4": "Perfect. When would you need it and which email should I send the information to?",
+          "did1": "Replies and asks what they need",
+          "did2": "Asks for the email and the timing",
+          "did3": "Saves the contact with its channel",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Julián"
+            },
+            "v2": {
+              "name": "channel",
+              "value": "Instagram"
+            },
+            "v3": {
+              "name": "interest",
+              "value": "plan for 3 people"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Which channels does it use for people coming from my campaigns?",
+            "answer": "Whichever the customer uses: WhatsApp, Instagram, Messenger, email and your website chat. It all lands in the same inbox."
+          },
+          "q2": {
+            "question": "What information does it save for each contact?",
+            "answer": "Whatever you ask it to capture, such as name, email, phone, company and interest, along with the score, the stage and the source channel."
+          },
+          "q3": {
+            "question": "How do I know which channel works best?",
+            "answer": "Every contact keeps its source channel and score. You can see how many arrive through each channel."
+          },
+          "q4": {
+            "question": "Does it pass contacts to my sales team?",
+            "answer": "Yes. Your team sees the full conversation and the captured data, and gets notified when a contact reaches a high score."
+          },
+          "q5": {
+            "question": "Can I step into a conversation?",
+            "answer": "Yes. You take control whenever you want and the agent pauses. When you release the conversation, it picks up with a summary of what you discussed."
+          }
+        }
+      },
+      "teamOperationsBooking": {
+        "name": "Operations and bookings",
+        "short": "Fill your calendar without anyone answering: the agent books the appointment in the conversation.",
+        "h1": {
+          "before": "The agent books the appointment.",
+          "accent": "Your calendar fills itself.",
+          "after": ""
+        },
+        "lead": "When a customer writes to ask for an appointment, the agent checks your calendar, offers open slots and leaves the booking confirmed in the same conversation. Your front desk no longer chases times or types in data.",
+        "label": "Booking agent",
+        "chat": {
+          "m1": "I'd like an appointment Thursday at 10.",
+          "m2": "That time is taken. I have 11:30 or 15:00 open. Which do you prefer?",
+          "chip1": "Appointment confirmed"
+        },
+        "storyH": "What the agent does with every customer who wants an appointment",
+        "storyLead": "Today booking is a back and forth of messages: the customer suggests a time, someone checks the calendar, the time is gone and it starts over. Sometimes nobody answers in time and the customer goes elsewhere. The agent closes that back and forth in a single conversation.",
+        "methodClose": "Your team books nothing by hand. And 30 minutes before each appointment, GenSmart sends them a notice inside the platform.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the customer and asks what they need",
+            "text": "It greets them and asks which service or type of appointment they want. If they are unsure, it briefly describes what you offer so they can decide.",
+            "result": "A clear service from the first message"
+          },
+          "s2": {
+            "title": "Collects the booking details",
+            "text": "It asks for full name, email, phone and any preferences that matter in your business, such as the professional or the location. Then it asks which day and time suit them.",
+            "result": "A booking with all the details, no phone call"
+          },
+          "s3": {
+            "title": "Checks your calendar right then",
+            "text": "It checks the real availability of your calendar, with your working days and hours, the length of each appointment and the buffer between them. If the requested time is taken, it instantly offers the two or three closest ones.",
+            "result": "An open slot chosen by the customer, not by your front desk"
+          },
+          "s4": {
+            "title": "Confirms before booking",
+            "text": "It repeats the service, date, time and contact details and asks if everything is right. It only books once the customer says yes.",
+            "result": "No appointments with the wrong details"
+          },
+          "s5": {
+            "title": "Books and notifies both sides",
+            "text": "It puts the appointment in your GenSmart calendar. If the customer left their email, they get a confirmation with the date, the time and a link to add it to their Google Calendar. You get an email notice.",
+            "result": "A confirmed appointment nobody had to schedule"
+          }
+        },
+        "control": {
+          "title": "You define how far the agent goes",
+          "lead": "The agent books within the rules of your calendar and its instructions. You set the rules.",
+          "r1": {
+            "title": "When people can book",
+            "text": "You set your working days and hours, the length of each appointment, the buffer between them and how many days ahead people can book. The agent offers nothing outside that."
+          },
+          "r2": {
+            "title": "What details it asks for",
+            "text": "Besides name, email and phone, you tell it what matters in your business: the professional, the location or the reason for the visit."
+          },
+          "r3": {
+            "title": "Cancel and reschedule",
+            "text": "By default the agent books, but does not move or cancel appointments. You make those changes from the calendar. If your system allows it, you can connect it through API."
+          },
+          "r4": {
+            "title": "When it hands over to a person",
+            "text": "You decide when: a special case or a customer who asks to talk to someone. On WhatsApp, web and Facebook they get a button and your team sees the full conversation."
+          }
+        },
+        "console": {
+          "name": "Laura",
+          "channel": "WhatsApp",
+          "stage": "Appointment confirmed",
+          "summary": "Asked for an assessment on Thursday at 10:00. It was taken, she chose 11:30 and it was booked.",
+          "m1": "Hi, I'd like an assessment appointment on Thursday at 10",
+          "m2": "Happy to, Laura. Thursday at 10:00 is already taken. I have 11:30 or 15:00 open. Which works for you?",
+          "m3": "11:30",
+          "m4": "Perfect. To confirm: assessment, Thursday November 19 at 11:30, under Laura Mejía. Is that right?",
+          "m5": "Yes, all good",
+          "m6": "Done, it's booked. The confirmation is on its way to laura.m@correo.com.",
+          "did1": "Checks the calendar and offers alternatives",
+          "did2": "Repeats the details and asks for confirmation",
+          "did3": "Books and sends the confirmation by email",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Laura Mejía"
+            },
+            "v2": {
+              "name": "email",
+              "value": "laura.m@correo.com"
+            },
+            "v3": {
+              "name": "phone",
+              "value": "300 000 0000"
+            },
+            "v4": {
+              "name": "service",
+              "value": "assessment"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "What if the time the customer asks for is taken?",
+            "answer": "The agent doesn't just say there is no availability. It instantly offers the closest open alternatives so the customer can choose."
+          },
+          "q2": {
+            "question": "How does it know which times are open?",
+            "answer": "From the calendar you set up in GenSmart: your working days and hours, the length of each appointment, the buffer between them and how far ahead a booking can be made."
+          },
+          "q3": {
+            "question": "Does the customer get a confirmation?",
+            "answer": "Yes, if they left their email. They get a message with the date, the time and a link to add the appointment to their Google Calendar. You get an email notice for every booking."
+          },
+          "q4": {
+            "question": "Can I have more than one calendar?",
+            "answer": "Yes. You can create several calendars, each with its own schedule."
+          },
+          "q5": {
+            "question": "Can I step into a conversation?",
+            "answer": "Yes. You take control whenever you want and the agent pauses. When you release the conversation, it picks up with a summary of what you discussed."
+          }
+        }
+      },
+      "teamHumanResources": {
+        "name": "Human resources",
+        "short": "Looks after everyone who writes about an opening and books their interview.",
+        "h1": {
+          "before": "Every candidate gets an answer.",
+          "accent": "Your team arrives at the interview with everything ready.",
+          "after": ""
+        },
+        "lead": "When someone writes about an opening, the agent replies, asks what you define, saves their answers and books the interview in your calendar. Your team decides with the full picture.",
+        "label": "Screening agent",
+        "chat": {
+          "m1": "Hi, I'm interested in the sales advisor role.",
+          "m2": "Thanks for writing. What sales experience do you have and when could you start?",
+          "chip1": "Details received",
+          "chip2": "Booking interview"
+        },
+        "storyH": "What the agent does with everyone who writes about your opening",
+        "storyLead": "When you open a role, many messages arrive at once: the same questions about schedule, location and process, and details someone has to ask for one by one. The agent answers each person right away, gathers the information and leaves the interviews booked. The hiring decision always belongs to your team.",
+        "methodClose": "The hiring decision always belongs to your team. The agent answers, gathers information and books. And 30 minutes before each interview, GenSmart sends them a notice inside the platform.",
+        "method": {
+          "s1": {
+            "title": "Welcomes each person",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks which opening they are writing about.",
+            "result": "No one is left waiting for an answer"
+          },
+          "s2": {
+            "title": "Answers their questions with your information",
+            "text": "It answers about schedule, location and process using the documents you loaded. If it does not know something, it does not make it up and hands the conversation to a person.",
+            "result": "Your team stops repeating the same answers"
+          },
+          "s3": {
+            "title": "Gathers the information you ask for",
+            "text": "It asks what you define about the opening, such as experience related to the role, city or availability. It asks one question at a time and saves each answer on the contact.",
+            "result": "Everything about each person in one place"
+          },
+          "s4": {
+            "title": "Hands the conversation to your team",
+            "text": "If the person wants to talk to someone on your team, the agent hands over the full conversation and your team continues from there.",
+            "result": "No conversation gets lost"
+          },
+          "s5": {
+            "title": "Books the interview",
+            "text": "It checks your calendar availability, offers open slots and books once the person confirms. They get an email with the date and a link for their Google Calendar, and you get an email notice.",
+            "result": "A confirmed interview without trading messages"
+          }
+        },
+        "control": {
+          "title": "You define how far the agent goes",
+          "lead": "The agent looks after candidates within the rules you give it in its instructions and in your calendar. You set the rules.",
+          "r1": {
+            "title": "What it asks each person",
+            "text": "You define the questions for each opening: experience, city, availability. It asks one at a time and saves each answer on the contact."
+          },
+          "r2": {
+            "title": "Who moves forward",
+            "text": "The agent gathers the answers and books. Who moves forward is decided by your team with the full conversation. If you need a rule first, such as the city, you write it in its instructions."
+          },
+          "r3": {
+            "title": "When interviews get booked",
+            "text": "With the calendar you set up: your days and hours, the length of each interview, the buffer between them and how many days ahead one can be booked."
+          },
+          "r4": {
+            "title": "When it hands over to a person",
+            "text": "If it does not know something or the person wants to talk to someone, it hands the case over. On WhatsApp, web and Facebook they get a button and your team sees the full conversation."
+          }
+        },
+        "console": {
+          "name": "Sebastián",
+          "channel": "WhatsApp",
+          "stage": "Booking interview",
+          "summary": "Sales advisor candidate with 3 years in insurance sales. The interview day is still to be agreed.",
+          "m1": "Hi, I saw the sales advisor opening. Is it still open?",
+          "m2": "Hi, Sebastián. Yes, it is still open. What sales experience do you have?",
+          "m3": "Three years in insurance sales",
+          "m4": "Thanks. When could you start and which day works for an interview?",
+          "did1": "Replies and asks your questions",
+          "did2": "Saves their answers",
+          "did3": "Books the interview",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Sebastián"
+            },
+            "v2": {
+              "name": "opening",
+              "value": "sales advisor"
+            },
+            "v3": {
+              "name": "experience",
+              "value": "3 years in sales"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Which channels does it use with candidates?",
+            "answer": "Whichever each person uses: WhatsApp, Instagram, Messenger, email and your website chat. It all lands in the same inbox."
+          },
+          "q2": {
+            "question": "What questions does it ask each person?",
+            "answer": "The ones you define about the opening, such as experience related to the role, city or availability. It asks one question at a time and saves each answer on the contact."
+          },
+          "q3": {
+            "question": "How does it book interviews?",
+            "answer": "It checks your calendar availability, offers open slots and books once the person confirms. They receive a confirmation email and you get an email notice."
+          },
+          "q4": {
+            "question": "Does the agent decide who gets hired?",
+            "answer": "No. It does not rule anyone out or pick anyone. It answers, gathers information and books interviews. Your team sees the full conversation and decides."
+          },
+          "q5": {
+            "question": "Can it answer my employees' questions?",
+            "answer": "Yes, using your documents: time off, payroll and policies. If it does not know something, it does not make it up and hands the conversation to a person."
+          }
+        }
+      },
+      "teamCollections": {
+        "name": "Collections",
+        "short": "Looks after customers who write about a payment, clarifies the balance and shares how to pay.",
+        "h1": {
+          "before": "Many payments run late because of an unanswered question.",
+          "accent": "The agent answers it and puts the payment on track.",
+          "after": ""
+        },
+        "lead": "When a customer writes about an invoice or a balance, the agent clarifies the amount, shares how to pay and records the date they say they will pay. Special cases go to your team.",
+        "label": "Collections agent",
+        "chat": {
+          "m1": "How much do I owe on the September invoice?",
+          "m2": "It is $320,000, due on September 30. Would you rather pay by bank transfer or with a link?",
+          "chip1": "Payment commitment",
+          "chip2": "Link sent"
+        },
+        "storyH": "What the agent does with every customer who writes about a payment",
+        "storyLead": "A pending payment usually stays that way because of simple questions: how much it is, how to pay, whether it can be split. If nobody answers in time, the customer puts it off. The agent answers right away and respectfully, and your team focuses on the cases that do need a person.",
+        "methodClose": "You define the payment terms and the exceptions, and the agent respects them. When something falls outside what you defined, it does not improvise: it hands the conversation to a person.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the customer",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks which invoice or service they are writing about.",
+            "result": "Nobody waits hours for an answer"
+          },
+          "s2": {
+            "title": "Clarifies the balance",
+            "text": "It explains the amount, the concept and the due date. If you connect your system through API, it looks up the customer's real balance. If not, it answers with the documents you loaded.",
+            "result": "The customer understands how much they owe and why"
+          },
+          "s3": {
+            "title": "Shares how to pay",
+            "text": "It tells them your payment methods, such as bank transfer, card or the payment link you use. If your payments platform has an API, it can generate the link for that invoice.",
+            "result": "The customer knows exactly how to pay"
+          },
+          "s4": {
+            "title": "Records the commitment",
+            "text": "It asks on which date they will be able to pay and saves it on the contact, along with whatever the customer shared.",
+            "result": "One payment date per customer, in plain sight"
+          },
+          "s5": {
+            "title": "Hands special cases to a person",
+            "text": "If the customer disputes the amount, asks for a payment plan or says they are going through a hard time, the agent hands the full conversation to your team.",
+            "result": "Your team handles only what needs a person"
+          }
+        },
+        "control": {
+          "title": "You define how far the agent goes",
+          "lead": "What the agent says and offers about a payment is set in its instructions and in the tools you connect. You set the rules.",
+          "r1": {
+            "title": "Where it gets the balance",
+            "text": "From the documents you load or, if you connect your system through API, from each customer's real balance. If it does not have the figure, it does not make it up and hands the conversation to a person."
+          },
+          "r2": {
+            "title": "How people pay",
+            "text": "You define the payment methods it shares: bank transfer, card or your payment link. If your payments platform has an API, it can generate the link for each invoice."
+          },
+          "r3": {
+            "title": "What it can offer and how it speaks",
+            "text": "You set the tone and the terms: whether it can offer installments, until when, under what rules. Anything outside that it does not improvise. Check the collections regulations that apply to you before defining them."
+          },
+          "r4": {
+            "title": "When it hands over to a person",
+            "text": "You decide when: a disputed amount, a payment plan or a customer who describes a hard situation. On WhatsApp, web and Facebook they get a button and your team sees the full conversation."
+          }
+        },
+        "console": {
+          "name": "Andrés",
+          "channel": "WhatsApp",
+          "stage": "Payment commitment",
+          "summary": "Asked about the September invoice balance ($320,000). Requested the payment link and committed to pay on Friday.",
+          "m1": "How much do I owe on the September invoice?",
+          "m2": "It is $320,000, due on September 30. Would you rather pay by bank transfer or with a payment link?",
+          "m3": "With the link, please. I can pay on Friday.",
+          "m4": "Done, Andrés. I am sending you the link and noting your payment for Friday.",
+          "did1": "Clarifies the balance",
+          "did2": "Shares how to pay",
+          "did3": "Records the payment date",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Andrés"
+            },
+            "v2": {
+              "name": "invoice",
+              "value": "September"
+            },
+            "v3": {
+              "name": "balance",
+              "value": "$320,000"
+            },
+            "v4": {
+              "name": "payment_date",
+              "value": "Friday"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does the agent write to my customers first to collect?",
+            "answer": "No. The agent replies when the customer writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q2": {
+            "question": "How does it know how much each customer owes?",
+            "answer": "From the documents you load or by looking up your system through API when you connect it. If it does not have the figure, it does not make it up and hands the conversation to a person."
+          },
+          "q3": {
+            "question": "What happens if the customer disagrees with the amount?",
+            "answer": "The agent does not argue. It hands the full conversation to your team so a person can resolve it."
+          },
+          "q4": {
+            "question": "How does it send the payment link?",
+            "answer": "It shares the link or payment details you define. If your payments platform has an API, it can generate the link for each invoice."
+          },
+          "q5": {
+            "question": "Can I set the tone and the rules?",
+            "answer": "Yes. You define how it speaks, what it can offer and when it hands over to a person. Check the collections regulations that apply to you before setting your terms."
+          }
+        }
+      }
     }
   }
 }

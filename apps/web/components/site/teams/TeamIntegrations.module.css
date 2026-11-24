@@ -1,0 +1,43 @@
+/* design/web: .logo-strip.ints-strip */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tile {
+  width: 100%;
+}
+
+.more {
+  margin: var(--gs-sp-5) 0 0;
+  font-size: var(--gs-fs-base);
+  line-height: 1.55;
+  color: var(--gs-fg-soft);
+}
+
+.link {
+  color: var(--gs-link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (min-width: 640px) {
+  .strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1000px) {
+  .strip {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

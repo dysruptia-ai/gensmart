@@ -24,6 +24,16 @@ export function proxy(req: NextRequest): NextResponse {
 
   // Sitio público con rutas por idioma (lib/site-routes): español en la raíz, inglés bajo /en
   const siteMatch = matchPublicPath(pathname);
+  // Variantes en mayúsculas (`/soluciones/equipos/VENTAS`): 308 a la ruta canónica.
+  // La barra final ya la redirige Next.js antes de llegar aquí.
+  if (!siteMatch && pathname !== pathname.toLowerCase()) {
+    const lower = matchPublicPath(pathname.toLowerCase());
+    if (lower) {
+      const url = req.nextUrl.clone();
+      url.pathname = lower.route.paths[lower.lang];
+      return NextResponse.redirect(url, 308);
+    }
+  }
   if (siteMatch) {
     // Se reescribe a `/{idioma}{interna}` si la ruta pública es otra: siempre en español
     // (`/precios`) y en inglés cuando el segmento cambia (`/en/product/ai-agents`)

@@ -48,6 +48,21 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Terms of service](https://www.gensmart.co/legal/terms-of-service)
 - [Privacy policy](https://www.gensmart.co/legal/privacy-policy)
 
+## Solutions by team
+
+- [Sales](https://www.gensmart.co/en/solutions/teams/sales): Answers every lead in seconds, qualifies and books.
+- [Ventas (Spanish)](https://www.gensmart.co/soluciones/equipos/ventas): Responde a cada prospecto en segundos, califica y agenda.
+- [Customer support](https://www.gensmart.co/en/solutions/teams/customer-support): Resolves repeated questions and leaves the cases that matter to your team.
+- [Atención al cliente (Spanish)](https://www.gensmart.co/soluciones/equipos/atencion-al-cliente): Resuelve las preguntas repetidas y deja a tu equipo los casos que importan.
+- [Marketing](https://www.gensmart.co/en/solutions/teams/marketing): Looks after anyone who replies to your campaigns and hands them to sales qualified, with their source channel.
+- [Marketing (Spanish)](https://www.gensmart.co/soluciones/equipos/marketing): Atiende a quien responde a tus campañas y lo entrega a ventas calificado, con su canal de origen.
+- [Operations and bookings](https://www.gensmart.co/en/solutions/teams/operations-and-bookings): Fill your calendar without anyone answering: the agent books the appointment in the conversation.
+- [Operaciones y reservas (Spanish)](https://www.gensmart.co/soluciones/equipos/operaciones-y-reservas): Llena tu agenda sin que nadie conteste: el agente reserva la cita en la conversación.
+- [Human resources](https://www.gensmart.co/en/solutions/teams/human-resources): Looks after everyone who writes about an opening and books their interview.
+- [Recursos humanos (Spanish)](https://www.gensmart.co/soluciones/equipos/recursos-humanos): Atiende a cada persona que escribe por una vacante y le agenda la entrevista.
+- [Collections](https://www.gensmart.co/en/solutions/teams/collections): Looks after customers who write about a payment, clarifies the balance and shares how to pay.
+- [Cobranzas (Spanish)](https://www.gensmart.co/soluciones/equipos/cobranzas): Atiende a los clientes que escriben por un pago, aclara el saldo y comparte cómo pagar.
+
 ## Company
 
 GenSmart is a product of Dysruptia LLC. Contact: hello@gensmart.co

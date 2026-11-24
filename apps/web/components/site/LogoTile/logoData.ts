@@ -59,4 +59,6 @@ export const BRAND_LOGOS: Record<string, BrandLogo> = {
   Outlook: { src: `${D}outlook.png`, name: 'Outlook', width: 321, height: 293, wordmark: true },
   Brevo: { src: `${D}brevo.svg`, name: 'Brevo', width: 22, height: 22, wordmark: false },
   Zoom: { src: `${D}zoom.svg`, name: 'Zoom', width: 22, height: 22, wordmark: false },
+  Pipedrive: { src: `${D}pipedrive.svg`, name: 'Pipedrive', width: 121, height: 26, wordmark: true },
+  Siigo: { src: `${D}siigo.svg`, name: 'Siigo', width: 81, height: 50, wordmark: true },
 };

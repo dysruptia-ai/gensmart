@@ -23,7 +23,13 @@ export type SiteRouteId =
   | 'productCrm'
   | 'productBooking'
   | 'integrations'
-  | 'contact';
+  | 'contact'
+  | 'teamSales'
+  | 'teamCustomerSupport'
+  | 'teamMarketing'
+  | 'teamOperationsBooking'
+  | 'teamHumanResources'
+  | 'teamCollections';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -63,6 +69,37 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
     id: 'productBooking',
     internal: '/product/scheduling',
     paths: { es: '/producto/agenda', en: '/en/product/scheduling' },
+  },
+  // Soluciones por equipo: /soluciones/equipos/… y /en/solutions/teams/…
+  teamSales: {
+    id: 'teamSales',
+    internal: '/solutions/teams/sales',
+    paths: { es: '/soluciones/equipos/ventas', en: '/en/solutions/teams/sales' },
+  },
+  teamCustomerSupport: {
+    id: 'teamCustomerSupport',
+    internal: '/solutions/teams/customer-support',
+    paths: { es: '/soluciones/equipos/atencion-al-cliente', en: '/en/solutions/teams/customer-support' },
+  },
+  teamMarketing: {
+    id: 'teamMarketing',
+    internal: '/solutions/teams/marketing',
+    paths: { es: '/soluciones/equipos/marketing', en: '/en/solutions/teams/marketing' },
+  },
+  teamOperationsBooking: {
+    id: 'teamOperationsBooking',
+    internal: '/solutions/teams/operations-and-bookings',
+    paths: { es: '/soluciones/equipos/operaciones-y-reservas', en: '/en/solutions/teams/operations-and-bookings' },
+  },
+  teamHumanResources: {
+    id: 'teamHumanResources',
+    internal: '/solutions/teams/human-resources',
+    paths: { es: '/soluciones/equipos/recursos-humanos', en: '/en/solutions/teams/human-resources' },
+  },
+  teamCollections: {
+    id: 'teamCollections',
+    internal: '/solutions/teams/collections',
+    paths: { es: '/soluciones/equipos/cobranzas', en: '/en/solutions/teams/collections' },
   },
 };
 

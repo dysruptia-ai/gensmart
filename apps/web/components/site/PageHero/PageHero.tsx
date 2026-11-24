@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Image from 'next/image';
 import Breadcrumbs, { type Crumb } from '../Breadcrumbs';
 import Container from '../Container';
 import GlowBackdrop from '../GlowBackdrop';
@@ -19,6 +20,11 @@ interface PageHeroProps {
   below?: ReactNode;
   /** `default`: `page-hero` de las páginas interiores. `feature`: `pr-hero` (título y aire mayores). */
   size?: 'default' | 'feature';
+  /**
+   * Foto de fondo (design/web: `.page-hero-bg`), en duotono verde y con velo para
+   * el contraste. Decorativa y con `priority`, porque es el LCP de la página.
+   */
+  photo?: { src: string; position?: string };
   className?: string;
 }
 
@@ -32,19 +38,36 @@ export default function PageHero({
   aside,
   below,
   size = 'default',
+  photo,
   className,
 }: PageHeroProps) {
   const classes = [
     styles.hero,
     size === 'feature' ? styles.feature : '',
     below ? styles.stacked : '',
+    photo ? styles.photo : '',
     className,
   ]
     .filter(Boolean)
     .join(' ');
   return (
     <section className={classes}>
-      <GlowBackdrop />
+      {photo ? (
+        <div className={styles.photoLayer} aria-hidden="true">
+          <Image
+            src={photo.src}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className={styles.photoImg}
+            style={photo.position ? { objectPosition: photo.position } : undefined}
+          />
+          <span className={styles.tone} />
+        </div>
+      ) : (
+        <GlowBackdrop />
+      )}
       <Container className={aside ? `${styles.inner} ${styles.split}` : styles.inner}>
         <div className={styles.copy}>
           <Breadcrumbs crumbs={crumbs} />

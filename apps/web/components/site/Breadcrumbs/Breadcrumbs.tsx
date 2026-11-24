@@ -19,12 +19,12 @@ export default function Breadcrumbs({ crumbs, className }: BreadcrumbsProps) {
       <ol className={styles.crumbs}>
         {crumbs.map((crumb, i) =>
           i === last ? (
-            <li key={crumb.id} aria-current="page">
+            <li key={crumb.labelKey} aria-current="page">
               {t(crumb.labelKey)}
             </li>
           ) : (
-            <li key={crumb.id}>
-              <SiteLink to={crumb.id}>{t(crumb.labelKey)}</SiteLink>
+            <li key={crumb.labelKey}>
+              {crumb.id ? <SiteLink to={crumb.id}>{t(crumb.labelKey)}</SiteLink> : t(crumb.labelKey)}
             </li>
           )
         )}

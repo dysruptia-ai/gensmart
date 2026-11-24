@@ -89,13 +89,15 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   industryEducation: { href: null },
   industryFinanceInsurance: { href: null },
 
+  // Índice de Soluciones: llega con las industrias (web-25)
   teams: { href: null },
-  teamSales: { href: null },
-  teamCustomerSupport: { href: null },
-  teamMarketing: { href: null },
-  teamOperationsBooking: { href: null },
-  teamHumanResources: { href: null },
-  teamCollections: { href: null },
+  // Con rutas por idioma: se resuelven en LOCALIZED_LINKS
+  teamSales: { href: '/en/solutions/teams/sales' },
+  teamCustomerSupport: { href: '/en/solutions/teams/customer-support' },
+  teamMarketing: { href: '/en/solutions/teams/marketing' },
+  teamOperationsBooking: { href: '/en/solutions/teams/operations-and-bookings' },
+  teamHumanResources: { href: '/en/solutions/teams/human-resources' },
+  teamCollections: { href: '/en/solutions/teams/collections' },
 
   resources: { href: null },
   docs: { href: null },
@@ -148,6 +150,12 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, SiteRouteId>> = {
   productBooking: 'productBooking',
   integrations: 'integrations',
   contact: 'contact',
+  teamSales: 'teamSales',
+  teamCustomerSupport: 'teamCustomerSupport',
+  teamMarketing: 'teamMarketing',
+  teamOperationsBooking: 'teamOperationsBooking',
+  teamHumanResources: 'teamHumanResources',
+  teamCollections: 'teamCollections',
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

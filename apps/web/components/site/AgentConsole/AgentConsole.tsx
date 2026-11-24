@@ -28,12 +28,15 @@ export interface ConsoleExample {
   /** Iniciales del avatar (decorativas). */
   initials: string;
   nameKey: string;
-  metaKey: string;
+  /** Cabecera del hilo. Con varias claves se unen con ` · ` (canal · agente · etapa). */
+  metaKey: string | readonly string[];
   summaryKey: string;
   bubbles: ReadonlyArray<{ key: string; out: boolean }>;
-  /** Puntaje del lead, de 0 a 10. */
-  score: number;
+  /** Puntaje del lead, de 0 a 10. Sin él, el panel es "Estado de la conversación" y no hay barra. */
+  score?: number;
   data: ReadonlyArray<{ labelKey: string; valueKey: string }>;
+  /** Variables capturadas por el agente (nombre en estilo de código). */
+  vars?: ReadonlyArray<{ nameKey: string; valueKey: string }>;
   /** Lo que hizo el agente, en orden. */
   didKeys: readonly string[];
 }
@@ -61,14 +64,19 @@ export const SALES_EXAMPLE: ConsoleExample = {
 
 interface AgentConsoleProps {
   example?: ConsoleExample;
+  /** Nombre accesible de la maqueta (`role="group"`). Por defecto, el del home. */
+  label?: string;
 }
 
 /** Vista de la bandeja de la plataforma (riel, hilo y contexto del lead). */
-export default function AgentConsole({ example = SALES_EXAMPLE }: AgentConsoleProps) {
+export default function AgentConsole({ example = SALES_EXAMPLE, label }: AgentConsoleProps) {
   const { t } = useTranslation();
-  const scorePercent = Math.max(0, Math.min(100, example.score * 10));
+  const { score, vars } = example;
+  const meta = typeof example.metaKey === 'string'
+    ? t(example.metaKey)
+    : example.metaKey.map((k) => t(k)).join(' · ');
   return (
-    <div className={styles.frame} role="group" aria-label={t(`${P}.consoleLabel`)}>
+    <div className={styles.frame} role="group" aria-label={label ?? t(`${P}.consoleLabel`)}>
       <div className={styles.top}>
         <span className={styles.dots} aria-hidden="true">
           <i />
@@ -109,7 +117,7 @@ export default function AgentConsole({ example = SALES_EXAMPLE }: AgentConsolePr
             </span>
             <div>
               <b>{t(example.nameKey)}</b>
-              <small>{t(example.metaKey)}</small>
+              <small>{meta}</small>
             </div>
           </div>
           <p className={styles.summary}>
@@ -127,16 +135,22 @@ export default function AgentConsole({ example = SALES_EXAMPLE }: AgentConsolePr
 
         <div className={styles.ctx}>
           <div className={styles.ctxLead}>
-            <h4 className={styles.h6}>{t(`${P}.leadStatus`)}</h4>
-            <div className={styles.score}>
-              <strong>
-                <span className={styles.srOnly}>{t(`${P}.scoreLabel`)}: </span>
-                {example.score}
-              </strong>
-              <span className={styles.bar} aria-hidden="true">
-                <i style={{ width: `${scorePercent}%` }} />
-              </span>
-            </div>
+            {score === undefined ? (
+              <h4 className={styles.h6}>{t(`${P}.conversationStatus`)}</h4>
+            ) : (
+              <>
+                <h4 className={styles.h6}>{t(`${P}.leadStatus`)}</h4>
+                <div className={styles.score}>
+                  <strong>
+                    <span className={styles.srOnly}>{t(`${P}.scoreLabel`)}: </span>
+                    {score}
+                  </strong>
+                  <span className={styles.bar} aria-hidden="true">
+                    <i style={{ width: `${Math.max(0, Math.min(100, score * 10))}%` }} />
+                  </span>
+                </div>
+              </>
+            )}
             <dl className={styles.data}>
               {example.data.map((row) => (
                 <Fragment key={row.labelKey}>
@@ -146,6 +160,21 @@ export default function AgentConsole({ example = SALES_EXAMPLE }: AgentConsolePr
               ))}
             </dl>
           </div>
+          {vars && vars.length > 0 ? (
+            <div className={styles.ctxDid}>
+              <h4 className={styles.h6}>{t(`${P}.capturedVars`)}</h4>
+              <dl className={`${styles.data} ${styles.vars}`}>
+                {vars.map((v) => (
+                  <Fragment key={v.nameKey}>
+                    <dt>
+                      <code>{t(v.nameKey)}</code>
+                    </dt>
+                    <dd>{t(v.valueKey)}</dd>
+                  </Fragment>
+                ))}
+              </dl>
+            </div>
+          ) : null}
           <div className={styles.ctxDid}>
             <h4 className={styles.h6}>{t(`${P}.didTitle`)}</h4>
             <ol className={styles.did}>

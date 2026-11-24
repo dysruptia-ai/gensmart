@@ -2122,7 +2122,9 @@
         "did1": "Lee el mensaje y el historial de Laura",
         "did2": "Consulta tu inventario: quedan 3 en talla M",
         "did3": "Cotiza el envío a Bogotá y arma el total",
-        "did4": "Envía el link de pago y lo registra en tu CRM"
+        "did4": "Envía el link de pago y lo registra en tu CRM",
+        "conversationStatus": "Estado de la conversación",
+        "capturedVars": "Variables capturadas"
       },
       "compare": {
         "title": "Con GenSmart no creas chatbots, creas agentes",
@@ -2236,6 +2238,36 @@
         "title": "Contacto y demo | GenSmart",
         "description": "Cuéntanos tu caso: un consultor de GenSmart lo revisa y te muestra cómo respondería tu agente de IA, en qué canales y con qué reglas.",
         "ogAlt": "Contacto y demo de GenSmart"
+      },
+      "teamSales": {
+        "title": "Agentes de IA para ventas: responde y califica | GenSmart",
+        "description": "Un agente de IA responde a cada prospecto en segundos, lo califica de 0 a 10, lo registra en tu CRM y agenda la llamada. Tú decides quién cierra.",
+        "ogAlt": "Agentes de IA de GenSmart para ventas"
+      },
+      "teamCustomerSupport": {
+        "title": "Agentes de IA para atención al cliente | GenSmart",
+        "description": "Un agente de IA resuelve las preguntas repetidas en WhatsApp, Instagram y tu web, y pasa a tu equipo los casos que importan, con el resumen.",
+        "ogAlt": "Agentes de IA de GenSmart para atención al cliente"
+      },
+      "teamMarketing": {
+        "title": "Agentes de IA para marketing y campañas | GenSmart",
+        "description": "Un agente de IA atiende a quien responde a tus anuncios, lo califica y lo entrega a ventas con su canal de origen y los datos que dejó.",
+        "ogAlt": "Agentes de IA de GenSmart para marketing"
+      },
+      "teamOperationsBooking": {
+        "title": "Agentes de IA para reservas y citas | GenSmart",
+        "description": "Un agente de IA reserva la cita dentro de la conversación, con tus horarios y tus reglas, y envía la confirmación. Tu agenda se llena sola.",
+        "ogAlt": "Agentes de IA de GenSmart para reservas y citas"
+      },
+      "teamHumanResources": {
+        "title": "Agentes de IA para selección de personal | GenSmart",
+        "description": "Un agente de IA responde a cada candidato que escribe por una vacante, hace tus preguntas de filtro y le agenda la entrevista con tu equipo.",
+        "ogAlt": "Agentes de IA de GenSmart para selección de personal"
+      },
+      "teamCollections": {
+        "title": "Agentes de IA para cobranzas | GenSmart",
+        "description": "Un agente de IA atiende a quien escribe por un pago: aclara el saldo, comparte cómo pagar y anota el compromiso. Tu equipo ve cada caso.",
+        "ogAlt": "Agentes de IA de GenSmart para cobranzas"
       }
     },
     "langHint": {
@@ -2435,7 +2467,14 @@
       "productInbox": "Bandeja unificada",
       "productCrm": "CRM y embudo",
       "productBooking": "Agenda de citas",
-      "contact": "Contacto"
+      "contact": "Contacto",
+      "teamSales": "Ventas",
+      "teamCustomerSupport": "Atención al cliente",
+      "teamMarketing": "Marketing",
+      "teamOperationsBooking": "Operaciones y reservas",
+      "teamHumanResources": "Recursos humanos",
+      "teamCollections": "Cobranzas",
+      "solutions": "Soluciones"
     },
     "channels": {
       "email": "Correo",
@@ -3105,6 +3144,762 @@
         "primary": "Prueba {days} días gratis"
       },
       "jsonLdName": "Contacto y demo de GenSmart"
+    },
+    "teams": {
+      "common": {
+        "solutions": "Soluciones",
+        "primary": "Empieza la prueba gratis",
+        "demo": "Agenda una demo",
+        "chatLabel": "Conversación de ejemplo: {agent}",
+        "result": "Resultado",
+        "youConfigure": "Lo configuras tú",
+        "talk": "Hablar con una persona",
+        "inboxTitle": "Lo que ve tu equipo en la bandeja",
+        "inboxLeadScore": "El agente deja el resumen, los datos capturados y el puntaje. Tú ves qué hizo y puedes tomar la conversación cuando quieras.",
+        "inboxLeadNoScore": "El agente deja el resumen y los datos capturados. Tú ves qué hizo y puedes tomar la conversación cuando quieras.",
+        "consoleLabel": "Vista de ejemplo de la bandeja: conversación con {name}",
+        "defaultSummary": "Atendió la consulta completa y dejó el lead listo. Etapa: {stage}.",
+        "intsTitle": "Se conecta con las herramientas que ya usas",
+        "intsLead": "Mientras conversa, el agente consulta y escribe en las herramientas de tu equipo: el CRM, la agenda, la tienda.",
+        "intsListLabel": "Integraciones para {team}",
+        "intsOther": "Si usas otra, la conectas por API, MCP o webhook.",
+        "intsLink": "Ver las integraciones",
+        "channelsTitle": "La misma conversación en cualquier canal",
+        "channelsText": "Si el cliente escribe por WhatsApp y después por tu web, el agente lo reconoce y sigue donde quedó. Tu equipo lo ve todo en la misma bandeja.",
+        "channelsLabel": "Canales",
+        "faqKicker": "Preguntas frecuentes · {team}",
+        "faqTitleBefore": "¿Dudas?",
+        "faqTitleAccent": "Resuélvelas aquí",
+        "faqHelpBefore": "¿No ves la tuya? Escríbenos y",
+        "faqHelpAccent": "te respondemos",
+        "faqHelpAfter": "pronto.",
+        "faqCta": "Hablar con el equipo",
+        "moreTitle": "Explora más soluciones",
+        "moreSaidBy": "Lo dice: {agent}"
+      },
+      "teamSales": {
+        "name": "Ventas",
+        "short": "Responde a cada prospecto en segundos, califica y agenda.",
+        "h1": {
+          "before": "El agente atiende y califica.",
+          "accent": "Tú decides quién cierra.",
+          "after": ""
+        },
+        "lead": "Cuando un cliente te escribe, por el canal que sea, el agente le responde, lo asesora con tu catálogo, le hace las preguntas de calificación y lo deja registrado en tu CRM. Cuando entra tu comercial, el cliente ya dijo qué quiere.",
+        "label": "Asistente comercial",
+        "chat": {
+          "m1": "Estoy buscando un regulador de voltaje.",
+          "m2": "Quiero ser transparente: ese equipo no lo manejamos por separado. Cuéntame qué problema quieres resolver y te oriento.",
+          "chip1": "Línea: UPS trifásica",
+          "chip2": "Oportunidad"
+        },
+        "storyH": "Qué hace el agente con cada cliente que te escribe",
+        "storyLead": "Hoy un cliente escribe y espera. Cuando alguien responde, toca preguntarle lo básico, buscarlo en el CRM y pasar los datos a mano. El agente hace todo eso antes de que tu comercial entre, siempre en el mismo orden.",
+        "methodClose": "Hasta aquí el agente deja la venta preparada. Quién la cierra lo decides tú: tu comercial, o el propio agente si lo configuras para cerrar.",
+        "method": {
+          "s1": {
+            "title": "Responde y abre la conversación",
+            "text": "Contesta enseguida y pregunta qué busca el cliente. Con tu catálogo y tus documentos a mano, lo orienta y le dice con claridad lo que sí ofreces.",
+            "result": "Un cliente atendido desde el primer mensaje"
+          },
+          "s2": {
+            "title": "Descubre qué necesita",
+            "text": "Hace preguntas abiertas, de una en una: su situación, qué le urge, el tamaño de su negocio y qué usa hoy. Tú defines lo que debe preguntar antes de pasar el caso.",
+            "result": "Una necesidad concreta, no un “quiero información”"
+          },
+          "s3": {
+            "title": "Explica cómo lo resuelves",
+            "text": "Con lo que el cliente contó, explica cómo tu producto o servicio resuelve su caso. Habla de beneficios y no promete más de lo que ofreces.",
+            "result": "Un cliente que entiende por qué tu oferta le sirve"
+          },
+          "s4": {
+            "title": "Pide los datos sin sonar a formulario",
+            "text": "Nombre y correo primero, después teléfono y empresa. El presupuesto lo pregunta al final, cuando ya hay confianza. Todo queda guardado en tu CRM.",
+            "result": "Un contacto completo, sin que nadie lo digite"
+          },
+          "s5": {
+            "title": "Califica y define el siguiente paso",
+            "text": "Le asigna un puntaje de 0 a 10 según su interés y lo ubica en tu embudo. Si el interés es alto, propone una llamada o una demo con tu equipo. Con la agenda de GenSmart, la reserva en la misma conversación. Si es bajo, le ofrece recursos por correo.",
+            "result": "Tu comercial ve a quién llamar primero y abre la conversación completa"
+          }
+        },
+        "control": {
+          "title": "Tú defines hasta dónde llega el agente",
+          "lead": "Lo que el agente hace con un cliente que quiere comprar se programa en sus instrucciones y en las herramientas que le conectas. Tú pones las reglas.",
+          "r1": {
+            "title": "Negociar",
+            "text": "Le dices qué puede ofrecer y hasta qué descuento. Lo que pase de ese tope, lo pasa a tu comercial."
+          },
+          "r2": {
+            "title": "Cotizar",
+            "text": "Con tus precios cargados o consultando tu sistema por API, arma la cotización con las reglas que definas."
+          },
+          "r3": {
+            "title": "Cerrar",
+            "text": "Con tu tienda o tu API conectada, crea el pedido en la misma conversación. Sin conexión, deja el cierre a tu comercial."
+          },
+          "r4": {
+            "title": "Pasar a una persona",
+            "text": "Tú marcas cuándo: un descuento mayor, una cotización grande o un cliente que pide hablar con alguien. Recibe la conversación completa."
+          }
+        },
+        "console": {
+          "name": "Marco",
+          "channel": "Web",
+          "stage": "Oportunidad",
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad.",
+          "m1": "Estoy buscando un regulador de voltaje",
+          "m2": "Quiero ser transparente: no manejamos reguladores de voltaje como producto independiente. Nuestras líneas principales son plantas eléctricas, UPS trifásicas, paneles solares e ingeniería de proyectos eléctricos. Cuéntame, ¿qué problema quieres resolver?",
+          "m3": "UPS trifásica",
+          "m4": "Para orientar bien la solicitud: ¿para qué aplicación la necesitas, qué potencia (kVA) y cuánta autonomía en caso de corte?",
+          "m5": "yo creería que unos 10 kva",
+          "did1": "Busca el contacto por teléfono",
+          "did2": "Crea el contacto en el CRM",
+          "did3": "Crea la oportunidad",
+          "did4": "Avisa que un asesor lo contactará",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Marco"
+            },
+            "v2": {
+              "name": "telefono",
+              "value": "+57 321 ••• ••••"
+            },
+            "v3": {
+              "name": "ciudad",
+              "value": "Cundinamarca"
+            },
+            "v4": {
+              "name": "tipo_consulta",
+              "value": "venta"
+            },
+            "v5": {
+              "name": "linea_producto",
+              "value": "UPS"
+            },
+            "v6": {
+              "name": "especificacion_tecnica",
+              "value": "10 kVA aprox."
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Quién cierra la venta?",
+            "answer": "Lo defines tú. Tu comercial puede cerrar con la conversación y los datos que dejó el agente, o puedes configurar al agente para que cierre él. Puedes tomar la conversación en cualquier momento."
+          },
+          "q2": {
+            "question": "¿Qué pasa si piden algo que no vendo?",
+            "answer": "El agente lo dice con claridad y propone lo que sí ofreces, con el catálogo que tú le cargaste."
+          },
+          "q3": {
+            "question": "¿Puede hacer preguntas técnicas?",
+            "answer": "Tú defines qué debe preguntar antes de pasar la solicitud, como aplicación, potencia o ciudad."
+          },
+          "q4": {
+            "question": "¿Cómo le llega la solicitud a mi equipo?",
+            "answer": "Como contacto y oportunidad en tu CRM, con la conversación y los datos que capturó."
+          },
+          "q5": {
+            "question": "¿Puedo intervenir en la conversación?",
+            "answer": "Sí. Tomas el control cuando quieras y el historial completo queda a la vista."
+          }
+        }
+      },
+      "teamCustomerSupport": {
+        "name": "Atención al cliente",
+        "short": "Resuelve las preguntas repetidas y deja a tu equipo los casos que importan.",
+        "h1": {
+          "before": "El agente resuelve lo repetido.",
+          "accent": "Tu equipo, lo que importa.",
+          "after": ""
+        },
+        "lead": "Cuando un cliente escribe con una duda o un problema, por el canal que sea, el agente le responde con la información de tu negocio y lo guía hasta resolverlo. Si el caso necesita a una persona, se lo pasa a tu equipo con el resumen hecho.",
+        "label": "Asistente de soporte",
+        "chat": {
+          "m1": "¿Dónde está mi pedido 4821?",
+          "m2": "Salió ayer y llega mañana antes de las 6 p. m. Te dejo el enlace de seguimiento.",
+          "chip1": "Resuelto",
+          "chip2": "Pasar a una persona"
+        },
+        "storyH": "Qué hace el agente con cada cliente que necesita ayuda",
+        "storyLead": "Hoy tu equipo contesta las mismas preguntas todo el día. Mientras tanto, el cliente con un problema serio espera detrás de los que solo querían un dato. El agente resuelve lo simple y le pasa a tu equipo solo los casos que requieren a una persona.",
+        "methodClose": "Lo repetido se resuelve solo. Lo que pide criterio llega a tu equipo con el contexto completo.",
+        "method": {
+          "s1": {
+            "title": "Recibe al cliente",
+            "text": "Lo saluda con calidez, se presenta como asistente de soporte y le pregunta en qué puede ayudarlo.",
+            "result": "Un cliente atendido sin esperar turno"
+          },
+          "s2": {
+            "title": "Entiende el problema",
+            "text": "Si falta información, hace preguntas aclaratorias antes de responder.",
+            "result": "Un problema claro, no una queja suelta"
+          },
+          "s3": {
+            "title": "Busca la respuesta en tu información",
+            "text": "Consulta tu base de conocimiento, con los documentos, políticas y enlaces que cargaste. Si no encuentra la respuesta, lo dice y no inventa.",
+            "result": "Respuestas basadas en lo que tú dijiste"
+          },
+          "s4": {
+            "title": "Guía hasta resolverlo",
+            "text": "Da la solución paso a paso. En un problema técnico, lo lleva por el diagnóstico de a un paso. Reconoce la frustración del cliente y, antes de cerrar, confirma que quedó satisfecho.",
+            "result": "Un cliente que resuelve su problema sin esperar a nadie"
+          },
+          "s5": {
+            "title": "Pasa el caso a una persona",
+            "text": "Si no lo resuelve en dos intentos o el cliente pide hablar con alguien, le envía un botón para abrir la conversación con tu equipo y deja el resumen del caso. No promete reembolsos ni créditos: explica que una persona revisará su caso.",
+            "result": "Tu equipo recibe el caso resumido y el cliente no repite nada"
+          }
+        },
+        "control": {
+          "title": "Tú defines hasta dónde llega el agente",
+          "lead": "Lo que el agente resuelve con un cliente se programa en sus instrucciones y en las herramientas que le conectas. Tú pones las reglas.",
+          "r1": {
+            "title": "Con qué información responde",
+            "text": "Solo con lo que cargas: documentos, políticas y enlaces. Si no encuentra la respuesta, lo dice y no inventa."
+          },
+          "r2": {
+            "title": "Consultar el estado",
+            "text": "Con tu tienda, tu agenda o tu API conectada, dice dónde está un pedido o una cita. Sin conexión, pasa la consulta a tu equipo."
+          },
+          "r3": {
+            "title": "Reembolsos y créditos",
+            "text": "Por su cuenta no los promete. Si quieres que aplique uno, se lo permites con una herramienta de tu sistema y le pones el tope."
+          },
+          "r4": {
+            "title": "Pasar a una persona",
+            "text": "Tú marcas cuándo: tras dos intentos sin resolver o cuando el cliente lo pide. En WhatsApp, web y Facebook le envía un botón para hablar con tu equipo y deja el resumen."
+          }
+        },
+        "console": {
+          "name": "Andrea",
+          "channel": "WhatsApp",
+          "stage": "Necesita a alguien",
+          "summary": "Cobro duplicado. Pidió el correo y las fechas, no prometió reembolso y pasó el caso a una persona.",
+          "m1": "Me cobraron dos veces la mensualidad",
+          "m2": "Lamento lo que pasó. Para revisarlo bien, ¿me confirmas el correo de tu cuenta y la fecha de los dos cobros?",
+          "m3": "andrea.r@correo.com, los dos del 3 de noviembre",
+          "m4": "Gracias, Andrea. Un reembolso no te lo puedo prometer yo, pero una persona del equipo puede revisar tu caso. Te dejo un botón para hablar con ella y ya le paso el resumen.",
+          "did1": "Pide el correo y la fecha de los cobros",
+          "did2": "No promete el reembolso",
+          "did3": "Envía el botón para hablar con una persona",
+          "did4": "Deja el resumen para tu equipo",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Andrea"
+            },
+            "v2": {
+              "name": "correo",
+              "value": "andrea.r@correo.com"
+            },
+            "v3": {
+              "name": "tipo_consulta",
+              "value": "facturación"
+            },
+            "v4": {
+              "name": "motivo",
+              "value": "cobro duplicado"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Qué pasa si el agente no sabe la respuesta?",
+            "answer": "No la inventa. Lo dice con claridad y pasa el caso a una persona de tu equipo."
+          },
+          "q2": {
+            "question": "¿Cuándo pasa un caso a una persona?",
+            "answer": "Cuando el cliente lo pide o cuando el agente no logra resolverlo en dos intentos. El cliente recibe un botón para abrir la conversación con tu equipo y el resumen del caso queda a la vista."
+          },
+          "q3": {
+            "question": "¿Puede prometer reembolsos o créditos?",
+            "answer": "No. Explica que una persona del equipo revisará el caso."
+          },
+          "q4": {
+            "question": "¿Puedo intervenir en una conversación?",
+            "answer": "Sí. Tomas el control cuando quieras y el agente se pausa. Cuando liberas la conversación, retoma con el resumen de lo que hablaste."
+          },
+          "q5": {
+            "question": "¿Con qué información responde?",
+            "answer": "Con la que tú cargas en su base de conocimiento: documentos, políticas y enlaces."
+          }
+        }
+      },
+      "teamMarketing": {
+        "name": "Marketing",
+        "short": "Atiende a quien responde a tus campañas y lo entrega a ventas calificado, con su canal de origen.",
+        "h1": {
+          "before": "Pagaste por el clic.",
+          "accent": "El agente atiende a quien llegó.",
+          "after": ""
+        },
+        "lead": "Cuando alguien escribe desde tus campañas o tus redes, el agente le responde al instante, descubre qué busca y deja el contacto calificado en tu CRM, con el canal por el que llegó. Tu equipo comercial recibe personas listas para hablar.",
+        "label": "Agente de marketing",
+        "chat": {
+          "m1": "Vi su anuncio en Instagram, ¿cuánto cuesta el plan?",
+          "m2": "Con gusto te oriento. Para recomendarte el plan indicado, ¿cuántas personas serían?",
+          "chip1": "Lead calificado"
+        },
+        "storyH": "Qué hace el agente con cada persona que responde a tus campañas",
+        "storyLead": "Hoy el interés dura minutos. Si nadie responde a tiempo, el clic que pagaste se pierde. Y cuando alguien responde, entrega a ventas un nombre sin contexto. El agente atiende en el momento y entrega contactos con la información completa.",
+        "methodClose": "Tus campañas traen a la gente. El agente la atiende, la califica y guarda por qué canal llegó.",
+        "method": {
+          "s1": {
+            "title": "Responde en el momento",
+            "text": "Saluda a la persona por el canal en el que escribió y le pregunta en qué puede ayudarla. Puede ser WhatsApp, Instagram, Messenger, tu web o el correo.",
+            "result": "Nadie que llega desde tus campañas queda sin respuesta"
+          },
+          "s2": {
+            "title": "Descubre qué busca",
+            "text": "Hace preguntas abiertas, de a una, para entender la necesidad. Tú defines qué debe preguntar antes de pasar el contacto a ventas.",
+            "result": "Un interés concreto en cada contacto"
+          },
+          "s3": {
+            "title": "Pide los datos sin sonar a formulario",
+            "text": "Primero el nombre y el correo, después el teléfono y la empresa. El presupuesto va al final. Todo queda guardado en tu CRM.",
+            "result": "Un contacto completo, sin que nadie lo digite"
+          },
+          "s4": {
+            "title": "Califica y lo ubica en tu embudo",
+            "text": "Le pone un puntaje de 0 a 10 según lo que dijo y lo ubica en su etapa: lead u oportunidad.",
+            "result": "Sabes cuáles contactos valen una llamada hoy"
+          },
+          "s5": {
+            "title": "Registra el canal de origen",
+            "text": "Cada contacto guarda el canal por el que llegó. Con eso ves cuál trae más contactos y cuáles puntúan mejor.",
+            "result": "Sabes qué canal trae más y mejores contactos"
+          }
+        },
+        "control": {
+          "title": "Tú defines hasta dónde llega el agente",
+          "lead": "Lo que el agente pregunta y guarda de cada persona que llega de tus campañas se programa en sus instrucciones. Tú pones las reglas.",
+          "r1": {
+            "title": "Qué pregunta y en qué orden",
+            "text": "Tú defines las preguntas que debe hacer antes de pasar el contacto a ventas, y cuáles deja para el final, como el presupuesto."
+          },
+          "r2": {
+            "title": "Qué datos guarda",
+            "text": "Eliges las variables que captura de cada persona: nombre, correo, teléfono, empresa, interés. Quedan en el contacto, a la vista de tu equipo."
+          },
+          "r3": {
+            "title": "Qué sabe del anuncio",
+            "text": "Si la persona llega desde un anuncio de Meta que abre WhatsApp, el agente recibe el título, la descripción y el enlace del anuncio. En sus instrucciones defines cómo usarlos."
+          },
+          "r4": {
+            "title": "Cuándo pasa a ventas",
+            "text": "Tú decides cuándo entra una persona de tu equipo. Cuando un contacto puntúa alto, tu equipo recibe el aviso y ve la conversación completa."
+          }
+        },
+        "console": {
+          "name": "Julián",
+          "channel": "Instagram",
+          "stage": "Lead",
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: lead.",
+          "m1": "Vi su anuncio en Instagram, ¿cuánto cuesta el plan?",
+          "m2": "Hola, Julián. Con gusto te oriento. Para recomendarte el plan indicado, ¿cuántas personas serían?",
+          "m3": "Somos tres",
+          "m4": "Perfecto. ¿Para cuándo lo necesitarían y a qué correo te envío la información?",
+          "did1": "Responde y pregunta qué necesita",
+          "did2": "Pide el correo y el momento",
+          "did3": "Guarda el contacto con su canal",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Julián"
+            },
+            "v2": {
+              "name": "canal",
+              "value": "Instagram"
+            },
+            "v3": {
+              "name": "interes",
+              "value": "plan para 3 personas"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Por qué canales atiende a quien llega de mis campañas?",
+            "answer": "Por el que el cliente use: WhatsApp, Instagram, Messenger, correo y la ventana de mensajes de tu sitio web. Todo llega a la misma bandeja."
+          },
+          "q2": {
+            "question": "¿Qué información guarda de cada contacto?",
+            "answer": "Lo que le pidas que capture, como nombre, correo, teléfono, empresa e interés, junto con el puntaje, la etapa y el canal de origen."
+          },
+          "q3": {
+            "question": "¿Cómo sé qué canal funciona mejor?",
+            "answer": "Cada contacto guarda su canal de origen y su puntaje. Puedes ver cuántos llegan por cada canal."
+          },
+          "q4": {
+            "question": "¿Pasa los contactos a mi equipo comercial?",
+            "answer": "Sí. Tu equipo ve la conversación completa y los datos capturados, y recibe aviso cuando un contacto alcanza un puntaje alto."
+          },
+          "q5": {
+            "question": "¿Puedo intervenir en una conversación?",
+            "answer": "Sí. Tomas el control cuando quieras y el agente se pausa. Cuando liberas la conversación, retoma con el resumen de lo que hablaste."
+          }
+        }
+      },
+      "teamOperationsBooking": {
+        "name": "Operaciones y reservas",
+        "short": "Llena tu agenda sin que nadie conteste: el agente reserva la cita en la conversación.",
+        "h1": {
+          "before": "El agente reserva la cita.",
+          "accent": "Tu agenda se llena sola.",
+          "after": ""
+        },
+        "lead": "Cuando un cliente escribe para pedir una cita, el agente revisa tu agenda, le ofrece horarios libres y deja la reserva confirmada en la misma conversación. Tu recepción ya no persigue horarios ni digita datos.",
+        "label": "Agente de reservas",
+        "chat": {
+          "m1": "Quiero una cita para el jueves a las 10.",
+          "m2": "Ese horario está ocupado. Tengo libre a las 11:30 o a las 15:00. ¿Cuál prefieres?",
+          "chip1": "Cita confirmada"
+        },
+        "storyH": "Qué hace el agente con cada cliente que quiere una cita",
+        "storyLead": "Hoy agendar es un ir y venir de mensajes: el cliente propone una hora, alguien revisa la agenda, la hora ya no está y se vuelve a empezar. A veces nadie contesta a tiempo y el cliente se va con otro. El agente cierra ese ir y venir en una sola conversación.",
+        "methodClose": "Tu equipo no agenda nada a mano. Y 30 minutos antes de cada cita, GenSmart le avisa dentro de la plataforma.",
+        "method": {
+          "s1": {
+            "title": "Recibe al cliente y pregunta qué necesita",
+            "text": "Lo saluda y le pregunta qué servicio o tipo de cita busca. Si no está seguro, le describe brevemente lo que ofreces para que decida.",
+            "result": "Un servicio claro desde el primer mensaje"
+          },
+          "s2": {
+            "title": "Toma los datos de la cita",
+            "text": "Pide nombre completo, correo, teléfono y las preferencias que importen en tu negocio, como el profesional o la sede. Después pregunta qué día y a qué hora le conviene.",
+            "result": "Una reserva con todos los datos, sin llamada"
+          },
+          "s3": {
+            "title": "Revisa tu agenda en ese momento",
+            "text": "Consulta la disponibilidad real de tu calendario, con tus días y horas de atención, la duración de cada cita y el margen entre una y otra. Si la hora pedida está ocupada, ofrece al instante las dos o tres más cercanas.",
+            "result": "Un horario libre elegido por el cliente, no por tu recepción"
+          },
+          "s4": {
+            "title": "Confirma antes de reservar",
+            "text": "Repite el servicio, la fecha, la hora y los datos de contacto y pregunta si todo está bien. Solo reserva cuando el cliente dice que sí.",
+            "result": "Cero citas con datos equivocados"
+          },
+          "s5": {
+            "title": "Reserva y avisa a los dos lados",
+            "text": "Deja la cita en tu agenda de GenSmart. Si el cliente dejó su correo, le llega la confirmación con la fecha, la hora y un enlace para agregarla a su Google Calendar. A ti te llega un aviso por correo.",
+            "result": "Una cita confirmada que nadie tuvo que agendar"
+          }
+        },
+        "control": {
+          "title": "Tú defines hasta dónde llega el agente",
+          "lead": "El agente reserva dentro de las reglas de tu calendario y de sus instrucciones. Tú pones las reglas.",
+          "r1": {
+            "title": "Cuándo se puede reservar",
+            "text": "Defines tus días y horas de atención, la duración de cada cita, el margen entre una y otra y con cuántos días de anticipación se puede reservar. El agente no ofrece nada fuera de eso."
+          },
+          "r2": {
+            "title": "Qué datos pide",
+            "text": "Además del nombre, el correo y el teléfono, le pides lo que importe en tu negocio: el profesional, la sede o el motivo de la consulta."
+          },
+          "r3": {
+            "title": "Cancelar y reprogramar",
+            "text": "Por defecto el agente reserva, pero no mueve ni cancela citas. Esos cambios los haces tú desde la agenda. Si tu sistema lo permite, puedes conectárselo por API."
+          },
+          "r4": {
+            "title": "Cuándo pasa a una persona",
+            "text": "Tú marcas cuándo: un caso especial o un cliente que pide hablar con alguien. En WhatsApp, web y Facebook recibe un botón y tu equipo ve la conversación completa."
+          }
+        },
+        "console": {
+          "name": "Laura",
+          "channel": "WhatsApp",
+          "stage": "Cita confirmada",
+          "summary": "Pidió una valoración el jueves a las 10:00. Estaba ocupado, eligió las 11:30 y quedó reservada.",
+          "m1": "Hola, quiero una cita para una valoración el jueves a las 10",
+          "m2": "Con gusto, Laura. El jueves a las 10:00 ya está ocupado. Tengo libre a las 11:30 o a las 15:00. ¿Cuál te sirve?",
+          "m3": "A las 11:30",
+          "m4": "Perfecto. Te confirmo: valoración, jueves 19 de noviembre a las 11:30, a nombre de Laura Mejía. ¿Está bien así?",
+          "m5": "Sí, todo bien",
+          "m6": "Listo, quedó reservada. Te llega la confirmación a laura.m@correo.com.",
+          "did1": "Revisa la agenda y ofrece alternativas",
+          "did2": "Repite los datos y pide confirmación",
+          "did3": "Reserva y envía la confirmación por correo",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Laura Mejía"
+            },
+            "v2": {
+              "name": "correo",
+              "value": "laura.m@correo.com"
+            },
+            "v3": {
+              "name": "telefono",
+              "value": "300 000 0000"
+            },
+            "v4": {
+              "name": "servicio",
+              "value": "valoración"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Qué pasa si la hora que pide el cliente está ocupada?",
+            "answer": "El agente no responde solo que no hay disponibilidad. Ofrece al instante las alternativas libres más cercanas para que el cliente elija."
+          },
+          "q2": {
+            "question": "¿Cómo sabe qué horarios están libres?",
+            "answer": "Con el calendario que configuras en GenSmart: tus días y horas de atención, la duración de cada cita, el margen entre citas y hasta con cuántos días de anticipación se puede reservar."
+          },
+          "q3": {
+            "question": "¿El cliente recibe una confirmación?",
+            "answer": "Sí, si dejó su correo. Le llega un mensaje con la fecha, la hora y un enlace para agregar la cita a su Google Calendar. Tú recibes un aviso por correo de cada reserva."
+          },
+          "q4": {
+            "question": "¿Puedo tener más de un calendario?",
+            "answer": "Sí. Puedes crear varios calendarios, cada uno con sus propios horarios."
+          },
+          "q5": {
+            "question": "¿Puedo intervenir en una conversación?",
+            "answer": "Sí. Tomas el control cuando quieras y el agente se pausa. Cuando liberas la conversación, retoma con el resumen de lo que hablaste."
+          }
+        }
+      },
+      "teamHumanResources": {
+        "name": "Recursos humanos",
+        "short": "Atiende a cada persona que escribe por una vacante y le agenda la entrevista.",
+        "h1": {
+          "before": "Cada candidato recibe respuesta.",
+          "accent": "Tu equipo llega a la entrevista con todo listo.",
+          "after": ""
+        },
+        "lead": "Cuando alguien escribe por una vacante, el agente le responde, le pregunta lo que tú definas, guarda sus respuestas y le agenda la entrevista en tu calendario. Tu equipo decide con la información completa.",
+        "label": "Agente de selección",
+        "chat": {
+          "m1": "Hola, me interesa la vacante de asesor comercial.",
+          "m2": "Gracias por escribir. ¿Qué experiencia tienes en ventas y cuándo podrías empezar?",
+          "chip1": "Datos recibidos",
+          "chip2": "Agendando entrevista"
+        },
+        "storyH": "Qué hace el agente con cada persona que escribe por tu vacante",
+        "storyLead": "Al abrir una vacante llegan muchos mensajes a la vez: las mismas preguntas sobre horario, sede y proceso, y datos que alguien debe pedir uno por uno. El agente responde a cada persona en el momento, reúne la información y deja las entrevistas agendadas. La decisión de contratar es siempre de tu equipo.",
+        "methodClose": "La decisión de contratar es siempre de tu equipo. El agente atiende, reúne la información y agenda. Y 30 minutos antes de cada entrevista, GenSmart le avisa dentro de la plataforma.",
+        "method": {
+          "s1": {
+            "title": "Recibe a cada persona",
+            "text": "La saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta por qué vacante escribe.",
+            "result": "Nadie se queda esperando respuesta"
+          },
+          "s2": {
+            "title": "Responde sus dudas con tu información",
+            "text": "Contesta sobre horario, sede y proceso usando los documentos que le cargaste. Si no sabe algo, no lo inventa y pasa la conversación a una persona.",
+            "result": "Tu equipo deja de repetir las mismas respuestas"
+          },
+          "s3": {
+            "title": "Reúne la información que pides",
+            "text": "Pregunta lo que tú definas sobre la vacante, como experiencia relacionada con el cargo, ciudad o disponibilidad. Hace una pregunta a la vez y guarda cada respuesta en el contacto.",
+            "result": "Toda la información de cada persona en un solo lugar"
+          },
+          "s4": {
+            "title": "Pasa la conversación a tu equipo",
+            "text": "Si la persona quiere hablar con alguien de tu equipo, el agente le cede la conversación completa y tu equipo sigue desde ahí.",
+            "result": "Ninguna conversación se pierde"
+          },
+          "s5": {
+            "title": "Agenda la entrevista",
+            "text": "Revisa la disponibilidad de tu calendario, le ofrece horarios libres y reserva cuando la persona confirma. A ella le llega un correo con la fecha y un enlace para su Google Calendar, y a ti un aviso por correo.",
+            "result": "Una entrevista confirmada sin cruzar mensajes"
+          }
+        },
+        "control": {
+          "title": "Tú defines hasta dónde llega el agente",
+          "lead": "El agente atiende a los candidatos dentro de las reglas que le das en sus instrucciones y en tu calendario. Tú pones las reglas.",
+          "r1": {
+            "title": "Qué le pregunta a cada persona",
+            "text": "Tú defines las preguntas de cada vacante: experiencia, ciudad, disponibilidad. Hace una a la vez y guarda cada respuesta en el contacto."
+          },
+          "r2": {
+            "title": "Quién avanza",
+            "text": "El agente reúne las respuestas y agenda. Quién avanza lo decide tu equipo con la conversación completa. Si necesitas una regla previa, como la ciudad, la escribes en sus instrucciones."
+          },
+          "r3": {
+            "title": "Cuándo se agendan entrevistas",
+            "text": "Con la agenda que configuras: tus días y horas, la duración de cada entrevista, el margen entre una y otra y con cuántos días de anticipación se puede reservar."
+          },
+          "r4": {
+            "title": "Cuándo pasa a una persona",
+            "text": "Si no sabe algo o la persona quiere hablar con alguien, pasa el caso. En WhatsApp, web y Facebook recibe un botón y tu equipo ve la conversación completa."
+          }
+        },
+        "console": {
+          "name": "Sebastián",
+          "channel": "WhatsApp",
+          "stage": "Agendando entrevista",
+          "summary": "Candidato a asesor comercial con 3 años en ventas de seguros. Falta acordar el día de la entrevista.",
+          "m1": "Hola, vi la vacante de asesor comercial. ¿Sigue abierta?",
+          "m2": "Hola, Sebastián. Sí, sigue abierta. ¿Qué experiencia tienes en ventas?",
+          "m3": "Tres años en ventas de seguros",
+          "m4": "Gracias. ¿Cuándo podrías empezar y qué día te queda bien para una entrevista?",
+          "did1": "Responde y hace tus preguntas",
+          "did2": "Guarda sus respuestas",
+          "did3": "Agenda la entrevista",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Sebastián"
+            },
+            "v2": {
+              "name": "vacante",
+              "value": "asesor comercial"
+            },
+            "v3": {
+              "name": "experiencia",
+              "value": "3 años en ventas"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Por qué canales atiende a los candidatos?",
+            "answer": "Por el que cada persona use: WhatsApp, Instagram, Messenger, correo y la ventana de mensajes de tu sitio web. Todo llega a la misma bandeja."
+          },
+          "q2": {
+            "question": "¿Qué preguntas le hace a cada persona?",
+            "answer": "Las que tú definas sobre la vacante, como experiencia relacionada con el cargo, ciudad o disponibilidad. Hace una pregunta a la vez y guarda cada respuesta en el contacto."
+          },
+          "q3": {
+            "question": "¿Cómo agenda las entrevistas?",
+            "answer": "Consulta la disponibilidad de tu calendario, ofrece horarios libres y reserva cuando la persona confirma. Ella recibe un correo de confirmación y a ti te llega un aviso por correo."
+          },
+          "q4": {
+            "question": "¿El agente decide a quién se contrata?",
+            "answer": "No. No descarta ni selecciona a nadie. Atiende, reúne la información y agenda las entrevistas. Tu equipo ve la conversación completa y decide."
+          },
+          "q5": {
+            "question": "¿Puede responder las dudas de mis empleados?",
+            "answer": "Sí, con tus documentos: vacaciones, nómina y políticas. Si no sabe algo, no lo inventa y pasa la conversación a una persona."
+          }
+        }
+      },
+      "teamCollections": {
+        "name": "Cobranzas",
+        "short": "Atiende a los clientes que escriben por un pago, aclara el saldo y comparte cómo pagar.",
+        "h1": {
+          "before": "Muchos pagos se atrasan por una duda sin responder.",
+          "accent": "El agente la resuelve y encamina el pago.",
+          "after": ""
+        },
+        "lead": "Cuando un cliente escribe por una factura o un saldo, el agente le aclara el monto, le comparte cómo pagar y registra la fecha en la que dice que pagará. Los casos especiales pasan a tu equipo.",
+        "label": "Agente de cobranzas",
+        "chat": {
+          "m1": "¿Cuánto debo de la factura de septiembre?",
+          "m2": "Son $320.000, con vencimiento el 30 de septiembre. ¿Prefieres pagar por transferencia o con un enlace?",
+          "chip1": "Compromiso de pago",
+          "chip2": "Enlace enviado"
+        },
+        "storyH": "Qué hace el agente con cada cliente que escribe por un pago",
+        "storyLead": "Un pago pendiente suele quedarse así por dudas simples: cuánto es, cómo se paga, si se puede en cuotas. Si nadie responde a tiempo, el cliente lo deja para después. El agente atiende en el momento y con tono respetuoso, y tu equipo se dedica a los casos que sí necesitan a una persona.",
+        "methodClose": "Las condiciones de pago y las excepciones las defines tú, y el agente las respeta. Cuando algo se sale de lo definido, no improvisa: pasa la conversación a una persona.",
+        "method": {
+          "s1": {
+            "title": "Recibe al cliente",
+            "text": "Lo saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta por qué factura o servicio escribe.",
+            "result": "Nadie espera horas por una respuesta"
+          },
+          "s2": {
+            "title": "Aclara el saldo",
+            "text": "Explica el monto, el concepto y la fecha de vencimiento. Si conectas tu sistema por API, consulta el saldo real del cliente. Si no, responde con los documentos que le cargaste.",
+            "result": "El cliente entiende cuánto debe y por qué"
+          },
+          "s3": {
+            "title": "Comparte cómo pagar",
+            "text": "Le indica los medios de pago de tu negocio, como transferencia, tarjeta o el enlace de pago que uses. Si tu plataforma de pagos tiene API, puede generar el enlace de esa factura.",
+            "result": "El cliente sabe exactamente cómo pagar"
+          },
+          "s4": {
+            "title": "Registra el compromiso",
+            "text": "Pregunta en qué fecha podrá pagar y la guarda en el contacto, junto con lo que el cliente haya contado.",
+            "result": "Una fecha de pago por cliente, a la vista"
+          },
+          "s5": {
+            "title": "Pasa los casos especiales a una persona",
+            "text": "Si el cliente discute el monto, pide un plan de pagos o cuenta que atraviesa una situación difícil, el agente le cede la conversación completa a tu equipo.",
+            "result": "Tu equipo atiende solo lo que necesita a una persona"
+          }
+        },
+        "control": {
+          "title": "Tú defines hasta dónde llega el agente",
+          "lead": "Lo que el agente dice y ofrece sobre un pago se programa en sus instrucciones y en las herramientas que le conectas. Tú pones las reglas.",
+          "r1": {
+            "title": "De dónde saca el saldo",
+            "text": "De los documentos que cargas o, si conectas tu sistema por API, del saldo real de cada cliente. Si no tiene el dato, no lo inventa y pasa la conversación a una persona."
+          },
+          "r2": {
+            "title": "Cómo se paga",
+            "text": "Defines los medios de pago que comparte: transferencia, tarjeta o tu enlace de pago. Si tu plataforma de pagos tiene API, puede generar el enlace de cada factura."
+          },
+          "r3": {
+            "title": "Qué puede ofrecer y cómo habla",
+            "text": "Tú fijas el tono y las condiciones: si puede ofrecer cuotas, hasta cuándo, con qué reglas. Lo que se salga de eso no lo improvisa. Revisa la normativa de cobranza que te aplique antes de definirlas."
+          },
+          "r4": {
+            "title": "Cuándo pasa a una persona",
+            "text": "Tú marcas cuándo: un monto en disputa, un plan de pagos o un cliente que cuenta una situación difícil. En WhatsApp, web y Facebook recibe un botón y tu equipo ve la conversación completa."
+          }
+        },
+        "console": {
+          "name": "Andrés",
+          "channel": "WhatsApp",
+          "stage": "Compromiso de pago",
+          "summary": "Consultó el saldo de la factura de septiembre ($320.000). Pidió el enlace de pago y se comprometió a pagar el viernes.",
+          "m1": "¿Cuánto debo de la factura de septiembre?",
+          "m2": "Son $320.000, con vencimiento el 30 de septiembre. ¿Prefieres pagar por transferencia o con un enlace de pago?",
+          "m3": "Con el enlace, por favor. Puedo pagar el viernes.",
+          "m4": "Listo, Andrés. Te envío el enlace y dejo anotado tu pago para el viernes.",
+          "did1": "Aclara el saldo",
+          "did2": "Comparte cómo pagar",
+          "did3": "Registra la fecha de pago",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Andrés"
+            },
+            "v2": {
+              "name": "factura",
+              "value": "septiembre"
+            },
+            "v3": {
+              "name": "saldo",
+              "value": "$320.000"
+            },
+            "v4": {
+              "name": "fecha_pago",
+              "value": "viernes"
+            }
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿El agente escribe primero a mis clientes para cobrar?",
+            "answer": "No. El agente responde cuando el cliente escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q2": {
+            "question": "¿Cómo sabe cuánto debe cada cliente?",
+            "answer": "Con los documentos que le cargas o consultando tu sistema por API cuando lo conectas. Si no tiene el dato, no lo inventa y pasa la conversación a una persona."
+          },
+          "q3": {
+            "question": "¿Qué pasa si el cliente no está de acuerdo con el monto?",
+            "answer": "El agente no discute. Pasa la conversación completa a tu equipo para que la resuelva una persona."
+          },
+          "q4": {
+            "question": "¿Cómo envía el enlace de pago?",
+            "answer": "Comparte el enlace o los datos de pago que tú definas. Si tu plataforma de pagos tiene API, puede generar el enlace de cada factura."
+          },
+          "q5": {
+            "question": "¿Puedo definir el tono y las reglas?",
+            "answer": "Sí. Defines cómo habla, qué puede ofrecer y cuándo pasa a una persona. Revisa la normativa de cobranza que te aplique antes de fijar tus condiciones."
+          }
+        }
+      }
     }
   }
 }
