@@ -9,11 +9,16 @@ interface BreadcrumbsProps {
   /** De la raíz a la página actual; la última no enlaza y lleva `aria-current`. */
   crumbs: readonly Crumb[];
   className?: string;
+  /**
+   * La última miga también enlaza (sin `aria-current`): para páginas que no se nombran
+   * en las migas, como un artículo del blog (Inicio / Blog / {Categoría}).
+   */
+  linkLast?: boolean;
 }
 
-export default function Breadcrumbs({ crumbs, className }: BreadcrumbsProps) {
+export default function Breadcrumbs({ crumbs, className, linkLast = false }: BreadcrumbsProps) {
   const { t } = useTranslation();
-  const last = crumbs.length - 1;
+  const last = linkLast ? -1 : crumbs.length - 1;
   return (
     <nav aria-label={t('site.crumbs.label')} className={className}>
       <ol className={styles.crumbs}>

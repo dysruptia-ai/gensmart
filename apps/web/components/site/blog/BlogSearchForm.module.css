@@ -1,0 +1,60 @@
+/* design/web: .bsb-search (el botón queda solo para lectores de pantalla) */
+.form {
+  position: relative;
+}
+
+.icon {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  color: var(--gs-ink-300);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px 12px 42px;
+  border: 1px solid rgba(240, 244, 242, 0.16);
+  border-radius: var(--gs-r-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gs-ink-100);
+  font: inherit;
+  font-size: 16px;
+}
+
+.input::placeholder {
+  color: var(--gs-ink-300);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* El botón oculto sigue enfocable: al recibir foco se ve */
+button.srOnly:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 10px 0 0;
+  padding: 8px 14px;
+  clip: auto;
+  border-radius: var(--gs-r-sm);
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+  font-weight: 600;
+}

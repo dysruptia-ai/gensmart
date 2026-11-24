@@ -1,13 +1,13 @@
 /**
  * Enlaces de Recursos a la base de conocimiento (web-30), a Academy (web-31) y a los
- * artículos nuevos del blog, que todavía no está migrado (web-32).
+ * artículos del blog (web-32).
  * Los slugs y títulos son los del diseño (design/web: `DOCS`, `ROUTES`, `RUTA_BLOG`).
- * `docHref` y `academyHref` ya devuelven la ruta de cada guía y curso; `blogPostHref`
- * sigue en `null` (enlace pendiente: se ve, no navega).
+ * `docHref`, `academyHref` y `blogPostHref` devuelven la ruta de cada guía, curso y artículo.
  * Sin `'use client'`: el JSON-LD se arma en el servidor con esto.
  */
 import type { SiteHref } from '@/lib/site-links';
 import { ACADEMY_ROUTES, academyRouteId } from '@/lib/academy-routes';
+import { BLOG_POST_ROUTES, blogPostRouteId } from '@/lib/blog-routes';
 import { DOC_ROUTES, docRouteId } from '@/lib/docs-routes';
 import { publicPath, type SiteLanguage } from '@/lib/site-routes';
 
@@ -143,13 +143,12 @@ export function academyHref(slug: string, lang: SiteLanguage): SiteHref | null {
 }
 
 /**
- * Artículo nuevo del blog (web-32): devuelve `null` hasta migrar el blog.
- * Recibe el slug del artículo **en ese idioma** (`slug[0]` en ES, `slug[1]` en EN de
- * `design/web/posts*.mjs`). Ojo: las lecciones de Academy guardan en `ref` el slug en
- * inglés (`slug[1]`), como el diseño; `academyData.ts` traduce `ref` al par de slugs
- * y llama a esta función con el del idioma de la página.
+ * Artículo del blog en el idioma de la página. Recibe el slug del artículo **en ese idioma**
+ * (`slug[0]` en ES, `slug[1]` en EN de `design/web/posts*.mjs`); las lecciones de Academy
+ * guardan en `ref` el slug en inglés y `academyData.ts` lo traduce al par de slugs.
+ * `null` si el slug no es de ningún artículo publicado (el enlace se ve, no navega).
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- parámetros reservados para web-32
-export function blogPostHref(_slug: string, _lang: SiteLanguage): SiteHref | null {
-  return null;
+export function blogPostHref(slug: string, lang: SiteLanguage): SiteHref | null {
+  const post = BLOG_POST_ROUTES.find((p) => p.slug[lang] === slug);
+  return post ? (publicPath(blogPostRouteId(post.id), lang) as SiteHref) : null;
 }

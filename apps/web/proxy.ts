@@ -22,6 +22,13 @@ const PUBLIC_PREFIXES = [
 export function proxy(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
 
+  // RSS del blog en español: se sirve desde la ruta interna `/es/blog/rss.xml`
+  if (pathname === '/blog/rss.xml') {
+    const url = req.nextUrl.clone();
+    url.pathname = '/es/blog/rss.xml';
+    return NextResponse.rewrite(url);
+  }
+
   // Sitio público con rutas por idioma (lib/site-routes): español en la raíz, inglés bajo /en
   const siteMatch = matchPublicPath(pathname);
   // Variantes en mayúsculas (`/soluciones/equipos/VENTAS`): 308 a la ruta canónica.

@@ -1,0 +1,108 @@
+/* design/web: .bl-all, .chips[data-blog-filter], .bl-grid, .bl-empty, .bl-more */
+.all {
+  margin-top: clamp(48px, 6vw, 88px);
+  scroll-margin-top: calc(var(--gs-header-h) + 20px);
+}
+
+.head {
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(240, 244, 242, 0.2);
+}
+
+.head h2 {
+  margin: 0;
+  font: 700 clamp(26px, 1.2vw + 18px, 36px) / 1.1 var(--gs-font-display);
+  letter-spacing: -0.03em;
+  scroll-margin-top: calc(var(--gs-header-h) + 20px);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.chips button {
+  padding: 8px 15px;
+  border: 1px solid rgba(240, 244, 242, 0.1);
+  border-radius: var(--gs-r-pill);
+  background: var(--gs-ink-800);
+  color: var(--gs-ink-100);
+  font: 600 15px/1.2 var(--gs-font-sans);
+  cursor: pointer;
+  transition:
+    border-color var(--gs-t-fast) ease,
+    color var(--gs-t-fast) ease;
+}
+
+.chips button:hover {
+  border-color: var(--gs-brand-line);
+  color: var(--gs-brand-bright);
+}
+
+.chips button:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.chips button[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--gs-brand-bright);
+  color: var(--gs-ground);
+}
+
+.count {
+  margin: 16px 0 24px;
+  font-size: 14px;
+  color: var(--gs-ink-300);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(22px, 2.6vw, 36px) clamp(18px, 2.4vw, 30px);
+}
+
+.item {
+  min-width: 0;
+}
+
+.item[hidden] {
+  display: none;
+}
+
+.empty {
+  color: var(--gs-ink-300);
+}
+
+.more {
+  margin: var(--gs-sp-6) 0 0;
+  text-align: center;
+}
+
+.moreButton {
+  padding: 13px 22px;
+  border: 1px solid rgba(240, 244, 242, 0.2);
+  border-radius: var(--gs-r-pill);
+  background: transparent;
+  color: var(--gs-ink-100);
+  font: 600 16px/1 var(--gs-font-sans);
+  cursor: pointer;
+  transition: border-color var(--gs-t-fast) ease;
+}
+
+.moreButton:hover {
+  border-color: var(--gs-brand-bright);
+}
+
+.moreButton:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

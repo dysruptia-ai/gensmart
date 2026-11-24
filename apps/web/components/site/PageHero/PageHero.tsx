@@ -7,6 +7,8 @@ import styles from './PageHero.module.css';
 
 interface PageHeroProps {
   crumbs: readonly Crumb[];
+  /** La última miga también enlaza (artículos del blog: Inicio / Blog / {Categoría}). */
+  linkLastCrumb?: boolean;
   /** Único `h1` de la página: texto, con un tramo opcional resaltado en verde. */
   title: { before: string; accent?: string; after?: string };
   /** Etiqueta corta sobre el título (p. ej. el tipo de un curso de Academy, que no tiene página). */
@@ -36,6 +38,7 @@ interface PageHeroProps {
 /** Hero de las páginas interiores (design/web: `.page-hero` y `.pr-hero`). */
 export default function PageHero({
   crumbs,
+  linkLastCrumb = false,
   title,
   eyebrow,
   lead,
@@ -77,7 +80,7 @@ export default function PageHero({
       )}
       <Container className={aside ? `${styles.inner} ${styles.split}` : styles.inner}>
         <div className={styles.copy}>
-          <Breadcrumbs crumbs={crumbs} />
+          <Breadcrumbs crumbs={crumbs} linkLast={linkLastCrumb} />
           {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
           <h1 className={styles.title}>
             {title.before}

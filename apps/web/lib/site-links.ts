@@ -59,9 +59,20 @@ export type SiteLinkKey =
   | 'partnersDirectory'
   | 'partnerSignup'
   | DocRouteId
-  | AcademyRouteId;
+  | AcademyRouteId
+  | BlogCategoryRouteId
+  | BlogPostRouteId;
 
 import { ACADEMY_ROUTES, academyRouteId, type AcademyRouteId } from './academy-routes';
+import {
+  BLOG_CATEGORY_ROUTES,
+  BLOG_POST_ROUTES,
+  blogCategoryRouteId,
+  blogPostRouteId,
+  type BlogCategoryId,
+  type BlogCategoryRouteId,
+  type BlogPostRouteId,
+} from './blog-routes';
 import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
 import { publicPath, type SiteLanguage, type SiteRouteId } from './site-routes';
 
@@ -75,6 +86,12 @@ const ACADEMY_LINKS = Object.fromEntries(
   ACADEMY_ROUTES.map((c) => [academyRouteId(c.id), { href: `/en/academy/${c.slug.en}` }])
 ) as Record<AcademyRouteId, SiteLinkTarget>;
 
+/** Categorías y artículos del blog (web-32). Con rutas por idioma: se resuelven en LOCALIZED_LINKS. */
+const BLOG_LINKS = Object.fromEntries([
+  ...BLOG_CATEGORY_ROUTES.map((c) => [blogCategoryRouteId(c.id), { href: `/en/blog/category/${c.slug.en}` }]),
+  ...BLOG_POST_ROUTES.map((p) => [blogPostRouteId(p.id), { href: `/en/blog/${p.slug.en}` }]),
+]) as Record<BlogCategoryRouteId | BlogPostRouteId, SiteLinkTarget>;
+
 export interface SiteLinkTarget {
   href: string | null;
   external?: boolean;
@@ -84,6 +101,7 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   home: { href: '/' },
   // Con rutas por idioma: se resuelve en LOCALIZED_LINKS (`/precios` o `/en/pricing`)
   pricing: { href: '/en/pricing' },
+  // Con rutas por idioma: se resuelve en LOCALIZED_LINKS (`/blog` o `/en/blog`)
   blog: { href: '/blog' },
   // Con ruta por idioma: se resuelve en LOCALIZED_LINKS (`/contacto` o `/en/contact`)
   contact: { href: '/en/contact' },
@@ -155,6 +173,7 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   partnerSignup: { href: null },
   ...DOC_LINKS,
   ...ACADEMY_LINKS,
+  ...BLOG_LINKS,
 };
 
 /**
@@ -188,6 +207,21 @@ export function contactVariantHref(
   const params = new URLSearchParams({ tipo });
   if (partner) params.set('partner', partner);
   return `${publicPath('contact', lang)}?${params.toString()}` as SiteHref;
+}
+
+/** Artículo del blog por su id (`slug[0]` del diseño), en el idioma dado. */
+export function blogPostHref(id: string, lang: SiteLanguage): SiteHref {
+  return publicPath(blogPostRouteId(id), lang) as SiteHref;
+}
+
+/** Categoría del blog en el idioma dado. */
+export function blogCategoryHref(id: BlogCategoryId, lang: SiteLanguage): SiteHref {
+  return publicPath(blogCategoryRouteId(id), lang) as SiteHref;
+}
+
+/** Índice del blog con una búsqueda (`/blog?q=…`). El canonical sigue sin query. */
+export function blogSearchHref(lang: SiteLanguage, q: string): SiteHref {
+  return `${publicPath('blog', lang)}?${new URLSearchParams({ q }).toString()}` as SiteHref;
 }
 
 /** Página del registro, con un ancla opcional por idioma (`/soluciones#equipos`). */
@@ -238,6 +272,7 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
   community: 'community',
   docs: 'docs',
   academy: 'academy',
+  blog: 'blog',
   docsTestAgent: 'doc-probar-antes',
   docsHandoff: 'doc-traspaso',
   ...(Object.fromEntries(DOC_ROUTES.map((d) => [docRouteId(d.id), docRouteId(d.id)])) as Record<DocRouteId, DocRouteId>),
@@ -245,6 +280,12 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
     AcademyRouteId,
     AcademyRouteId
   >),
+  ...(Object.fromEntries(
+    [
+      ...BLOG_CATEGORY_ROUTES.map((c) => blogCategoryRouteId(c.id)),
+      ...BLOG_POST_ROUTES.map((p) => blogPostRouteId(p.id)),
+    ].map((id) => [id, id])
+  ) as Record<BlogCategoryRouteId | BlogPostRouteId, BlogCategoryRouteId | BlogPostRouteId>),
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

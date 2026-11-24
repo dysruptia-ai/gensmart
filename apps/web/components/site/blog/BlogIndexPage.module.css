@@ -1,0 +1,120 @@
+/* design/web: .bl-hero, .bl-dest, .bl-h, .pil-block, .pil-head, .pil-grid, .ruta-grid, .nov-band */
+.hero {
+  display: grid;
+  gap: clamp(28px, 3vw, 44px);
+}
+
+.dest {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 22px;
+}
+
+.label {
+  grid-column: 1 / -1;
+  margin: 0;
+  font: 600 13px/1.3 var(--gs-font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
+.block {
+  margin-top: clamp(48px, 6vw, 88px);
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(240, 244, 242, 0.2);
+}
+
+.head h2 {
+  margin: 0 0 6px;
+  font: 700 clamp(26px, 1.2vw + 18px, 36px) / 1.1 var(--gs-font-display);
+  letter-spacing: -0.03em;
+}
+
+.head p {
+  max-width: 58ch;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--gs-ink-300);
+}
+
+.count {
+  opacity: 0.7;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(20px, 2.4vw, 32px);
+}
+
+.paths {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+/* Banda de Novedades */
+.news {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: clamp(20px, 3vw, 44px);
+  align-items: center;
+  margin-top: clamp(48px, 6vw, 88px);
+  padding: clamp(22px, 3vw, 38px);
+  border: 1px solid color-mix(in srgb, #c9f23c 40%, transparent);
+  border-radius: 24px;
+  background: linear-gradient(135deg, color-mix(in srgb, #c9f23c 16%, var(--gs-ground)), var(--gs-ground) 70%);
+}
+
+.news h2 {
+  margin: 8px 0 10px;
+  font: 700 clamp(26px, 1.2vw + 18px, 38px) / 1.08 var(--gs-font-display);
+  letter-spacing: -0.03em;
+}
+
+.news p {
+  max-width: 52ch;
+  margin: 0 0 18px;
+  color: var(--gs-ink-300);
+}
+
+.cat {
+  font: 700 12px/1.4 var(--gs-font-sans);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
+.newsActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.newsCover {
+  border-radius: 16px;
+}
+
+@media (max-width: 860px) {
+  .dest,
+  .grid,
+  .paths,
+  .news {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

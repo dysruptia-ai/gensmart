@@ -1647,12 +1647,6 @@
       "crmAdvanced": "CRM & Advanced"
     }
   },
-  "blog": {
-    "title": "GenSmart Blog",
-    "subtitle": "Insights on AI agents, automation, and growth",
-    "readMore": "Read more",
-    "noPosts": "No posts yet. Check back soon!"
-  },
   "onboarding": {
     "welcome": {
       "title": "Welcome to GenSmart!",
@@ -2375,6 +2369,13 @@
         "description": "Free courses to build, run and sell with your AI agent, organized by product, level and audience.",
         "ogAlt": "GenSmart Academy",
         "courseSuffix": "Academy | GenSmart"
+      },
+      "blog": {
+        "title": "GenSmart blog: AI agents, WhatsApp and sales",
+        "description": "Guides on AI agents, WhatsApp, sales, marketing and customer support, with cases by industry. From the GenSmart team.",
+        "ogAlt": "GenSmart blog",
+        "categoryTitle": "{name} | GenSmart Blog",
+        "rss": "GenSmart blog (RSS)"
       }
     },
     "langHint": {
@@ -2601,7 +2602,8 @@
       "resources": "Resources",
       "community": "Community",
       "docs": "Knowledge base",
-      "academy": "Academy"
+      "academy": "Academy",
+      "blog": "Blog"
     },
     "channels": {
       "email": "Email",
@@ -6760,6 +6762,137 @@
         "next": "Next course",
         "all": "All courses",
         "keepLearning": "Keep learning"
+      }
+    },
+    "blog": {
+      "lead": "Guides to build, test and improve your AI agent, and to serve and sell better in conversations.",
+      "all": "All",
+      "filterLabel": "Filter by topic",
+      "chipsLabel": "Blog topics",
+      "mainGuide": "Main guide",
+      "minRead": "{n} min read",
+      "min": "{n} min",
+      "mostRead": "Most read to get started",
+      "paths": {
+        "title": "Learning paths",
+        "lead": "Reads in order, to reach a result without going around in circles.",
+        "reads": "{n} reads · {m} min",
+        "start": "Start the path",
+        "items": {
+          "empieza": {
+            "name": "Start here: what an AI agent is",
+            "desc": "From the concept to your first agent, in the order worth reading it."
+          },
+          "venta": {
+            "name": "From conversation to sale",
+            "desc": "How to organize the funnel, qualify each person and know whether your agent sells."
+          },
+          "en-vivo": {
+            "name": "Go live on WhatsApp",
+            "desc": "Connect your number, understand the 24-hour window and check everything before going live."
+          },
+          "citable": {
+            "name": "Get cited by AI",
+            "desc": "SEO, AEO and GEO: how to write so Google and AI answers name your business."
+          }
+        }
+      },
+      "seeMore": "See more",
+      "news": {
+        "title": "What is new in GenSmart",
+        "read": "Read the update",
+        "all": "See all"
+      },
+      "allTitle": "All articles",
+      "empty": "We found no articles for that search.",
+      "loadMore": "Load more articles",
+      "count": "{shown} of {total} articles",
+      "sidebar": {
+        "label": "Blog sidebar",
+        "search": "Search the blog",
+        "searchButton": "Search",
+        "topics": "Topics",
+        "latest": "Latest",
+        "trial": "We build your first agent with you, with your data and your channels.",
+        "trialCta": "Start your free trial"
+      },
+      "category": {
+        "startHere": "Start here",
+        "articlesIn": "Articles in {name}"
+      },
+      "post": {
+        "by": "GenSmart",
+        "updated": "Updated",
+        "inThisArticle": "In this article",
+        "tocLabel": "Article contents",
+        "ctaTitle": "Want to see this in your own business?",
+        "ctaText": "We build your first agent with you, with your data and your channels.",
+        "ctaTrial": "Start your free trial",
+        "ctaDemo": "Book a demo",
+        "pathLabel": "Learning path",
+        "pathTag": "Path",
+        "pathStep": "Step {i} of {n}",
+        "prev": "Previous",
+        "next": "Next",
+        "keepReading": "Keep reading",
+        "related": "More articles"
+      },
+      "newsletter": {
+        "title": "One email when we publish something useful",
+        "lead": "No filler, and no weekly email just because.",
+        "label": "Your email",
+        "placeholder": "you@email.com",
+        "submit": "Subscribe",
+        "sending": "Sending…",
+        "invalid": "Enter a valid email, for example name@company.com.",
+        "error": "We could not complete the subscription. Please try again later.",
+        "ok": "Done, you're subscribed."
+      },
+      "categories": {
+        "agentes": {
+          "name": "AI agents",
+          "desc": "What an agentic platform is, how an agent works inside, how to train it and when it beats the alternatives."
+        },
+        "whatsapp": {
+          "name": "WhatsApp and channels",
+          "desc": "Connect your WhatsApp Business number, its rules and how to serve Instagram and the web with the same agent."
+        },
+        "marketing": {
+          "name": "Marketing",
+          "desc": "What happens after the click, how to prepare high-volume dates and how to get Google and AI to cite your business (SEO, AEO and GEO)."
+        },
+        "crm": {
+          "name": "Sales and CRM",
+          "desc": "From the first message to the booked appointment: funnel, lead scoring, pipeline and what each part of the team does."
+        },
+        "atencion": {
+          "name": "Customer support",
+          "desc": "FAQs, opening hours, holidays, demand peaks, collections and how to measure whether your support works."
+        },
+        "industrias": {
+          "name": "By industry",
+          "desc": "How an AI agent solves the problems of each sector: clinics, real estate, education, retail and more."
+        },
+        "novedades": {
+          "name": "News",
+          "desc": "What is new in GenSmart: integrations and product changes, told from what you see when you use it."
+        }
+      },
+      "subs": {
+        "fundamentos": "Fundamentals",
+        "agentes": "AI agents",
+        "whatsapp": "WhatsApp",
+        "crm": "Sales and CRM",
+        "marketing": "Marketing",
+        "atencion": "Customer support",
+        "industrias": "By industry",
+        "negocios-ia": "Business with AI",
+        "comparativas": "Comparisons",
+        "novedades": "News"
+      },
+      "rss": {
+        "title": "GenSmart blog",
+        "description": "Guides on AI agents, WhatsApp, sales, marketing and customer support."
       }
     }
   }

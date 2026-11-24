@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/blog-index.mjs",
     "dev": "next dev --port 3000",
+    "prebuild": "node scripts/blog-index.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

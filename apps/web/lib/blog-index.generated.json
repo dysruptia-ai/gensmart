@@ -1,0 +1,412 @@
+{
+  "posts": [
+    {
+      "id": "admisiones-en-epoca-de-matriculas-quien-llama-a-quien",
+      "category": "industrias",
+      "slug": {
+        "es": "admisiones-en-epoca-de-matriculas-quien-llama-a-quien",
+        "en": "admissions-in-enrollment-season-who-calls-whom"
+      }
+    },
+    {
+      "id": "agendar-citas-por-whatsapp-con-un-agente-de-ia",
+      "category": "agentes",
+      "slug": {
+        "es": "agendar-citas-por-whatsapp-con-un-agente-de-ia",
+        "en": "booking-appointments-on-whatsapp-with-an-ai-agent"
+      }
+    },
+    {
+      "id": "agente-de-ia-o-chatbot-de-reglas",
+      "category": "agentes",
+      "slug": {
+        "es": "agente-de-ia-o-chatbot-de-reglas",
+        "en": "ai-agent-or-rules-based-chatbot"
+      }
+    },
+    {
+      "id": "agente-de-ia-o-mas-personal-de-atencion",
+      "category": "agentes",
+      "slug": {
+        "es": "agente-de-ia-o-mas-personal-de-atencion",
+        "en": "ai-agent-or-more-support-staff"
+      }
+    },
+    {
+      "id": "atencion-en-festivos-fines-de-semana-y-picos",
+      "category": "atencion",
+      "slug": {
+        "es": "atencion-en-festivos-fines-de-semana-y-picos",
+        "en": "support-on-holidays-weekends-and-peaks"
+      }
+    },
+    {
+      "id": "atender-interesados-inmobiliarios-antes-que-la-competencia",
+      "category": "industrias",
+      "slug": {
+        "es": "atender-interesados-inmobiliarios-antes-que-la-competencia",
+        "en": "answering-property-leads-before-the-competition"
+      }
+    },
+    {
+      "id": "calendario-comercial-fechas-de-alto-volumen",
+      "category": "marketing",
+      "slug": {
+        "es": "calendario-comercial-fechas-de-alto-volumen",
+        "en": "commercial-calendar-preparing-for-high-volume-dates"
+      }
+    },
+    {
+      "id": "checklist-antes-de-poner-tu-agente-en-vivo",
+      "category": "agentes",
+      "slug": {
+        "es": "checklist-antes-de-poner-tu-agente-en-vivo",
+        "en": "checklist-before-putting-your-agent-live"
+      }
+    },
+    {
+      "id": "cobranza-por-whatsapp-sin-perder-al-cliente",
+      "category": "atencion",
+      "slug": {
+        "es": "cobranza-por-whatsapp-sin-perder-al-cliente",
+        "en": "collections-on-whatsapp-without-losing-the-customer"
+      }
+    },
+    {
+      "id": "cobros-de-meta-en-whatsapp-que-se-cobra-y-por-que",
+      "category": "whatsapp",
+      "slug": {
+        "es": "cobros-de-meta-en-whatsapp-que-se-cobra-y-por-que",
+        "en": "meta-whatsapp-charges-what-is-billed-and-why"
+      }
+    },
+    {
+      "id": "como-desplegar-un-agente-de-ia-en-whatsapp",
+      "category": "whatsapp",
+      "slug": {
+        "es": "como-desplegar-un-agente-de-ia-en-whatsapp",
+        "en": "how-to-deploy-whatsapp-ai-agent"
+      }
+    },
+    {
+      "id": "como-escribir-contenido-que-google-y-la-ia-puedan-citar",
+      "category": "marketing",
+      "slug": {
+        "es": "como-escribir-contenido-que-google-y-la-ia-puedan-citar",
+        "en": "how-to-write-content-google-and-ai-can-cite"
+      }
+    },
+    {
+      "id": "como-escribir-la-base-de-conocimiento-de-tu-agente",
+      "category": "agentes",
+      "slug": {
+        "es": "como-escribir-la-base-de-conocimiento-de-tu-agente",
+        "en": "how-to-write-your-agents-knowledge-base"
+      }
+    },
+    {
+      "id": "como-funciona-un-agente-de-ia-por-dentro",
+      "category": "agentes",
+      "slug": {
+        "es": "como-funciona-un-agente-de-ia-por-dentro",
+        "en": "how-an-ai-agent-works-inside"
+      }
+    },
+    {
+      "id": "como-medir-la-atencion-al-cliente",
+      "category": "atencion",
+      "slug": {
+        "es": "como-medir-la-atencion-al-cliente",
+        "en": "how-to-measure-customer-service"
+      }
+    },
+    {
+      "id": "como-medir-si-tu-agente-de-ventas-funciona",
+      "category": "crm",
+      "slug": {
+        "es": "como-medir-si-tu-agente-de-ventas-funciona",
+        "en": "how-to-measure-whether-your-sales-agent-works"
+      }
+    },
+    {
+      "id": "como-ordenar-prospectos-en-un-pipeline",
+      "category": "crm",
+      "slug": {
+        "es": "como-ordenar-prospectos-en-un-pipeline",
+        "en": "how-to-organize-prospects-in-a-pipeline"
+      }
+    },
+    {
+      "id": "como-responder-mensajes-fuera-de-horario",
+      "category": "atencion",
+      "slug": {
+        "es": "como-responder-mensajes-fuera-de-horario",
+        "en": "how-to-answer-messages-outside-business-hours"
+      }
+    },
+    {
+      "id": "conecta-tu-cuenta-de-dropi-a-un-agente-de-gensmart",
+      "category": "novedades",
+      "slug": {
+        "es": "conecta-tu-cuenta-de-dropi-a-un-agente-de-gensmart",
+        "en": "connect-your-dropi-account-to-a-gensmart-agent"
+      }
+    },
+    {
+      "id": "conecta-tu-tienda-tiendanube-a-un-agente-de-gensmart",
+      "category": "novedades",
+      "slug": {
+        "es": "conecta-tu-tienda-tiendanube-a-un-agente-de-gensmart",
+        "en": "connect-your-tiendanube-store-to-a-gensmart-agent"
+      }
+    },
+    {
+      "id": "conecta-tu-tienda-venndelo-a-un-agente-de-gensmart",
+      "category": "novedades",
+      "slug": {
+        "es": "conecta-tu-tienda-venndelo-a-un-agente-de-gensmart",
+        "en": "connect-your-venndelo-store-to-a-gensmart-agent"
+      }
+    },
+    {
+      "id": "conectar-whatsapp-en-dos-clics",
+      "category": "whatsapp",
+      "slug": {
+        "es": "conectar-whatsapp-en-dos-clics",
+        "en": "connect-whatsapp-one-click"
+      }
+    },
+    {
+      "id": "cotizar-un-vehiculo-escribe-a-varios-concesionarios",
+      "category": "industrias",
+      "slug": {
+        "es": "cotizar-un-vehiculo-escribe-a-varios-concesionarios",
+        "en": "car-shoppers-write-to-several-dealerships"
+      }
+    },
+    {
+      "id": "cuando-un-agente-de-ia-debe-pasar-a-un-humano",
+      "category": "agentes",
+      "slug": {
+        "es": "cuando-un-agente-de-ia-debe-pasar-a-un-humano",
+        "en": "when-an-ai-agent-should-hand-off-to-a-human"
+      }
+    },
+    {
+      "id": "datos-antes-de-la-llamada-con-el-asesor-de-seguros-o-credito",
+      "category": "industrias",
+      "slug": {
+        "es": "datos-antes-de-la-llamada-con-el-asesor-de-seguros-o-credito",
+        "en": "details-to-gather-before-the-insurance-or-credit-advisor-call"
+      }
+    },
+    {
+      "id": "de-contacto-nuevo-a-cita-agendada",
+      "category": "crm",
+      "slug": {
+        "es": "de-contacto-nuevo-a-cita-agendada",
+        "en": "from-new-contact-to-booked-appointment"
+      }
+    },
+    {
+      "id": "embudo-de-ventas-por-conversaciones",
+      "category": "crm",
+      "slug": {
+        "es": "embudo-de-ventas-por-conversaciones",
+        "en": "conversational-sales-funnel"
+      }
+    },
+    {
+      "id": "glosario-de-agentes-de-ia-y-mensajeria",
+      "category": "agentes",
+      "slug": {
+        "es": "glosario-de-agentes-de-ia-y-mensajeria",
+        "en": "glossary-of-ai-agents-and-messaging"
+      }
+    },
+    {
+      "id": "guia-para-empezar-con-ia-conversacional-en-una-pyme",
+      "category": "agentes",
+      "slug": {
+        "es": "guia-para-empezar-con-ia-conversacional-en-una-pyme",
+        "en": "getting-started-with-conversational-ai-in-a-small-business"
+      }
+    },
+    {
+      "id": "n8n-vs-gensmart-comparativa",
+      "category": "agentes",
+      "slug": {
+        "es": "n8n-vs-gensmart-comparativa",
+        "en": "n8n-vs-gensmart-comparison"
+      }
+    },
+    {
+      "id": "precio-y-hora-las-dos-preguntas-de-un-salon",
+      "category": "industrias",
+      "slug": {
+        "es": "precio-y-hora-las-dos-preguntas-de-un-salon",
+        "en": "price-and-time-the-two-questions-of-a-salon"
+      }
+    },
+    {
+      "id": "preguntas-de-talla-stock-y-envio-en-tu-tienda",
+      "category": "industrias",
+      "slug": {
+        "es": "preguntas-de-talla-stock-y-envio-en-tu-tienda",
+        "en": "size-stock-and-shipping-questions-in-your-store"
+      }
+    },
+    {
+      "id": "preguntas-frecuentes-respuestas-que-el-agente-no-improvise",
+      "category": "atencion",
+      "slug": {
+        "es": "preguntas-frecuentes-respuestas-que-el-agente-no-improvise",
+        "en": "frequent-questions-answers-the-agent-does-not-improvise"
+      }
+    },
+    {
+      "id": "preguntas-para-calificar-a-un-prospecto",
+      "category": "crm",
+      "slug": {
+        "es": "preguntas-para-calificar-a-un-prospecto",
+        "en": "questions-to-qualify-a-prospect"
+      }
+    },
+    {
+      "id": "primera-reunion-con-contexto-en-firmas-profesionales",
+      "category": "industrias",
+      "slug": {
+        "es": "primera-reunion-con-contexto-en-firmas-profesionales",
+        "en": "first-meeting-with-context-in-professional-firms"
+      }
+    },
+    {
+      "id": "puntaje-de-leads-con-ia-explicado",
+      "category": "crm",
+      "slug": {
+        "es": "puntaje-de-leads-con-ia-explicado",
+        "en": "ai-lead-scoring-explained"
+      }
+    },
+    {
+      "id": "que-es-geo-y-por-que-tu-negocio-debe-ser-citable-por-la-ia",
+      "category": "marketing",
+      "slug": {
+        "es": "que-es-geo-y-por-que-tu-negocio-debe-ser-citable-por-la-ia",
+        "en": "what-is-geo-and-why-your-business-must-be-citable-by-ai"
+      }
+    },
+    {
+      "id": "que-es-un-agente-de-ia-multicanal",
+      "category": "agentes",
+      "slug": {
+        "es": "que-es-un-agente-de-ia-multicanal",
+        "en": "what-is-a-multichannel-ai-agent"
+      }
+    },
+    {
+      "id": "que-es-una-plataforma-agentica",
+      "category": "agentes",
+      "slug": {
+        "es": "que-es-una-plataforma-agentica",
+        "en": "what-is-an-agentic-platform"
+      }
+    },
+    {
+      "id": "que-pasa-despues-del-clic-en-un-anuncio",
+      "category": "marketing",
+      "slug": {
+        "es": "que-pasa-despues-del-clic-en-un-anuncio",
+        "en": "what-happens-after-the-click-on-an-ad"
+      }
+    },
+    {
+      "id": "que-puede-y-que-no-puede-hacer-un-agente-de-ia",
+      "category": "agentes",
+      "slug": {
+        "es": "que-puede-y-que-no-puede-hacer-un-agente-de-ia",
+        "en": "what-an-ai-agent-can-and-cannot-do"
+      }
+    },
+    {
+      "id": "que-responde-un-agente-en-una-clinica-y-que-no",
+      "category": "industrias",
+      "slug": {
+        "es": "que-responde-un-agente-en-una-clinica-y-que-no",
+        "en": "what-an-agent-answers-in-a-clinic-and-what-it-does-not"
+      }
+    },
+    {
+      "id": "responder-mensajes-directos-de-instagram-con-un-agente",
+      "category": "whatsapp",
+      "slug": {
+        "es": "responder-mensajes-directos-de-instagram-con-un-agente",
+        "en": "answering-instagram-direct-messages-with-an-agent"
+      }
+    },
+    {
+      "id": "restaurante-hora-pico-reservas-pedidos-y-eventos",
+      "category": "industrias",
+      "slug": {
+        "es": "restaurante-hora-pico-reservas-pedidos-y-eventos",
+        "en": "restaurant-rush-hour-bookings-orders-and-events"
+      }
+    },
+    {
+      "id": "seguimiento-a-clientes-que-no-responden",
+      "category": "crm",
+      "slug": {
+        "es": "seguimiento-a-clientes-que-no-responden",
+        "en": "following-up-with-customers-who-go-quiet"
+      }
+    },
+    {
+      "id": "seo-aeo-y-geo-que-es-cada-uno",
+      "category": "marketing",
+      "slug": {
+        "es": "seo-aeo-y-geo-que-es-cada-uno",
+        "en": "seo-aeo-and-geo-what-each-one-is"
+      }
+    },
+    {
+      "id": "solicitud-de-servicio-tecnico-completa-desde-el-primer-mensaje",
+      "category": "industrias",
+      "slug": {
+        "es": "solicitud-de-servicio-tecnico-completa-desde-el-primer-mensaje",
+        "en": "a-complete-service-request-from-the-first-message"
+      }
+    },
+    {
+      "id": "venta-b2b-de-un-necesito-cotizar-a-una-llamada-con-contexto",
+      "category": "industrias",
+      "slug": {
+        "es": "venta-b2b-de-un-necesito-cotizar-a-una-llamada-con-contexto",
+        "en": "b2b-sales-from-a-need-a-quote-to-a-call-with-context"
+      }
+    },
+    {
+      "id": "ventana-de-24-horas-de-whatsapp-business",
+      "category": "whatsapp",
+      "slug": {
+        "es": "ventana-de-24-horas-de-whatsapp-business",
+        "en": "whatsapp-business-24-hour-window"
+      }
+    },
+    {
+      "id": "viajero-escribe-en-otro-idioma-a-cualquier-hora",
+      "category": "industrias",
+      "slug": {
+        "es": "viajero-escribe-en-otro-idioma-a-cualquier-hora",
+        "en": "a-traveler-writes-in-another-language-at-any-hour"
+      }
+    },
+    {
+      "id": "whatsapp-instagram-o-web-que-canal-para-cada-pregunta",
+      "category": "whatsapp",
+      "slug": {
+        "es": "whatsapp-instagram-o-web-que-canal-para-cada-pregunta",
+        "en": "whatsapp-instagram-or-web-which-channel-for-each-question"
+      }
+    }
+  ]
+}

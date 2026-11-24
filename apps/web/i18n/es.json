@@ -1647,12 +1647,6 @@
       "crmAdvanced": "CRM y Avanzado"
     }
   },
-  "blog": {
-    "title": "Blog de GenSmart",
-    "subtitle": "Artículos sobre agentes de IA, automatización y crecimiento",
-    "readMore": "Leer más",
-    "noPosts": "¡Aún no hay posts. Vuelve pronto!"
-  },
   "onboarding": {
     "welcome": {
       "title": "¡Bienvenido a GenSmart!",
@@ -2375,6 +2369,13 @@
         "description": "Cursos gratuitos para crear, operar y vender con tu agente de IA, organizados por producto, nivel y audiencia.",
         "ogAlt": "Academy de GenSmart",
         "courseSuffix": "Academy | GenSmart"
+      },
+      "blog": {
+        "title": "Blog de GenSmart: agentes de IA, WhatsApp y ventas",
+        "description": "Guías sobre agentes de IA, WhatsApp, ventas, marketing y atención al cliente, con casos por industria. Del equipo de GenSmart.",
+        "ogAlt": "Blog de GenSmart",
+        "categoryTitle": "{name} | Blog de GenSmart",
+        "rss": "Blog de GenSmart (RSS)"
       }
     },
     "langHint": {
@@ -2601,7 +2602,8 @@
       "resources": "Recursos",
       "community": "Comunidad",
       "docs": "Base de conocimiento",
-      "academy": "Academy"
+      "academy": "Academy",
+      "blog": "Blog"
     },
     "channels": {
       "email": "Correo",
@@ -6760,6 +6762,137 @@
         "next": "Siguiente curso",
         "all": "Todos los cursos",
         "keepLearning": "Sigue aprendiendo"
+      }
+    },
+    "blog": {
+      "lead": "Guías para montar, probar y mejorar tu agente de IA, y para atender y vender mejor en conversaciones.",
+      "all": "Todos",
+      "filterLabel": "Filtrar por tema",
+      "chipsLabel": "Temas del blog",
+      "mainGuide": "Guía principal",
+      "minRead": "{n} min de lectura",
+      "min": "{n} min",
+      "mostRead": "Lo más leído para empezar",
+      "paths": {
+        "title": "Rutas de aprendizaje",
+        "lead": "Lecturas en orden, para llegar a un resultado sin dar vueltas.",
+        "reads": "{n} lecturas · {m} min",
+        "start": "Empezar la ruta",
+        "items": {
+          "empieza": {
+            "name": "Empieza aquí: qué es un agente de IA",
+            "desc": "Del concepto a tu primer agente, en el orden en que conviene leerlo."
+          },
+          "venta": {
+            "name": "De la conversación a la venta",
+            "desc": "Cómo ordenar el embudo, calificar a cada persona y saber si tu agente vende."
+          },
+          "en-vivo": {
+            "name": "Sal en vivo con WhatsApp",
+            "desc": "Conecta tu número, entiende la ventana de 24 horas y revisa todo antes de publicar."
+          },
+          "citable": {
+            "name": "Que la IA te cite",
+            "desc": "SEO, AEO y GEO: cómo escribir para que Google y las respuestas de la IA nombren tu negocio."
+          }
+        }
+      },
+      "seeMore": "Ver más",
+      "news": {
+        "title": "Lo nuevo en GenSmart",
+        "read": "Leer la novedad",
+        "all": "Ver todas"
+      },
+      "allTitle": "Todos los artículos",
+      "empty": "No encontramos artículos con esa búsqueda.",
+      "loadMore": "Ver más artículos",
+      "count": "{shown} de {total} artículos",
+      "sidebar": {
+        "label": "Barra lateral del blog",
+        "search": "Buscar en el blog",
+        "searchButton": "Buscar",
+        "topics": "Temas",
+        "latest": "Lo más reciente",
+        "trial": "Creamos tu primer agente contigo, con tus datos y tus canales.",
+        "trialCta": "Empieza la prueba gratis"
+      },
+      "category": {
+        "startHere": "Empieza por aquí",
+        "articlesIn": "Artículos de {name}"
+      },
+      "post": {
+        "by": "GenSmart",
+        "updated": "Actualizado",
+        "inThisArticle": "En este artículo",
+        "tocLabel": "Contenido del artículo",
+        "ctaTitle": "¿Quieres verlo en tu propio negocio?",
+        "ctaText": "Creamos tu primer agente contigo, con tus datos y tus canales.",
+        "ctaTrial": "Empieza la prueba gratis",
+        "ctaDemo": "Agenda una demo",
+        "pathLabel": "Ruta de aprendizaje",
+        "pathTag": "Ruta",
+        "pathStep": "Paso {i} de {n}",
+        "prev": "Anterior",
+        "next": "Siguiente",
+        "keepReading": "Seguir leyendo",
+        "related": "Otros artículos"
+      },
+      "newsletter": {
+        "title": "Un correo cuando publicamos algo que sirve",
+        "lead": "Sin relleno y sin enviarte algo cada semana porque toca.",
+        "label": "Tu correo",
+        "placeholder": "tu@correo.com",
+        "submit": "Suscribirme",
+        "sending": "Enviando…",
+        "invalid": "Escribe un correo válido, por ejemplo nombre@empresa.com.",
+        "error": "No pudimos completar la suscripción. Intenta de nuevo más tarde.",
+        "ok": "Listo, quedaste suscrito."
+      },
+      "categories": {
+        "agentes": {
+          "name": "Agentes de IA",
+          "desc": "Qué es una plataforma agéntica, cómo funciona un agente por dentro, cómo entrenarlo y cuándo conviene frente a otras opciones."
+        },
+        "whatsapp": {
+          "name": "WhatsApp y canales",
+          "desc": "Conectar tu número de WhatsApp Business, sus reglas y cómo atender también Instagram y la web con el mismo agente."
+        },
+        "marketing": {
+          "name": "Marketing",
+          "desc": "Qué pasa después del clic, cómo preparar fechas de alto volumen y cómo lograr que Google y la IA citen tu negocio (SEO, AEO y GEO)."
+        },
+        "crm": {
+          "name": "Ventas y CRM",
+          "desc": "Del primer mensaje a la cita agendada: embudo, puntaje de leads, pipeline y qué hace cada parte del equipo."
+        },
+        "atencion": {
+          "name": "Atención al cliente",
+          "desc": "Preguntas frecuentes, horarios, festivos, picos de demanda, cobranza y cómo medir si tu atención funciona."
+        },
+        "industrias": {
+          "name": "Por industria",
+          "desc": "Cómo resuelve un agente de IA los problemas de cada sector: clínicas, inmobiliarias, educación, comercio y más."
+        },
+        "novedades": {
+          "name": "Novedades",
+          "desc": "Lo nuevo en GenSmart: integraciones y cambios del producto, contados desde lo que ves al usarlo."
+        }
+      },
+      "subs": {
+        "fundamentos": "Fundamentos",
+        "agentes": "Agentes de IA",
+        "whatsapp": "WhatsApp",
+        "crm": "Ventas y CRM",
+        "marketing": "Marketing",
+        "atencion": "Atención al cliente",
+        "industrias": "Por industria",
+        "negocios-ia": "Negocios con IA",
+        "comparativas": "Comparativas",
+        "novedades": "Novedades"
+      },
+      "rss": {
+        "title": "Blog de GenSmart",
+        "description": "Guías sobre agentes de IA, WhatsApp, ventas, marketing y atención al cliente."
       }
     }
   }

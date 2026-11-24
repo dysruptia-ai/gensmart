@@ -31,6 +31,20 @@ const WIDGET_CSP = [
   "base-uri 'self'",
 ].join('; ');
 
+/** URLs del blog viejo (content/blog/*.md hasta web-32) y su destino. */
+const OLD_BLOG_REDIRECTS: ReadonlyArray<readonly [string, string]> = [
+  ['/blog/ai-lead-scoring-explained', '/en/blog/ai-lead-scoring-explained'],
+  ['/blog/lead-scoring-ia-crm', '/blog/puntaje-de-leads-con-ia-explicado'],
+  ['/blog/how-to-deploy-whatsapp-ai-agent', '/en/blog/how-to-deploy-whatsapp-ai-agent'],
+  ['/blog/como-desplegar-agente-whatsapp-ia', '/blog/como-desplegar-un-agente-de-ia-en-whatsapp'],
+  ['/blog/connect-whatsapp-one-click', '/en/blog/connect-whatsapp-one-click'],
+  ['/blog/conecta-whatsapp-un-click', '/blog/conectar-whatsapp-en-dos-clics'],
+  ['/blog/n8n-vs-gensmart-comparison', '/en/blog/n8n-vs-gensmart-comparison'],
+  ['/blog/gensmart-vs-n8n-automatizacion', '/blog/n8n-vs-gensmart-comparativa'],
+  // No hay artículo de Mastershop: la guía de la base de conocimiento cubre la conexión de tiendas
+  ['/blog/como-configurar-agente-mastershop-dropshipping', '/docs/conectar-tu-tienda'],
+];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Hay dos layouts raíz ((platform) y (site)/[lang]): las URL sin ruta usan app/global-not-found.tsx
@@ -55,6 +69,9 @@ const nextConfig: NextConfig = {
       // La guía vieja de WhatsApp (en inglés) se reemplazó por la de la base de conocimiento
       // 301 (no 308): pedido explícito para la URL indexada
       { source: '/docs/whatsapp-setup', destination: '/en/docs/connect-whatsapp', statusCode: 301 },
+      // Blog viejo (web-32): sus 9 URLs estaban indexadas. 301 a su equivalente nuevo; los artículos
+      // en inglés vivían en /blog/<slug> y ahora van bajo /en/blog
+      ...OLD_BLOG_REDIRECTS.map(([source, destination]) => ({ source, destination, statusCode: 301 as const })),
     ];
   },
   async headers() {

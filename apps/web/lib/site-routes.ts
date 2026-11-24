@@ -7,6 +7,14 @@
 import type { SupportedLanguage } from '@/contexts/LanguageContext';
 import type { DocId } from '@gensmart/shared';
 import { ACADEMY_ROUTES, academyRouteId, type AcademyRouteId } from './academy-routes';
+import {
+  BLOG_CATEGORY_ROUTES,
+  BLOG_POST_ROUTES,
+  blogCategoryRouteId,
+  blogPostRouteId,
+  type BlogCategoryRouteId,
+  type BlogPostRouteId,
+} from './blog-routes';
 import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
 
 export const SITE_LANGUAGES = ['es', 'en'] as const satisfies readonly SupportedLanguage[];
@@ -55,7 +63,10 @@ export type SiteRouteId =
   | 'docs'
   | DocRouteId
   | 'academy'
-  | AcademyRouteId;
+  | AcademyRouteId
+  | 'blog'
+  | BlogCategoryRouteId
+  | BlogPostRouteId;
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -96,6 +107,35 @@ const ACADEMY_PAGES = Object.fromEntries(
     return [id, route];
   })
 ) as Record<AcademyRouteId, SiteRoute>;
+
+/**
+ * Blog: categorías bajo `categoria/` (`/blog/categoria/<slug-es>`, `/en/blog/category/<slug-en>`)
+ * para que nunca choquen con el slug de un artículo. Las rutas internas usan el slug en inglés.
+ */
+const BLOG_CATEGORY_PAGES = Object.fromEntries(
+  BLOG_CATEGORY_ROUTES.map((c) => {
+    const id = blogCategoryRouteId(c.id);
+    const route: SiteRoute = {
+      id,
+      internal: `/blog/category/${c.slug.en}`,
+      paths: { es: `/blog/categoria/${c.slug.es}`, en: `/en/blog/category/${c.slug.en}` },
+    };
+    return [id, route];
+  })
+) as Record<BlogCategoryRouteId, SiteRoute>;
+
+/** Artículos del blog, generados desde los Markdown (`lib/blog-index.generated.json`). */
+const BLOG_POST_PAGES = Object.fromEntries(
+  BLOG_POST_ROUTES.map((p) => {
+    const id = blogPostRouteId(p.id);
+    const route: SiteRoute = {
+      id,
+      internal: `/blog/${p.slug.en}`,
+      paths: { es: `/blog/${p.slug.es}`, en: `/en/blog/${p.slug.en}` },
+    };
+    return [id, route];
+  })
+) as Record<BlogPostRouteId, SiteRoute>;
 
 export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   home: { id: 'home', internal: '', paths: { es: '/', en: '/en' } },
@@ -246,6 +286,10 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   // Academy: cursos hechos de guías, artículos y páginas que ya existen
   academy: { id: 'academy', internal: '/academy', paths: { es: '/academia', en: '/en/academy' } },
   ...ACADEMY_PAGES,
+  // Blog: índice, 7 categorías y los artículos de content/blog (web-32)
+  blog: { id: 'blog', internal: '/blog', paths: { es: '/blog', en: '/en/blog' } },
+  ...BLOG_CATEGORY_PAGES,
+  ...BLOG_POST_PAGES,
 };
 
 const ROUTE_LIST: SiteRoute[] = Object.values(SITE_ROUTES);

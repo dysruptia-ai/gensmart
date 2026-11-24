@@ -61,7 +61,7 @@ export const productNames = (c: AcademyCourseData, lang: SiteLanguage) =>
 export interface LessonView {
   title: string;
   kind: AcademyLesson['kind'];
-  /** `null`: el artículo todavía no está publicado en el sitio nuevo (web-32). Se ve, no navega. */
+  /** `null`: el artículo no está en el blog (`content/blog`). Se ve, no navega. */
   href: SiteHref | null;
   summary: string;
   /** Minutos de lectura; las páginas no suman (0). */
