@@ -1,28 +1,33 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import Container from '../Container';
 import Section from '../Section';
 import SectionHead from '../SectionHead';
 import SiteLink from '../SiteLink';
-import { COMMON, otherTeams, teamKey, type TeamData } from './teamsData';
-import styles from './TeamMore.module.css';
+import type { SolutionData } from './solutionsData';
+import styles from './SolutionMore.module.css';
 
-interface TeamMoreProps {
-  team: TeamData;
+interface SolutionMoreProps {
+  title: string;
+  /** Páginas a enlazar, cada una con la primera respuesta de su agente. */
+  pages: readonly SolutionData[];
+  /** Debajo de la lista (botón al índice). */
+  footer?: ReactNode;
 }
 
-/** "Explora más soluciones": los 3 equipos siguientes en orden circular (design/web: `.index`). */
-export default function TeamMore({ team }: TeamMoreProps) {
+/** "Explora más": tarjetas de otras páginas de Soluciones (design/web: `.index`). */
+export default function SolutionMore({ title, pages, footer }: SolutionMoreProps) {
   const { t } = useTranslation();
   return (
     <Section surface="alt">
       <Container>
-        <SectionHead title={t(`${COMMON}.moreTitle`)} />
+        <SectionHead title={title} />
         <ol className={styles.index}>
-          {otherTeams(team.id).map((other) => {
-            const k = teamKey(other.id);
+          {pages.map((other) => {
+            const k = other.base;
             const firstOut = other.heroChat.indexOf('out') + 1;
             return (
               <li key={other.id}>
@@ -39,6 +44,7 @@ export default function TeamMore({ team }: TeamMoreProps) {
             );
           })}
         </ol>
+        {footer ? <div className={styles.footer}>{footer}</div> : null}
       </Container>
     </Section>
   );

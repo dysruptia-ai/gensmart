@@ -48,6 +48,38 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Terms of service](https://www.gensmart.co/legal/terms-of-service)
 - [Privacy policy](https://www.gensmart.co/legal/privacy-policy)
 
+## Solutions
+
+- [Solutions](https://www.gensmart.co/en/solutions): index of the 12 industry pages and the 6 team pages, with an example conversation per business type.
+- [Soluciones (Spanish)](https://www.gensmart.co/soluciones): índice de las 12 páginas por industria y las 6 por equipo.
+
+## Solutions by industry
+
+- [E-commerce and dropshipping](https://www.gensmart.co/en/solutions/industries/ecommerce): Answers product, stock and shipping questions, and takes the customer to checkout.
+- [E-commerce y dropshipping (Spanish)](https://www.gensmart.co/soluciones/industrias/ecommerce): Responde por producto, stock y envío, y lleva al cliente al checkout.
+- [Clinics and health](https://www.gensmart.co/en/solutions/industries/clinics): Answers questions, books the appointment and confirms it by email, without overloading reception.
+- [Clínicas y salud (Spanish)](https://www.gensmart.co/soluciones/industrias/clinicas): Responde dudas, agenda la cita y la confirma por correo, sin saturar a tu recepción.
+- [Real estate and developers](https://www.gensmart.co/en/solutions/industries/real-estate): Answers about each property, qualifies the lead and books the viewing with your advisor.
+- [Inmobiliarias y constructoras (Spanish)](https://www.gensmart.co/soluciones/industrias/inmobiliarias): Responde por cada inmueble, califica al interesado y agenda la visita con tu asesor.
+- [Field services and contractors](https://www.gensmart.co/en/solutions/industries/field-services): Takes each request in full and books your crew's visit.
+- [Servicios en campo y contratistas (Spanish)](https://www.gensmart.co/soluciones/industrias/servicios-en-campo): Recibe cada solicitud completa y agenda la visita de tu cuadrilla.
+- [Education and training](https://www.gensmart.co/en/solutions/industries/education): Handles every applicant, scores them and books the call with admissions.
+- [Educación y formación (Spanish)](https://www.gensmart.co/soluciones/industrias/educacion): Atiende a cada aspirante, lo califica y agenda la llamada con admisiones.
+- [Restaurants and hospitality](https://www.gensmart.co/en/solutions/industries/restaurants): Handles bookings, orders and event quotes across all your channels and locations.
+- [Restaurantes y hospitalidad (Spanish)](https://www.gensmart.co/soluciones/industrias/restaurantes): Atiende reservas, pedidos y cotizaciones de eventos en todos tus canales y sedes.
+- [Automotive](https://www.gensmart.co/en/solutions/industries/automotive): Answers quotes, books test drives and workshop visits across all your locations.
+- [Automotriz (Spanish)](https://www.gensmart.co/soluciones/industrias/automotriz): Responde cotizaciones, agenda pruebas de manejo y citas de taller en todas tus sedes.
+- [Beauty and wellness](https://www.gensmart.co/en/solutions/industries/beauty-and-wellness): Answers prices, scores and books across all your locations.
+- [Belleza y bienestar (Spanish)](https://www.gensmart.co/soluciones/industrias/belleza-y-bienestar): Responde precios, califica y agenda en todas tus sedes.
+- [Finance and insurance](https://www.gensmart.co/en/solutions/industries/finance-and-insurance): Gathers the details of each inquiry and books with your advisor.
+- [Finanzas y seguros (Spanish)](https://www.gensmart.co/soluciones/industrias/finanzas-y-seguros): Reúne los datos de cada consulta y agenda con tu asesor.
+- [Travel and tourism](https://www.gensmart.co/en/solutions/industries/travel-and-tourism): Serves each traveler in their language and books the call with your advisor.
+- [Turismo y viajes (Spanish)](https://www.gensmart.co/soluciones/industrias/turismo-y-viajes): Atiende a cada viajero en su idioma y agenda la llamada con tu asesor.
+- [Professional services](https://www.gensmart.co/en/solutions/industries/professional-services): Answers whoever asks about your services and books the meeting with the professional.
+- [Servicios profesionales (Spanish)](https://www.gensmart.co/soluciones/industrias/servicios-profesionales): Responde a quien pregunta por tus servicios y agenda la reunión con el profesional.
+- [B2B, industrial and SaaS](https://www.gensmart.co/en/solutions/industries/b2b-and-saas): Answers the company asking about your products and books the demo or visit.
+- [B2B, industria y SaaS (Spanish)](https://www.gensmart.co/soluciones/industrias/b2b-y-saas): Responde a la empresa que pregunta por tus productos y agenda la demo o la visita.
+
 ## Solutions by team
 
 - [Sales](https://www.gensmart.co/en/solutions/teams/sales): Answers every lead in seconds, qualifies and books.

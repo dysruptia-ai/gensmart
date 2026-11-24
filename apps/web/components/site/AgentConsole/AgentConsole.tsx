@@ -1,6 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
+import Image from 'next/image';
 import { useTranslation } from '@/hooks/useTranslation';
 import ChatBubble from '../ChatBubble';
 import styles from './AgentConsole.module.css';
@@ -21,6 +22,16 @@ const AGENTS: Array<{ key: string; count: number; tone: 'green' | 'blue' | 'ambe
 ];
 
 /**
+ * Mensaje del hilo. Con `card`, es una tarjeta de producto que envía el agente
+ * (design/web: `.m.out.pcard`): `key` es el nombre y la imagen es decorativa.
+ */
+export interface ConsoleBubble {
+  key: string;
+  out: boolean;
+  card?: { detailKey: string; priceKey: string; image: string };
+}
+
+/**
  * Conversación de ejemplo. El marco (filtros, agentes, rótulos) es siempre el mismo;
  * esto es lo que cambia de una página a otra. Las claves de texto van completas.
  */
@@ -31,7 +42,7 @@ export interface ConsoleExample {
   /** Cabecera del hilo. Con varias claves se unen con ` · ` (canal · agente · etapa). */
   metaKey: string | readonly string[];
   summaryKey: string;
-  bubbles: ReadonlyArray<{ key: string; out: boolean }>;
+  bubbles: readonly ConsoleBubble[];
   /** Puntaje del lead, de 0 a 10. Sin él, el panel es "Estado de la conversación" y no hay barra. */
   score?: number;
   data: ReadonlyArray<{ labelKey: string; valueKey: string }>;
@@ -124,11 +135,22 @@ export default function AgentConsole({ example = SALES_EXAMPLE, label }: AgentCo
             <span>{t(`${P}.summaryLabel`)}</span> {t(example.summaryKey)}
           </p>
           <div className={styles.msgs}>
-            {example.bubbles.map((b) => (
-              <ChatBubble key={b.key} direction={b.out ? 'out' : 'in'} className={styles.bubble}>
-                {t(b.key)}
-              </ChatBubble>
-            ))}
+            {example.bubbles.map((b) =>
+              b.card ? (
+                <ChatBubble key={b.key} direction="out" className={`${styles.bubble} ${styles.card}`}>
+                  <Image src={b.card.image} alt="" width={64} height={64} className={styles.cardImg} />
+                  <span className={styles.cardBody}>
+                    <b>{t(b.key)}</b>
+                    <span>{t(b.card.detailKey)}</span>
+                    <strong>{t(b.card.priceKey)}</strong>
+                  </span>
+                </ChatBubble>
+              ) : (
+                <ChatBubble key={b.key} direction={b.out ? 'out' : 'in'} className={styles.bubble}>
+                  {t(b.key)}
+                </ChatBubble>
+              )
+            )}
           </div>
           <p className={styles.composer}>{t(`${P}.composer`)}</p>
         </div>

@@ -2268,6 +2268,71 @@
         "title": "AI agents for collections | GenSmart",
         "description": "An AI agent helps customers who write about a payment: it clarifies the balance, shares how to pay and logs the commitment for your team.",
         "ogAlt": "GenSmart AI agents for collections"
+      },
+      "solutions": {
+        "title": "AI agents by industry and by team | GenSmart",
+        "description": "AI agents for 12 industries and 6 teams: clinics, real estate, restaurants, education, sales, customer support, bookings and collections.",
+        "ogAlt": "GenSmart AI agents by industry and by team"
+      },
+      "industryEcommerce": {
+        "title": "AI support for e-commerce and dropshipping | GenSmart",
+        "description": "An AI agent answers product, stock, size and shipping questions on WhatsApp and Instagram, and takes the customer to your store's checkout.",
+        "ogAlt": "GenSmart AI agents for e-commerce"
+      },
+      "industryClinics": {
+        "title": "AI agents for clinics: book appointments | GenSmart",
+        "description": "An AI agent answers your patients' questions, books the appointment and confirms it by email, without overloading reception. For clinics and practices.",
+        "ogAlt": "GenSmart AI agents for clinics"
+      },
+      "industryRealEstate": {
+        "title": "AI agents for real estate agencies and developers | GenSmart",
+        "description": "An AI agent answers about each property, qualifies the lead and books the viewing with your advisor. For agencies, developers and brokers.",
+        "ogAlt": "GenSmart AI agents for real estate"
+      },
+      "industryFieldServices": {
+        "title": "AI agents for field services and contractors | GenSmart",
+        "description": "An AI agent takes each request in full, with address and service type, and books your crew's visit. For contractors and field service teams.",
+        "ogAlt": "GenSmart AI agents for field services"
+      },
+      "industryEducation": {
+        "title": "AI agents for education and admissions | GenSmart",
+        "description": "An AI agent handles every applicant, scores them and books the call with admissions. For universities, schools, academies and online courses.",
+        "ogAlt": "GenSmart AI agents for education"
+      },
+      "industryRestaurants": {
+        "title": "AI agents for restaurants: bookings and events | GenSmart",
+        "description": "An AI agent handles bookings, orders and event quotes across all your channels and locations. For restaurants, chains, catering and hotels.",
+        "ogAlt": "GenSmart AI agents for restaurants"
+      },
+      "industryAutomotive": {
+        "title": "AI agents for car dealerships and workshops | GenSmart",
+        "description": "An AI agent answers quotes, books test drives and workshop visits across all your locations. For dealerships, workshops and rentals.",
+        "ogAlt": "GenSmart AI agents for dealerships and workshops"
+      },
+      "industryBeautyWellness": {
+        "title": "AI agents for salons, spas and gyms | GenSmart",
+        "description": "An AI agent answers prices, scores leads and books across all your locations. For beauty centers, spas, salons, barbershops, gyms and studios.",
+        "ogAlt": "GenSmart AI agents for beauty and wellness"
+      },
+      "industryFinanceInsurance": {
+        "title": "AI agents for insurance and finance | GenSmart",
+        "description": "An AI agent gathers the details of each inquiry and books with your advisor. For insurance brokers, lenders, fintech and sales teams.",
+        "ogAlt": "GenSmart AI agents for insurance and finance"
+      },
+      "industryTravel": {
+        "title": "AI agents for travel agencies and tourism | GenSmart",
+        "description": "An AI agent serves each traveler in their language and books the call with your advisor. For travel agencies, tour operators and hotels.",
+        "ogAlt": "GenSmart AI agents for travel and tourism"
+      },
+      "industryProfessionalServices": {
+        "title": "AI agents for firms and professional services | GenSmart",
+        "description": "An AI agent answers whoever asks about your services and books the meeting with the professional. For law firms, accountants and consultancies.",
+        "ogAlt": "GenSmart AI agents for professional services"
+      },
+      "industryB2b": {
+        "title": "AI agents for B2B, industrial and SaaS companies | GenSmart",
+        "description": "An AI agent answers the company asking about your products, qualifies it and books the demo or visit. For distributors, industry and SaaS.",
+        "ogAlt": "GenSmart AI agents for B2B and SaaS"
       }
     },
     "langHint": {
@@ -2474,7 +2539,19 @@
       "teamOperationsBooking": "Operations and bookings",
       "teamHumanResources": "Human resources",
       "teamCollections": "Collections",
-      "solutions": "Solutions"
+      "solutions": "Solutions",
+      "industryEcommerce": "E-commerce and dropshipping",
+      "industryClinics": "Clinics and health",
+      "industryRealEstate": "Real estate and developers",
+      "industryFieldServices": "Field services and contractors",
+      "industryEducation": "Education and training",
+      "industryRestaurants": "Restaurants and hospitality",
+      "industryAutomotive": "Automotive",
+      "industryBeautyWellness": "Beauty and wellness",
+      "industryFinanceInsurance": "Finance and insurance",
+      "industryTravel": "Travel and tourism",
+      "industryProfessionalServices": "Professional services",
+      "industryB2b": "B2B, industrial and SaaS"
     },
     "channels": {
       "email": "Email",
@@ -3161,13 +3238,13 @@
         "defaultSummary": "Handled the whole inquiry and left the lead ready. Stage: {stage}.",
         "intsTitle": "Connects to the tools you already use",
         "intsLead": "While it talks, the agent queries and writes in your team's tools: the CRM, the calendar, the store.",
-        "intsListLabel": "Integrations for {team}",
+        "intsListLabel": "Integrations for {name}",
         "intsOther": "If you use another one, you connect it through API, MCP or webhook.",
         "intsLink": "See the integrations",
         "channelsTitle": "The same conversation on any channel",
         "channelsText": "If the customer writes on WhatsApp and later on your website, the agent recognizes them and picks up where it left off. Your team sees everything in the same inbox.",
         "channelsLabel": "Channels",
-        "faqKicker": "FAQ · {team}",
+        "faqKicker": "FAQ · {name}",
         "faqTitleBefore": "Questions?",
         "faqTitleAccent": "Get answers here",
         "faqHelpBefore": "Can't find yours? Write to us and",
@@ -3900,6 +3977,1492 @@
           }
         }
       }
+    },
+    "industries": {
+      "common": {
+        "primary": "Start your free trial",
+        "demo": "Book a demo",
+        "chatLabel": "Example conversation: {agent}",
+        "result": "Result",
+        "inboxTitle": "What your team sees in the inbox",
+        "consoleLabel": "Example inbox view: conversation with {name}",
+        "intsTitle": "Connects to the tools you already use",
+        "intsListLabel": "Integrations for {name}",
+        "intsOther": "If you use another one, you connect it through API, MCP or webhook.",
+        "intsLink": "See the integrations",
+        "channelsTitle": "The same conversation on any channel",
+        "channelsText": "If the customer writes on WhatsApp and later on your website, the agent recognizes them and picks up where it left off. Your team sees everything in the same inbox.",
+        "channelsLabel": "Channels",
+        "faqKicker": "FAQ · {name}",
+        "faqTitleBefore": "Questions?",
+        "faqTitleAccent": "Get answers here",
+        "faqHelpBefore": "Can't find yours? Write to us and",
+        "faqHelpAccent": "we will answer",
+        "faqHelpAfter": "soon.",
+        "faqCta": "Talk to the team",
+        "moreTitle": "Explore other industries",
+        "moreAll": "See all solutions",
+        "ecommerceBefore": "Want to see how it works inside Shopify, Tiendanube or WooCommerce?",
+        "ecommerceLink": "See the online store solution"
+      },
+      "industryEcommerce": {
+        "name": "E-commerce and dropshipping",
+        "short": "Answers product, stock and shipping questions, and takes the customer to checkout.",
+        "h1": {
+          "before": "Whoever asks about stock, size or shipping wants to buy.",
+          "accent": "The agent helps them and takes them to checkout.",
+          "after": ""
+        },
+        "lead": "When a customer writes about a product, the agent answers from your catalog, handles shipping and warranty questions, and shares your checkout link to pay. Claims and returns go to your team.",
+        "subs": {
+          "s1": "Fashion and footwear",
+          "s2": "Beauty and cosmetics",
+          "s3": "Electronics",
+          "s4": "Home and decor",
+          "s5": "Supplements and food",
+          "s6": "Dropshipping"
+        },
+        "label": "Store agent",
+        "chat": {
+          "m1": "Hi, I'm looking for a waterproof jacket, size M",
+          "m2": "I have the Trail Pro in size M, $189,000. Shall I share the link to buy it?",
+          "m3": "Yes, please",
+          "m4": "Here is the store payment link. If you have shipping questions, tell me your city.",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: payment link sent"
+        },
+        "flow": {
+          "f1": "Answers with your catalog, prices and policies",
+          "f2": "Recommends and answers shipping and warranty questions",
+          "f3": "Shares your checkout payment link",
+          "f4": "Hands claims, returns and special cases to a person"
+        },
+        "storyH": "What the agent does with every customer who writes to your store",
+        "storyLead": "Whoever writes to an online store almost always wants something already: a product, a size, to know when it arrives. The agent helps them right then, with your information, and leaves the purchase one link away.",
+        "methodClose": "You define the prices and the policies, and the agent respects them. When something falls outside what you defined, it does not improvise: it hands the conversation to a person.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the customer",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks what they are looking for.",
+            "result": "Nobody is left waiting for an answer"
+          },
+          "s2": {
+            "title": "Answers with your information",
+            "text": "It checks the catalog, prices and the shipping, exchange and warranty policies you loaded. If it does not have the information, it does not make it up and hands the conversation to a person.",
+            "result": "Answers like your team's, at any hour"
+          },
+          "s3": {
+            "title": "Checks your store",
+            "text": "If your store or your dropshipping platform has an API, the agent checks stock and order status on the spot. If it does not, it hands the question to a person.",
+            "result": "The customer gets the answer without your team looking it up"
+          },
+          "s4": {
+            "title": "Takes them to payment",
+            "text": "It shares your checkout payment link. The customer pays there, with your gateway, and your store records the sale as usual.",
+            "result": "From question to checkout in the same conversation"
+          },
+          "s5": {
+            "title": "Hands special cases to a person",
+            "text": "If the customer has a claim, asks for a return or has a problem with their order, the agent hands the full conversation to your team, with the summary.",
+            "result": "Your team handles only what needs judgment"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it connect to my store?",
+            "answer": "Yes, through API. If your platform is not on the list, we look at it in the demo: it connects to practically any tool that has an API."
+          },
+          "q2": {
+            "question": "Does the agent take payment inside the conversation?",
+            "answer": "No. It shares your checkout payment link and the customer pays there, with your gateway."
+          },
+          "q3": {
+            "question": "Does it write to someone who left a cart?",
+            "answer": "No. The agent replies when the customer writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q4": {
+            "question": "Can it say whether something is in stock?",
+            "answer": "With the catalog you load it answers about products and prices. For real time stock, connect your store through API. If it does not have the figure, it does not make it up and hands the question to a person."
+          },
+          "q5": {
+            "question": "What happens with claims and returns?",
+            "answer": "They go to your team with the full conversation and the summary, so a person can resolve them."
+          }
+        },
+        "console": {
+          "name": "Camila",
+          "channel": "WhatsApp",
+          "stage": "Payment link sent",
+          "m1": "Hi, I'm looking for a waterproof jacket, size M",
+          "m2": "I have the Trail Pro in size M, $189,000. Shall I share the link to buy it?",
+          "card": {
+            "name": "Trail Pro jacket",
+            "detail": "Size M · Waterproof",
+            "price": "$189,000 COP"
+          },
+          "m3": "Yes, please",
+          "m4": "Here is the store payment link. If you have shipping questions, tell me your city.",
+          "did1": "Answers with the catalog",
+          "did2": "Shares the payment link",
+          "did3": "Records the order details",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Camila"
+            },
+            "v2": {
+              "name": "product",
+              "value": "Trail Pro"
+            },
+            "v3": {
+              "name": "size",
+              "value": "M"
+            },
+            "v4": {
+              "name": "price",
+              "value": "$189,000"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: payment link sent."
+        }
+      },
+      "industryClinics": {
+        "name": "Clinics and health",
+        "short": "Answers questions, books the appointment and confirms it by email, without overloading reception.",
+        "h1": {
+          "before": "Your receptionist cannot answer everything.",
+          "accent": "The agent answers and books.",
+          "after": ""
+        },
+        "lead": "When a patient writes to ask a question or request an appointment, the agent answers with your information, offers times from your calendar and confirms the appointment by email. Anything that needs a person's judgment goes to your team.",
+        "subs": {
+          "s1": "Dental and orthodontics",
+          "s2": "Aesthetic medicine",
+          "s3": "Dermatology",
+          "s4": "Physiotherapy",
+          "s5": "Veterinary",
+          "s6": "Labs and diagnostics"
+        },
+        "label": "Appointments agent",
+        "chat": {
+          "m1": "Hi, I'd like to book a dental cleaning.",
+          "m2": "Happy to help. I have Tuesday at 10:00 a.m. or Wednesday at 4:00 p.m. Which works?",
+          "m3": "Tuesday.",
+          "m4": "Done, your appointment is booked for Tuesday at 10:00 a.m. I am sending the confirmation by email with a link to save it to your calendar.",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: appointment booked"
+        },
+        "flow": {
+          "f1": "Answers services, hours, preparation and location",
+          "f2": "Books on the calendar you connect",
+          "f3": "Confirms the appointment by email, with a link to save it",
+          "f4": "Hands off to reception what needs a person"
+        },
+        "storyH": "What the agent does with every patient who writes to your clinic",
+        "storyLead": "Whoever writes to a clinic almost always wants one of two things: an answer or an appointment. The agent handles both right then, with your information, and leaves the appointment on your calendar.",
+        "methodClose": "Clinical matters are always decided by your team. The agent informs with what you loaded and books; when something falls outside that, it does not improvise: it hands the conversation to a person.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the patient",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks how it can help.",
+            "result": "Nobody waits for reception to be free"
+          },
+          "s2": {
+            "title": "Answers with your information",
+            "text": "It answers questions about services, hours, preparation and location with what you loaded. It does not give medical advice: if the question is clinical, it hands it to a person.",
+            "result": "Your receptionist stops repeating the same answers"
+          },
+          "s3": {
+            "title": "Offers times from your calendar",
+            "text": "It checks the availability of the calendar you connect and proposes the free times for the service the patient asked about.",
+            "result": "The appointment is agreed in a single conversation"
+          },
+          "s4": {
+            "title": "Books and confirms by email",
+            "text": "It records the appointment on your calendar and emails the patient the confirmation, with a link to save it to theirs.",
+            "result": "The appointment is recorded for the patient and for your team"
+          },
+          "s5": {
+            "title": "Hands to reception what needs a person",
+            "text": "If the patient has a clinical question, wants to change or cancel their appointment, or the case is sensitive, the agent hands the full conversation to your team, with the summary.",
+            "result": "Your team handles only what needs judgment"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does the agent give medical advice?",
+            "answer": "No. It answers from the information you loaded: services, hours, preparation and location. Clinical questions go to a person on your team."
+          },
+          "q2": {
+            "question": "How does it book appointments?",
+            "answer": "It checks the availability of the calendar you connect, offers times to the patient and records the appointment. Your team gets the notice by email."
+          },
+          "q3": {
+            "question": "Can it cancel or reschedule an appointment?",
+            "answer": "Not today. When a patient wants to change it, the agent hands the conversation to reception with the summary."
+          },
+          "q4": {
+            "question": "Does it send reminders or write to patients first?",
+            "answer": "No. The agent replies when the patient writes. On WhatsApp, it can also only reply within 24 hours of the patient's last message."
+          },
+          "q5": {
+            "question": "What happens with patient data?",
+            "answer": "Each contact is saved in your GenSmart CRM with their conversation. Check the health data regulations that apply to you before defining what information you ask for."
+          },
+          "q6": {
+            "question": "Does it work with my current calendar?",
+            "answer": "It connects with Google Calendar and other tools that have an API. If you use another, we look at it in the demo."
+          }
+        },
+        "console": {
+          "name": "Mateo",
+          "channel": "WhatsApp",
+          "stage": "Appointment booked",
+          "m1": "Hi, I'd like to book a dental cleaning.",
+          "m2": "Happy to help. I have Tuesday at 10:00 a.m. or Wednesday at 4:00 p.m. Which works?",
+          "m3": "Tuesday.",
+          "m4": "Done, your appointment is booked for Tuesday at 10:00 a.m. I am sending the confirmation by email with a link to save it to your calendar.",
+          "did1": "Answers with your information",
+          "did2": "Offers the calendar times",
+          "did3": "Books and confirms by email",
+          "vars": {
+            "v1": {
+              "name": "name",
+              "value": "Mateo"
+            },
+            "v2": {
+              "name": "service",
+              "value": "Dental cleaning"
+            },
+            "v3": {
+              "name": "date",
+              "value": "Tuesday"
+            },
+            "v4": {
+              "name": "time",
+              "value": "10:00 a.m."
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: appointment booked."
+        }
+      },
+      "industryRealEstate": {
+        "name": "Real estate and developers",
+        "short": "Answers about each property, qualifies the lead and books the viewing with your advisor.",
+        "h1": {
+          "before": "The buyer writes to several agencies and developers.",
+          "accent": "The first to reply wins.",
+          "after": ""
+        },
+        "lead": "When someone writes about a property or a project, the agent answers with what you loaded for each one, qualifies them and offers times to visit. Your advisor gets the contact with their score and the viewing booked.",
+        "subs": {
+          "s1": "Home sales",
+          "s2": "Rentals",
+          "s3": "Developers and off plan projects",
+          "s4": "Independent agents",
+          "s5": "Offices and retail"
+        },
+        "label": "Real estate agent",
+        "chat": {
+          "m1": "Hi, I saw the three bedroom apartment in your post. Is it still available?",
+          "m2": "Hi, happy to help. When do you need it and how many people would live there?",
+          "m3": "For next month, there are four of us.",
+          "m4": "I have Thursday at 5:00 p.m. or Saturday at 11:00 a.m. to visit it with an advisor. Which works?",
+          "chip1": "Channel: Instagram",
+          "chip2": "Stage: booking viewing"
+        },
+        "flow": {
+          "f1": "Answers about each property with your information",
+          "f2": "Asks what is needed and gives a score",
+          "f3": "Books the viewing with the advisor",
+          "f4": "Hands the full conversation to the advisor"
+        },
+        "storyH": "What the agent does with every lead who writes to your agency or development company",
+        "storyLead": "Whoever writes about a property almost always wants three things: to know if it is still available, to see if it fits what they want and to visit it. The agent handles all three right then and leaves the advisor a contact ready to call.",
+        "methodClose": "Price, negotiation and closing are always handled by your advisor. The agent makes sure they reach the viewing with a lead who already knows what they want.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the lead",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks which property or project they are asking about, or what they are looking for.",
+            "result": "Nobody waits for an advisor to be free"
+          },
+          "s2": {
+            "title": "Answers with each property's information",
+            "text": "It answers questions about price, area, size, features and conditions with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "Your advisor stops answering the same thing in every message"
+          },
+          "s3": {
+            "title": "Qualifies and sets the next step",
+            "text": "It asks what you need to know, such as budget, area and when they need it, and gives a score from 0 to 10 based on their interest. It places them in your funnel as a lead or an opportunity.",
+            "result": "You know who to call first"
+          },
+          "s4": {
+            "title": "Books the viewing",
+            "text": "If interest is high, it offers free times from your advisor's calendar and books the viewing in the same conversation, with the GenSmart calendar or Google Calendar.",
+            "result": "The viewing is set while the interest is alive"
+          },
+          "s5": {
+            "title": "Hands the advisor the full conversation",
+            "text": "Your advisor gets the contact with their details, the score, the source channel and the whole conversation, and is notified when it reaches a high score. Whatever needs negotiating, such as price or terms, is handled by a person.",
+            "result": "The advisor arrives to talk to someone who already said what they want"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it know which properties I have available?",
+            "answer": "It answers from the information you loaded for each property. If availability changes, you update it there. If your system has an API, we look in the demo at how to query it directly."
+          },
+          "q2": {
+            "question": "Does it qualify leads?",
+            "answer": "Yes. It gives a score from 0 to 10 based on their interest, places them in your funnel and saves what you asked it to capture, such as name, email, phone, budget and area."
+          },
+          "q3": {
+            "question": "Does it book viewings?",
+            "answer": "Yes. It offers free times from the GenSmart calendar or your Google Calendar and records the viewing. Your advisor gets notified."
+          },
+          "q4": {
+            "question": "Can it cancel or reschedule a viewing?",
+            "answer": "Not today. When the lead wants to change it, the agent hands the conversation to your advisor with the summary."
+          },
+          "q5": {
+            "question": "Does it write first or follow up with leads?",
+            "answer": "No. The agent replies when the lead writes. On WhatsApp, it can also only reply within 24 hours of the lead's last message."
+          },
+          "q6": {
+            "question": "Does it handle contacts that arrive from property portals?",
+            "answer": "It handles anyone who writes to you on your channels. If the portal delivers the contact by email or API, we look at it in the demo."
+          },
+          "q7": {
+            "question": "Does it work with my CRM?",
+            "answer": "It connects with HubSpot, Wasi, Tokko Broker and other tools that have an API. If you use another, we look at it in the demo."
+          }
+        },
+        "console": {
+          "name": "Valeria",
+          "channel": "Instagram",
+          "stage": "Booking viewing",
+          "m1": "Hi, I saw the three bedroom apartment in your post. Is it still available?",
+          "m2": "Hi, happy to help. When do you need it and how many people would live there?",
+          "m3": "For next month, there are four of us.",
+          "m4": "I have Thursday at 5:00 p.m. or Saturday at 11:00 a.m. to visit it with an advisor. Which works?",
+          "did1": "Answers with the property information",
+          "did2": "Qualifies and assigns a score",
+          "did3": "Offers two times for the viewing with the advisor",
+          "vars": {
+            "v1": {
+              "name": "interest",
+              "value": "3 bedrooms"
+            },
+            "v2": {
+              "name": "people",
+              "value": "4"
+            },
+            "v3": {
+              "name": "when",
+              "value": "Next month"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: booking viewing."
+        }
+      },
+      "industryFieldServices": {
+        "name": "Field services and contractors",
+        "short": "Takes each request in full and books your crew's visit.",
+        "h1": {
+          "before": "Your technicians are in the field.",
+          "accent": "The agent handles the requests.",
+          "after": ""
+        },
+        "lead": "The agent handles WhatsApp, Instagram, Messenger, your website and email. It understands which service the person needs, at what address and by when, gives them a score and books the visit on your calendar, so your coordinator receives each request in full and dispatches without calling to ask the basics.",
+        "subs": {
+          "s1": "HVAC and refrigeration",
+          "s2": "Building and property maintenance",
+          "s3": "Electrical and network installations",
+          "s4": "Plumbing and hydraulic services",
+          "s5": "Companies with several crews and zones"
+        },
+        "label": "Request agent",
+        "chat": {
+          "m1": "Hi, I need maintenance on two air conditioners in my office.",
+          "m2": "Happy to help. What is the office address and for which day do you need it?",
+          "m3": "120 W 23rd Street, Tuesday if possible.",
+          "m4": "I have Tuesday at 9:00 a.m. or 2:00 p.m. Which do you prefer?",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Answers from your services and zones",
+          "f2": "Asks what they need, where and when",
+          "f3": "Scores and books the visit",
+          "f4": "Hands the full conversation to your coordinator"
+        },
+        "storyH": "What the agent does when a customer writes to request a technical service",
+        "storyLead": "Whoever requests a technical service has to give three things: what they need, where and by when. The agent collects them in the conversation, on any channel, and leaves your coordinator the visit ready to assign to a crew.",
+        "methodClose": "Whoever requests a service gets a reply right away, on any channel. Quoting, payment and the assignment of each technician is always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Answers on whichever channel they use",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks which service they need.",
+            "result": "No request waits for someone to be free to answer"
+          },
+          "s2": {
+            "title": "Answers from your services and zones",
+            "text": "It answers questions about services, coverage zones, hours and rates with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "The same answer in every zone and for every customer"
+          },
+          "s3": {
+            "title": "Understands what they need and where",
+            "text": "It asks which service or fault they have, the address and which day and time slot they prefer. Everything stays in the conversation.",
+            "result": "Your coordinator gets the full request"
+          },
+          "s4": {
+            "title": "Scores and books the visit",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar, with the GenSmart calendar or Google Calendar.",
+            "result": "Visits on the calendar with no calls in between"
+          },
+          "s5": {
+            "title": "Hands your coordinator the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and gets a notification when it reaches a high score. Quoting, payment and technician assignment are handled by a person.",
+            "result": "Your coordinator dispatches with everything in hand"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it quote the job?",
+            "answer": "It shares the rates and visit prices you loaded. The custom quote for each job is made by someone on your team. If your quoting system has an API, we look in the demo at how to connect it."
+          },
+          "q2": {
+            "question": "Does it book the visits?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the visit with the address. Your team gets notified."
+          },
+          "q3": {
+            "question": "What is the score and what is it for?",
+            "answer": "It is a number from 0 to 10 based on how interested the person is. It places them in your funnel as a lead or an opportunity and your team gets a notification when it is high, to attend first to whoever already requested the service."
+          },
+          "q4": {
+            "question": "Does it assign the technician or crew?",
+            "answer": "No. Your coordinator does the assignment with the full request in hand. If your service management software has an API, we look in the demo at how to connect it."
+          },
+          "q5": {
+            "question": "Can it cancel or reschedule a visit?",
+            "answer": "Not today. When the person wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q6": {
+            "question": "Does it write first or notify that the technician is on the way?",
+            "answer": "No. The agent replies when the person writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q7": {
+            "question": "What happens with an emergency?",
+            "answer": "The agent replies right away and collects the address and the problem. If the score is high, your team gets a notification. Sending out a technician is always decided by a person."
+          },
+          "q8": {
+            "question": "What happens if they ask something that is not loaded?",
+            "answer": "The agent does not invent the answer. It hands the conversation to someone on your team with everything already discussed."
+          }
+        },
+        "console": {
+          "name": "Daniela",
+          "channel": "WhatsApp",
+          "stage": "Opportunity",
+          "m1": "Hi, I need maintenance on two air conditioners in my office.",
+          "m2": "Happy to help. What is the office address and for which day do you need it?",
+          "m3": "120 W 23rd Street, Tuesday if possible.",
+          "m4": "I have Tuesday at 9:00 a.m. or 2:00 p.m. Which do you prefer?",
+          "did1": "Answers service and zone",
+          "did2": "Captures service, address and date",
+          "did3": "Scores and offers times for the visit",
+          "vars": {
+            "v1": {
+              "name": "service",
+              "value": "AC maintenance"
+            },
+            "v2": {
+              "name": "address",
+              "value": "120 W 23rd Street"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryEducation": {
+        "name": "Education and training",
+        "short": "Handles every applicant, scores them and books the call with admissions.",
+        "h1": {
+          "before": "Admissions cannot answer every applicant.",
+          "accent": "The agent can.",
+          "after": ""
+        },
+        "lead": "The agent handles WhatsApp, Instagram, Messenger, your website and email. It answers each program's information, understands what the applicant is after, scores them and books the call with your admissions team so advisors talk first to the people with the most interest.",
+        "subs": {
+          "s1": "Universities and institutes",
+          "s2": "Private schools",
+          "s3": "Language academies",
+          "s4": "Online courses and continuing education",
+          "s5": "Corporate training"
+        },
+        "label": "Admissions agent",
+        "chat": {
+          "m1": "Hi, I want to know about the business administration program.",
+          "m2": "Happy to help. Are you looking for in person or online, and for which term do you want to start?",
+          "m3": "Online, for the next semester.",
+          "m4": "Perfect. An admissions advisor will walk you through the process. Can they call you Thursday at 3:00 p.m. or Friday at 10:00 a.m.?",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Answers each program's information",
+          "f2": "Suggests the program based on what they want",
+          "f3": "Scores and books the call with admissions",
+          "f4": "Hands the full conversation to your team"
+        },
+        "storyH": "What the agent does with every applicant who writes to your institution",
+        "storyLead": "Whoever writes to an educational institution almost always wants to know three things: which program suits them, how much it costs and when it starts. The agent answers all three right then, on any channel, and leaves admissions the contact ready to call.",
+        "methodClose": "The applicant gets a reply right away, on any channel and at any hour. Enrollment, scholarships and anything that needs judgment are always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the applicant on any channel",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks what they want to study.",
+            "result": "No applicant goes unanswered"
+          },
+          "s2": {
+            "title": "Answers with each program's information",
+            "text": "It answers questions about duration, format, costs, start dates and requirements with what you loaded for each program. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "The same answer for every applicant"
+          },
+          "s3": {
+            "title": "Understands what they want and suggests the program",
+            "text": "It asks what they want to study, in what format and for when, and suggests the program that fits best among the ones you loaded.",
+            "result": "The applicant lands on the right program"
+          },
+          "s4": {
+            "title": "Scores and books the call",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar, with the GenSmart calendar or Google Calendar.",
+            "result": "Admissions calls the person with the most interest"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Admissions gets the contact with their details, the score, the source channel and the whole conversation, and is notified when it reaches a high score. Enrollment, scholarships and discounts are handled by a person.",
+            "result": "The advisor calls someone who already said what they need"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it answer differently depending on the program?",
+            "answer": "It answers from the information you loaded for each program: duration, format, costs, dates and requirements. If something changes, you update it there. If asked something it does not have, it hands the conversation to a person."
+          },
+          "q2": {
+            "question": "Does it score applicants?",
+            "answer": "Yes. It gives them a score from 0 to 10 based on their interest and places them in your funnel as a lead or an opportunity. Admissions gets a notification when the score is high."
+          },
+          "q3": {
+            "question": "Can it book the call with admissions?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the call. Your team gets notified."
+          },
+          "q4": {
+            "question": "Does it recommend a program?",
+            "answer": "It asks what they want to study, in what format and for when, and suggests the program that fits best among the ones you loaded. The final decision is made by the applicant with your advisor."
+          },
+          "q5": {
+            "question": "Can it enroll students or collect the tuition?",
+            "answer": "Enrollment is handled by someone on your team. If your payment gateway or platform has an API, we look in the demo at how to share a payment link inside the conversation."
+          },
+          "q6": {
+            "question": "Can it cancel or reschedule an appointment?",
+            "answer": "Not today. When the applicant wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q7": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the applicant writes. On WhatsApp, it can also only reply within 24 hours of the applicant's last message."
+          },
+          "q8": {
+            "question": "What about scholarships and discounts?",
+            "answer": "Scholarship and discount terms are defined and discussed by someone on your team. The agent only shares the information you loaded and hands the conversation over when the applicant asks about them."
+          }
+        },
+        "console": {
+          "name": "Daniela",
+          "channel": "WhatsApp",
+          "stage": "Opportunity",
+          "m1": "Hi, I want to know about the business administration program.",
+          "m2": "Happy to help. Are you looking for in person or online, and for which term do you want to start?",
+          "m3": "Online, for the next semester.",
+          "m4": "Perfect. An admissions advisor will walk you through the process. Can they call you Thursday or Friday?",
+          "did1": "Answers and asks format and start",
+          "did2": "Suggests the program and captures contact",
+          "did3": "Scores and offers a call with admissions",
+          "vars": {
+            "v1": {
+              "name": "format",
+              "value": "Online"
+            },
+            "v2": {
+              "name": "start",
+              "value": "Next semester"
+            },
+            "v3": {
+              "name": "program",
+              "value": "Business administration"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryRestaurants": {
+        "name": "Restaurants and hospitality",
+        "short": "Handles bookings, orders and event quotes across all your channels and locations.",
+        "h1": {
+          "before": "An unanswered message is",
+          "accent": "a table, an order or an event lost.",
+          "after": ""
+        },
+        "lead": "The agent handles WhatsApp, Instagram, Messenger, your website and email. It answers the menu and hours of each location, takes bookings and orders, and qualifies event and catering requests so your sales team calls the most valuable first.",
+        "subs": {
+          "s1": "Restaurant groups and chains",
+          "s2": "Multi location restaurants",
+          "s3": "Dark kitchens and virtual brands",
+          "s4": "Catering and corporate events",
+          "s5": "Hotels and clubs"
+        },
+        "label": "Booking and events agent",
+        "chat": {
+          "m1": "Hi, we need a quote for a lunch for 40 people from our company.",
+          "m2": "Happy to help. What date do you need it for and at which of our locations would you like it?",
+          "m3": "December 12, at the north location.",
+          "m4": "Perfect. An events advisor will prepare the proposal. What email and phone should they contact you on?",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Answers menu and hours for each location",
+          "f2": "Takes the booking or order with complete details",
+          "f3": "Scores events and catering requests",
+          "f4": "Hands the full conversation to your team"
+        },
+        "storyH": "What the agent does with every customer who writes to your business",
+        "storyLead": "Whoever writes to a restaurant or a hotel almost always wants one of three things: to book, to order or to quote an event. The agent handles all three right then, on any channel, and leaves your team the information ready to act on.",
+        "methodClose": "The customer gets a reply right away, on any channel and for any location. Events, complaints and anything that needs judgment are always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the customer on any channel",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks whether they want to book, order or quote an event.",
+            "result": "No channel goes unattended"
+          },
+          "s2": {
+            "title": "Answers with each location's information",
+            "text": "It answers questions about the menu, prices, hours, location and policies with what you loaded for each location. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "The same answer at all your locations"
+          },
+          "s3": {
+            "title": "Takes the booking or order",
+            "text": "For a booking it asks the day, the time and how many people, offers the free times on your calendar and records it, with the GenSmart calendar or Google Calendar. For an order it asks what your kitchen needs and repeats the summary before closing it.",
+            "result": "Complete details, with no back and forth"
+          },
+          "s4": {
+            "title": "Scores events and catering",
+            "text": "When someone asks about an event or catering, it asks for the date, headcount, location and contact details, and gives a score from 0 to 10 based on their interest. It places them in your funnel as a lead or an opportunity.",
+            "result": "Your sales team knows who to call first"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and is notified when it reaches a high score. The proposal, price and closing of an event are handled by a person.",
+            "result": "The advisor calls someone who already said what they need"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it answer differently depending on the location?",
+            "answer": "It answers from the information you loaded for each location: menu, prices, hours, location and policies. If something changes, you update it there. If asked something it does not have, it hands the conversation to a person."
+          },
+          "q2": {
+            "question": "Does it take bookings?",
+            "answer": "Yes. It asks the day, the time and the number of people, offers free times from the GenSmart calendar or your Google Calendar and records the booking. Your team gets notified."
+          },
+          "q3": {
+            "question": "What does it do with event and catering requests?",
+            "answer": "It asks what you need to know, such as date, headcount, location and contact, gives a score from 0 to 10 and places it in your funnel. Your sales team gets the full conversation and a notification when the score is high. A person prepares the proposal."
+          },
+          "q4": {
+            "question": "Does it take orders?",
+            "answer": "It takes the order details and leaves your team the summary. If your ordering system or point of sale has an API, we look in the demo at how to send the order straight to it."
+          },
+          "q5": {
+            "question": "Can it charge for the order?",
+            "answer": "If your payment gateway has an API, the agent can generate a payment link for the order and share it in the conversation. We define it in the demo."
+          },
+          "q6": {
+            "question": "Can it cancel or reschedule a booking?",
+            "answer": "Not today. When the customer wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q7": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the customer writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q8": {
+            "question": "What does it say about allergens and ingredients?",
+            "answer": "Only what you loaded. If the information is not there, it does not make it up: it hands the conversation to someone on your team."
+          }
+        },
+        "console": {
+          "name": "Camila",
+          "channel": "WhatsApp",
+          "stage": "Opportunity",
+          "m1": "Hi, we need a quote for a lunch for 40 people from our company.",
+          "m2": "Happy to help. What date do you need it for and at which of our locations would you like it?",
+          "m3": "December 12, at the north location.",
+          "m4": "Perfect. An events advisor will prepare the proposal. What email and phone should they contact you on?",
+          "did1": "Answers and asks for date and location",
+          "did2": "Captures headcount and contact",
+          "did3": "Scores and notifies the sales team",
+          "vars": {
+            "v1": {
+              "name": "people",
+              "value": "40"
+            },
+            "v2": {
+              "name": "date",
+              "value": "December 12"
+            },
+            "v3": {
+              "name": "location",
+              "value": "North"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryAutomotive": {
+        "name": "Automotive",
+        "short": "Answers quotes, books test drives and workshop visits across all your locations.",
+        "h1": {
+          "before": "Every quote that is slow to get an answer",
+          "accent": "goes to another dealership.",
+          "after": ""
+        },
+        "lead": "The agent handles WhatsApp, Instagram, Messenger, your website and email. It answers from the catalog and services you loaded, understands what the prospect is after, scores them and books the test drive or the workshop visit so your advisors serve first the people with the most interest.",
+        "subs": {
+          "s1": "Dealerships and dealer groups",
+          "s2": "Motorcycle dealerships",
+          "s3": "Workshops and service centers",
+          "s4": "Vehicle rental and fleets",
+          "s5": "Parts distributors"
+        },
+        "label": "Sales and service agent",
+        "chat": {
+          "m1": "Hi, I want to quote a family SUV for 5 people.",
+          "m2": "Happy to help. What budget do you have and when do you want to have it?",
+          "m3": "Up to 120 million, for this month.",
+          "m4": "I have two versions that fit. An advisor will show you both on a test drive. Does Thursday at 4:00 p.m. or Friday at 9:00 a.m. work for you?",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Answers from your catalog and services",
+          "f2": "Asks what they want and by when",
+          "f3": "Scores and books a test drive or workshop visit",
+          "f4": "Hands the full conversation to your team"
+        },
+        "storyH": "What the agent does with every prospect who writes to your dealership or workshop",
+        "storyLead": "Whoever writes to a dealership or a workshop almost always wants one of three things: to quote a vehicle, to test drive it or to book a service. The agent handles all three right then, on any channel, and leaves your team the information ready to act on.",
+        "methodClose": "The customer gets a reply right away, on any channel and for any location. Negotiation, financing and anything that needs judgment is always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Welcomes the prospect on any channel",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks whether they want to quote, test drive a vehicle or book a service.",
+            "result": "No prospect goes unanswered"
+          },
+          "s2": {
+            "title": "Answers from your catalog and services",
+            "text": "It answers questions about models, versions, prices, hours, locations and services with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "The same answer at all your locations"
+          },
+          "s3": {
+            "title": "Understands what the customer wants",
+            "text": "It asks what type of vehicle they want, for what use, with what budget and by when. For a workshop service, it asks about the vehicle and the type of service.",
+            "result": "The advisor gets the full profile"
+          },
+          "s4": {
+            "title": "Scores and books the appointment",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar for the test drive or workshop visit, with the GenSmart calendar or Google Calendar.",
+            "result": "Appointments on the calendar with no back and forth calls"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and is notified when it reaches a high score. Negotiation, financing and closing are handled by a person.",
+            "result": "The advisor calls someone who already said what they want"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it answer differently depending on the brand or location?",
+            "answer": "It answers from the information you loaded for each brand, model and location: versions, prices, hours and address. If something changes, you update it there. If asked something it does not have, it hands the conversation to a person."
+          },
+          "q2": {
+            "question": "Does it book test drives and workshop visits?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the appointment. Your team gets notified."
+          },
+          "q3": {
+            "question": "Does it score prospects?",
+            "answer": "Yes. It gives them a score from 0 to 10 based on their interest and places them in your funnel as a lead or an opportunity. Your team gets a notification when the score is high."
+          },
+          "q4": {
+            "question": "Can it give prices and financing terms?",
+            "answer": "It shares the prices and terms you loaded. The credit review, the negotiation and the closing are handled by someone on your team."
+          },
+          "q5": {
+            "question": "Can it tell how a vehicle is doing in the workshop?",
+            "answer": "If your workshop system has an API, we look in the demo at how to check the status and reply to the customer. Without a connection, it hands the query to your team."
+          },
+          "q6": {
+            "question": "Can it cancel or reschedule an appointment?",
+            "answer": "Not today. When the customer wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q7": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the customer writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q8": {
+            "question": "What about trading in a used vehicle?",
+            "answer": "The agent can ask for the details your team defines, such as make, model, year and mileage, and leave them for the advisor. The appraisal is done by a person."
+          }
+        },
+        "console": {
+          "name": "Mateo",
+          "channel": "WhatsApp",
+          "stage": "Opportunity",
+          "m1": "Hi, I want to quote a family SUV for 5 people.",
+          "m2": "Happy to help. What budget do you have and when do you want to have it?",
+          "m3": "Up to 120 million, for this month.",
+          "m4": "I have two versions that fit. Does a test drive on Thursday or Friday work for you?",
+          "did1": "Answers and asks budget and date",
+          "did2": "Captures vehicle and contact",
+          "did3": "Scores and offers a test drive",
+          "vars": {
+            "v1": {
+              "name": "vehicle",
+              "value": "SUV"
+            },
+            "v2": {
+              "name": "budget",
+              "value": "Up to 120 million"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryBeautyWellness": {
+        "name": "Beauty and wellness",
+        "short": "Answers prices, scores and books across all your locations.",
+        "h1": {
+          "before": "Your front desk serves whoever walks in.",
+          "accent": "The agent, whoever writes.",
+          "after": ""
+        },
+        "lead": "The agent handles WhatsApp, Instagram, Messenger, your website and email. It answers prices, duration and hours with what you loaded for each location, understands which service or class the person is after, gives them a score and books the appointment or trial class so your front desk serves first whoever already decided to book.",
+        "subs": {
+          "s1": "Aesthetic centers and spas",
+          "s2": "Salon and barbershop chains",
+          "s3": "Gyms and training studios",
+          "s4": "Yoga, pilates and class studios",
+          "s5": "Franchises and multi-location centers"
+        },
+        "label": "Booking agent",
+        "chat": {
+          "m1": "Hi, how much is the facial treatment?",
+          "m2": "The hydrating facial is $120,000 and takes 60 minutes. Which location suits you best and on what day?",
+          "m3": "At the north location, Thursday afternoon.",
+          "m4": "I have Thursday at 4:00 p.m. or 5:30 p.m. Which do you prefer?",
+          "chip1": "Channel: Instagram",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Answers from your services and prices",
+          "f2": "Asks what they want, where and when",
+          "f3": "Scores and books the appointment or class",
+          "f4": "Hands the full conversation to your team"
+        },
+        "storyH": "What the agent does when someone writes to your aesthetic center, spa or gym",
+        "storyLead": "Whoever writes to a beauty or wellness center usually starts with the same questions: how much it costs, how long it takes and when there is room. The agent answers all three right then, on any channel, and leaves your team the booking ready to confirm.",
+        "methodClose": "Whoever writes gets a reply right away, on any channel and for any location. Payment, packages and anything that needs judgment is always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Answers on whichever channel they use",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks which service or class they are interested in.",
+            "result": "No message goes unanswered"
+          },
+          "s2": {
+            "title": "Answers from your services and prices",
+            "text": "It answers questions about services, prices, duration, professionals, locations, hours and promotions with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "The same answer at all your locations"
+          },
+          "s3": {
+            "title": "Understands what they want and where",
+            "text": "It asks which service they want, which location suits them best and which day and time slot they prefer. At a gym or studio, it asks about the class or plan they are interested in.",
+            "result": "Your team gets the full request"
+          },
+          "s4": {
+            "title": "Scores and books the appointment",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar, with the GenSmart calendar or Google Calendar.",
+            "result": "Bookings on the calendar with no back and forth messages"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and gets a notification when it reaches a high score. Payment, packages and memberships are handled by a person.",
+            "result": "Your team writes to someone who already said what they want"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it answer differently depending on the location?",
+            "answer": "It answers from the information you loaded for each location: services, prices, hours and address. If something changes, you update it there. If asked something it does not have, it hands the conversation to a person."
+          },
+          "q2": {
+            "question": "Does it book appointments and classes?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the booking. Your team gets notified."
+          },
+          "q3": {
+            "question": "What is the score and what is it for?",
+            "answer": "It is a number from 0 to 10 based on how interested the person is. It places them in your funnel as a lead or an opportunity and your team gets a notification when it is high, so they write first to whoever already wants to book."
+          },
+          "q4": {
+            "question": "Can it give prices and promotions?",
+            "answer": "It shares the prices and promotions you loaded. Payment, package sales and closing are handled by someone on your team. If your payment system has an API, we look in the demo at how to connect it."
+          },
+          "q5": {
+            "question": "Can it cancel or reschedule an appointment?",
+            "answer": "Not today. When the person wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q6": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the person writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q7": {
+            "question": "Does it handle memberships or session packages?",
+            "answer": "If the system where you manage them has an API, we look in the demo at how the agent can check them. Without a connection, it hands the query to your team."
+          },
+          "q8": {
+            "question": "What happens if they ask something that is not loaded?",
+            "answer": "The agent does not invent the answer. It hands the conversation to someone on your team with everything already discussed."
+          }
+        },
+        "console": {
+          "name": "Valeria",
+          "channel": "Instagram",
+          "stage": "Opportunity",
+          "m1": "Hi, how much is the facial treatment?",
+          "m2": "The hydrating facial is $120,000 and takes 60 minutes. Which location suits you best and on what day?",
+          "m3": "At the north location, Thursday afternoon.",
+          "m4": "I have Thursday at 4:00 p.m. or 5:30 p.m. Which do you prefer?",
+          "did1": "Answers price and duration",
+          "did2": "Captures service, location and contact",
+          "did3": "Scores and offers times for the appointment",
+          "vars": {
+            "v1": {
+              "name": "service",
+              "value": "Hydrating facial"
+            },
+            "v2": {
+              "name": "location",
+              "value": "North"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryFinanceInsurance": {
+        "name": "Finance and insurance",
+        "short": "Gathers the details of each inquiry and books with your advisor.",
+        "h1": {
+          "before": "Your advisor takes the call with the full details.",
+          "accent": "The agent gathers them.",
+          "after": ""
+        },
+        "lead": "The agent handles WhatsApp, Instagram, Messenger, your website and email. It explains your products and requirements with what you loaded, asks for the details you define to quote or assess, gives the person a score and books the call with an advisor, so your team receives each inquiry with the information ready.",
+        "subs": {
+          "s1": "Insurance brokers and agencies",
+          "s2": "Lenders and microfinance",
+          "s3": "Fintech and payment platforms",
+          "s4": "Sales teams with several advisors"
+        },
+        "label": "Inquiry agent",
+        "chat": {
+          "m1": "I want to quote car insurance",
+          "m2": "Happy to help. Can you tell me the make, model and year of the vehicle?",
+          "m3": "Mazda 3, 2022.",
+          "m4": "Thanks. I have today at 4:00 p.m. or tomorrow at 10:00 a.m. with an advisor. Which do you prefer?",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Explains products and requirements with your wording",
+          "f2": "Asks for the details you define",
+          "f3": "Scores and books the call with an advisor",
+          "f4": "Hands the full conversation to your team"
+        },
+        "storyH": "What the agent does when someone writes to quote an insurance policy or ask for a loan",
+        "storyLead": "Whoever inquires about a financial product starts with the same questions: what you offer, what you require and how much it costs. The agent answers with what you loaded, gathers the details your advisor needs and leaves the call booked.",
+        "methodClose": "Whoever inquires gets a reply right away, on any channel. Quoting, advice, approval and contracting are always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Answers on whichever channel they use",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks which product they are interested in.",
+            "result": "No inquiry waits for an advisor to be free"
+          },
+          "s2": {
+            "title": "Explains your products and requirements",
+            "text": "It answers questions about products, coverage, requirements and documents with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "The same explanation, always with your wording"
+          },
+          "s3": {
+            "title": "Gathers the details you define",
+            "text": "It asks for the details your team needs to quote or assess, depending on the product. Everything stays in the conversation.",
+            "result": "Your advisor receives the inquiry with the details ready"
+          },
+          "s4": {
+            "title": "Scores and books the call",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar, with the GenSmart calendar or Google Calendar.",
+            "result": "Calls on the calendar with no back and forth messages"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and gets a notification when it reaches a high score. Quoting, advice, approval and contracting are handled by a person.",
+            "result": "Your advisor calls whoever is ready to move forward"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it approve loans or issue policies?",
+            "answer": "No. Approval, issuance and contracting are handled by someone on your team. The agent gathers the details and leaves them the full conversation."
+          },
+          "q2": {
+            "question": "Does it give financial advice?",
+            "answer": "No. It informs with the texts you loaded about your products and requirements. Personalized advice is given by your advisor on the call."
+          },
+          "q3": {
+            "question": "Does it quote?",
+            "answer": "It gathers the details you need to quote, and the quote is delivered by someone on your team. If your quoting system has an API, we look in the demo at how to connect it."
+          },
+          "q4": {
+            "question": "What is the score and what is it for?",
+            "answer": "It is a number from 0 to 10 based on how interested the person is. It places them in your funnel as a lead or an opportunity and your team gets a notification when it is high, so they call first whoever already wants to move forward."
+          },
+          "q5": {
+            "question": "Does it book the call with an advisor?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the call. Your team gets notified."
+          },
+          "q6": {
+            "question": "Can it cancel or reschedule an appointment?",
+            "answer": "Not today. When the person wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q7": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the person writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q8": {
+            "question": "What happens if they ask something that is not loaded?",
+            "answer": "The agent does not invent the answer. It hands the conversation to someone on your team with everything already discussed."
+          }
+        },
+        "console": {
+          "name": "Natalia",
+          "channel": "WhatsApp",
+          "stage": "Opportunity",
+          "m1": "I want to quote car insurance",
+          "m2": "Happy to help. Can you tell me the make, model and year of the vehicle?",
+          "m3": "Mazda 3, 2022.",
+          "m4": "Thanks. I have today at 4:00 p.m. or tomorrow at 10:00 a.m. with an advisor. Which do you prefer?",
+          "did1": "Explains product and requirements",
+          "did2": "Captures product, details and contact",
+          "did3": "Scores and offers times for the call",
+          "vars": {
+            "v1": {
+              "name": "product",
+              "value": "Car insurance"
+            },
+            "v2": {
+              "name": "vehicle",
+              "value": "Mazda 3, 2022"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryTravel": {
+        "name": "Travel and tourism",
+        "short": "Serves each traveler in their language and books the call with your advisor.",
+        "h1": {
+          "before": "Your travelers write in their own language.",
+          "accent": "The agent replies in the same.",
+          "after": ""
+        },
+        "lead": "The agent handles WhatsApp, Instagram, Messenger, your website and email, and replies in the language each traveler writes in, whether Spanish, English, Portuguese or another. It answers about your tours, hotels and packages with what you loaded, asks for destination, dates and number of travelers, gives the person a score and books the call with a travel advisor, so your team receives each request ready to quote.",
+        "subs": {
+          "s1": "Travel agencies with several advisors",
+          "s2": "Tour and experience operators",
+          "s3": "Hotels and hostels with several locations",
+          "s4": "Tourist transport",
+          "s5": "Event and group organizers"
+        },
+        "label": "Travel agent",
+        "chat": {
+          "m1": "Hello, do you have any tour to Cartagena this weekend?",
+          "m2": "Happy to help. For which date and how many people are traveling?",
+          "m3": "Saturday, four adults.",
+          "m4": "Thanks. An advisor can call you tomorrow at 9:00 a.m. or 3:00 p.m. to quote you. Which do you prefer?",
+          "chip1": "Channel: WhatsApp",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Replies in the traveler's language and channel",
+          "f2": "Answers with your loaded tours and rates",
+          "f3": "Asks destination, dates and people",
+          "f4": "Scores and books the call with an advisor"
+        },
+        "storyH": "What the agent does when a traveler writes to ask about a tour, a hotel or a package",
+        "storyLead": "Whoever plans a trip compares and writes to several agencies at once. The agent replies in their language, gathers the details your advisor needs to quote and leaves the call booked.",
+        "methodClose": "The traveler gets a reply right away, in their language and on any channel. Quoting, booking, payment and changes are always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Replies on whichever channel and language they use",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and replies in the traveler's language.",
+            "result": "No traveler waits for someone on your team who speaks their language"
+          },
+          "s2": {
+            "title": "Answers with your tours and rates",
+            "text": "It answers questions about destinations, what each package includes, schedules and conditions with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "The same information, always with your wording"
+          },
+          "s3": {
+            "title": "Asks what is needed to quote",
+            "text": "It asks for destination, dates, number of people and budget, depending on what your team needs. Everything stays in the conversation.",
+            "result": "Your advisor receives the request with the trip defined"
+          },
+          "s4": {
+            "title": "Scores and books the call",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar, with the GenSmart calendar or Google Calendar.",
+            "result": "Calls on the calendar with no back and forth messages"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and gets a notification when it reaches a high score. Quoting, booking, payment and changes are handled by a person.",
+            "result": "Your advisor calls whoever is ready to travel"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it reply in other languages?",
+            "answer": "Yes. It replies in the language the traveler writes in. The information about your tours and rates comes from what you loaded, and if something is not loaded, it hands the conversation to a person."
+          },
+          "q2": {
+            "question": "Does it quote and book?",
+            "answer": "It gathers destination, dates, people and budget, and quoting and booking are handled by someone on your team. If your booking system has an API, we look in the demo at how to connect it."
+          },
+          "q3": {
+            "question": "Does it collect deposits or payments?",
+            "answer": "No. Payments are handled by someone on your team. If your payment platform has an API, we look in the demo at what can be connected."
+          },
+          "q4": {
+            "question": "What is the score and what is it for?",
+            "answer": "It is a number from 0 to 10 based on how interested the person is. It places them in your funnel as a lead or an opportunity and your team gets a notification when it is high, so they call first whoever already wants to travel."
+          },
+          "q5": {
+            "question": "Does it book the call with an advisor?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the call. Your team gets notified."
+          },
+          "q6": {
+            "question": "Can it cancel or reschedule a booking?",
+            "answer": "Not today. When the traveler wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q7": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the person writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q8": {
+            "question": "Does it know if there is availability?",
+            "answer": "It answers with what you loaded. If your booking system has an API, we look in the demo at how to query it. If not, it hands the conversation to a person."
+          }
+        },
+        "console": {
+          "name": "Camila",
+          "channel": "WhatsApp",
+          "stage": "Opportunity",
+          "m1": "Hello, do you have any tour to Cartagena this weekend?",
+          "m2": "Happy to help. For which date and how many people are traveling?",
+          "m3": "Saturday, four adults.",
+          "m4": "Thanks. An advisor can call you tomorrow at 9:00 a.m. or 3:00 p.m. to quote you. Which do you prefer?",
+          "did1": "Answers about the tour",
+          "did2": "Captures destination, dates and people",
+          "did3": "Scores and offers times for the call",
+          "vars": {
+            "v1": {
+              "name": "destination",
+              "value": "Cartagena"
+            },
+            "v2": {
+              "name": "people",
+              "value": "4 adults"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryProfessionalServices": {
+        "name": "Professional services",
+        "short": "Answers whoever asks about your services and books the meeting with the professional.",
+        "h1": {
+          "before": "Whoever asks about your services expects an answer.",
+          "accent": "The agent replies and books the meeting.",
+          "after": ""
+        },
+        "lead": "When a potential client writes on WhatsApp, Instagram, Messenger, your website or email, the agent explains your services with what you loaded, asks what your team needs to know, gives them a score from 0 to 10 and books the meeting with the right professional. Your team receives the full conversation.",
+        "subs": {
+          "s1": "Law firms with several partners",
+          "s2": "Accounting and advisory firms",
+          "s3": "Consultancies",
+          "s4": "Architecture and engineering studios",
+          "s5": "Notaries and paperwork agencies"
+        },
+        "label": "Inquiry agent",
+        "chat": {
+          "m1": "Hello, I need advice to set up a company",
+          "m2": "Happy to help. How many partners would there be?",
+          "m3": "There are three of us.",
+          "m4": "Thanks. I have tomorrow at 10:00 a.m. or 3:00 p.m. with one of the firm's advisors. Which do you prefer?",
+          "chip1": "Channel: Web",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Identifies the service they need",
+          "f2": "Asks for the details you define",
+          "f3": "Scores and books with the right professional",
+          "f4": "Hands the full conversation to your team"
+        },
+        "storyH": "What the agent does when someone writes to hire a professional service",
+        "storyLead": "Whoever looks for a lawyer, an accountant or a consultancy usually writes first, in a few lines, what they need. The agent replies, gathers the details your team needs and leaves the meeting booked with the right professional.",
+        "methodClose": "Whoever inquires gets a reply right away, on any channel. Advice, proposal and contract are always handled by a professional on your team.",
+        "method": {
+          "s1": {
+            "title": "Answers on whichever channel they use",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks how you can help.",
+            "result": "No inquiry waits for a professional to be free"
+          },
+          "s2": {
+            "title": "Identifies the service they need",
+            "text": "It answers questions about your practice areas and how you work with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "Each inquiry reaches the area it belongs to"
+          },
+          "s3": {
+            "title": "Gathers the details you define",
+            "text": "It asks what your team needs to know before the first meeting, depending on the service. Everything stays in the conversation.",
+            "result": "The professional goes into the meeting with the context ready"
+          },
+          "s4": {
+            "title": "Scores and books the meeting",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar, with the GenSmart calendar or Google Calendar.",
+            "result": "Meetings on the calendar with no back and forth messages"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and gets a notification when it reaches a high score. Advice, proposal and contract are handled by a person.",
+            "result": "Your team attends first to whoever is ready to hire"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it give legal, accounting or technical advice?",
+            "answer": "No. It informs with the texts you loaded about your services. Advice is given by the professional on your team in the meeting."
+          },
+          "q2": {
+            "question": "Does it receive documents?",
+            "answer": "The agent works with what the person writes in the conversation. If you need to receive documents from a system with an API, we look in the demo at how to connect it."
+          },
+          "q3": {
+            "question": "Does it quote fees?",
+            "answer": "No. Fees and proposals are defined by someone on your team. The agent leaves them the full conversation to do so."
+          },
+          "q4": {
+            "question": "What is the score and what is it for?",
+            "answer": "It is a number from 0 to 10 based on how interested the person is. It places them in your funnel as a lead or an opportunity and your team gets a notification when it is high, so they write first to whoever already wants to move forward."
+          },
+          "q5": {
+            "question": "Does it book the meeting with the right professional?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the meeting. Your team gets notified."
+          },
+          "q6": {
+            "question": "Can it cancel or reschedule an appointment?",
+            "answer": "Not today. When the person wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q7": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the person writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q8": {
+            "question": "What happens if they ask something that is not loaded?",
+            "answer": "The agent does not invent the answer. It hands the conversation to someone on your team with everything already discussed."
+          }
+        },
+        "console": {
+          "name": "Valentina",
+          "channel": "Web",
+          "stage": "Opportunity",
+          "m1": "Hello, I need advice to set up a company",
+          "m2": "Happy to help. How many partners would there be?",
+          "m3": "There are three of us.",
+          "m4": "Thanks. I have tomorrow at 10:00 a.m. or 3:00 p.m. with one of the firm's advisors. Which do you prefer?",
+          "did1": "Identifies the service",
+          "did2": "Captures the case and details",
+          "did3": "Scores and offers times for the meeting",
+          "vars": {
+            "v1": {
+              "name": "service",
+              "value": "Company incorporation"
+            },
+            "v2": {
+              "name": "partners",
+              "value": "3"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      },
+      "industryB2b": {
+        "name": "B2B, industrial and SaaS",
+        "short": "Answers the company asking about your products and books the demo or visit.",
+        "h1": {
+          "before": "A company that wants to buy from you does not wait.",
+          "accent": "The agent replies and books the demo.",
+          "after": ""
+        },
+        "lead": "When a company writes on WhatsApp, Instagram, Messenger, your website or email, the agent replies with what you loaded from your catalog, asks what your sales team needs to know, gives it a score from 0 to 10 and books the demo or visit. Your team receives the full conversation.",
+        "subs": {
+          "s1": "Industrial distribution",
+          "s2": "Construction and suppliers",
+          "s3": "Software and SaaS",
+          "s4": "Agencies and consulting",
+          "s5": "Logistics and freight"
+        },
+        "label": "Sales agent",
+        "chat": {
+          "m1": "I need to quote 200 units of this instrument",
+          "m2": "Happy to help. Which company is it for and which city would it be delivered to?",
+          "m3": "We are a construction company in Medellín.",
+          "m4": "Thanks. I have tomorrow at 9:00 a.m. or 2:00 p.m. for a call with a technical advisor. Which do you prefer?",
+          "chip1": "Channel: Web",
+          "chip2": "Stage: opportunity"
+        },
+        "flow": {
+          "f1": "Answers with your catalog and specs",
+          "f2": "Asks company, need and volume",
+          "f3": "Scores and books the demo or visit",
+          "f4": "Hands the full conversation to your team"
+        },
+        "storyH": "What the agent does when a company writes to buy from you",
+        "storyLead": "Whoever buys for a company usually writes what they need, how much and by when. The agent replies with your catalog, gathers the details your sales team needs and leaves the demo or visit booked.",
+        "methodClose": "The company that writes gets a reply right away, on any channel. Quote, negotiation and closing are always handled by someone on your team.",
+        "method": {
+          "s1": {
+            "title": "Answers on whichever channel they use",
+            "text": "It greets them on the channel they wrote from, whether WhatsApp, Instagram, Messenger, your website or email, and asks what they need.",
+            "result": "No company waits for an advisor to be free"
+          },
+          "s2": {
+            "title": "Answers with your catalog and spec sheets",
+            "text": "It answers questions about products, uses and features with what you loaded. If asked something that is not there, it does not invent the answer: it hands the conversation to a person.",
+            "result": "Basic technical questions are solved without taking up your team"
+          },
+          "s3": {
+            "title": "Asks what your team needs to know",
+            "text": "It asks company, city, product and volume, and any other details you define. Everything stays in the conversation.",
+            "result": "Your team quotes knowing what each company is looking for"
+          },
+          "s4": {
+            "title": "Scores and books the demo or visit",
+            "text": "It gives them a score from 0 to 10 based on their interest, places them in your funnel as a lead or an opportunity and offers the free times on your calendar, with the GenSmart calendar or Google Calendar.",
+            "result": "Demos and visits on the calendar with no back and forth messages"
+          },
+          "s5": {
+            "title": "Hands your team the full conversation",
+            "text": "Your team gets the contact with their details, the score, the source channel and the whole conversation, and gets a notification when it reaches a high score. Quote, negotiation and closing are handled by a person.",
+            "result": "Your team attends first to the company that is ready to buy"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "Does it answer technical questions?",
+            "answer": "Yes, with the spec sheets and catalog you loaded. If asked something that is not loaded, it does not invent the answer and hands the conversation to someone on your team."
+          },
+          "q2": {
+            "question": "Does it quote and negotiate prices?",
+            "answer": "No. Quoting, negotiation and closing are done by someone on your team. The agent leaves them the full conversation with company, product and volume."
+          },
+          "q3": {
+            "question": "What is the score and what is it for?",
+            "answer": "It is a number from 0 to 10 based on how interested the person is. It places them in your funnel as a lead or an opportunity and your team gets a notification when it is high, so they write first to whoever already wants to move forward."
+          },
+          "q4": {
+            "question": "Does it book the demo or the visit?",
+            "answer": "Yes. It offers the free times from the GenSmart calendar or your Google Calendar and records the appointment. Your team gets notified."
+          },
+          "q5": {
+            "question": "Does it connect to my ERP or inventory?",
+            "answer": "It connects to practically anything that has an API. If your ERP or inventory system has one, we look in the demo at how to connect it."
+          },
+          "q6": {
+            "question": "Can it cancel or reschedule an appointment?",
+            "answer": "Not today. When the person wants to change it, the agent hands the conversation to your team with the summary."
+          },
+          "q7": {
+            "question": "Does it write first or send reminders?",
+            "answer": "No. The agent replies when the person writes. On WhatsApp, it can also only reply within 24 hours of the customer's last message."
+          },
+          "q8": {
+            "question": "Does it work with several sales teams?",
+            "answer": "Yes. It can book with different advisors and your team receives each conversation with the full context."
+          }
+        },
+        "console": {
+          "name": "Mateo",
+          "channel": "Web",
+          "stage": "Opportunity",
+          "m1": "I need to quote 200 units of this instrument",
+          "m2": "Happy to help. Which company is it for and which city would it be delivered to?",
+          "m3": "We are a construction company in Medellín.",
+          "m4": "Thanks. I have tomorrow at 9:00 a.m. or 2:00 p.m. for a call with a technical advisor. Which do you prefer?",
+          "did1": "Identifies the product",
+          "did2": "Captures company and volume",
+          "did3": "Scores and offers times for the call",
+          "vars": {
+            "v1": {
+              "name": "product",
+              "value": "Measuring instrument"
+            },
+            "v2": {
+              "name": "quantity",
+              "value": "200 units"
+            }
+          },
+          "summary": "Handled the whole inquiry and left the lead ready. Stage: opportunity."
+        }
+      }
+    },
+    "solutions": {
+      "h1": {
+        "before": "Your sector has its own questions.",
+        "accent": "Your agent answers them with your information."
+      },
+      "lead": "A clinic gets messages about appointments, a real estate agency about viewings and a restaurant about bookings. Pick your sector and see the full conversation: what the customer writes, what the agent does and when it hands over to a person.",
+      "clockTitle": "Pick your business type and see a conversation",
+      "clockLead": "What the customer writes, what the agent does step by step and when it hands off to a person.",
+      "clockTabs": "Business type",
+      "clockCta": "See the solution",
+      "industriesTitle": "One page per industry, with its full flow",
+      "industriesLead": "Each one has the sector's concrete problems, the agent's step by step and the frequently asked questions.",
+      "industriesMore": "See solution",
+      "teamsTitle": "Already know what you want to solve? Start from the function",
+      "teamsLead": "Sales, customer support, marketing, bookings, hiring or collections. Each function has its own page, with what the agent does and what you control.",
+      "missingTitle": "Is your industry not listed?",
+      "missingText": "GenSmart is configured for any business that serves customers through conversation.",
+      "missingCta": "Tell us your case",
+      "listName": "GenSmart solutions by industry and by team"
     }
   }
 }

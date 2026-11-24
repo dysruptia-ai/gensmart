@@ -1,0 +1,92 @@
+/* design/web: .tm-ctl*, .cu-lim y .cu-tag */
+.ctl {
+  margin-top: clamp(48px, 7vw, 96px);
+  padding-top: clamp(32px, 4vw, 56px);
+  border-top: 1px solid var(--gs-line-strong);
+}
+
+.ctlTitle {
+  margin: 0;
+  font-family: var(--gs-font-display);
+  font-weight: 700;
+  font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.4rem);
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  color: var(--gs-fg);
+}
+
+.ctlLead {
+  margin: 14px 0 0;
+  max-width: 62ch;
+  color: var(--gs-fg-soft);
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: clamp(24px, 5vw, 72px);
+  margin: var(--gs-sp-6) 0 0;
+}
+
+.rules div {
+  padding: 22px 0;
+  border-top: 1px solid var(--gs-line);
+}
+
+.rules dt {
+  font-family: var(--gs-font-display);
+  font-weight: 600;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  color: var(--gs-fg);
+}
+
+.rules dd {
+  margin: 8px 0 0;
+  color: var(--gs-fg-soft);
+  line-height: 1.55;
+}
+
+.tag {
+  display: inline-block;
+  margin-left: 12px;
+  padding: 2px 9px;
+  border: 1px solid var(--gs-brand-line);
+  border-radius: 99px;
+  background: var(--gs-brand-tint);
+  color: var(--gs-brand-bright);
+  font-family: var(--gs-font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: var(--gs-sp-5);
+}
+
+@media (max-width: 760px) {
+  .rules {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .tag {
+    display: table;
+    margin: 8px 0 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .actions > * {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}

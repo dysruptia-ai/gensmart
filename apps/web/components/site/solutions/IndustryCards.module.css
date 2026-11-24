@@ -1,0 +1,183 @@
+/* design/web: .ind-grid.ind-grid-ph, .ind-card, .ic-wrap, .ic-ph, .ic-n, .ic-subs */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: var(--gs-sp-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grid > li {
+  display: flex;
+  min-width: 0;
+}
+
+.card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border: 1px solid var(--gs-panel-line);
+  border-radius: var(--gs-r-lg);
+  background: var(--gs-panel);
+  color: var(--gs-fg);
+  text-decoration: none;
+  transition: border-color 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--gs-brand-line);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+/* Trama de puntos sobre la parte baja de la foto (la verde aparece al pasar) */
+.card::before,
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  pointer-events: none;
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, transparent 30%, #000 92%);
+}
+
+.card::before {
+  background-image: radial-gradient(rgba(240, 244, 242, 0.48) 1.2px, transparent 1.45px);
+}
+
+.card::after {
+  background-image: radial-gradient(rgba(61, 220, 132, 0.7) 1.2px, transparent 1.4px);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.card:hover::after,
+.card:focus-visible::after {
+  opacity: 1;
+}
+
+.wrap {
+  position: relative;
+  isolation: isolate;
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 16 / 11;
+  margin: 0 0 -22px;
+  mask-image: linear-gradient(180deg, #000 38%, rgba(0, 0, 0, 0.6) 66%, transparent 96%);
+}
+
+.ph {
+  z-index: 0;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.25) brightness(0.9);
+  transition: transform 0.5s ease;
+}
+
+/* Duotono verde (multiplica) y sombras (pantalla), como en el hero */
+.wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(160deg, #30c775 0%, #1b8b53 55%, #0d5a37 100%);
+  mix-blend-mode: multiply;
+  opacity: 0.96;
+  transition: opacity 0.35s ease;
+}
+
+.wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #082a1b;
+  mix-blend-mode: screen;
+}
+
+.card:hover .ph {
+  transform: scale(1.04);
+}
+
+.card:hover .wrap::before {
+  opacity: 0.82;
+}
+
+.n {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 3;
+  padding: 4px 8px;
+  border-radius: var(--gs-r-xs);
+  background: rgba(10, 18, 15, 0.72);
+  color: #f4faf6;
+  font-style: normal;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+}
+
+.h3,
+.short,
+.subs,
+.more {
+  position: relative;
+  z-index: 2;
+  margin-inline: var(--gs-sp-4);
+}
+
+.h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-family: var(--gs-font-display);
+  font-weight: 600;
+  font-size: var(--gs-fs-h3);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.short {
+  margin-block: 0;
+  font-size: var(--gs-fs-sm);
+  line-height: 1.5;
+  color: var(--gs-fg-soft);
+}
+
+.subs {
+  margin-block: var(--gs-sp-3) var(--gs-sp-4);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--gs-ink-300);
+}
+
+.more {
+  margin-top: auto;
+  margin-bottom: var(--gs-sp-4);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gs-link);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card::after,
+  .ph,
+  .wrap::before {
+    transition: none;
+  }
+
+  .card:hover .ph {
+    transform: none;
+  }
+}

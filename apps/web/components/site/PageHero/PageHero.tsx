@@ -10,6 +10,8 @@ interface PageHeroProps {
   /** Único `h1` de la página: texto, con un tramo opcional resaltado en verde. */
   title: { before: string; accent?: string; after?: string };
   lead?: ReactNode;
+  /** Subsectores en una línea bajo el lead (design/web: `.sub-line`), hasta 6. */
+  subs?: readonly string[];
   /** Botones (`SiteButton`). */
   actions?: ReactNode;
   /** Nota corta bajo los botones. */
@@ -23,8 +25,9 @@ interface PageHeroProps {
   /**
    * Foto de fondo (design/web: `.page-hero-bg`), en duotono verde y con velo para
    * el contraste. Decorativa y con `priority`, porque es el LCP de la página.
+   * `light: false` para una foto oscura, que se aclara menos (design/web: sin `.is-light`).
    */
-  photo?: { src: string; position?: string };
+  photo?: { src: string; position?: string; light?: boolean };
   className?: string;
 }
 
@@ -33,6 +36,7 @@ export default function PageHero({
   crumbs,
   title,
   lead,
+  subs,
   actions,
   note,
   aside,
@@ -60,7 +64,7 @@ export default function PageHero({
             fill
             priority
             sizes="100vw"
-            className={styles.photoImg}
+            className={photo.light === false ? `${styles.photoImg} ${styles.photoDark}` : styles.photoImg}
             style={photo.position ? { objectPosition: photo.position } : undefined}
           />
           <span className={styles.tone} />
@@ -82,6 +86,13 @@ export default function PageHero({
             {title.after ? ` ${title.after}` : null}
           </h1>
           {lead ? <p className={styles.lead}>{lead}</p> : null}
+          {subs && subs.length > 0 ? (
+            <p className={styles.subs}>
+              {subs.slice(0, 6).map((sub) => (
+                <span key={sub}>{sub}</span>
+              ))}
+            </p>
+          ) : null}
           {actions ? <div className={styles.actions}>{actions}</div> : null}
           {note ? <p className={styles.note}>{note}</p> : null}
         </div>

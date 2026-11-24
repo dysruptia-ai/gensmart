@@ -29,7 +29,20 @@ export type SiteRouteId =
   | 'teamMarketing'
   | 'teamOperationsBooking'
   | 'teamHumanResources'
-  | 'teamCollections';
+  | 'teamCollections'
+  | 'solutions'
+  | 'industryEcommerce'
+  | 'industryClinics'
+  | 'industryRealEstate'
+  | 'industryFieldServices'
+  | 'industryEducation'
+  | 'industryRestaurants'
+  | 'industryAutomotive'
+  | 'industryBeautyWellness'
+  | 'industryFinanceInsurance'
+  | 'industryTravel'
+  | 'industryProfessionalServices'
+  | 'industryB2b';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -100,6 +113,69 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
     id: 'teamCollections',
     internal: '/solutions/teams/collections',
     paths: { es: '/soluciones/equipos/cobranzas', en: '/en/solutions/teams/collections' },
+  },
+  // Índice de Soluciones: industrias y equipos (/soluciones/equipos e /industrias redirigen aquí)
+  solutions: { id: 'solutions', internal: '/solutions', paths: { es: '/soluciones', en: '/en/solutions' } },
+  // Soluciones por industria: /soluciones/industrias/… y /en/solutions/industries/…
+  industryEcommerce: {
+    id: 'industryEcommerce',
+    internal: '/solutions/industries/ecommerce',
+    paths: { es: '/soluciones/industrias/ecommerce', en: '/en/solutions/industries/ecommerce' },
+  },
+  industryClinics: {
+    id: 'industryClinics',
+    internal: '/solutions/industries/clinics',
+    paths: { es: '/soluciones/industrias/clinicas', en: '/en/solutions/industries/clinics' },
+  },
+  industryRealEstate: {
+    id: 'industryRealEstate',
+    internal: '/solutions/industries/real-estate',
+    paths: { es: '/soluciones/industrias/inmobiliarias', en: '/en/solutions/industries/real-estate' },
+  },
+  industryFieldServices: {
+    id: 'industryFieldServices',
+    internal: '/solutions/industries/field-services',
+    paths: { es: '/soluciones/industrias/servicios-en-campo', en: '/en/solutions/industries/field-services' },
+  },
+  industryEducation: {
+    id: 'industryEducation',
+    internal: '/solutions/industries/education',
+    paths: { es: '/soluciones/industrias/educacion', en: '/en/solutions/industries/education' },
+  },
+  industryRestaurants: {
+    id: 'industryRestaurants',
+    internal: '/solutions/industries/restaurants',
+    paths: { es: '/soluciones/industrias/restaurantes', en: '/en/solutions/industries/restaurants' },
+  },
+  industryAutomotive: {
+    id: 'industryAutomotive',
+    internal: '/solutions/industries/automotive',
+    paths: { es: '/soluciones/industrias/automotriz', en: '/en/solutions/industries/automotive' },
+  },
+  industryBeautyWellness: {
+    id: 'industryBeautyWellness',
+    internal: '/solutions/industries/beauty-and-wellness',
+    paths: { es: '/soluciones/industrias/belleza-y-bienestar', en: '/en/solutions/industries/beauty-and-wellness' },
+  },
+  industryFinanceInsurance: {
+    id: 'industryFinanceInsurance',
+    internal: '/solutions/industries/finance-and-insurance',
+    paths: { es: '/soluciones/industrias/finanzas-y-seguros', en: '/en/solutions/industries/finance-and-insurance' },
+  },
+  industryTravel: {
+    id: 'industryTravel',
+    internal: '/solutions/industries/travel-and-tourism',
+    paths: { es: '/soluciones/industrias/turismo-y-viajes', en: '/en/solutions/industries/travel-and-tourism' },
+  },
+  industryProfessionalServices: {
+    id: 'industryProfessionalServices',
+    internal: '/solutions/industries/professional-services',
+    paths: { es: '/soluciones/industrias/servicios-profesionales', en: '/en/solutions/industries/professional-services' },
+  },
+  industryB2b: {
+    id: 'industryB2b',
+    internal: '/solutions/industries/b2b-and-saas',
+    paths: { es: '/soluciones/industrias/b2b-y-saas', en: '/en/solutions/industries/b2b-and-saas' },
   },
 };
 

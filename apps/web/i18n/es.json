@@ -2268,6 +2268,71 @@
         "title": "Agentes de IA para cobranzas | GenSmart",
         "description": "Un agente de IA atiende a quien escribe por un pago: aclara el saldo, comparte cómo pagar y anota el compromiso. Tu equipo ve cada caso.",
         "ogAlt": "Agentes de IA de GenSmart para cobranzas"
+      },
+      "solutions": {
+        "title": "Agentes de IA por industria y por equipo | GenSmart",
+        "description": "Agentes de IA para 12 industrias y 6 equipos: clínicas, inmobiliarias, restaurantes, educación, ventas, atención al cliente, reservas y cobranzas.",
+        "ogAlt": "Agentes de IA de GenSmart por industria y por equipo"
+      },
+      "industryEcommerce": {
+        "title": "Atención con IA para e-commerce y dropshipping | GenSmart",
+        "description": "Un agente de IA responde por producto, stock, talla y envío en WhatsApp e Instagram, y lleva al cliente al checkout de tu tienda o tu dropshipping.",
+        "ogAlt": "Agentes de IA de GenSmart para e-commerce"
+      },
+      "industryClinics": {
+        "title": "Agentes de IA para clínicas: agenda citas | GenSmart",
+        "description": "Un agente de IA responde las dudas de tus pacientes, agenda la cita y la confirma por correo, sin saturar a tu recepción. Para clínicas y consultorios.",
+        "ogAlt": "Agentes de IA de GenSmart para clínicas"
+      },
+      "industryRealEstate": {
+        "title": "Agentes de IA para inmobiliarias y constructoras | GenSmart",
+        "description": "Un agente de IA responde por cada inmueble, califica al interesado y agenda la visita con tu asesor. Para inmobiliarias, constructoras y corredores.",
+        "ogAlt": "Agentes de IA de GenSmart para inmobiliarias"
+      },
+      "industryFieldServices": {
+        "title": "Agentes de IA para servicios en campo | GenSmart",
+        "description": "Un agente de IA recibe cada solicitud completa, con dirección y tipo de servicio, y agenda la visita de tu cuadrilla. Para contratistas y técnicos.",
+        "ogAlt": "Agentes de IA de GenSmart para servicios en campo"
+      },
+      "industryEducation": {
+        "title": "Agentes de IA para educación y admisiones | GenSmart",
+        "description": "Un agente de IA atiende a cada aspirante, lo califica y agenda la llamada con admisiones. Para universidades, colegios, academias y cursos online.",
+        "ogAlt": "Agentes de IA de GenSmart para educación"
+      },
+      "industryRestaurants": {
+        "title": "Agentes de IA para restaurantes y eventos | GenSmart",
+        "description": "Un agente de IA atiende reservas, pedidos y cotizaciones de eventos en todos tus canales y sedes. Para restaurantes, cadenas, catering y hoteles.",
+        "ogAlt": "Agentes de IA de GenSmart para restaurantes"
+      },
+      "industryAutomotive": {
+        "title": "Agentes de IA para concesionarios y talleres | GenSmart",
+        "description": "Un agente de IA responde cotizaciones, agenda pruebas de manejo y citas de taller en todas tus sedes. Para concesionarios, talleres y alquiler.",
+        "ogAlt": "Agentes de IA de GenSmart para concesionarios y talleres"
+      },
+      "industryBeautyWellness": {
+        "title": "Agentes de IA para salones, spas y gimnasios | GenSmart",
+        "description": "Un agente de IA responde precios, califica y agenda en todas tus sedes. Para centros de estética, spas, salones, barberías, gimnasios y estudios.",
+        "ogAlt": "Agentes de IA de GenSmart para belleza y bienestar"
+      },
+      "industryFinanceInsurance": {
+        "title": "Agentes de IA para seguros y finanzas | GenSmart",
+        "description": "Un agente de IA reúne los datos de cada consulta y agenda con tu asesor. Para corredores de seguros, entidades de crédito, fintech y equipos comerciales.",
+        "ogAlt": "Agentes de IA de GenSmart para seguros y finanzas"
+      },
+      "industryTravel": {
+        "title": "Agentes de IA para agencias de viajes y turismo | GenSmart",
+        "description": "Un agente de IA atiende a cada viajero en su idioma y agenda la llamada con tu asesor. Para agencias de viajes, operadores de tours y hoteles.",
+        "ogAlt": "Agentes de IA de GenSmart para turismo y viajes"
+      },
+      "industryProfessionalServices": {
+        "title": "Agentes de IA para servicios profesionales | GenSmart",
+        "description": "Un agente de IA responde a quien pregunta por tus servicios y agenda la reunión con el profesional. Para firmas de abogados, contables y consultoras.",
+        "ogAlt": "Agentes de IA de GenSmart para servicios profesionales"
+      },
+      "industryB2b": {
+        "title": "Agentes de IA para B2B, industria y SaaS | GenSmart",
+        "description": "Un agente de IA responde a la empresa que pregunta por tus productos, la califica y agenda la demo o la visita. Para distribuidores, industria y SaaS.",
+        "ogAlt": "Agentes de IA de GenSmart para B2B y SaaS"
       }
     },
     "langHint": {
@@ -2474,7 +2539,19 @@
       "teamOperationsBooking": "Operaciones y reservas",
       "teamHumanResources": "Recursos humanos",
       "teamCollections": "Cobranzas",
-      "solutions": "Soluciones"
+      "solutions": "Soluciones",
+      "industryEcommerce": "E-commerce y dropshipping",
+      "industryClinics": "Clínicas y salud",
+      "industryRealEstate": "Inmobiliarias y constructoras",
+      "industryFieldServices": "Servicios en campo y contratistas",
+      "industryEducation": "Educación y formación",
+      "industryRestaurants": "Restaurantes y hospitalidad",
+      "industryAutomotive": "Automotriz",
+      "industryBeautyWellness": "Belleza y bienestar",
+      "industryFinanceInsurance": "Finanzas y seguros",
+      "industryTravel": "Turismo y viajes",
+      "industryProfessionalServices": "Servicios profesionales",
+      "industryB2b": "B2B, industria y SaaS"
     },
     "channels": {
       "email": "Correo",
@@ -3161,13 +3238,13 @@
         "defaultSummary": "Atendió la consulta completa y dejó el lead listo. Etapa: {stage}.",
         "intsTitle": "Se conecta con las herramientas que ya usas",
         "intsLead": "Mientras conversa, el agente consulta y escribe en las herramientas de tu equipo: el CRM, la agenda, la tienda.",
-        "intsListLabel": "Integraciones para {team}",
+        "intsListLabel": "Integraciones para {name}",
         "intsOther": "Si usas otra, la conectas por API, MCP o webhook.",
         "intsLink": "Ver las integraciones",
         "channelsTitle": "La misma conversación en cualquier canal",
         "channelsText": "Si el cliente escribe por WhatsApp y después por tu web, el agente lo reconoce y sigue donde quedó. Tu equipo lo ve todo en la misma bandeja.",
         "channelsLabel": "Canales",
-        "faqKicker": "Preguntas frecuentes · {team}",
+        "faqKicker": "Preguntas frecuentes · {name}",
         "faqTitleBefore": "¿Dudas?",
         "faqTitleAccent": "Resuélvelas aquí",
         "faqHelpBefore": "¿No ves la tuya? Escríbenos y",
@@ -3900,6 +3977,1492 @@
           }
         }
       }
+    },
+    "industries": {
+      "common": {
+        "primary": "Empieza la prueba gratis",
+        "demo": "Agenda una demo",
+        "chatLabel": "Conversación de ejemplo: {agent}",
+        "result": "Resultado",
+        "inboxTitle": "Lo que ve tu equipo en la bandeja",
+        "consoleLabel": "Vista de ejemplo de la bandeja: conversación con {name}",
+        "intsTitle": "Se conecta con las herramientas que ya usas",
+        "intsListLabel": "Integraciones para {name}",
+        "intsOther": "Si usas otra, la conectas por API, MCP o webhook.",
+        "intsLink": "Ver las integraciones",
+        "channelsTitle": "La misma conversación en cualquier canal",
+        "channelsText": "Si el cliente escribe por WhatsApp y después por tu web, el agente lo reconoce y sigue donde quedó. Tu equipo lo ve todo en la misma bandeja.",
+        "channelsLabel": "Canales",
+        "faqKicker": "Preguntas frecuentes · {name}",
+        "faqTitleBefore": "¿Dudas?",
+        "faqTitleAccent": "Resuélvelas aquí",
+        "faqHelpBefore": "¿No ves la tuya? Escríbenos y",
+        "faqHelpAccent": "te respondemos",
+        "faqHelpAfter": "pronto.",
+        "faqCta": "Hablar con el equipo",
+        "moreTitle": "Explora otras industrias",
+        "moreAll": "Ver todas las soluciones",
+        "ecommerceBefore": "¿Quieres ver cómo trabaja dentro de Shopify, Tiendanube o WooCommerce?",
+        "ecommerceLink": "Mira la solución para tiendas online"
+      },
+      "industryEcommerce": {
+        "name": "E-commerce y dropshipping",
+        "short": "Responde por producto, stock y envío, y lleva al cliente al checkout.",
+        "h1": {
+          "before": "Quien pregunta por stock, talla o envío quiere comprar.",
+          "accent": "El agente lo atiende y lo lleva al checkout.",
+          "after": ""
+        },
+        "lead": "Cuando un cliente escribe por un producto, el agente le responde con tu catálogo, le resuelve dudas de envío y garantía, y le comparte el enlace de tu checkout para pagar. Los reclamos y las devoluciones pasan a tu equipo.",
+        "subs": {
+          "s1": "Moda y calzado",
+          "s2": "Belleza y cosmética",
+          "s3": "Tecnología",
+          "s4": "Hogar y decoración",
+          "s5": "Suplementos y alimentos",
+          "s6": "Dropshipping"
+        },
+        "label": "Agente de tienda",
+        "chat": {
+          "m1": "Hola, busco una chaqueta impermeable talla M",
+          "m2": "Tengo la Trail Pro en talla M, $189.000. ¿Te comparto el enlace para comprarla?",
+          "m3": "Sí, por favor",
+          "m4": "Aquí tienes el enlace de pago de la tienda. Si tienes dudas del envío, dime tu ciudad.",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: enlace de pago enviado"
+        },
+        "flow": {
+          "f1": "Responde con tu catálogo, precios y políticas",
+          "f2": "Recomienda y resuelve dudas de envío y garantía",
+          "f3": "Comparte el enlace de pago de tu checkout",
+          "f4": "Pasa a una persona reclamos, devoluciones y casos especiales"
+        },
+        "storyH": "Qué hace el agente con cada cliente que escribe a tu tienda",
+        "storyLead": "Quien escribe a una tienda en línea casi siempre ya quiere algo: un producto, una talla, saber cuándo llega. El agente lo atiende en el momento, con tu información, y deja la compra a un enlace de distancia.",
+        "methodClose": "Los precios y las políticas los defines tú, y el agente las respeta. Cuando algo se sale de lo definido, no improvisa: pasa la conversación a una persona.",
+        "method": {
+          "s1": {
+            "title": "Recibe al cliente",
+            "text": "Lo saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta qué está buscando.",
+            "result": "Nadie queda esperando respuesta"
+          },
+          "s2": {
+            "title": "Responde con tu información",
+            "text": "Consulta el catálogo, los precios y las políticas de envío, cambios y garantía que cargaste. Si no tiene el dato, no lo inventa y pasa la conversación a una persona.",
+            "result": "Respuestas como las de tu equipo, a cualquier hora"
+          },
+          "s3": {
+            "title": "Consulta tu tienda",
+            "text": "Si tu tienda o tu plataforma de dropshipping tiene API, el agente revisa el stock y el estado del pedido en el momento. Si no la tiene, pasa la consulta a una persona.",
+            "result": "El cliente recibe el dato sin que tu equipo lo busque"
+          },
+          "s4": {
+            "title": "Lo lleva al pago",
+            "text": "Comparte el enlace de pago de tu checkout. El cliente paga ahí, con tu pasarela, y tu tienda registra la venta como siempre.",
+            "result": "De la pregunta al checkout en la misma conversación"
+          },
+          "s5": {
+            "title": "Pasa los casos especiales a una persona",
+            "text": "Si el cliente tiene un reclamo, pide una devolución o su pedido tiene un problema, el agente le cede la conversación completa a tu equipo, con el resumen.",
+            "result": "Tu equipo atiende solo lo que necesita criterio"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Se conecta con mi tienda?",
+            "answer": "Sí, por API. Si tu plataforma no está en la lista, lo vemos en la demo: se conecta con prácticamente cualquier herramienta que tenga API."
+          },
+          "q2": {
+            "question": "¿El agente cobra dentro de la conversación?",
+            "answer": "No. Comparte el enlace de pago de tu checkout y el cliente paga ahí, con tu pasarela."
+          },
+          "q3": {
+            "question": "¿Escribe a quien dejó el carrito sin comprar?",
+            "answer": "No. El agente responde cuando el cliente escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q4": {
+            "question": "¿Puede decir si hay stock?",
+            "answer": "Con el catálogo que cargas responde por productos y precios. Para el stock en tiempo real conecta tu tienda por API. Si no lo tiene, no lo inventa y pasa la pregunta a una persona."
+          },
+          "q5": {
+            "question": "¿Qué pasa con reclamos y devoluciones?",
+            "answer": "Pasan a tu equipo con la conversación completa y el resumen, para que los resuelva una persona."
+          }
+        },
+        "console": {
+          "name": "Camila",
+          "channel": "WhatsApp",
+          "stage": "Enlace de pago enviado",
+          "m1": "Hola, busco una chaqueta impermeable talla M",
+          "m2": "Tengo la Trail Pro en talla M, $189.000. ¿Te comparto el enlace para comprarla?",
+          "card": {
+            "name": "Chaqueta Trail Pro",
+            "detail": "Talla M · Impermeable",
+            "price": "$189.000 COP"
+          },
+          "m3": "Sí, por favor",
+          "m4": "Aquí tienes el enlace de pago de la tienda. Si tienes dudas del envío, dime tu ciudad.",
+          "did1": "Responde con el catálogo",
+          "did2": "Comparte el enlace de pago",
+          "did3": "Registra los datos del pedido",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Camila"
+            },
+            "v2": {
+              "name": "producto",
+              "value": "Trail Pro"
+            },
+            "v3": {
+              "name": "talla",
+              "value": "M"
+            },
+            "v4": {
+              "name": "precio",
+              "value": "$189.000"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: enlace de pago enviado."
+        }
+      },
+      "industryClinics": {
+        "name": "Clínicas y salud",
+        "short": "Responde dudas, agenda la cita y la confirma por correo, sin saturar a tu recepción.",
+        "h1": {
+          "before": "Tu recepcionista no alcanza a contestar todo.",
+          "accent": "El agente responde y agenda.",
+          "after": ""
+        },
+        "lead": "Cuando un paciente escribe para preguntar o pedir una cita, el agente le responde con tu información, le ofrece horarios de tu calendario y le confirma la cita por correo. Lo que requiere criterio de una persona pasa a tu equipo.",
+        "subs": {
+          "s1": "Odontología y ortodoncia",
+          "s2": "Medicina estética",
+          "s3": "Dermatología",
+          "s4": "Fisioterapia",
+          "s5": "Veterinarias",
+          "s6": "Laboratorios y diagnóstico"
+        },
+        "label": "Agente de citas",
+        "chat": {
+          "m1": "Hola, quiero agendar una limpieza dental.",
+          "m2": "Con gusto. Tengo el martes a las 10:00 a. m. o el miércoles a las 4:00 p. m. ¿Cuál te sirve?",
+          "m3": "El martes.",
+          "m4": "Listo, tu cita quedó agendada para el martes a las 10:00 a. m. Te envío la confirmación por correo con el enlace para guardarla en tu calendario.",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: cita agendada"
+        },
+        "flow": {
+          "f1": "Responde servicios, horarios, preparación y ubicación",
+          "f2": "Agenda en el calendario que tú conectas",
+          "f3": "Confirma la cita por correo, con enlace para guardarla",
+          "f4": "Pasa a recepción lo que requiere una persona"
+        },
+        "storyH": "Qué hace el agente con cada paciente que escribe a tu clínica",
+        "storyLead": "Quien escribe a una clínica casi siempre quiere una de dos cosas: resolver una duda o conseguir una cita. El agente atiende las dos en el momento, con tu información, y deja la cita en tu calendario.",
+        "methodClose": "Lo clínico lo decide siempre tu equipo. El agente informa con lo que cargaste y agenda; cuando algo se sale de eso, no improvisa: pasa la conversación a una persona.",
+        "method": {
+          "s1": {
+            "title": "Recibe al paciente",
+            "text": "Saluda al paciente por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta en qué puede ayudarle.",
+            "result": "Nadie queda esperando a que recepción esté libre"
+          },
+          "s2": {
+            "title": "Responde con tu información",
+            "text": "Resuelve dudas sobre servicios, horarios, preparación y ubicación con lo que cargaste. No da consejos médicos: si la pregunta es clínica, la pasa a una persona.",
+            "result": "Tu recepcionista deja de repetir las mismas respuestas"
+          },
+          "s3": {
+            "title": "Ofrece horarios de tu calendario",
+            "text": "Consulta la disponibilidad del calendario que conectas y le propone al paciente los horarios libres para el servicio que pidió.",
+            "result": "La cita se acuerda en una sola conversación"
+          },
+          "s4": {
+            "title": "Agenda y confirma por correo",
+            "text": "Registra la cita en tu calendario y le envía al paciente la confirmación por correo, con un enlace para guardarla en el suyo.",
+            "result": "La cita queda registrada para el paciente y para tu equipo"
+          },
+          "s5": {
+            "title": "Pasa a recepción lo que requiere una persona",
+            "text": "Si el paciente tiene una pregunta clínica, quiere cambiar o cancelar su cita, o el caso es delicado, el agente le cede la conversación completa a tu equipo, con el resumen.",
+            "result": "Tu equipo atiende solo lo que necesita criterio"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿El agente da consejos médicos?",
+            "answer": "No. Responde con la información que tú cargaste: servicios, horarios, preparación y ubicación. Las preguntas clínicas pasan a una persona de tu equipo."
+          },
+          "q2": {
+            "question": "¿Cómo agenda las citas?",
+            "answer": "Consulta la disponibilidad del calendario que conectas, ofrece horarios al paciente y registra la cita. Tu equipo recibe el aviso por correo."
+          },
+          "q3": {
+            "question": "¿Puede cancelar o mover una cita?",
+            "answer": "Hoy no. Cuando un paciente quiere cambiarla, el agente pasa la conversación a recepción con el resumen."
+          },
+          "q4": {
+            "question": "¿Envía recordatorios o escribe primero a los pacientes?",
+            "answer": "No. El agente responde cuando el paciente escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del paciente."
+          },
+          "q5": {
+            "question": "¿Qué pasa con los datos de los pacientes?",
+            "answer": "Cada contacto queda guardado en tu CRM de GenSmart con su conversación. Revisa la normativa de datos de salud que te aplique antes de definir qué información pides."
+          },
+          "q6": {
+            "question": "¿Funciona con mi agenda actual?",
+            "answer": "Se conecta con Google Calendar y con otras herramientas que tengan API. Si usas otra, lo vemos en la demo."
+          }
+        },
+        "console": {
+          "name": "Mateo",
+          "channel": "WhatsApp",
+          "stage": "Cita agendada",
+          "m1": "Hola, quiero agendar una limpieza dental.",
+          "m2": "Con gusto. Tengo el martes a las 10:00 a. m. o el miércoles a las 4:00 p. m. ¿Cuál te sirve?",
+          "m3": "El martes.",
+          "m4": "Listo, tu cita quedó agendada para el martes a las 10:00 a. m. Te envío la confirmación por correo con el enlace para guardarla en tu calendario.",
+          "did1": "Responde con tu información",
+          "did2": "Ofrece los horarios del calendario",
+          "did3": "Agenda y confirma por correo",
+          "vars": {
+            "v1": {
+              "name": "nombre",
+              "value": "Mateo"
+            },
+            "v2": {
+              "name": "servicio",
+              "value": "Limpieza dental"
+            },
+            "v3": {
+              "name": "fecha",
+              "value": "Martes"
+            },
+            "v4": {
+              "name": "hora",
+              "value": "10:00 a. m."
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: cita agendada."
+        }
+      },
+      "industryRealEstate": {
+        "name": "Inmobiliarias y constructoras",
+        "short": "Responde por cada inmueble, califica al interesado y agenda la visita con tu asesor.",
+        "h1": {
+          "before": "El interesado escribe a varias inmobiliarias y constructoras.",
+          "accent": "Gana la que responde primero.",
+          "after": ""
+        },
+        "lead": "Cuando alguien escribe por un inmueble o un proyecto, el agente le responde con lo que cargaste de cada uno, lo califica y le ofrece horarios para visitarlo. Tu asesor recibe el contacto con su puntaje y la visita agendada.",
+        "subs": {
+          "s1": "Venta de vivienda",
+          "s2": "Arriendos",
+          "s3": "Constructoras y proyectos sobre planos",
+          "s4": "Corredores independientes",
+          "s5": "Oficinas y locales"
+        },
+        "label": "Agente inmobiliario",
+        "chat": {
+          "m1": "Hola, vi el apartamento de tres habitaciones en su publicación. ¿Todavía está disponible?",
+          "m2": "Hola, con gusto te ayudo. ¿Para cuándo lo necesitas y cuántas personas vivirían allí?",
+          "m3": "Para el próximo mes, somos cuatro.",
+          "m4": "Tengo el jueves a las 5:00 p. m. o el sábado a las 11:00 a. m. para visitarlo con un asesor. ¿Cuál te sirve?",
+          "chip1": "Canal: Instagram",
+          "chip2": "Etapa: agendando visita"
+        },
+        "flow": {
+          "f1": "Responde sobre cada inmueble con tu información",
+          "f2": "Pregunta lo necesario y le da un puntaje",
+          "f3": "Agenda la visita con el asesor",
+          "f4": "Pasa al asesor la conversación completa"
+        },
+        "storyH": "Qué hace el agente con cada interesado que escribe a tu inmobiliaria o constructora",
+        "storyLead": "Quien escribe por un inmueble casi siempre quiere tres cosas: saber si sigue disponible, ver si encaja con lo que busca y visitarlo. El agente atiende las tres en el momento y le deja al asesor un contacto listo para llamar.",
+        "methodClose": "El precio, la negociación y el cierre los lleva siempre tu asesor. El agente se encarga de que llegue a la visita con un interesado que ya sabe qué busca.",
+        "method": {
+          "s1": {
+            "title": "Recibe al interesado",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta por cuál inmueble o proyecto consulta, o qué está buscando.",
+            "result": "Nadie espera a que un asesor esté libre"
+          },
+          "s2": {
+            "title": "Responde con la información de cada inmueble",
+            "text": "Resuelve dudas de precio, zona, área, características y condiciones con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "Tu asesor deja de contestar lo mismo en cada mensaje"
+          },
+          "s3": {
+            "title": "Califica y define el siguiente paso",
+            "text": "Le pregunta lo que necesitas saber, como presupuesto, zona y para cuándo lo necesita, y le da un puntaje de 0 a 10 según su interés. Lo ubica en tu embudo como lead u oportunidad.",
+            "result": "Sabes a quién llamar primero"
+          },
+          "s4": {
+            "title": "Agenda la visita",
+            "text": "Si el interés es alto, ofrece horarios libres del calendario de tu asesor y deja la visita agendada en la misma conversación, con la agenda de GenSmart o con Google Calendar.",
+            "result": "La visita queda fijada mientras el interés está vivo"
+          },
+          "s5": {
+            "title": "Pasa al asesor la conversación completa",
+            "text": "Tu asesor recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y le avisan cuando alcanza un puntaje alto. Lo que requiere negociar, como precio o condiciones, lo lleva una persona.",
+            "result": "El asesor llega a hablar con alguien que ya dijo qué busca"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Sabe qué inmuebles tengo disponibles?",
+            "answer": "Responde con la información que cargaste de cada inmueble. Si la disponibilidad cambia, la actualizas ahí. Si tu sistema tiene API, vemos en la demo cómo consultarla directamente."
+          },
+          "q2": {
+            "question": "¿Califica a los interesados?",
+            "answer": "Sí. Le asigna un puntaje de 0 a 10 según su interés, lo ubica en tu embudo y guarda lo que le pediste capturar, como nombre, correo, teléfono, presupuesto y zona."
+          },
+          "q3": {
+            "question": "¿Agenda las visitas?",
+            "answer": "Sí. Ofrece horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la visita registrada. Tu asesor recibe el aviso."
+          },
+          "q4": {
+            "question": "¿Puede cancelar o mover una visita?",
+            "answer": "Hoy no. Cuando el interesado quiere cambiarla, el agente pasa la conversación a tu asesor con el resumen."
+          },
+          "q5": {
+            "question": "¿Escribe primero o hace seguimiento a los interesados?",
+            "answer": "No. El agente responde cuando el interesado escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del interesado."
+          },
+          "q6": {
+            "question": "¿Atiende los contactos que llegan por portales inmobiliarios?",
+            "answer": "Atiende a quien te escribe por tus canales. Si el portal te entrega el contacto por correo o por API, lo vemos en la demo."
+          },
+          "q7": {
+            "question": "¿Funciona con mi CRM?",
+            "answer": "Se conecta con HubSpot, Wasi, Tokko Broker y con otras herramientas que tengan API. Si usas otra, lo vemos en la demo."
+          }
+        },
+        "console": {
+          "name": "Valeria",
+          "channel": "Instagram",
+          "stage": "Agendando visita",
+          "m1": "Hola, vi el apartamento de tres habitaciones en su publicación. ¿Todavía está disponible?",
+          "m2": "Hola, con gusto te ayudo. ¿Para cuándo lo necesitas y cuántas personas vivirían allí?",
+          "m3": "Para el próximo mes, somos cuatro.",
+          "m4": "Tengo el jueves a las 5:00 p. m. o el sábado a las 11:00 a. m. para visitarlo con un asesor. ¿Cuál te sirve?",
+          "did1": "Responde con la información del inmueble",
+          "did2": "Califica y asigna un puntaje",
+          "did3": "Ofrece dos horarios para la visita con el asesor",
+          "vars": {
+            "v1": {
+              "name": "interes",
+              "value": "3 habitaciones"
+            },
+            "v2": {
+              "name": "personas",
+              "value": "4"
+            },
+            "v3": {
+              "name": "cuando",
+              "value": "Próximo mes"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: agendando visita."
+        }
+      },
+      "industryFieldServices": {
+        "name": "Servicios en campo y contratistas",
+        "short": "Recibe cada solicitud completa y agenda la visita de tu cuadrilla.",
+        "h1": {
+          "before": "Tus técnicos están en campo.",
+          "accent": "El agente atiende las solicitudes.",
+          "after": ""
+        },
+        "lead": "El agente atiende por WhatsApp, Instagram, Messenger, tu web y el correo. Entiende qué servicio necesita quien escribe, en qué dirección y para cuándo, le da un puntaje y agenda la visita en tu calendario, para que tu coordinador reciba cada solicitud completa y despache sin llamar para preguntar lo básico.",
+        "subs": {
+          "s1": "Aire acondicionado y refrigeración",
+          "s2": "Mantenimiento de edificios y conjuntos",
+          "s3": "Instalaciones eléctricas y redes",
+          "s4": "Plomería y servicios hidráulicos",
+          "s5": "Empresas con varias cuadrillas y zonas"
+        },
+        "label": "Agente de solicitudes",
+        "chat": {
+          "m1": "Hola, necesito mantenimiento de dos aires acondicionados en mi oficina.",
+          "m2": "Con gusto. ¿En qué dirección está la oficina y para qué día lo necesitas?",
+          "m3": "120 W 23rd Street, el martes si se puede.",
+          "m4": "Tengo el martes a las 9:00 a. m. o a las 2:00 p. m. ¿Cuál prefieres?",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Responde con tus servicios y zonas",
+          "f2": "Pregunta qué necesita, dónde y cuándo",
+          "f3": "Califica y agenda la visita",
+          "f4": "Pasa la conversación completa a tu coordinador"
+        },
+        "storyH": "Qué hace el agente cuando un cliente escribe para pedir un servicio técnico",
+        "storyLead": "Quien pide un servicio técnico tiene que dar tres datos: qué necesita, dónde y para cuándo. El agente los recoge en la conversación, en cualquier canal, y le deja a tu coordinador la visita lista para asignar a una cuadrilla.",
+        "methodClose": "Quien pide un servicio recibe respuesta al instante, en cualquier canal. La cotización, el cobro y la asignación de cada técnico los lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Atiende en el canal que use",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta qué servicio necesita.",
+            "result": "Ninguna solicitud espera a que alguien pueda contestar"
+          },
+          "s2": {
+            "title": "Responde con tus servicios y zonas",
+            "text": "Resuelve dudas sobre servicios, zonas de cobertura, horarios y tarifas con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "La misma respuesta en cada zona y para cada cliente"
+          },
+          "s3": {
+            "title": "Entiende qué necesita y dónde",
+            "text": "Pregunta qué servicio o qué falla tiene, la dirección y qué día y franja prefiere. Todo queda en la conversación.",
+            "result": "Tu coordinador recibe la solicitud completa"
+          },
+          "s4": {
+            "title": "Califica y agenda la visita",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Visitas en agenda sin llamadas de por medio"
+          },
+          "s5": {
+            "title": "Pasa a tu coordinador la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y recibe un aviso cuando alcanza un puntaje alto. La cotización, el cobro y la asignación del técnico los lleva una persona.",
+            "result": "Tu coordinador despacha con todo en la mano"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Cotiza el trabajo?",
+            "answer": "Comparte las tarifas y los precios de visita que cargaste. La cotización a la medida de cada trabajo la hace una persona de tu equipo. Si tu sistema de cotizaciones tiene API, vemos en la demo cómo conectarlo."
+          },
+          "q2": {
+            "question": "¿Agenda las visitas?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la visita registrada con la dirección. Tu equipo recibe el aviso."
+          },
+          "q3": {
+            "question": "¿Qué es el puntaje y para qué sirve?",
+            "answer": "Es un número de 0 a 10 según el interés de quien escribe. Lo ubica en tu embudo como lead u oportunidad y tu equipo recibe un aviso cuando es alto, para atender primero a quien ya pidió el servicio."
+          },
+          "q4": {
+            "question": "¿Asigna el técnico o la cuadrilla?",
+            "answer": "No. La asignación la hace tu coordinador con la solicitud completa en la mano. Si tu software de gestión de servicios tiene API, vemos en la demo cómo conectarlo."
+          },
+          "q5": {
+            "question": "¿Puede cancelar o mover una visita?",
+            "answer": "Hoy no. Cuando la persona quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q6": {
+            "question": "¿Escribe primero o avisa que el técnico va en camino?",
+            "answer": "No. El agente responde cuando la persona escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q7": {
+            "question": "¿Qué pasa con una urgencia?",
+            "answer": "El agente responde en el momento y recoge la dirección y el problema. Si el puntaje es alto, tu equipo recibe un aviso. La salida de un técnico la decide siempre una persona."
+          },
+          "q8": {
+            "question": "¿Qué pasa si preguntan algo que no está cargado?",
+            "answer": "El agente no inventa la respuesta. Pasa la conversación a una persona de tu equipo con todo lo que ya se habló."
+          }
+        },
+        "console": {
+          "name": "Daniela",
+          "channel": "WhatsApp",
+          "stage": "Oportunidad",
+          "m1": "Hola, necesito mantenimiento de dos aires acondicionados en mi oficina.",
+          "m2": "Con gusto. ¿En qué dirección está la oficina y para qué día lo necesitas?",
+          "m3": "120 W 23rd Street, el martes si se puede.",
+          "m4": "Tengo el martes a las 9:00 a. m. o a las 2:00 p. m. ¿Cuál prefieres?",
+          "did1": "Responde servicio y zona",
+          "did2": "Captura servicio, dirección y fecha",
+          "did3": "Califica y ofrece horarios para la visita",
+          "vars": {
+            "v1": {
+              "name": "servicio",
+              "value": "Mantenimiento de aires"
+            },
+            "v2": {
+              "name": "direccion",
+              "value": "120 W 23rd Street"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryEducation": {
+        "name": "Educación y formación",
+        "short": "Atiende a cada aspirante, lo califica y agenda la llamada con admisiones.",
+        "h1": {
+          "before": "Admisiones no alcanza a responder a todos los aspirantes.",
+          "accent": "El agente sí.",
+          "after": ""
+        },
+        "lead": "El agente atiende por WhatsApp, Instagram, Messenger, tu web y el correo. Responde la información de cada programa, entiende qué busca el aspirante, lo califica y agenda la llamada con tu equipo de admisiones para que sus asesores hablen primero con quienes tienen más interés.",
+        "subs": {
+          "s1": "Universidades e institutos",
+          "s2": "Colegios privados",
+          "s3": "Academias de idiomas",
+          "s4": "Cursos online y formación continua",
+          "s5": "Formación empresarial"
+        },
+        "label": "Agente de admisiones",
+        "chat": {
+          "m1": "Hola, quiero saber del programa de administración de empresas.",
+          "m2": "Con gusto. ¿Lo buscas presencial o virtual, y para qué periodo quieres empezar?",
+          "m3": "Virtual, para el próximo semestre.",
+          "m4": "Perfecto. Un asesor de admisiones te explica el proceso. ¿Te llama el jueves a las 3:00 p. m. o el viernes a las 10:00 a. m.?",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Responde la información de cada programa",
+          "f2": "Sugiere el programa según lo que busca",
+          "f3": "Califica y agenda la llamada con admisiones",
+          "f4": "Pasa la conversación completa a tu equipo"
+        },
+        "storyH": "Qué hace el agente con cada aspirante que escribe a tu institución",
+        "storyLead": "Quien escribe a una institución educativa casi siempre quiere saber tres cosas: qué programa le conviene, cuánto cuesta y cuándo empieza. El agente responde las tres en el momento, en cualquier canal, y le deja a admisiones el contacto listo para llamar.",
+        "methodClose": "El aspirante recibe respuesta al instante, en cualquier canal y a cualquier hora. La matrícula, las becas y todo lo que pide criterio los lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Recibe al aspirante en cualquier canal",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta qué quiere estudiar.",
+            "result": "Ningún aspirante queda sin respuesta"
+          },
+          "s2": {
+            "title": "Responde con la información de cada programa",
+            "text": "Resuelve dudas de duración, modalidad, costos, fechas de inicio y requisitos con lo que cargaste de cada programa. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "La misma respuesta para todos los aspirantes"
+          },
+          "s3": {
+            "title": "Entiende qué busca y sugiere el programa",
+            "text": "Pregunta qué quiere estudiar, en qué modalidad y para cuándo, y le sugiere el programa que mejor encaja entre los que cargaste.",
+            "result": "El aspirante llega al programa correcto"
+          },
+          "s4": {
+            "title": "Califica y agenda la llamada",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Admisiones llama a quien más interés tiene"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Admisiones recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y le avisan cuando alcanza un puntaje alto. La matrícula, las becas y los descuentos los lleva una persona.",
+            "result": "El asesor llama a alguien que ya dijo qué necesita"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Responde distinto según el programa?",
+            "answer": "Responde con la información que cargaste de cada programa: duración, modalidad, costos, fechas y requisitos. Si algo cambia, lo actualizas ahí. Si le preguntan algo que no tiene, pasa la conversación a una persona."
+          },
+          "q2": {
+            "question": "¿Califica a los aspirantes?",
+            "answer": "Sí. Les da un puntaje de 0 a 10 según su interés y los ubica en tu embudo como lead u oportunidad. Admisiones recibe un aviso cuando el puntaje es alto."
+          },
+          "q3": {
+            "question": "¿Puede agendar la llamada con admisiones?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la llamada registrada. Tu equipo recibe el aviso."
+          },
+          "q4": {
+            "question": "¿Recomienda un programa?",
+            "answer": "Pregunta qué quiere estudiar, en qué modalidad y para cuándo, y sugiere el programa que mejor encaja entre los que cargaste. La decisión final la toma el aspirante con tu asesor."
+          },
+          "q5": {
+            "question": "¿Puede matricular o cobrar la matrícula?",
+            "answer": "La matrícula la lleva una persona de tu equipo. Si tu pasarela de pagos o tu plataforma tiene API, vemos en la demo cómo compartir un enlace de pago dentro de la conversación."
+          },
+          "q6": {
+            "question": "¿Puede cancelar o mover una cita?",
+            "answer": "Hoy no. Cuando el aspirante quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q7": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando el aspirante escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del aspirante."
+          },
+          "q8": {
+            "question": "¿Qué pasa con becas y descuentos?",
+            "answer": "Las condiciones de becas y descuentos las define y las conversa una persona de tu equipo. El agente solo comparte la información que cargaste y pasa la conversación cuando el aspirante pregunta por ellas."
+          }
+        },
+        "console": {
+          "name": "Daniela",
+          "channel": "WhatsApp",
+          "stage": "Oportunidad",
+          "m1": "Hola, quiero saber del programa de administración de empresas.",
+          "m2": "Con gusto. ¿Lo buscas presencial o virtual, y para qué periodo quieres empezar?",
+          "m3": "Virtual, para el próximo semestre.",
+          "m4": "Perfecto. Un asesor de admisiones te explica el proceso. ¿Te llama el jueves o el viernes?",
+          "did1": "Responde y pregunta modalidad e inicio",
+          "did2": "Sugiere el programa y captura contacto",
+          "did3": "Califica y ofrece la llamada con admisiones",
+          "vars": {
+            "v1": {
+              "name": "modalidad",
+              "value": "Virtual"
+            },
+            "v2": {
+              "name": "inicio",
+              "value": "Próximo semestre"
+            },
+            "v3": {
+              "name": "programa",
+              "value": "Administración"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryRestaurants": {
+        "name": "Restaurantes y hospitalidad",
+        "short": "Atiende reservas, pedidos y cotizaciones de eventos en todos tus canales y sedes.",
+        "h1": {
+          "before": "Un mensaje sin responder es",
+          "accent": "una mesa, un pedido o un evento perdido.",
+          "after": ""
+        },
+        "lead": "El agente atiende por WhatsApp, Instagram, Messenger, tu web y el correo. Responde la carta y los horarios de cada sede, toma reservas y pedidos, y califica las solicitudes de eventos y catering para que tu equipo comercial llame primero a las que más valen.",
+        "subs": {
+          "s1": "Grupos y cadenas gastronómicas",
+          "s2": "Restaurantes con varias sedes",
+          "s3": "Dark kitchens y marcas virtuales",
+          "s4": "Catering y eventos corporativos",
+          "s5": "Hoteles y clubes"
+        },
+        "label": "Agente de reservas y eventos",
+        "chat": {
+          "m1": "Hola, necesitamos cotizar un almuerzo para 40 personas de la empresa.",
+          "m2": "Con gusto. ¿Para qué fecha lo necesitan y en cuál de nuestras sedes les gustaría hacerlo?",
+          "m3": "El 12 de diciembre, en la sede norte.",
+          "m4": "Perfecto. Un asesor de eventos les prepara la propuesta. ¿A qué correo y teléfono los contacta?",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Responde carta y horarios de cada sede",
+          "f2": "Toma la reserva o el pedido con los datos completos",
+          "f3": "Califica eventos y catering con un puntaje",
+          "f4": "Pasa la conversación completa a tu equipo"
+        },
+        "storyH": "Qué hace el agente con cada cliente que escribe a tu operación",
+        "storyLead": "Quien escribe a un restaurante o a un hotel casi siempre quiere una de tres cosas: reservar, pedir o cotizar un evento. El agente atiende las tres en el momento, en cualquier canal, y le deja a tu equipo la información lista para actuar.",
+        "methodClose": "El cliente recibe respuesta al instante, en cualquier canal y de cualquier sede. Los eventos, los reclamos y todo lo que pide criterio los lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Recibe al cliente en cualquier canal",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta si quiere reservar, pedir o cotizar un evento.",
+            "result": "Ningún canal queda sin atender"
+          },
+          "s2": {
+            "title": "Responde con la información de cada sede",
+            "text": "Resuelve dudas de carta, precios, horarios, ubicación y políticas con lo que cargaste de cada sede. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "La misma respuesta en todas tus sedes"
+          },
+          "s3": {
+            "title": "Toma la reserva o el pedido",
+            "text": "Para una reserva pregunta el día, la hora y cuántas personas son, ofrece los horarios libres de tu calendario y la deja registrada, con la agenda de GenSmart o con Google Calendar. Para un pedido pregunta lo que tu cocina necesita y repite el resumen antes de cerrarlo.",
+            "result": "Datos completos, sin idas y vueltas"
+          },
+          "s4": {
+            "title": "Califica eventos y catering",
+            "text": "Cuando alguien pregunta por un evento o un catering, le pregunta la fecha, el número de personas, la sede y los datos de contacto, y le da un puntaje de 0 a 10 según su interés. Lo ubica en tu embudo como lead u oportunidad.",
+            "result": "Tu equipo comercial sabe a quién llamar primero"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y le avisan cuando alcanza un puntaje alto. La propuesta, el precio y el cierre de un evento los lleva una persona.",
+            "result": "El asesor llama a alguien que ya dijo qué necesita"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Responde distinto según la sede?",
+            "answer": "Responde con la información que cargaste de cada sede: carta, precios, horarios, ubicación y políticas. Si algo cambia, lo actualizas ahí. Si le preguntan algo que no tiene, pasa la conversación a una persona."
+          },
+          "q2": {
+            "question": "¿Toma reservas?",
+            "answer": "Sí. Pregunta el día, la hora y el número de personas, ofrece horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la reserva registrada. Tu equipo recibe el aviso."
+          },
+          "q3": {
+            "question": "¿Qué hace con las solicitudes de eventos y catering?",
+            "answer": "Pregunta lo que necesitas saber, como fecha, número de personas, sede y contacto, le da un puntaje de 0 a 10 y lo ubica en tu embudo. Tu equipo comercial recibe la conversación completa y un aviso cuando el puntaje es alto. La propuesta la prepara una persona."
+          },
+          "q4": {
+            "question": "¿Toma pedidos?",
+            "answer": "Toma los datos del pedido y le deja el resumen a tu equipo. Si tu sistema de pedidos o tu punto de venta tiene API, vemos en la demo cómo enviarle el pedido directamente."
+          },
+          "q5": {
+            "question": "¿Puede cobrar el pedido?",
+            "answer": "Si tu pasarela de pagos tiene API, el agente puede generar un enlace de pago para el pedido y compartirlo en la conversación. Lo definimos en la demo."
+          },
+          "q6": {
+            "question": "¿Puede cancelar o mover una reserva?",
+            "answer": "Hoy no. Cuando el cliente quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q7": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando el cliente escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q8": {
+            "question": "¿Qué responde sobre alérgenos e ingredientes?",
+            "answer": "Solo lo que tú cargaste. Si la información no está, no la inventa: pasa la conversación a una persona de tu equipo."
+          }
+        },
+        "console": {
+          "name": "Camila",
+          "channel": "WhatsApp",
+          "stage": "Oportunidad",
+          "m1": "Hola, necesitamos cotizar un almuerzo para 40 personas de la empresa.",
+          "m2": "Con gusto. ¿Para qué fecha lo necesitan y en cuál de nuestras sedes les gustaría hacerlo?",
+          "m3": "El 12 de diciembre, en la sede norte.",
+          "m4": "Perfecto. Un asesor de eventos les prepara la propuesta. ¿A qué correo y teléfono los contacta?",
+          "did1": "Responde y pregunta fecha y sede",
+          "did2": "Captura personas y contacto",
+          "did3": "Califica y avisa al equipo comercial",
+          "vars": {
+            "v1": {
+              "name": "personas",
+              "value": "40"
+            },
+            "v2": {
+              "name": "fecha",
+              "value": "12 de diciembre"
+            },
+            "v3": {
+              "name": "sede",
+              "value": "Norte"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryAutomotive": {
+        "name": "Automotriz",
+        "short": "Responde cotizaciones, agenda pruebas de manejo y citas de taller en todas tus sedes.",
+        "h1": {
+          "before": "Cada cotización que se demora en responder",
+          "accent": "se la lleva otro concesionario.",
+          "after": ""
+        },
+        "lead": "El agente atiende por WhatsApp, Instagram, Messenger, tu web y el correo. Responde con el catálogo y los servicios que cargaste, entiende qué busca el interesado, lo califica y agenda la prueba de manejo o la cita de taller para que tus asesores atiendan primero a quien más interés tiene.",
+        "subs": {
+          "s1": "Concesionarios y grupos automotrices",
+          "s2": "Concesionarios de motos",
+          "s3": "Talleres y centros de servicio",
+          "s4": "Alquiler de vehículos y flotas",
+          "s5": "Distribuidores de repuestos"
+        },
+        "label": "Agente de ventas y servicio",
+        "chat": {
+          "m1": "Hola, quiero cotizar una camioneta familiar para 5 personas.",
+          "m2": "Con gusto. ¿Qué presupuesto manejas y para cuándo quieres tenerla?",
+          "m3": "Hasta 120 millones, para este mes.",
+          "m4": "Tengo dos versiones que encajan. Un asesor te las muestra en una prueba de manejo. ¿Te va bien el jueves a las 4:00 p. m. o el viernes a las 9:00 a. m.?",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Responde con tu catálogo y tus servicios",
+          "f2": "Pregunta qué busca y para cuándo",
+          "f3": "Califica y agenda prueba de manejo o taller",
+          "f4": "Pasa la conversación completa a tu equipo"
+        },
+        "storyH": "Qué hace el agente con cada interesado que escribe a tu concesionario o taller",
+        "storyLead": "Quien escribe a un concesionario o a un taller casi siempre quiere una de tres cosas: cotizar un vehículo, probarlo o agendar un servicio. El agente atiende las tres en el momento, en cualquier canal, y le deja a tu equipo la información lista para actuar.",
+        "methodClose": "El cliente recibe respuesta al instante, en cualquier canal y de cualquier sede. La negociación, la financiación y todo lo que pide criterio lo lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Recibe al interesado en cualquier canal",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta si quiere cotizar, probar un vehículo o agendar un servicio.",
+            "result": "Ningún interesado queda sin respuesta"
+          },
+          "s2": {
+            "title": "Responde con tu catálogo y tus servicios",
+            "text": "Resuelve dudas de modelos, versiones, precios, horarios, sedes y servicios con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "La misma respuesta en todas tus sedes"
+          },
+          "s3": {
+            "title": "Entiende qué busca el cliente",
+            "text": "Pregunta qué tipo de vehículo busca, para qué uso, con qué presupuesto y para cuándo. Si es un servicio de taller, pregunta el vehículo y el tipo de servicio.",
+            "result": "El asesor recibe el perfil completo"
+          },
+          "s4": {
+            "title": "Califica y agenda la cita",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario para la prueba de manejo o la cita de taller, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Citas en agenda sin llamadas de ida y vuelta"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y le avisan cuando alcanza un puntaje alto. La negociación, la financiación y el cierre los lleva una persona.",
+            "result": "El asesor llama a alguien que ya dijo qué busca"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Responde distinto según la marca o la sede?",
+            "answer": "Responde con la información que cargaste de cada marca, modelo y sede: versiones, precios, horarios y ubicación. Si algo cambia, lo actualizas ahí. Si le preguntan algo que no tiene, pasa la conversación a una persona."
+          },
+          "q2": {
+            "question": "¿Agenda pruebas de manejo y citas de taller?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la cita registrada. Tu equipo recibe el aviso."
+          },
+          "q3": {
+            "question": "¿Califica a los interesados?",
+            "answer": "Sí. Les da un puntaje de 0 a 10 según su interés y los ubica en tu embudo como lead u oportunidad. Tu equipo recibe un aviso cuando el puntaje es alto."
+          },
+          "q4": {
+            "question": "¿Puede dar precios y condiciones de financiación?",
+            "answer": "Comparte los precios y las condiciones que cargaste. El estudio de crédito, la negociación y el cierre los lleva una persona de tu equipo."
+          },
+          "q5": {
+            "question": "¿Puede decir cómo va un vehículo en el taller?",
+            "answer": "Si el sistema de tu taller tiene API, vemos en la demo cómo consultar el estado y responderle al cliente. Sin conexión, pasa la consulta a tu equipo."
+          },
+          "q6": {
+            "question": "¿Puede cancelar o mover una cita?",
+            "answer": "Hoy no. Cuando el cliente quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q7": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando el cliente escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q8": {
+            "question": "¿Qué pasa con la retoma de un vehículo usado?",
+            "answer": "El agente puede preguntar los datos que tu equipo defina, como marca, modelo, año y kilometraje, y dejárselos al asesor. El avalúo lo hace una persona."
+          }
+        },
+        "console": {
+          "name": "Mateo",
+          "channel": "WhatsApp",
+          "stage": "Oportunidad",
+          "m1": "Hola, quiero cotizar una camioneta familiar para 5 personas.",
+          "m2": "Con gusto. ¿Qué presupuesto manejas y para cuándo quieres tenerla?",
+          "m3": "Hasta 120 millones, para este mes.",
+          "m4": "Tengo dos versiones que encajan. ¿Te va bien una prueba de manejo el jueves o el viernes?",
+          "did1": "Responde y pregunta presupuesto y fecha",
+          "did2": "Captura vehículo y contacto",
+          "did3": "Califica y ofrece la prueba de manejo",
+          "vars": {
+            "v1": {
+              "name": "vehiculo",
+              "value": "Camioneta"
+            },
+            "v2": {
+              "name": "presupuesto",
+              "value": "Hasta 120 millones"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryBeautyWellness": {
+        "name": "Belleza y bienestar",
+        "short": "Responde precios, califica y agenda en todas tus sedes.",
+        "h1": {
+          "before": "Tu recepción atiende a quien llega.",
+          "accent": "El agente, a quien escribe.",
+          "after": ""
+        },
+        "lead": "El agente atiende por WhatsApp, Instagram, Messenger, tu web y el correo. Responde precios, duración y horarios con lo que cargaste de cada sede, entiende qué servicio o clase busca quien escribe, le da un puntaje y agenda la cita o la clase de prueba para que tu recepción atienda primero a quien ya decidió reservar.",
+        "subs": {
+          "s1": "Centros de estética y spas",
+          "s2": "Cadenas de salones y barberías",
+          "s3": "Gimnasios y estudios de entrenamiento",
+          "s4": "Yoga, pilates y estudios de clases",
+          "s5": "Franquicias y centros con varias sedes"
+        },
+        "label": "Agente de reservas",
+        "chat": {
+          "m1": "Hola, ¿cuánto cuesta el tratamiento facial?",
+          "m2": "El facial hidratante cuesta $120.000 y dura 60 minutos. ¿En qué sede te queda mejor y qué día?",
+          "m3": "En la sede norte, el jueves en la tarde.",
+          "m4": "Tengo jueves a las 4:00 p. m. o a las 5:30 p. m. ¿Cuál prefieres?",
+          "chip1": "Canal: Instagram",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Responde con tus servicios y precios",
+          "f2": "Pregunta qué busca, en qué sede y cuándo",
+          "f3": "Califica y agenda la cita o la clase",
+          "f4": "Pasa la conversación completa a tu equipo"
+        },
+        "storyH": "Qué hace el agente cuando alguien escribe a tu centro de estética, spa o gimnasio",
+        "storyLead": "Quien escribe a un centro de belleza o bienestar suele empezar por lo mismo: cuánto cuesta, cuánto dura y cuándo hay espacio. El agente responde las tres en el momento, en cualquier canal, y le deja a tu equipo la reserva lista para confirmar.",
+        "methodClose": "Quien escribe recibe respuesta al instante, en cualquier canal y de cualquier sede. El cobro, los paquetes y todo lo que pide criterio lo lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Atiende en el canal que use",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta qué servicio o clase le interesa.",
+            "result": "Ningún mensaje queda sin respuesta"
+          },
+          "s2": {
+            "title": "Responde con tus servicios y tus precios",
+            "text": "Resuelve dudas de servicios, precios, duración, profesionales, sedes, horarios y promociones con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "La misma respuesta en todas tus sedes"
+          },
+          "s3": {
+            "title": "Entiende qué busca y dónde",
+            "text": "Pregunta qué servicio quiere, en qué sede le queda mejor y qué día y franja prefiere. En un gimnasio o estudio, pregunta por la clase o el plan que le interesa.",
+            "result": "Tu equipo recibe la solicitud completa"
+          },
+          "s4": {
+            "title": "Califica y agenda la cita",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Reservas en agenda sin mensajes de ida y vuelta"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y recibe un aviso cuando alcanza un puntaje alto. El cobro, los paquetes y las membresías los lleva una persona.",
+            "result": "Tu equipo escribe a alguien que ya dijo qué quiere"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Responde distinto según la sede?",
+            "answer": "Responde con la información que cargaste de cada sede: servicios, precios, horarios y dirección. Si algo cambia, lo actualizas ahí. Si le preguntan algo que no tiene, pasa la conversación a una persona."
+          },
+          "q2": {
+            "question": "¿Agenda citas y clases?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la reserva registrada. Tu equipo recibe el aviso."
+          },
+          "q3": {
+            "question": "¿Qué es el puntaje y para qué sirve?",
+            "answer": "Es un número de 0 a 10 según el interés de quien escribe. Lo ubica en tu embudo como lead u oportunidad y tu equipo recibe un aviso cuando es alto, para escribirle primero a quien ya quiere reservar."
+          },
+          "q4": {
+            "question": "¿Puede dar precios y promociones?",
+            "answer": "Comparte los precios y las promociones que cargaste. El cobro, la venta de paquetes y el cierre los lleva una persona de tu equipo. Si tu sistema de pagos tiene API, vemos en la demo cómo conectarlo."
+          },
+          "q5": {
+            "question": "¿Puede cancelar o mover una cita?",
+            "answer": "Hoy no. Cuando la persona quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q6": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando la persona escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q7": {
+            "question": "¿Maneja membresías o paquetes de sesiones?",
+            "answer": "Si el sistema donde los administras tiene API, vemos en la demo cómo consultarlos desde el agente. Sin conexión, pasa la consulta a tu equipo."
+          },
+          "q8": {
+            "question": "¿Qué pasa si preguntan algo que no está cargado?",
+            "answer": "El agente no inventa la respuesta. Pasa la conversación a una persona de tu equipo con todo lo que ya se habló."
+          }
+        },
+        "console": {
+          "name": "Valeria",
+          "channel": "Instagram",
+          "stage": "Oportunidad",
+          "m1": "Hola, ¿cuánto cuesta el tratamiento facial?",
+          "m2": "El facial hidratante cuesta $120.000 y dura 60 minutos. ¿En qué sede te queda mejor y qué día?",
+          "m3": "En la sede norte, el jueves en la tarde.",
+          "m4": "Tengo jueves a las 4:00 p. m. o a las 5:30 p. m. ¿Cuál prefieres?",
+          "did1": "Responde precio y duración",
+          "did2": "Captura servicio, sede y contacto",
+          "did3": "Califica y ofrece horarios para la cita",
+          "vars": {
+            "v1": {
+              "name": "servicio",
+              "value": "Facial hidratante"
+            },
+            "v2": {
+              "name": "sede",
+              "value": "Norte"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryFinanceInsurance": {
+        "name": "Finanzas y seguros",
+        "short": "Reúne los datos de cada consulta y agenda con tu asesor.",
+        "h1": {
+          "before": "Tu asesor atiende con los datos completos.",
+          "accent": "El agente los reúne.",
+          "after": ""
+        },
+        "lead": "El agente atiende por WhatsApp, Instagram, Messenger, tu web y el correo. Explica tus productos y requisitos con lo que cargaste, pregunta los datos que tú defines para cotizar o evaluar, le da un puntaje y agenda la llamada con un asesor, para que tu equipo reciba cada consulta con la información lista.",
+        "subs": {
+          "s1": "Corredores y agencias de seguros",
+          "s2": "Entidades de crédito y microfinanzas",
+          "s3": "Fintech y plataformas de pago",
+          "s4": "Equipos comerciales con varios asesores"
+        },
+        "label": "Agente de consultas",
+        "chat": {
+          "m1": "Quiero cotizar un seguro para mi carro",
+          "m2": "Con gusto. ¿Me indicas marca, modelo y año del vehículo?",
+          "m3": "Mazda 3, 2022.",
+          "m4": "Gracias. Tengo hoy a las 4:00 p. m. o mañana a las 10:00 a. m. con un asesor. ¿Cuál prefieres?",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Explica productos y requisitos con tus textos",
+          "f2": "Pregunta los datos que tú defines",
+          "f3": "Califica y agenda la llamada con un asesor",
+          "f4": "Pasa la conversación completa a tu equipo"
+        },
+        "storyH": "Qué hace el agente cuando alguien escribe para cotizar un seguro o pedir un crédito",
+        "storyLead": "Quien consulta por un producto financiero empieza por lo mismo: qué ofrecen, qué piden y cuánto cuesta. El agente responde con lo que cargaste, reúne los datos que tu asesor necesita y le deja la llamada agendada.",
+        "methodClose": "Quien consulta recibe respuesta al instante, en cualquier canal. La cotización, la asesoría, la aprobación y la contratación las lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Atiende en el canal que use",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta qué producto le interesa.",
+            "result": "Ninguna consulta espera a que un asesor esté libre"
+          },
+          "s2": {
+            "title": "Explica tus productos y requisitos",
+            "text": "Resuelve dudas sobre productos, coberturas, requisitos y documentos con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "La misma explicación, siempre con tus textos"
+          },
+          "s3": {
+            "title": "Reúne los datos que tú defines",
+            "text": "Pregunta los datos que tu equipo necesita para cotizar o evaluar, según el producto. Todo queda en la conversación.",
+            "result": "Tu asesor recibe la consulta con los datos listos"
+          },
+          "s4": {
+            "title": "Califica y agenda la llamada",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Llamadas en agenda sin mensajes de ida y vuelta"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y recibe un aviso cuando alcanza un puntaje alto. La cotización, la asesoría, la aprobación y la contratación las lleva una persona.",
+            "result": "Tu asesor llama a quien ya está listo para avanzar"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Aprueba créditos o emite pólizas?",
+            "answer": "No. La aprobación, la emisión y la contratación las lleva una persona de tu equipo. El agente reúne los datos y le deja la conversación completa."
+          },
+          "q2": {
+            "question": "¿Da asesoría financiera?",
+            "answer": "No. Informa con los textos que cargaste sobre tus productos y requisitos. La asesoría personalizada la da tu asesor en la llamada."
+          },
+          "q3": {
+            "question": "¿Cotiza?",
+            "answer": "Reúne los datos que necesitas para cotizar, y la cotización la entrega una persona de tu equipo. Si tu sistema de cotización tiene API, vemos en la demo cómo conectarlo."
+          },
+          "q4": {
+            "question": "¿Qué es el puntaje y para qué sirve?",
+            "answer": "Es un número de 0 a 10 según el interés de quien escribe. Lo ubica en tu embudo como lead u oportunidad y tu equipo recibe un aviso cuando es alto, para llamar primero a quien ya quiere avanzar."
+          },
+          "q5": {
+            "question": "¿Agenda la llamada con un asesor?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la llamada registrada. Tu equipo recibe el aviso."
+          },
+          "q6": {
+            "question": "¿Puede cancelar o mover una cita?",
+            "answer": "Hoy no. Cuando la persona quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q7": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando la persona escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q8": {
+            "question": "¿Qué pasa si preguntan algo que no está cargado?",
+            "answer": "El agente no inventa la respuesta. Pasa la conversación a una persona de tu equipo con todo lo que ya se habló."
+          }
+        },
+        "console": {
+          "name": "Natalia",
+          "channel": "WhatsApp",
+          "stage": "Oportunidad",
+          "m1": "Quiero cotizar un seguro para mi carro",
+          "m2": "Con gusto. ¿Me indicas marca, modelo y año del vehículo?",
+          "m3": "Mazda 3, 2022.",
+          "m4": "Gracias. Tengo hoy a las 4:00 p. m. o mañana a las 10:00 a. m. con un asesor. ¿Cuál prefieres?",
+          "did1": "Explica producto y requisitos",
+          "did2": "Captura producto, datos y contacto",
+          "did3": "Califica y ofrece horarios para la llamada",
+          "vars": {
+            "v1": {
+              "name": "producto",
+              "value": "Seguro de vehículo"
+            },
+            "v2": {
+              "name": "vehiculo",
+              "value": "Mazda 3, 2022"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryTravel": {
+        "name": "Turismo y viajes",
+        "short": "Atiende a cada viajero en su idioma y agenda la llamada con tu asesor.",
+        "h1": {
+          "before": "Tus viajeros te escriben en su idioma.",
+          "accent": "El agente les responde en el mismo.",
+          "after": ""
+        },
+        "lead": "El agente atiende por WhatsApp, Instagram, Messenger, tu web y el correo, y responde en el idioma en que escriba cada viajero, sea español, inglés, portugués u otro. Responde sobre tus tours, hoteles y paquetes con lo que cargaste, pregunta destino, fechas y número de viajeros, le da un puntaje y agenda la llamada con un asesor de viajes, para que tu equipo reciba cada solicitud lista para cotizar.",
+        "subs": {
+          "s1": "Agencias de viajes con varios asesores",
+          "s2": "Operadores de tours y experiencias",
+          "s3": "Hoteles y hostales con varias sedes",
+          "s4": "Transporte turístico",
+          "s5": "Organizadores de eventos y grupos"
+        },
+        "label": "Agente de viajes",
+        "chat": {
+          "m1": "Hola, ¿tienen algún tour a Cartagena este fin de semana?",
+          "m2": "Con gusto. ¿Para qué fecha y cuántas personas viajan?",
+          "m3": "El sábado, cuatro adultos.",
+          "m4": "Gracias. Un asesor puede llamarte mañana a las 9:00 a. m. o a las 3:00 p. m. para cotizarte. ¿Cuál prefieres?",
+          "chip1": "Canal: WhatsApp",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Atiende en el idioma y el canal del viajero",
+          "f2": "Responde con tus tours y tarifas cargados",
+          "f3": "Pregunta destino, fechas y personas",
+          "f4": "Califica y agenda la llamada con un asesor"
+        },
+        "storyH": "Qué hace el agente cuando un viajero escribe para preguntar por un tour, un hotel o un paquete",
+        "storyLead": "Quien planea un viaje compara y escribe a varias agencias a la vez. El agente responde en su idioma, reúne los datos que tu asesor necesita para cotizar y le deja la llamada agendada.",
+        "methodClose": "El viajero recibe respuesta al instante, en su idioma y en cualquier canal. La cotización, la reserva, el cobro y los cambios los lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Atiende en el canal y el idioma que use",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y responde en el idioma del viajero.",
+            "result": "Ningún viajero espera a que alguien de tu equipo hable su idioma"
+          },
+          "s2": {
+            "title": "Responde con tus tours y tarifas",
+            "text": "Resuelve dudas sobre destinos, qué incluye cada paquete, horarios y condiciones con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "La misma información, siempre con tus textos"
+          },
+          "s3": {
+            "title": "Pregunta lo necesario para cotizar",
+            "text": "Pide destino, fechas, número de personas y presupuesto, según lo que tu equipo necesita. Todo queda en la conversación.",
+            "result": "Tu asesor recibe la solicitud con el viaje definido"
+          },
+          "s4": {
+            "title": "Califica y agenda la llamada",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Llamadas en agenda sin mensajes de ida y vuelta"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y recibe un aviso cuando alcanza un puntaje alto. La cotización, la reserva, el cobro y los cambios los lleva una persona.",
+            "result": "Tu asesor llama a quien ya está listo para viajar"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Responde en otros idiomas?",
+            "answer": "Sí. Responde en el idioma en que escribe el viajero. La información sobre tus tours y tarifas sale de lo que cargaste, y si algo no está cargado, pasa la conversación a una persona."
+          },
+          "q2": {
+            "question": "¿Cotiza y reserva?",
+            "answer": "Reúne destino, fechas, personas y presupuesto, y la cotización y la reserva las lleva una persona de tu equipo. Si tu sistema de reservas tiene API, vemos en la demo cómo conectarlo."
+          },
+          "q3": {
+            "question": "¿Cobra anticipos o pagos?",
+            "answer": "No. Los cobros los gestiona una persona de tu equipo. Si tu plataforma de pagos tiene API, vemos en la demo qué se puede conectar."
+          },
+          "q4": {
+            "question": "¿Qué es el puntaje y para qué sirve?",
+            "answer": "Es un número de 0 a 10 según el interés de quien escribe. Lo ubica en tu embudo como lead u oportunidad y tu equipo recibe un aviso cuando es alto, para llamar primero a quien ya quiere viajar."
+          },
+          "q5": {
+            "question": "¿Agenda la llamada con un asesor?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la llamada registrada. Tu equipo recibe el aviso."
+          },
+          "q6": {
+            "question": "¿Puede cancelar o mover una reserva?",
+            "answer": "Hoy no. Cuando el viajero quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q7": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando la persona escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q8": {
+            "question": "¿Sabe si hay disponibilidad?",
+            "answer": "Responde con lo que cargaste. Si tu sistema de reservas tiene API, vemos en la demo cómo consultarlo. Si no, pasa la conversación a una persona."
+          }
+        },
+        "console": {
+          "name": "Camila",
+          "channel": "WhatsApp",
+          "stage": "Oportunidad",
+          "m1": "Hola, ¿tienen algún tour a Cartagena este fin de semana?",
+          "m2": "Con gusto. ¿Para qué fecha y cuántas personas viajan?",
+          "m3": "El sábado, cuatro adultos.",
+          "m4": "Gracias. Un asesor puede llamarte mañana a las 9:00 a. m. o a las 3:00 p. m. para cotizarte. ¿Cuál prefieres?",
+          "did1": "Responde sobre el tour",
+          "did2": "Captura destino, fechas y personas",
+          "did3": "Califica y ofrece horarios para la llamada",
+          "vars": {
+            "v1": {
+              "name": "destino",
+              "value": "Cartagena"
+            },
+            "v2": {
+              "name": "personas",
+              "value": "4 adultos"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryProfessionalServices": {
+        "name": "Servicios profesionales",
+        "short": "Responde a quien pregunta por tus servicios y agenda la reunión con el profesional.",
+        "h1": {
+          "before": "Quien pregunta por tus servicios espera respuesta.",
+          "accent": "El agente responde y agenda la reunión.",
+          "after": ""
+        },
+        "lead": "Cuando un posible cliente escribe por WhatsApp, Instagram, Messenger, tu web o el correo, el agente le explica tus servicios con lo que cargaste, le pregunta lo que tu equipo necesita saber, le da un puntaje de 0 a 10 y agenda la reunión con el profesional adecuado. Tu equipo recibe la conversación completa.",
+        "subs": {
+          "s1": "Firmas de abogados con varios socios",
+          "s2": "Firmas contables y de asesoría",
+          "s3": "Consultoras",
+          "s4": "Estudios de arquitectura e ingeniería",
+          "s5": "Notarías y gestoras de trámites"
+        },
+        "label": "Agente de consultas",
+        "chat": {
+          "m1": "Hola, necesito asesoría para constituir una empresa",
+          "m2": "Con gusto. ¿Cuántos socios serían?",
+          "m3": "Somos tres.",
+          "m4": "Gracias. Tengo mañana a las 10:00 a. m. o a las 3:00 p. m. con un asesor de la firma. ¿Cuál prefieres?",
+          "chip1": "Canal: Web",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Identifica el servicio que busca",
+          "f2": "Pregunta los datos que tú defines",
+          "f3": "Califica y agenda con el profesional adecuado",
+          "f4": "Pasa la conversación completa a tu equipo"
+        },
+        "storyH": "Qué hace el agente cuando alguien escribe para contratar un servicio profesional",
+        "storyLead": "Quien busca un abogado, un contador o una consultora suele escribir primero qué necesita en pocas líneas. El agente le responde, reúne los datos que tu equipo necesita y deja la reunión agendada con el profesional adecuado.",
+        "methodClose": "Quien consulta recibe respuesta al instante, en cualquier canal. La asesoría, la propuesta y el contrato los lleva siempre un profesional de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Atiende en el canal que use",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta en qué lo puedes ayudar.",
+            "result": "Ninguna consulta espera a que un profesional esté libre"
+          },
+          "s2": {
+            "title": "Identifica el servicio que busca",
+            "text": "Resuelve dudas sobre tus áreas de práctica y cómo trabajan con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "Cada consulta llega al área que le corresponde"
+          },
+          "s3": {
+            "title": "Reúne los datos que tú defines",
+            "text": "Pregunta lo que tu equipo necesita saber antes de la primera reunión, según el servicio. Todo queda en la conversación.",
+            "result": "El profesional entra a la reunión con el contexto listo"
+          },
+          "s4": {
+            "title": "Califica y agenda la reunión",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Reuniones en agenda sin mensajes de ida y vuelta"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y recibe un aviso cuando alcanza un puntaje alto. La asesoría, la propuesta y el contrato los lleva una persona.",
+            "result": "Tu equipo atiende primero a quien ya está listo para contratar"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Da asesoría legal, contable o técnica?",
+            "answer": "No. Informa con los textos que cargaste sobre tus servicios. La asesoría la da el profesional de tu equipo en la reunión."
+          },
+          "q2": {
+            "question": "¿Recibe documentos?",
+            "answer": "El agente trabaja con lo que la persona escribe en la conversación. Si necesitas recibir documentos de un sistema con API, vemos en la demo cómo conectarlo."
+          },
+          "q3": {
+            "question": "¿Cotiza honorarios?",
+            "answer": "No. Los honorarios y las propuestas los define una persona de tu equipo. El agente le deja la conversación completa para hacerlo."
+          },
+          "q4": {
+            "question": "¿Qué es el puntaje y para qué sirve?",
+            "answer": "Es un número de 0 a 10 según el interés de quien escribe. Lo ubica en tu embudo como lead u oportunidad y tu equipo recibe un aviso cuando es alto, para escribir primero a quien ya quiere avanzar."
+          },
+          "q5": {
+            "question": "¿Agenda la reunión con el profesional adecuado?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la reunión registrada. Tu equipo recibe el aviso."
+          },
+          "q6": {
+            "question": "¿Puede cancelar o mover una cita?",
+            "answer": "Hoy no. Cuando la persona quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q7": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando la persona escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q8": {
+            "question": "¿Qué pasa si preguntan algo que no está cargado?",
+            "answer": "El agente no inventa la respuesta. Pasa la conversación a una persona de tu equipo con todo lo que ya se habló."
+          }
+        },
+        "console": {
+          "name": "Valentina",
+          "channel": "Web",
+          "stage": "Oportunidad",
+          "m1": "Hola, necesito asesoría para constituir una empresa",
+          "m2": "Con gusto. ¿Cuántos socios serían?",
+          "m3": "Somos tres.",
+          "m4": "Gracias. Tengo mañana a las 10:00 a. m. o a las 3:00 p. m. con un asesor de la firma. ¿Cuál prefieres?",
+          "did1": "Identifica el servicio",
+          "did2": "Captura el caso y los datos",
+          "did3": "Califica y ofrece horarios para la reunión",
+          "vars": {
+            "v1": {
+              "name": "servicio",
+              "value": "Constitución de empresa"
+            },
+            "v2": {
+              "name": "socios",
+              "value": "3"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      },
+      "industryB2b": {
+        "name": "B2B, industria y SaaS",
+        "short": "Responde a la empresa que pregunta por tus productos y agenda la demo o la visita.",
+        "h1": {
+          "before": "Una empresa que quiere comprarte no espera.",
+          "accent": "El agente le responde y agenda la demo.",
+          "after": ""
+        },
+        "lead": "Cuando una empresa escribe por WhatsApp, Instagram, Messenger, tu web o el correo, el agente le responde con lo que cargaste de tu catálogo, le pregunta lo que tu equipo comercial necesita saber, le da un puntaje de 0 a 10 y agenda la demo o la visita. Tu equipo recibe la conversación completa.",
+        "subs": {
+          "s1": "Distribución industrial",
+          "s2": "Construcción y proveedores",
+          "s3": "Software y SaaS",
+          "s4": "Agencias y consultoría",
+          "s5": "Logística y transporte"
+        },
+        "label": "Agente comercial",
+        "chat": {
+          "m1": "Necesito cotizar 200 unidades de este instrumento",
+          "m2": "Con gusto. ¿Para qué empresa sería y en qué ciudad se entregaría?",
+          "m3": "Somos una constructora en Medellín.",
+          "m4": "Gracias. Tengo mañana a las 9:00 a. m. o a las 2:00 p. m. para una llamada con un asesor técnico. ¿Cuál prefieres?",
+          "chip1": "Canal: Web",
+          "chip2": "Etapa: oportunidad"
+        },
+        "flow": {
+          "f1": "Responde con tu catálogo y fichas",
+          "f2": "Pregunta empresa, necesidad y volumen",
+          "f3": "Califica y agenda la demo o la visita",
+          "f4": "Pasa la conversación completa a tu equipo"
+        },
+        "storyH": "Qué hace el agente cuando una empresa escribe para comprarte",
+        "storyLead": "Quien compra para una empresa suele escribir qué necesita, cuánto y para cuándo. El agente le responde con tu catálogo, reúne los datos que tu equipo comercial necesita y deja agendada la demo o la visita.",
+        "methodClose": "La empresa que escribe recibe respuesta al instante, en cualquier canal. La cotización, la negociación y el cierre los lleva siempre una persona de tu equipo.",
+        "method": {
+          "s1": {
+            "title": "Atiende en el canal que use",
+            "text": "Saluda por el canal en el que escribió, sea WhatsApp, Instagram, Messenger, tu web o el correo, y le pregunta qué necesita.",
+            "result": "Ninguna empresa espera a que un asesor esté libre"
+          },
+          "s2": {
+            "title": "Responde con tu catálogo y tus fichas",
+            "text": "Resuelve dudas sobre productos, usos y características con lo que cargaste. Si le preguntan algo que no está, no inventa la respuesta: pasa la conversación a una persona.",
+            "result": "Las dudas técnicas básicas se resuelven sin ocupar a tu equipo"
+          },
+          "s3": {
+            "title": "Pregunta lo que tu equipo necesita saber",
+            "text": "Pregunta empresa, ciudad, producto y volumen, y los demás datos que tú definas. Todo queda en la conversación.",
+            "result": "Tu equipo cotiza sabiendo qué busca cada empresa"
+          },
+          "s4": {
+            "title": "Califica y agenda la demo o la visita",
+            "text": "Le da un puntaje de 0 a 10 según su interés, lo ubica en tu embudo como lead u oportunidad y ofrece los horarios libres de tu calendario, con la agenda de GenSmart o con Google Calendar.",
+            "result": "Demos y visitas en agenda sin mensajes de ida y vuelta"
+          },
+          "s5": {
+            "title": "Pasa a tu equipo la conversación completa",
+            "text": "Tu equipo recibe el contacto con sus datos, el puntaje, el canal de origen y toda la conversación, y recibe un aviso cuando alcanza un puntaje alto. La cotización, la negociación y el cierre los lleva una persona.",
+            "result": "Tu equipo atiende primero a la empresa que ya está lista para comprar"
+          }
+        },
+        "faq": {
+          "q1": {
+            "question": "¿Responde preguntas técnicas?",
+            "answer": "Sí, con las fichas y el catálogo que cargaste. Si preguntan algo que no está cargado, no inventa la respuesta y pasa la conversación a una persona de tu equipo."
+          },
+          "q2": {
+            "question": "¿Cotiza y negocia precios?",
+            "answer": "No. La cotización, la negociación y el cierre los hace una persona de tu equipo. El agente le deja la conversación completa con empresa, producto y volumen."
+          },
+          "q3": {
+            "question": "¿Qué es el puntaje y para qué sirve?",
+            "answer": "Es un número de 0 a 10 según el interés de quien escribe. Lo ubica en tu embudo como lead u oportunidad y tu equipo recibe un aviso cuando es alto, para escribir primero a quien ya quiere avanzar."
+          },
+          "q4": {
+            "question": "¿Agenda la demo o la visita?",
+            "answer": "Sí. Ofrece los horarios libres de la agenda de GenSmart o de tu Google Calendar y deja la cita registrada. Tu equipo recibe el aviso."
+          },
+          "q5": {
+            "question": "¿Se conecta con mi ERP o mi inventario?",
+            "answer": "Se conecta con prácticamente todo lo que tenga API. Si tu ERP o tu sistema de inventario la tiene, vemos en la demo cómo conectarlo."
+          },
+          "q6": {
+            "question": "¿Puede cancelar o mover una cita?",
+            "answer": "Hoy no. Cuando la persona quiere cambiarla, el agente pasa la conversación a tu equipo con el resumen."
+          },
+          "q7": {
+            "question": "¿Escribe primero o manda recordatorios?",
+            "answer": "No. El agente responde cuando la persona escribe. En WhatsApp, además, solo puede responder dentro de las 24 horas siguientes al último mensaje del cliente."
+          },
+          "q8": {
+            "question": "¿Funciona con varios equipos comerciales?",
+            "answer": "Sí. Puede agendar con distintos asesores y tu equipo recibe cada conversación con el contexto completo."
+          }
+        },
+        "console": {
+          "name": "Mateo",
+          "channel": "Web",
+          "stage": "Oportunidad",
+          "m1": "Necesito cotizar 200 unidades de este instrumento",
+          "m2": "Con gusto. ¿Para qué empresa sería y en qué ciudad se entregaría?",
+          "m3": "Somos una constructora en Medellín.",
+          "m4": "Gracias. Tengo mañana a las 9:00 a. m. o a las 2:00 p. m. para una llamada con un asesor técnico. ¿Cuál prefieres?",
+          "did1": "Identifica el producto",
+          "did2": "Captura empresa y volumen",
+          "did3": "Califica y ofrece horarios para la llamada",
+          "vars": {
+            "v1": {
+              "name": "producto",
+              "value": "Instrumento de medición"
+            },
+            "v2": {
+              "name": "cantidad",
+              "value": "200 unidades"
+            }
+          },
+          "summary": "Atendió la consulta completa y dejó el lead listo. Etapa: oportunidad."
+        }
+      }
+    },
+    "solutions": {
+      "h1": {
+        "before": "Tu sector tiene sus propias preguntas.",
+        "accent": "Tu agente las responde con tu información."
+      },
+      "lead": "A una clínica le escriben por citas, a una inmobiliaria por visitas y a un restaurante por reservas. Elige tu sector y mira la conversación completa: qué escribe el cliente, qué hace el agente y cuándo pasa a una persona.",
+      "clockTitle": "Elige tu tipo de negocio y mira una conversación",
+      "clockLead": "Lo que escribe el cliente, lo que hace el agente paso a paso y cuándo pasa a una persona.",
+      "clockTabs": "Tipo de negocio",
+      "clockCta": "Ver la solución",
+      "industriesTitle": "Una página por industria, con su flujo completo",
+      "industriesLead": "Cada una trae los problemas concretos del sector, el paso a paso del agente y las preguntas frecuentes.",
+      "industriesMore": "Ver solución",
+      "teamsTitle": "¿Ya sabes qué quieres resolver? Entra por la función",
+      "teamsLead": "Ventas, atención al cliente, marketing, reservas, selección o cobranzas. Cada función tiene su página, con lo que hace el agente y lo que tú controlas.",
+      "missingTitle": "¿Tu industria no está en la lista?",
+      "missingText": "GenSmart se configura para cualquier negocio que atienda clientes por conversación.",
+      "missingCta": "Cuéntanos tu caso",
+      "listName": "Soluciones de GenSmart por industria y por equipo"
     }
   }
 }

@@ -61,4 +61,11 @@ export const BRAND_LOGOS: Record<string, BrandLogo> = {
   Zoom: { src: `${D}zoom.svg`, name: 'Zoom', width: 22, height: 22, wordmark: false },
   Pipedrive: { src: `${D}pipedrive.svg`, name: 'Pipedrive', width: 121, height: 26, wordmark: true },
   Siigo: { src: `${D}siigo.svg`, name: 'Siigo', width: 81, height: 50, wordmark: true },
+  Wasi: { src: `${D}wasi.png`, name: 'Wasi', width: 420, height: 143, wordmark: true },
+  'Tokko Broker': { src: `${D}tokko.svg`, name: 'Tokko Broker', width: 121, height: 27, wordmark: true },
+  Moodle: { src: `${D}moodle.svg`, name: 'Moodle', width: 138, height: 35, wordmark: true },
+  Hotmart: { src: `${D}hotmart.png`, name: 'Hotmart', width: 472, height: 152, wordmark: true },
+  AgendaPro: { src: `${D}agendapro.svg`, name: 'AgendaPro', width: 7212, height: 1083, wordmark: true },
+  Mindbody: { src: `${D}mindbody.svg`, name: 'Mindbody', width: 912, height: 191, wordmark: true },
+  Cloudbeds: { src: `${D}cloudbeds.svg`, name: 'Cloudbeds', width: 240, height: 35, wordmark: true },
 };

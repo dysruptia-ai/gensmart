@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { notFound } from 'next/navigation';
+import SolutionShell from '@/components/site/solutions/SolutionShell';
+import { solutionJsonLd, solutionMetadata } from '@/components/site/solutions/solutionMeta';
 import TeamPage from '@/components/site/teams/TeamPage';
-import { teamMetadata } from '@/components/site/teams/teamMeta';
 import { TEAM_SLUGS, teamBySlug, type TeamData } from '@/components/site/teams/teamsData';
 import { SITE_LANGUAGES, isSiteLanguage, type SiteLanguage } from '@/lib/site-routes';
 
@@ -25,7 +26,7 @@ async function resolve(params: PageProps['params']): Promise<{ lang: SiteLanguag
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { lang, team } = await resolve(params);
-  return teamMetadata(team, lang);
+  return solutionMetadata(team.id, lang);
 }
 
 export const viewport: Viewport = {
@@ -34,5 +35,9 @@ export const viewport: Viewport = {
 
 export default async function TeamSolutionPage({ params }: PageProps) {
   const { lang, team } = await resolve(params);
-  return <TeamPage team={team} lang={lang} />;
+  return (
+    <SolutionShell jsonLd={solutionJsonLd(team, lang)}>
+      <TeamPage team={team} />
+    </SolutionShell>
+  );
 }

@@ -7,25 +7,28 @@ import { BRAND_LOGOS } from '../LogoTile/logoData';
 import Section from '../Section';
 import SectionHead from '../SectionHead';
 import SiteLink from '../SiteLink';
-import { COMMON, teamKey, type TeamData } from './teamsData';
-import styles from './TeamIntegrations.module.css';
+import type { SolutionData } from './solutionsData';
+import styles from './SolutionIntegrations.module.css';
 
-interface TeamIntegrationsProps {
-  team: TeamData;
+interface SolutionIntegrationsProps {
+  page: SolutionData;
+  /** Lead bajo el título (`{common}.intsLead`). Las industrias no lo llevan. */
+  withLead?: boolean;
 }
 
-/** Integraciones del equipo (design/web: `.logo-strip.ints-strip`). */
-export default function TeamIntegrations({ team }: TeamIntegrationsProps) {
+/** Integraciones de la página (design/web: `.logo-strip.ints-strip`). */
+export default function SolutionIntegrations({ page, withLead = false }: SolutionIntegrationsProps) {
   const { t } = useTranslation();
+  const lead = withLead ? t(`${page.common}.intsLead`) : undefined;
   return (
     <Section surface="dark">
       <Container>
-        <SectionHead title={t(`${COMMON}.intsTitle`)} lead={t(`${COMMON}.intsLead`)} />
+        <SectionHead title={t(`${page.common}.intsTitle`)} lead={lead} />
         <ul
           className={styles.strip}
-          aria-label={t(`${COMMON}.intsListLabel`, { team: t(`${teamKey(team.id)}.name`) })}
+          aria-label={t(`${page.common}.intsListLabel`, { name: t(`${page.base}.name`) })}
         >
-          {team.integrations.map((name) => {
+          {page.integrations.map((name) => {
             const logo = BRAND_LOGOS[name];
             return logo ? (
               <li key={name}>
@@ -35,9 +38,9 @@ export default function TeamIntegrations({ team }: TeamIntegrationsProps) {
           })}
         </ul>
         <p className={styles.more}>
-          {t(`${COMMON}.intsOther`)}{' '}
+          {t(`${page.common}.intsOther`)}{' '}
           <SiteLink to="integrations" className={styles.link}>
-            {t(`${COMMON}.intsLink`)} <span aria-hidden="true">→</span>
+            {t(`${page.common}.intsLink`)} <span aria-hidden="true">→</span>
           </SiteLink>
         </p>
       </Container>

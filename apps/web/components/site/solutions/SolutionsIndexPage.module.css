@@ -1,0 +1,12 @@
+/* "¿Tu industria no está en la lista?": bloque centrado (design/web: .center.stack, 680px) */
+.missing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 760px;
+  text-align: center;
+}
+
+.missing > div {
+  margin-bottom: var(--gs-sp-5);
+}

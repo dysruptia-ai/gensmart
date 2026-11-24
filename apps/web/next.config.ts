@@ -43,6 +43,11 @@ const nextConfig: NextConfig = {
       { source: '/pricing', destination: '/en/pricing', permanent: true },
       // Contacto vive en /contacto (es) y /en/contact (en); /contact?tipo=… conserva el query
       { source: '/contact', destination: '/en/contact', permanent: true },
+      // Soluciones: los niveles intermedios no tienen página propia, van al índice de su idioma
+      { source: '/soluciones/equipos', destination: '/soluciones', permanent: true },
+      { source: '/soluciones/industrias', destination: '/soluciones', permanent: true },
+      { source: '/en/solutions/teams', destination: '/en/solutions', permanent: true },
+      { source: '/en/solutions/industries', destination: '/en/solutions', permanent: true },
     ];
   },
   async headers() {

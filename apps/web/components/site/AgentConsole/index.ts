@@ -1,1 +1,1 @@
-export { default, SALES_EXAMPLE, type ConsoleExample } from './AgentConsole';
+export { default, SALES_EXAMPLE, type ConsoleBubble, type ConsoleExample } from './AgentConsole';

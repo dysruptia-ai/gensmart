@@ -1,0 +1,19 @@
+/* Enlace a la landing para tiendas online, después del cierre de "Cómo trabaja" */
+.related {
+  margin: var(--gs-sp-5) 0 0;
+  max-width: 62ch;
+  font-size: var(--gs-fs-base);
+  line-height: 1.55;
+  color: var(--gs-fg-soft);
+}
+
+.link {
+  color: var(--gs-link);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
