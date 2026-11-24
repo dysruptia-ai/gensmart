@@ -2231,6 +2231,11 @@
         "title": "Agenda de citas: reserva en la conversación | GenSmart",
         "description": "Tu cliente reserva sin salir de la conversación. El agente consulta tu calendario, ofrece horarios libres y agenda. Tu equipo ve la cita en el calendario.",
         "ogAlt": "Agenda de citas de GenSmart"
+      },
+      "contact": {
+        "title": "Contacto y demo | GenSmart",
+        "description": "Cuéntanos tu caso: un consultor de GenSmart lo revisa y te muestra cómo respondería tu agente de IA, en qué canales y con qué reglas.",
+        "ogAlt": "Contacto y demo de GenSmart"
       }
     },
     "langHint": {
@@ -2417,7 +2422,8 @@
       "success": "¡Gracias! Te respondemos en menos de 24 horas.",
       "error": "No pudimos enviar tu mensaje. Inténtalo de nuevo en un momento.",
       "close": "Cerrar",
-      "done": "Listo"
+      "done": "Listo",
+      "captcha": "Completa la verificación antes de enviar."
     },
     "crumbs": {
       "label": "Migas de pan",
@@ -2428,7 +2434,8 @@
       "productAgents": "Agentes de IA",
       "productInbox": "Bandeja unificada",
       "productCrm": "CRM y embudo",
-      "productBooking": "Agenda de citas"
+      "productBooking": "Agenda de citas",
+      "contact": "Contacto"
     },
     "channels": {
       "email": "Correo",
@@ -2990,6 +2997,114 @@
         "toolsLabel": "Agendas y CRM que puedes conectar",
         "more": "+{tools} herramientas más"
       }
+    },
+    "contact": {
+      "hero": {
+        "titleBefore": "Mira a un agente atender",
+        "titleAccent": "tu negocio",
+        "titleAfter": "antes de decidir",
+        "lead": "Cuéntanos qué proceso quieres automatizar. Un consultor revisa tu caso y te muestra cómo respondería tu agente, en qué canales y con qué reglas."
+      },
+      "intro": {
+        "title": "Cuéntanos tu caso",
+        "checks": [
+          "Demo con tu caso real",
+          "Vemos qué proceso conviene automatizar primero",
+          "Resolvemos tus dudas de canales, herramientas y planes"
+        ],
+        "nextTitle": "Qué pasa cuando envías el formulario",
+        "next": [
+          "Revisamos lo que nos cuentas.",
+          "Te escribimos por correo o WhatsApp.",
+          "Acordamos los siguientes pasos contigo."
+        ]
+      },
+      "form": {
+        "label": "Formulario de contacto",
+        "requiredNote": "Los campos marcados con * son obligatorios.",
+        "required": "obligatorio",
+        "optional": "opcional",
+        "name": "Nombre",
+        "email": "Correo",
+        "whatsapp": "WhatsApp, con código de país",
+        "message": "Cuéntanos qué necesitas",
+        "messagePlaceholder": "¿Qué proceso quieres automatizar y por qué canales te escriben hoy tus clientes?",
+        "honeypot": "Deja este campo vacío",
+        "send": "Enviar",
+        "sending": "Enviando…",
+        "legalBefore": "Al enviar aceptas nuestra",
+        "legalLink": "política de privacidad",
+        "success": "Gracias. Te contactamos pronto.",
+        "networkError": "No pudimos enviar tu mensaje. Revisa tu conexión e inténtalo de nuevo.",
+        "retry": "Reintentar",
+        "summary": "Revisa {count} campo(s) del formulario.",
+        "errors": {
+          "nameRequired": "Escribe tu nombre.",
+          "emailRequired": "Escribe tu correo.",
+          "emailInvalid": "Escribe un correo válido, por ejemplo ana@empresa.com.",
+          "whatsappInvalid": "Usa solo números, espacios y los signos + - ( ).",
+          "messageRequired": "Cuéntanos qué necesitas.",
+          "captcha": "Completa la verificación antes de enviar.",
+          "rateLimited": "Enviaste varios mensajes seguidos. Inténtalo de nuevo en unos minutos."
+        }
+      },
+      "tipos": {
+        "partner": {
+          "h1": "Habla con nosotros sobre la ruta de agencia",
+          "lead": "Si ya implementas agentes para tus clientes y quieres que tu comisión suba con tu cartera, lo acordamos en una llamada corta.",
+          "h2": "Cuéntanos de tu agencia",
+          "checks": [
+            "Una llamada corta, sin compromiso",
+            "Te explicamos los niveles Experto y Élite",
+            "Si te interesa, hablamos de reventa y marca blanca"
+          ],
+          "msg": "¿Cuántos clientes manejas hoy y en qué países?",
+          "title": "Ruta de agencia | GenSmart"
+        },
+        "directorio": {
+          "h1": "Aparece en el directorio de partners",
+          "lead": "Cuéntanos qué haces con GenSmart y en qué región trabajas. Cada ficha se revisa a mano antes de publicarse.",
+          "h2": "Tu ficha en el directorio",
+          "checks": [
+            "Revisamos tu ficha a mano",
+            "Aparece con tu especialidad y región",
+            "Los clientes te escriben directo"
+          ],
+          "msg": "¿Qué implementas y en qué región trabajas?",
+          "title": "Aparecer en el directorio | GenSmart"
+        },
+        "recomendacion": {
+          "h1": "Cuéntanos qué necesitas y te recomendamos un partner",
+          "lead": "Una persona de GenSmart revisa tu caso y te presenta a quien mejor encaja con tu país, tu idioma y lo que quieres automatizar.",
+          "h2": "Tu caso",
+          "checks": [
+            "Revisamos tu caso a mano",
+            "Te presentamos a quien encaja con tu país e idioma",
+            "Empiezas con la prueba gratis de {days} días"
+          ],
+          "msg": "¿Qué quieres automatizar y en qué país y idioma atiendes?",
+          "title": "Pedir una recomendación | GenSmart"
+        },
+        "comunidad": {
+          "h1": "Avísame cuando abra la comunidad",
+          "lead": "Déjanos tus datos y te enviamos el enlace de la comunidad apenas esté lista.",
+          "h2": "Tus datos",
+          "checks": [
+            "Entrar es gratis",
+            "Te enviamos el enlace cuando abra",
+            "Cuéntanos qué quieres resolver o aprender"
+          ],
+          "msg": "¿Qué te gustaría resolver o aprender en la comunidad?",
+          "title": "Unirme a la comunidad | GenSmart"
+        }
+      },
+      "cta": {
+        "titleBefore": "Mientras te respondemos, prueba tu agente",
+        "titleAccent": "{days} días gratis",
+        "lead": "Crea tu agente con tu información en tres pasos y míralo atender a tus propios clientes.",
+        "primary": "Prueba {days} días gratis"
+      },
+      "jsonLdName": "Contacto y demo de GenSmart"
     }
   }
 }

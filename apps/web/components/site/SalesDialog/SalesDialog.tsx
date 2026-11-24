@@ -3,6 +3,8 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { CheckCircle2, Send, X } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
+import { isSiteLanguage } from '@/lib/site-routes';
+import TurnstileField, { TURNSTILE_SITE_KEY } from '../TurnstileField';
 import styles from './SalesDialog.module.css';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? '';
@@ -20,11 +22,13 @@ const FOCUSABLE =
 
 /**
  * Diálogo "Hablar con ventas" del sitio público (reemplaza al ContactSalesModal del sitio viejo).
- * Mismo endpoint y campos: POST /api/contact-sales { name, email, company, message }.
+ * POST /api/contact-sales { name, email, company, message, type: 'sales', language, turnstileToken }.
+ * Usa el mismo Turnstile que la página de Contacto.
  * Se renderiza dentro de SiteRoot para heredar los tokens --gs-*.
  */
 export default function SalesDialog({ open, onClose }: SalesDialogProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
+  const lang = isSiteLanguage(language) ? language : 'en';
   const titleId = useId();
   const descId = useId();
   const fieldId = useId();
@@ -36,6 +40,9 @@ export default function SalesDialog({ open, onClose }: SalesDialogProps) {
   const [company, setCompany] = useState('');
   const [message, setMessage] = useState('');
   const [status, setStatus] = useState<Status>('idle');
+  const [errorText, setErrorText] = useState('');
+  const [token, setToken] = useState('');
+  const [captchaReset, setCaptchaReset] = useState(0);
 
   // Al abrir: guarda quién tenía el foco, bloquea el scroll del fondo y enfoca el primer campo.
   // Al cerrar: restaura el scroll y devuelve el foco al botón que lo abrió.
@@ -60,6 +67,7 @@ export default function SalesDialog({ open, onClose }: SalesDialogProps) {
 
   function close() {
     setStatus('idle');
+    setErrorText('');
     setName('');
     setEmail('');
     setCompany('');
@@ -69,16 +77,38 @@ export default function SalesDialog({ open, onClose }: SalesDialogProps) {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (TURNSTILE_SITE_KEY && !token) {
+      setErrorText(t(`${S}.captcha`));
+      setStatus('error');
+      return;
+    }
     setStatus('sending');
     try {
       const res = await fetch(`${API_BASE}/api/contact-sales`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, company, message }),
+        body: JSON.stringify({
+          name,
+          email,
+          company,
+          message,
+          type: 'sales',
+          language: lang,
+          turnstileToken: token || undefined,
+        }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      // Token de un solo uso: se pide otro después de cada envío
+      setCaptchaReset((n) => n + 1);
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: { code?: string } } | null;
+        setErrorText(data?.error?.code === 'CAPTCHA_FAILED' ? t(`${S}.captcha`) : t(`${S}.error`));
+        setStatus('error');
+        return;
+      }
       setStatus('success');
     } catch {
+      setCaptchaReset((n) => n + 1);
+      setErrorText(t(`${S}.error`));
       setStatus('error');
     }
   }
@@ -201,9 +231,11 @@ export default function SalesDialog({ open, onClose }: SalesDialogProps) {
               />
             </div>
 
+            <TurnstileField onToken={setToken} resetKey={captchaReset} language={lang} />
+
             {status === 'error' ? (
               <p className={styles.error} role="alert">
-                {t(`${S}.error`)}
+                {errorText || t(`${S}.error`)}
               </p>
             ) : null}
 

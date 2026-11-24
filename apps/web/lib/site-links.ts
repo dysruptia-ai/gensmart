@@ -64,7 +64,8 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   // Con rutas por idioma: se resuelve en LOCALIZED_LINKS (`/precios` o `/en/pricing`)
   pricing: { href: '/en/pricing' },
   blog: { href: '/blog' },
-  contact: { href: '/contact' },
+  // Con ruta por idioma: se resuelve en LOCALIZED_LINKS (`/contacto` o `/en/contact`)
+  contact: { href: '/en/contact' },
   about: { href: '/about' },
   login: { href: '/login' },
   register: { href: '/register' },
@@ -146,6 +147,7 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, SiteRouteId>> = {
   productCrm: 'productCrm',
   productBooking: 'productBooking',
   integrations: 'integrations',
+  contact: 'contact',
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

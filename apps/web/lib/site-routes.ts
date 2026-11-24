@@ -22,7 +22,8 @@ export type SiteRouteId =
   | 'productInbox'
   | 'productCrm'
   | 'productBooking'
-  | 'integrations';
+  | 'integrations'
+  | 'contact';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -41,6 +42,7 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
     internal: '/integrations',
     paths: { es: '/integraciones', en: '/en/integrations' },
   },
+  contact: { id: 'contact', internal: '/contact', paths: { es: '/contacto', en: '/en/contact' } },
   // Subpáginas de Producto: rutas jerárquicas (mejores migas y SEO)
   productAgents: {
     id: 'productAgents',
@@ -84,6 +86,11 @@ export function publicPath(id: SiteRouteId, lang: SiteLanguage): string {
  */
 export function pricingHref(language: SupportedLanguage): string {
   return publicPath('pricing', isSiteLanguage(language) ? language : DEFAULT_SITE_LANGUAGE);
+}
+
+/** Página de contacto en el idioma del usuario (componentes viejos y enlaces fuera de `SiteLink`). */
+export function contactHref(language: SupportedLanguage): string {
+  return publicPath('contact', isSiteLanguage(language) ? language : DEFAULT_SITE_LANGUAGE);
 }
 
 export function absoluteUrl(path: string): string {

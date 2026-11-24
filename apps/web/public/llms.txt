@@ -43,7 +43,8 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Integrations (Spanish)](https://www.gensmart.co/integraciones): formas de conectar tus herramientas, límites por plan y directorio.
 - [Blog](https://www.gensmart.co/blog): guides and articles.
 - [WhatsApp setup guide](https://www.gensmart.co/docs/whatsapp-setup): how to connect a WhatsApp number.
-- [Contact](https://www.gensmart.co/contact): talk to the team.
+- [Contact](https://www.gensmart.co/en/contact): book a demo or talk to the team; a consultant reviews your case.
+- [Contact (Spanish)](https://www.gensmart.co/contacto): agenda una demo o habla con el equipo.
 - [Terms of service](https://www.gensmart.co/legal/terms-of-service)
 - [Privacy policy](https://www.gensmart.co/legal/privacy-policy)
 

@@ -17,6 +17,7 @@
     "test:safe-url": "tsx --test src/services/safe-url.headers.test.ts",
     "test:whatsapp-format": "tsx --test src/services/whatsapp-format.test.ts",
     "test:widget-turnstile": "tsx --test src/services/widget-turnstile.test.ts",
+    "test:contact-sales": "tsx --test src/services/contact-sales.test.ts",
     "test:admin-plan": "tsx --test src/services/admin-plan.test.ts",
     "test:plan-channels": "tsx --test --test-force-exit src/middleware/plan-channels.test.ts",
     "test:billing-admin-guards": "tsx --test src/services/billing-admin-guards.test.ts",
