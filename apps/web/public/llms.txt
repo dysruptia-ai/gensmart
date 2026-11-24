@@ -52,6 +52,8 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 
 - [Solutions](https://www.gensmart.co/en/solutions): index of the 12 industry pages and the 6 team pages, with an example conversation per business type.
 - [Soluciones (Spanish)](https://www.gensmart.co/soluciones): índice de las 12 páginas por industria y las 6 por equipo.
+- [AI sales agent for online stores](https://www.gensmart.co/en/solutions/ecommerce): sales agent for online stores: platforms (Tiendanube, Shopify, WooCommerce, Venndelo, Dropi, Dropea, Mastershop), pricing and a calculator. For chat-first selling and dropshipping, see the e-commerce industry page below.
+- [Agente comercial para tiendas online (Spanish)](https://www.gensmart.co/soluciones/ecommerce): agente comercial para tiendas online: plataformas, precios y calculadora. Distinta de la industria E-commerce y dropshipping (atención por chat).
 
 ## Solutions by industry
 

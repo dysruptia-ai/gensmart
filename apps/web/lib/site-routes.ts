@@ -31,6 +31,7 @@ export type SiteRouteId =
   | 'teamHumanResources'
   | 'teamCollections'
   | 'solutions'
+  | 'ecommerce'
   | 'industryEcommerce'
   | 'industryClinics'
   | 'industryRealEstate'
@@ -116,6 +117,8 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   },
   // Índice de Soluciones: industrias y equipos (/soluciones/equipos e /industrias redirigen aquí)
   solutions: { id: 'solutions', internal: '/solutions', paths: { es: '/soluciones', en: '/en/solutions' } },
+  // Landing E-commerce (agente comercial para tiendas online); la industria va aparte
+  ecommerce: { id: 'ecommerce', internal: '/solutions/ecommerce', paths: { es: '/soluciones/ecommerce', en: '/en/solutions/ecommerce' } },
   // Soluciones por industria: /soluciones/industrias/… y /en/solutions/industries/…
   industryEcommerce: {
     id: 'industryEcommerce',

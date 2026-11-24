@@ -2333,6 +2333,11 @@
         "title": "AI agents for B2B, industrial and SaaS companies | GenSmart",
         "description": "An AI agent answers the company asking about your products, qualifies it and books the demo or visit. For distributors, industry and SaaS.",
         "ogAlt": "GenSmart AI agents for B2B and SaaS"
+      },
+      "ecommerce": {
+        "title": "AI sales agent for your online store | GenSmart",
+        "description": "An AI agent in your online store answers product, shipping and payment questions and takes buyers to checkout. With Tiendanube, Shopify and WooCommerce.",
+        "ogAlt": "GenSmart sales agent for online stores"
       }
     },
     "langHint": {
@@ -2551,7 +2556,8 @@
       "industryFinanceInsurance": "Finance and insurance",
       "industryTravel": "Travel and tourism",
       "industryProfessionalServices": "Professional services",
-      "industryB2b": "B2B, industrial and SaaS"
+      "industryB2b": "B2B, industrial and SaaS",
+      "ecommerce": "E-commerce"
     },
     "channels": {
       "email": "Email",
@@ -5463,6 +5469,466 @@
       "missingText": "GenSmart is configured for any business that serves customers through conversation.",
       "missingCta": "Tell us your case",
       "listName": "GenSmart solutions by industry and by team"
+    },
+    "ecommerce": {
+      "hero": {
+        "titleBefore": "A sales agent",
+        "titleAccent": "inside your e-commerce store",
+        "lead": "Answers the questions that stall a purchase and takes the customer to your store checkout. When a person is needed, they step in with the whole conversation.",
+        "primary": "Start your free trial",
+        "calc": "Calculate what changes in your store"
+      },
+      "abandon": {
+        "title": "Seven out of ten carts go unpaid",
+        "lead": "Some were just browsing. Others left with a question about costs, shipping, trust or returns that a timely conversation could have solved.",
+        "figNote": "Average cart abandonment rate across 50 studies on online shopping, published between 2006 and 2025.",
+        "source": "Source:",
+        "sourceAfter": ". Percentages are from US shoppers who abandoned a cart, excluding those just browsing. Your store may differ.",
+        "listLabel": "Reasons for abandoning the cart and what the agent does",
+        "reasons": {
+          "r1": {
+            "label": "Extra costs (shipping, taxes)",
+            "help": "Tells the total before paying"
+          },
+          "r2": {
+            "label": "Delivery too slow",
+            "help": "Gives the delivery times you loaded"
+          },
+          "r3": {
+            "label": "Doesn't trust the site to pay",
+            "help": "Answers doubts before paying"
+          },
+          "r4": {
+            "label": "Long or complicated checkout",
+            "help": "Guides the purchase inside the conversation"
+          },
+          "r5": {
+            "label": "Unclear returns",
+            "help": "Explains your warranties and exchanges instantly"
+          },
+          "r6": {
+            "label": "Few payment methods",
+            "help": "Lists your store's payment methods"
+          }
+        }
+      },
+      "platforms": {
+        "title": "Pick your platform and see how the agent works in it",
+        "lead": "The agent runs each platform's full process, from the first question to delivery. It only passes what is critical to your team.",
+        "tabsLabel": "E-commerce platforms",
+        "customer": "What the customer writes",
+        "agent": "What the agent does",
+        "result": "Outcome",
+        "touches": "What it touches on your platform",
+        "handoff": "Only the critical goes to your team",
+        "apiNote": "Every action depends on what the platform's API provides. Anything it doesn't expose is built with a custom integration.",
+        "missing": "Is your platform missing? If it has an API, we connect it.",
+        "missingLink": "See all integrations",
+        "hand": {
+          "store": {
+            "h1": "Refunds and exchanges outside your policy",
+            "h2": "Serious complaints",
+            "h3": "Anything the agent doesn't know"
+          },
+          "cod": {
+            "h1": "Loss or damage claims with the carrier or supplier",
+            "h2": "Risk cases",
+            "h3": "Anything the agent doesn't know"
+          }
+        },
+        "items": {
+          "tiendanube": {
+            "s": {
+              "s1": {
+                "label": "Before buying",
+                "quote": "Is it in my size and does it ship to Medellín?",
+                "does": "Answers with your catalog, prices and stock in real time."
+              },
+              "s2": {
+                "label": "Deciding",
+                "quote": "Do you have a coupon?",
+                "does": "Explains promotions and coupons and takes the customer to your store checkout."
+              },
+              "s3": {
+                "label": "After buying",
+                "quote": "Where is my order?",
+                "does": "Reports the payment status, shipping and tracking."
+              },
+              "s4": {
+                "label": "After sale",
+                "quote": "I want to change the size",
+                "does": "Collects the full case and applies your exchange policy."
+              }
+            },
+            "touch": {
+              "c1": "Products",
+              "c2": "Variants",
+              "c3": "Stock",
+              "c4": "Coupons",
+              "c5": "Checkout",
+              "c6": "Orders",
+              "c7": "Shipments",
+              "c8": "Tracking",
+              "c9": "Customers"
+            }
+          },
+          "shopify": {
+            "s": {
+              "s1": {
+                "label": "Before buying",
+                "quote": "Do you have this jacket in M?",
+                "does": "Answers about product, variant and inventory in real time."
+              },
+              "s2": {
+                "label": "Deciding",
+                "quote": "Does this discount code apply?",
+                "does": "Explains current discounts and shares the cart link."
+              },
+              "s3": {
+                "label": "After buying",
+                "quote": "Has my order shipped?",
+                "does": "Reports the order status, fulfillment and tracking."
+              },
+              "s4": {
+                "label": "After sale",
+                "quote": "I want to return it",
+                "does": "Explains your policy, collects the case and reports the refund status."
+              }
+            },
+            "touch": {
+              "c1": "Products",
+              "c2": "Variants",
+              "c3": "Inventory",
+              "c4": "Discounts",
+              "c5": "Cart",
+              "c6": "Orders",
+              "c7": "Fulfillment",
+              "c8": "Tracking",
+              "c9": "Returns",
+              "c10": "Refunds"
+            }
+          },
+          "woocommerce": {
+            "s": {
+              "s1": {
+                "label": "Before buying",
+                "quote": "I'm looking for a gift, what do you recommend?",
+                "does": "Recommends based on what the customer wants, with variations and prices."
+              },
+              "s2": {
+                "label": "Deciding",
+                "quote": "How do I use my coupon?",
+                "does": "Explains coupons and shipping cost by zone and shares the purchase link."
+              },
+              "s3": {
+                "label": "After buying",
+                "quote": "What is my order status?",
+                "does": "Reports the order status and shipping notes."
+              },
+              "s4": {
+                "label": "After sale",
+                "quote": "It arrived damaged",
+                "does": "Collects the case with photos, applies your policy and reports the refund."
+              }
+            },
+            "touch": {
+              "c1": "Products",
+              "c2": "Variations",
+              "c3": "Prices",
+              "c4": "Coupons",
+              "c5": "Shipping zones",
+              "c6": "Orders",
+              "c7": "Statuses",
+              "c8": "Notes",
+              "c9": "Refunds"
+            }
+          },
+          "venndelo": {
+            "s": {
+              "s1": {
+                "label": "Places the order",
+                "quote": "I want it cash on delivery, what details do you need?",
+                "does": "Takes the delivery details, registers the order and confirms to the customer that it was created."
+              },
+              "s2": {
+                "label": "Before dispatch",
+                "quote": "When will you ship it?",
+                "does": "Checks the customer's delivery history and tells them when the order ships."
+              },
+              "s3": {
+                "label": "In transit",
+                "quote": "Where is my order?",
+                "does": "Shares the label and the carrier tracking."
+              },
+              "s4": {
+                "label": "Delivery issue",
+                "quote": "I wasn't home, can they come back?",
+                "does": "Handles the issue with the customer and offers online payment if the platform allows it."
+              }
+            },
+            "touch": {
+              "c1": "Cash on delivery orders",
+              "c2": "Address",
+              "c3": "Delivery history",
+              "c4": "Labels",
+              "c5": "Tracking",
+              "c6": "Delivery issues",
+              "c7": "Proof of attempt",
+              "c8": "Prepayment"
+            }
+          },
+          "dropi": {
+            "s": {
+              "s1": {
+                "label": "Quote",
+                "quote": "Do you have this product and how much is it?",
+                "does": "Answers with your suppliers' catalog and stock."
+              },
+              "s2": {
+                "label": "Order",
+                "quote": "I want it, what details do you need for the order?",
+                "does": "Takes the customer's details and creates the order in Dropi."
+              },
+              "s3": {
+                "label": "Tracking",
+                "quote": "Where is my label?",
+                "does": "Reports the label and shipment status."
+              },
+              "s4": {
+                "label": "Delivery issue",
+                "quote": "They say my address is incomplete",
+                "does": "Handles the issue with the customer and records what they confirm."
+              }
+            },
+            "touch": {
+              "c1": "Catalog",
+              "c2": "Stock",
+              "c3": "Prices",
+              "c4": "Create order",
+              "c5": "Check order",
+              "c6": "Labels",
+              "c7": "Statuses",
+              "c8": "Delivery issues",
+              "c9": "Returns"
+            }
+          },
+          "dropea": {
+            "s": {
+              "s1": {
+                "label": "Products",
+                "quote": "Do you have this product?",
+                "does": "Answers with the products linked to your store."
+              },
+              "s2": {
+                "label": "Confirmation",
+                "quote": "Has my order been confirmed?",
+                "does": "Looks up the order in your platform and confirms its status to the customer before dispatch."
+              },
+              "s3": {
+                "label": "Shipping",
+                "quote": "When does my order arrive?",
+                "does": "Reports the shipping status."
+              },
+              "s4": {
+                "label": "Incident",
+                "quote": "They say they couldn't find my address",
+                "does": "Handles the incident with the customer following the carrier's manual and records what was agreed."
+              }
+            },
+            "touch": {
+              "c1": "Products",
+              "c2": "Stores",
+              "c3": "Orders",
+              "c4": "Auto-confirmation",
+              "c5": "Shipping status",
+              "c6": "Incidents"
+            }
+          },
+          "mastershop": {
+            "s": {
+              "s1": {
+                "label": "Catalog",
+                "quote": "Do you have this product?",
+                "does": "Answers with the catalog, prices and availability."
+              },
+              "s2": {
+                "label": "Order",
+                "quote": "I want to place an order",
+                "does": "Takes the customer's details and processes the order."
+              },
+              "s3": {
+                "label": "Shipping",
+                "quote": "Where is my shipment?",
+                "does": "Reports the label and the assigned carrier."
+              },
+              "s4": {
+                "label": "Delivery issue",
+                "quote": "My order hasn't arrived",
+                "does": "Handles the delivery issue and records the customer's reply."
+              }
+            },
+            "touch": {
+              "c1": "Catalog",
+              "c2": "Suppliers",
+              "c3": "Orders",
+              "c4": "Shipments",
+              "c5": "Carrier",
+              "c6": "Delivery issues"
+            }
+          }
+        }
+      },
+      "split": {
+        "title": "What the agent does alone and what your team decides",
+        "lead": "No fine print: this is how it splits the work in any store.",
+        "agentKicker": "The agent does",
+        "agentTitle": "Handles it alone",
+        "agent": {
+          "i1": "Questions about products, price, shipping and policies from the information you loaded",
+          "i2": "Recommends and shares the purchase link or the order tracking",
+          "i3": "Scores the customer from 0 to 10 while chatting",
+          "i4": "Answers at night, on weekends and holidays"
+        },
+        "mid": "Hands off with full context",
+        "teamKicker": "Your team decides",
+        "teamTitle": "A person takes over",
+        "team": {
+          "i1": "Negotiation, closing and quotes",
+          "i2": "Changes, returns and complaints",
+          "i3": "Any question the agent doesn't know: it doesn't make it up, it hands it over",
+          "i4": "They step in with the full conversation and the summary, no repeated questions"
+        },
+        "foot": "The agent doesn't take payment inside the conversation: the customer pays at your store checkout, with your gateway. On WhatsApp it replies within 24 hours of the customer's last message."
+      },
+      "cases": {
+        "title": "Find your store type and start where it helps most",
+        "needLabel": "What you do",
+        "platLink": "See how it works on your platform",
+        "trialLink": "Start your free trial",
+        "c1": {
+          "title": "Your own store",
+          "text": "You sell from your own online store and the customer pays at your checkout.",
+          "need": "You connect your store and load your shipping and returns policies."
+        },
+        "c2": {
+          "title": "Dropshipping and cash on delivery",
+          "text": "You ship with a carrier and your operation revolves around orders, tracking numbers and delivery issues.",
+          "need": "You connect your platform and load your delivery times."
+        },
+        "c3": {
+          "title": "You sell on WhatsApp or Instagram",
+          "text": "You sell through messages and have no store platform connected.",
+          "need": "You load your catalog, prices and policies."
+        },
+        "industryBefore": "Selling mostly through chat or dropshipping?",
+        "industryLink": "See how the agent handles e-commerce and dropshipping"
+      },
+      "steps": {
+        "title": "Your online store agent, in three steps",
+        "lead": "It connects as a configuration, with no code and no technical team.",
+        "needLabel": "You need",
+        "s1": {
+          "title": "Connect your platform and channels",
+          "text": "You choose where the agent works and connect your store.",
+          "need": "Access to your store and your messaging channel."
+        },
+        "s2": {
+          "title": "Load your information",
+          "text": "Catalog, prices, shipping and returns policies. The agent speaks in your tone.",
+          "need": "Your catalog and policies, as documents or links."
+        },
+        "s3": {
+          "title": "Activate and measure",
+          "text": "You follow every conversation in the inbox and every lead in your CRM.",
+          "need": "Nothing else: you switch it on and it starts answering."
+        }
+      },
+      "plans": {
+        "title": "Your first agent, from ${price} USD a month",
+        "lead": "{days} days free on {plans}. Try it with your own customers and move up a plan when your operation needs it.",
+        "leadSales": "Enterprise is set up with sales.",
+        "details": "See every plan in detail"
+      },
+      "calc": {
+        "title": "What changes when your agent answers on time",
+        "lead": "Enter your own data and see how much slips away today, how much time your team spends and how little the agent has to recover to pay for itself. It is arithmetic with your assumptions, not a promise of results.",
+        "formLabel": "Your data",
+        "f1": {
+          "label": "Conversations you get per month",
+          "help": "Add up WhatsApp, Instagram and your website."
+        },
+        "f2": {
+          "label": "Out of every 100 conversations, how many end in a purchase?",
+          "help": "A number from 0 to 100."
+        },
+        "f3": {
+          "label": "Average order value (USD)",
+          "help": "What a customer pays per order, on average."
+        },
+        "f4": {
+          "label": "% of conversations you answer late or not at all today",
+          "help": "A number from 0 to 100."
+        },
+        "f5": {
+          "label": "Minutes your team spends on each conversation",
+          "help": "Include replying, looking things up and following up."
+        },
+        "resultsLabel": "Results",
+        "escapeK": "Sales slipping away each month",
+        "escapeHelp": "Conversations × % late or unanswered × % that buy × order value",
+        "hoursK": "Hours per month your team spends chatting",
+        "hoursHelp": "For every 10% the agent resolves alone, you free up those hours.",
+        "hoursHelpN": "For every 10% the agent resolves alone, you free up {h} h.",
+        "hours": "{h} h",
+        "plansK": "Orders per month that pay for the plan",
+        "orderOne": "{n} order",
+        "orderMany": "{n} orders",
+        "shareUnder": "under 1% of what slips away",
+        "share": "{pct} of what slips away",
+        "lossK": "What you are losing today",
+        "lossEmpty": "Fill in your data and you will see how much you are losing by not answering on time.",
+        "lossBefore": "Today you are losing",
+        "lossAfter": "a month in conversations answered late or not at all. The {plan} plan costs ${price}, {share} of that. Win back that part and the agent pays for itself; anything it recovers after that is sales you do not have today.",
+        "lossShareUnder": "under 1%",
+        "lossShare": "just {pct}",
+        "cta": "Start your free trial"
+      },
+      "faq": {
+        "kicker": "FAQ · E-commerce",
+        "titleBefore": "Questions?",
+        "titleAccent": "Get answers here",
+        "helpBefore": "Can't find yours? Write to us and",
+        "helpAccent": "we will answer",
+        "helpAfter": "soon.",
+        "cta": "Talk to the team",
+        "items": {
+          "q1": {
+            "question": "Which e-commerce platforms does it work with?",
+            "answer": "With Tiendanube, Shopify, WooCommerce, Venndelo, Dropi, Dropea and Mastershop, among others. If your platform has an API, it connects; if it isn't on the list, we look at it in the demo."
+          },
+          "q2": {
+            "question": "Do I need a technical team to get it running?",
+            "answer": "No. You set it up in three steps: connect your platform and channels, load your catalog and policies, and switch it on. No code."
+          },
+          "q3": {
+            "question": "What does the agent handle alone and what goes to my team?",
+            "answer": "It answers product, price, shipping and policy questions, recommends and shares the purchase link or the tracking. Negotiation, exchanges, returns, complaints and anything it doesn't know go to your team with the full conversation and the summary."
+          },
+          "q4": {
+            "question": "Does it message customers before they write?",
+            "answer": "It doesn't message people who abandon a cart. If the order started in the conversation and your platform reports changes, it tells the customer when the order is created, changes status or gets a tracking number. On WhatsApp, those updates only go out within 24 hours of the customer's last message."
+          },
+          "q5": {
+            "question": "What does the calculator estimate?",
+            "answer": "Using your own numbers, it estimates the sales you miss by answering late, the hours your team spends chatting and how many orders pay for each plan. It is arithmetic with your assumptions, not a promise of results."
+          }
+        }
+      },
+      "cta": {
+        "titleBefore": "Every unanswered question",
+        "titleAccent": "is a lost sale",
+        "lead": "Connect your store, load your policies and the agent starts answering."
+      }
     }
   }
 }

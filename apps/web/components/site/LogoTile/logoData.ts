@@ -18,6 +18,8 @@ export const BRAND_LOGOS: Record<string, BrandLogo> = {
   Dropi: { src: `${D}dropi.png`, name: 'Dropi', width: 268, height: 109, wordmark: true },
   Dropea: { src: `${D}dropea.png`, name: 'Dropea', width: 264, height: 113, wordmark: true },
   Mastershop: { src: `${D}mastershop.png`, name: 'Mastershop', width: 359, height: 79, wordmark: true },
+  WhatsApp: { src: `${D}whatsapp.svg`, name: 'WhatsApp', width: 22, height: 22, wordmark: false },
+  Instagram: { src: `${D}instagram.svg`, name: 'Instagram', width: 22, height: 22, wordmark: false },
   HubSpot: { src: `${D}hubspot.svg`, name: 'HubSpot', width: 22, height: 22, wordmark: false },
   Zoho: { src: `${D}zoho.svg`, name: 'Zoho', width: 22, height: 22, wordmark: false },
   Odoo: { src: `${D}odoo.svg`, name: 'Odoo', width: 22, height: 22, wordmark: false },

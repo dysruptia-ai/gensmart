@@ -1,0 +1,71 @@
+/* design/web: .case3, .case, .case-logos, .case-need */
+.cases {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gs-sp-5);
+  margin-top: var(--gs-sp-6);
+}
+
+.case {
+  display: grid;
+}
+
+.inner {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: var(--gs-sp-4);
+  padding: var(--gs-sp-6);
+  border: 1px solid var(--gs-line);
+  border-radius: var(--gs-r-lg);
+  background: var(--gs-bg-raised);
+}
+
+.h3 {
+  margin: 0;
+  font: 600 var(--gs-fs-h3) / 1.2 var(--gs-font-display);
+}
+
+.logos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.text {
+  margin: 0;
+  color: var(--gs-fg-soft);
+}
+
+.need {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-top: var(--gs-sp-3);
+  border-top: 1px dashed var(--gs-line);
+}
+
+.need b {
+  font: 600 12px var(--gs-font-display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
+.link {
+  color: var(--gs-brand-bright);
+  font-weight: 600;
+}
+
+.related {
+  margin: var(--gs-sp-6) 0 0;
+  color: var(--gs-fg-soft);
+}
+
+@media (max-width: 900px) {
+  .cases {
+    grid-template-columns: 1fr;
+  }
+}

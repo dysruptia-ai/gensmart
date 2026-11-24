@@ -27,7 +27,7 @@ export default function IndustryPage({ industry }: IndustryPageProps) {
       <SolutionHero page={industry} />
       <SolutionMethod page={industry}>
         {industry.id === 'industryEcommerce' ? (
-          // La landing para tiendas online (web-26) enlazará de vuelta aquí
+          // La landing para tiendas online enlaza de vuelta aquí (los dos sentidos)
           <p className={styles.related}>
             {t(`${c}.ecommerceBefore`)}{' '}
             <SiteLink to="ecommerce" className={styles.link}>

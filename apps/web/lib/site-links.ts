@@ -123,8 +123,8 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   partners: { href: null },
   cases: { href: null },
   status: { href: null },
-  // Landing E-commerce (tiendas online): llega en web-26
-  ecommerce: { href: null },
+  // Landing E-commerce (tiendas online). Con rutas por idioma: se resuelve en LOCALIZED_LINKS
+  ecommerce: { href: '/en/solutions/ecommerce' },
 
   socialInstagram: { href: 'https://www.instagram.com/gensmart.co/', external: true },
   socialTiktok: { href: 'https://www.tiktok.com/@gensmart.co', external: true },
@@ -174,6 +174,7 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
   teamHumanResources: 'teamHumanResources',
   teamCollections: 'teamCollections',
   solutions: 'solutions',
+  ecommerce: 'ecommerce',
   // "Ver todas las industrias" (mega menú, footer): el índice, sin ancla, porque arranca por industrias
   industries: { route: 'solutions', hash: { es: '#industrias', en: '#industries' } },
   teams: { route: 'solutions', hash: { es: '#equipos', en: '#teams' } },
