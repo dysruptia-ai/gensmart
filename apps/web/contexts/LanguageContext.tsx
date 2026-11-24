@@ -11,6 +11,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { counterpart } from '@/lib/site-routes';
 import { useAuth } from '@/contexts/AuthContext';
+import { storageGet, storageSet } from '@/lib/safe-storage';
 
 export type SupportedLanguage = 'en' | 'es';
 
@@ -38,7 +39,7 @@ function getInitialLanguage(userLanguage?: string): SupportedLanguage {
   }
   // 2. LocalStorage for guests
   if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem(LS_KEY);
+    const stored = storageGet(LS_KEY);
     if (stored === 'en' || stored === 'es') return stored;
   }
   // 3. Browser language
@@ -65,7 +66,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const lang = getInitialLanguage((user as { language?: string } | null)?.language);
     setLanguageState(lang);
     if (typeof window !== 'undefined') {
-      localStorage.setItem(LS_KEY, lang);
+      storageSet(LS_KEY, lang);
     }
     setIsLanguageResolved(true);
   }, [hydrated, user]);
@@ -74,7 +75,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     (lang: SupportedLanguage) => {
       setLanguageState(lang);
       if (typeof window !== 'undefined') {
-        localStorage.setItem(LS_KEY, lang);
+        storageSet(LS_KEY, lang);
       }
       // Persist to backend if authenticated
       if (user) {
@@ -116,7 +117,7 @@ export function FixedLanguageProvider({
 
   // El registro y las páginas viejas abren en el idioma que el visitante estaba leyendo
   useEffect(() => {
-    localStorage.setItem(LS_KEY, language);
+    storageSet(LS_KEY, language);
   }, [language]);
 
   const setLanguage = useCallback(

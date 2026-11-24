@@ -10,6 +10,7 @@ import en from '@/i18n/en.json';
 import es from '@/i18n/es.json';
 import Container from '../Container';
 import styles from './LanguageSuggestion.module.css';
+import { storageGet, storageSet } from '@/lib/safe-storage';
 
 const DISMISS_KEY = 'gs_lang_hint_dismissed';
 
@@ -35,7 +36,7 @@ export default function LanguageSuggestion() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem(DISMISS_KEY) === '1') return;
+    if (storageGet(DISMISS_KEY) === '1') return;
     const browser = (navigator.languages?.[0] ?? navigator.language ?? '').slice(0, 2).toLowerCase();
     if (!isSiteLanguage(browser) || browser === language) return;
     const target = counterpart(pathname);
@@ -52,7 +53,7 @@ export default function LanguageSuggestion() {
 
   const hint = HINTS[suggestion.lang];
   const dismiss = () => {
-    localStorage.setItem(DISMISS_KEY, '1');
+    storageSet(DISMISS_KEY, '1');
     setSuggestion(null);
   };
 
