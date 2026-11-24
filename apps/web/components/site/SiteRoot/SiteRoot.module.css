@@ -92,3 +92,12 @@
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
+
+/*
+ * `app/globals.css` (del dashboard) subraya todo enlace en hover. El sitio no lo hace:
+ * las tarjetas y los botones son enlaces completos. `:where` deja la especificidad en
+ * (0,1,1) para que los enlaces de texto que sí subrayan (migas, `.link`…) ganen con su clase.
+ */
+:where(.root) a:hover {
+  text-decoration: none;
+}
