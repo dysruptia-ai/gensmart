@@ -2,6 +2,7 @@
 id: "precio-y-hora-las-dos-preguntas-de-un-salon"
 title: "¿Cuánto cuesta y a qué hora hay? Las dos preguntas de un salón, un spa o un gimnasio"
 description: "Precios, duración, sede y horario se preguntan a toda hora. Cómo un agente de IA los responde, agenda la cita o la clase y deja el cobro a tu equipo."
+seoTitle: "Precio y hora: las dos preguntas de un salón, spa o gimnasio"
 date: "2026-07-28"
 updated: "2026-11-19"
 category: "industrias"

@@ -2,6 +2,7 @@
 id: "datos-antes-de-la-llamada-con-el-asesor-de-seguros-o-credito"
 title: "Insurance and credit: what details to gather before the advisor speaks"
 description: "An AI agent explains products and requirements, asks what your team defines and books the call. Advice, quotes and approval belong to a person."
+seoTitle: "Insurance and credit: what to gather before the advisor call"
 date: "2026-08-20"
 updated: "2026-11-19"
 category: "industrias"

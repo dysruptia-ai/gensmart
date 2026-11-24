@@ -2,6 +2,7 @@
 id: "venta-b2b-de-un-necesito-cotizar-a-una-llamada-con-contexto"
 title: "Venta B2B: de un «necesito cotizar» a una llamada con contexto"
 description: "Fichas, volumen, empresa y ciudad antes de que hable tu equipo comercial. Cómo un agente de IA ordena una venta larga sin cotizar ni negociar."
+seoTitle: "Venta B2B: de «necesito cotizar» a una llamada con contexto"
 date: "2026-10-26"
 updated: "2026-11-19"
 category: "industrias"

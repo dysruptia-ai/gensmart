@@ -23,6 +23,9 @@ export type SiteLanguage = (typeof SITE_LANGUAGES)[number];
 /** Idioma de `x-default` (mercado principal). */
 export const DEFAULT_SITE_LANGUAGE: SiteLanguage = 'es';
 
+/** Cabecera que `proxy.ts` agrega con el idioma de la URL (la lee `app/global-not-found.tsx`). */
+export const SITE_LANG_HEADER = 'x-site-lang';
+
 export const SITE_ORIGIN = 'https://www.gensmart.co';
 
 export type SiteRouteId =
@@ -345,6 +348,26 @@ export function alternates(id: SiteRouteId): Record<SiteLanguage | 'x-default', 
 
 function normalize(pathname: string): string {
   return pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname;
+}
+
+/** Ruta interna de la 404 del sitio: `proxy.ts` reescribe ahí las URL de una sección que no existen. */
+export const SITE_NOT_FOUND_INTERNAL = '/not-found-page';
+
+/** Primer segmento de las secciones en español (`/blog`, `/soluciones`…), sacado del registro. */
+const ES_SECTIONS = new Set(
+  ROUTE_LIST.map((route) => route.paths.es.split('/')[1]).filter((segment): segment is string => Boolean(segment))
+);
+
+/**
+ * Idioma de una URL que no está en el registro pero cae dentro del sitio: todo `/en/…` y
+ * las secciones en español. `null` = fuera del sitio (plataforma, `/no-existe`) o un archivo
+ * (`/en/blog/rss.xml`), que siguen su camino normal.
+ */
+export function siteSectionLanguage(pathname: string): SiteLanguage | null {
+  const segments = normalize(pathname).split('/');
+  if (segments.at(-1)?.includes('.')) return null;
+  if (segments[1] === 'en' && segments.length > 2) return 'en';
+  return segments.length > 2 && ES_SECTIONS.has(segments[1] ?? '') ? 'es' : null;
 }
 
 /** Página del registro cuya ruta pública coincide, con su idioma. */

@@ -2,6 +2,7 @@
 id: "cobros-de-meta-en-whatsapp-que-se-cobra-y-por-que"
 title: "Qué cobra Meta por los mensajes de WhatsApp y por qué"
 description: "Meta cobra por mensaje entregado, según su categoría y el país. Esto es lo que se cobra, lo que es gratis y un ejemplo con las tarifas de Colombia, con cuentas claras."
+seoDescription: "Meta cobra por mensaje de WhatsApp entregado, según categoría y país. Qué se cobra, qué es gratis y un ejemplo con las tarifas de Colombia."
 date: "2026-11-21"
 updated: "2026-11-21"
 category: "whatsapp"

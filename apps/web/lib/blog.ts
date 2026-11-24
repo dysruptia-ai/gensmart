@@ -25,6 +25,10 @@ export interface BlogPostMeta {
   title: string;
   /** El `excerpt` del diseño: lead, meta descripción y resumen de las tarjetas. */
   description: string;
+  /** `<title>` cuando `title` no cabe en 60 caracteres (ya con " | GenSmart" si cabe). */
+  seoTitle?: string;
+  /** `<meta name="description">` cuando `description` pasa de 155 caracteres. */
+  seoDescription?: string;
   /** `datePublished` (AAAA-MM-DD). */
   date: string;
   /** `dateModified` (AAAA-MM-DD). */
@@ -127,6 +131,15 @@ function str(data: Record<string, unknown>, key: string, file: string): string {
   return value;
 }
 
+/** Campo opcional con tope de caracteres: si viene vacío o largo, falla el build. */
+function optStr(data: Record<string, unknown>, key: string, file: string, max: number): string | undefined {
+  const value = data[key];
+  if (value === undefined) return undefined;
+  if (typeof value !== 'string' || !value) throw new Error(`blog: ${file} con "${key}" vacío`);
+  if ([...value].length > max) throw new Error(`blog: ${file} con "${key}" de más de ${max} caracteres`);
+  return value;
+}
+
 function readPost(lang: SiteLanguage, file: string): BlogPost {
   const raw = fs.readFileSync(path.join(BLOG_DIR, lang, file), 'utf-8');
   const { data, content } = matter(raw);
@@ -164,6 +177,8 @@ function readPost(lang: SiteLanguage, file: string): BlogPost {
     language: lang,
     title: str(data, 'title', file),
     description: str(data, 'description', file),
+    seoTitle: optStr(data, 'seoTitle', file, 60),
+    seoDescription: optStr(data, 'seoDescription', file, 155),
     date: str(data, 'date', file),
     updated: str(data, 'updated', file),
     category,

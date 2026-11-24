@@ -2,6 +2,7 @@
 id: "como-escribir-la-base-de-conocimiento-de-tu-agente"
 title: "Cómo escribir la base de conocimiento de tu agente para que responda con datos, no con rodeos"
 description: "La calidad de un agente depende más de lo que sabe que de cómo está configurado. Una guía práctica para escribir lo que necesita saber."
+seoTitle: "Cómo escribir la base de conocimiento de tu agente de IA"
 date: "2026-05-22"
 updated: "2026-11-19"
 category: "agentes"

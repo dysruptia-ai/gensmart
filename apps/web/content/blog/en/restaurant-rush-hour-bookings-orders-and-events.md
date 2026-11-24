@@ -2,6 +2,7 @@
 id: "restaurante-hora-pico-reservas-pedidos-y-eventos"
 title: "Rush hour, unanswered messages and a company event that goes cold"
 description: "When the team is serving, the phone goes unanswered. What an agent handles with bookings, orders and event requests, and what it leaves to your sales team."
+seoTitle: "Restaurant rush hour: bookings, orders and events | GenSmart"
 date: "2026-05-30"
 updated: "2026-11-19"
 category: "industrias"

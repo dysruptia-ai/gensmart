@@ -2,6 +2,7 @@
 id: "embudo-de-ventas-por-conversaciones"
 title: "El embudo de ventas por conversaciones: qué hace el agente y qué hace tu equipo en cada etapa"
 description: "Un embudo que vive dentro de la conversación necesita etapas claras y un responsable en cada una. Así se reparte el trabajo entre el agente y las personas."
+seoTitle: "El embudo de ventas por conversaciones, etapa por etapa"
 date: "2026-08-05"
 updated: "2026-11-19"
 category: "crm"

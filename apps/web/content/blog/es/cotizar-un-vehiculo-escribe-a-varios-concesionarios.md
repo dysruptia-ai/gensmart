@@ -2,6 +2,7 @@
 id: "cotizar-un-vehiculo-escribe-a-varios-concesionarios"
 title: "Quien cotiza un carro escribe a varios concesionarios a la vez"
 description: "Prueba de manejo, cita de taller y retoma: cómo un agente de IA atiende al interesado en un vehículo y entrega al asesor un contacto calificado."
+seoTitle: "Quien cotiza un carro escribe a varios concesionarios"
 date: "2026-07-06"
 updated: "2026-11-19"
 category: "industrias"

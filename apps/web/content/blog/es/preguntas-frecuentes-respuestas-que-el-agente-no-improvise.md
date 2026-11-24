@@ -2,6 +2,7 @@
 id: "preguntas-frecuentes-respuestas-que-el-agente-no-improvise"
 title: "Preguntas frecuentes: cómo convertirlas en respuestas que el agente no improvise"
 description: "Tu agente responde tan bien como le enseñes. Cómo reunir las preguntas reales y escribir respuestas claras, completas y con límites."
+seoTitle: "Preguntas frecuentes que el agente responda sin improvisar"
 date: "2026-07-21"
 updated: "2026-11-19"
 category: "atencion"

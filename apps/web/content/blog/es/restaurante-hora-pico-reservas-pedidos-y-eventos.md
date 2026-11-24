@@ -2,6 +2,8 @@
 id: "restaurante-hora-pico-reservas-pedidos-y-eventos"
 title: "Hora pico, mensajes sin contestar y un evento de empresa que se enfría"
 description: "Cuando el equipo está sirviendo, el celular no se atiende. Qué resuelve un agente con reservas, pedidos y solicitudes de eventos, y qué deja a tu equipo comercial."
+seoTitle: "Restaurante en hora pico: reservas, pedidos y eventos"
+seoDescription: "Hora pico en un restaurante: qué resuelve un agente con reservas, pedidos y eventos cuando nadie atiende el celular, y qué deja a tu equipo."
 date: "2026-05-30"
 updated: "2026-11-19"
 category: "industrias"

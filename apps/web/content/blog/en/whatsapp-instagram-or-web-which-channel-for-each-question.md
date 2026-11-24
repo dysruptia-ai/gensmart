@@ -2,6 +2,7 @@
 id: "whatsapp-instagram-o-web-que-canal-para-cada-pregunta"
 title: "WhatsApp, Instagram or web: which channel handles each type of question best"
 description: "Not every customer writes from the same place or with the same intent. What tends to work best in each channel and how to keep a single history."
+seoTitle: "WhatsApp, Instagram or web: which channel for each question"
 date: "2026-08-27"
 updated: "2026-11-19"
 category: "whatsapp"

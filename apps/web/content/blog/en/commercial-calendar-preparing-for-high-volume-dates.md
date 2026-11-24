@@ -2,6 +2,7 @@
 id: "calendario-comercial-fechas-de-alto-volumen"
 title: "Commercial calendar: how to prepare your agent for the highest-volume dates in Latin America"
 description: "Mother's Day, Amor y Amistad, Black Friday, Christmas and the start of the year bring more messages and new questions. What to update before they arrive."
+seoTitle: "Commercial calendar: prepare your agent for peak dates"
 date: "2026-11-10"
 updated: "2026-11-19"
 category: "marketing"

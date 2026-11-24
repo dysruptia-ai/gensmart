@@ -2,6 +2,7 @@
 id: "como-medir-la-atencion-al-cliente"
 title: "How to measure customer service: the indicators that matter"
 description: "Measuring does not require a complicated dashboard. Four simple indicators to know whether your conversations are handled well, and how to read them without fooling yourself."
+seoDescription: "How to measure customer service without a complicated dashboard: four simple indicators to know whether your conversations are handled well."
 date: "2026-11-03"
 updated: "2026-11-19"
 category: "atencion"

@@ -2,6 +2,7 @@
 id: "como-escribir-contenido-que-google-y-la-ia-puedan-citar"
 title: "Cómo escribir contenido que Google y las IA puedan citar"
 description: "Respuesta directa primero, preguntas como subtítulos, datos propios verificables y una ficha de negocio al día. Una forma de escribir que sirve a personas y a buscadores."
+seoDescription: "Cómo escribir contenido que Google y la IA puedan citar: respuesta directa primero, preguntas como subtítulos, datos propios y ficha al día."
 date: "2026-10-04"
 updated: "2026-11-19"
 category: "marketing"

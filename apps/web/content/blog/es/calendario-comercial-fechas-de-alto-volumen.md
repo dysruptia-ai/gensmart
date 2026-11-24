@@ -2,6 +2,7 @@
 id: "calendario-comercial-fechas-de-alto-volumen"
 title: "Calendario comercial: cómo preparar tu agente para las fechas de mayor volumen en Latinoamérica"
 description: "Día de la Madre, Amor y Amistad, Black Friday, Navidad e inicio de año traen más mensajes y más preguntas nuevas. Qué actualizar antes de que lleguen."
+seoTitle: "Calendario comercial: prepara tu agente para las fechas pico"
 date: "2026-11-10"
 updated: "2026-11-19"
 category: "marketing"

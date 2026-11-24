@@ -2,6 +2,7 @@
 id: "preguntas-para-calificar-a-un-prospecto"
 title: "Five questions to qualify a prospect in chat without sounding like an interrogation"
 description: "Qualifying is not screening people out, it is knowing who to serve first. What to ask, in what order and how to save it in the CRM."
+seoTitle: "Five questions to qualify a prospect in chat | GenSmart"
 date: "2026-02-06"
 updated: "2026-11-19"
 category: "crm"

@@ -2,6 +2,8 @@
 id: "n8n-vs-gensmart-comparativa"
 title: "N8N vs GenSmart: por qué una plataforma agéntica sin código le gana al hazlo tú mismo en agentes de IA para WhatsApp"
 description: "Comparación práctica entre armar agentes de IA para WhatsApp con flujos de N8N y hacerlo con el creador de agentes de IA sin código de GenSmart. Despliega en minutos, no en semanas."
+seoTitle: "N8N vs GenSmart: agentes de IA para WhatsApp sin código"
+seoDescription: "N8N vs GenSmart: comparación práctica entre armar agentes de IA para WhatsApp con flujos de N8N y hacerlo con el creador sin código de GenSmart."
 date: "2026-02-09"
 updated: "2026-11-19"
 category: "agentes"

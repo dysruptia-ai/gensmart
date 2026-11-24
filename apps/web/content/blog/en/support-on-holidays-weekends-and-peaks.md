@@ -2,6 +2,7 @@
 id: "atencion-en-festivos-fines-de-semana-y-picos"
 title: "Support on holidays, weekends and demand peaks without building night shifts"
 description: "Customers write when they can, not when your team rests. How to cover low-staff days and what to leave ready for the next business day."
+seoTitle: "Support on holidays, weekends and demand peaks | GenSmart"
 date: "2026-09-04"
 updated: "2026-11-19"
 category: "atencion"

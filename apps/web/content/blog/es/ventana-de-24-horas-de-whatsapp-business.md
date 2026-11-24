@@ -2,6 +2,7 @@
 id: "ventana-de-24-horas-de-whatsapp-business"
 title: "La ventana de 24 horas de WhatsApp Business: qué es y cómo no perder la conversación"
 description: "Cuando pasa un día sin respuesta del cliente, WhatsApp cambia las reglas. Entenderlo evita mensajes que no salen y conversaciones que se enfrían."
+seoTitle: "Ventana de 24 horas de WhatsApp: qué es y cómo funciona"
 date: "2026-07-13"
 updated: "2026-11-19"
 category: "whatsapp"

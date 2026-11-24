@@ -2,6 +2,7 @@
 id: "atender-interesados-inmobiliarios-antes-que-la-competencia"
 title: "Win the viewing: how an agent handles the lead who wrote to three agencies"
 description: "From the first message about an apartment to the viewing booked with your advisor: what the agent does at each moment and where a person steps in."
+seoTitle: "Answering property leads before the competition | GenSmart"
 date: "2026-03-08"
 updated: "2026-11-19"
 category: "industrias"

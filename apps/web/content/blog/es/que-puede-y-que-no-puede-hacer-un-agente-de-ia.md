@@ -2,6 +2,7 @@
 id: "que-puede-y-que-no-puede-hacer-un-agente-de-ia"
 title: "Qué puede y qué no puede hacer hoy un agente de IA en tu negocio"
 description: "Un agente bien configurado resuelve mucho, pero no negocia, no cierra ni cobra. Los límites reales, dichos sin adornos."
+seoTitle: "Qué puede y qué no puede hacer un agente de IA en tu negocio"
 date: "2026-04-15"
 updated: "2026-11-19"
 category: "agentes"

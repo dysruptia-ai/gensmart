@@ -2,6 +2,8 @@
 id: "conecta-tu-tienda-venndelo-a-un-agente-de-gensmart"
 title: "Connect your Venndelo store to a GenSmart agent: catalog with photos, cart, shipping and order inside the conversation"
 description: "A GenSmart agent can now serve your Venndelo store customers: it shows the catalog with photos, builds the cart, quotes shipping, creates the cash-on-delivery order and updates them on its status. You connect your store in three steps, with a code you copy from Venndelo and paste into GenSmart, no coding needed."
+seoTitle: "Connect Venndelo to a GenSmart agent: catalog and orders"
+seoDescription: "Connect Venndelo to a GenSmart agent: catalog with photos, cart, shipping and cash-on-delivery orders inside the conversation. Three steps, no code."
 date: "2026-11-19"
 updated: "2026-11-19"
 category: "novedades"

@@ -1,0 +1,98 @@
+/* `section surface-dark bg-grid` con alto mínimo de 60vh (plantilla `nf`) */
+.section {
+  position: relative;
+  overflow: clip;
+  min-height: 60vh;
+  display: grid;
+  align-items: center;
+  padding-block: 96px;
+  background: var(--gs-ink-900);
+  color: var(--gs-ink-100);
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(240, 244, 242, 0.3) 1.15px, transparent 1.35px);
+  background-size: 26px 26px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent 92%);
+}
+
+.inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+.fig {
+  font-family: var(--gs-font-display);
+  font-size: clamp(4rem, 2rem + 8vw, 8rem);
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--gs-brand-bright);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--gs-font-display);
+  font-size: var(--gs-fs-h2);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.lead {
+  margin: 0;
+  max-width: 36ch;
+  font-size: var(--gs-fs-lead);
+  line-height: 1.45;
+  color: var(--gs-ink-200);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.help {
+  margin: 8px 0 0;
+  max-width: 62ch;
+  font-size: var(--gs-fs-sm);
+  line-height: 1.6;
+  color: var(--gs-ink-300);
+}
+
+.helpLink {
+  color: var(--gs-brand-bright);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.helpLink:hover {
+  color: var(--gs-brand-soft);
+}
+
+.helpLink:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 640px) {
+  .section {
+    padding-block: 64px;
+  }
+
+  .lead {
+    font-size: var(--gs-fs-base);
+  }
+}

@@ -2,6 +2,7 @@
 id: "que-es-un-agente-de-ia-multicanal"
 title: "Qué es un agente de IA multicanal y por qué importa atender WhatsApp, Instagram y web desde un solo lugar"
 description: "Tus clientes escriben por donde les queda cómodo. Un agente multicanal los atiende en todos y guarda una sola historia por persona."
+seoTitle: "Qué es un agente de IA multicanal y por qué importa"
 date: "2026-01-30"
 updated: "2026-11-19"
 category: "agentes"

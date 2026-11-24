@@ -2,6 +2,7 @@
 id: "responder-mensajes-directos-de-instagram-con-un-agente"
 title: "Cómo atender los mensajes directos de Instagram sin vivir pegado al teléfono"
 description: "Para muchos negocios el DM es la vitrina y la caja. Qué conviene automatizar, qué no y cómo mantener una sola conversación con el cliente."
+seoTitle: "Cómo atender los mensajes directos de Instagram | GenSmart"
 date: "2026-03-23"
 updated: "2026-11-19"
 category: "whatsapp"

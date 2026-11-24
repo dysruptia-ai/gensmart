@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { matchInternalPath, matchPublicPath, publicPath } from '@/lib/site-routes';
+import {
+  SITE_LANG_HEADER,
+  SITE_NOT_FOUND_INTERNAL,
+  matchInternalPath,
+  matchPublicPath,
+  publicPath,
+  siteSectionLanguage,
+} from '@/lib/site-routes';
 
 const PUBLIC_PATHS = [
   '/',
@@ -18,6 +25,17 @@ const PUBLIC_PREFIXES = [
   '/api',
   '/favicon',
 ];
+
+/**
+ * Sigue sin cambios, pero con el idioma de la URL en `SITE_LANG_HEADER`: la 404 global
+ * (fuera de los layouts) no recibe parámetros y lo lee de ahí. Se fija siempre, para que
+ * no llegue un valor enviado por el cliente.
+ */
+function next(req: NextRequest, pathname: string): NextResponse {
+  const headers = new Headers(req.headers);
+  headers.set(SITE_LANG_HEADER, pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'es');
+  return NextResponse.next({ request: { headers } });
+}
 
 export function proxy(req: NextRequest): NextResponse {
   const { pathname } = req.nextUrl;
@@ -61,6 +79,17 @@ export function proxy(req: NextRequest): NextResponse {
       return NextResponse.redirect(url, 308);
     }
   }
+  // Una URL dentro de una sección del sitio que no está en el registro (`/blog/no-existe`,
+  // `/en/no-existe`): 404 del sitio, con cabecera y pie en su idioma. Las redirecciones de
+  // next.config corren antes que el proxy, así que una URL redirigida nunca llega aquí.
+  if (!siteMatch) {
+    const lang = siteSectionLanguage(pathname);
+    if (lang) {
+      const url = req.nextUrl.clone();
+      url.pathname = `/${lang}${SITE_NOT_FOUND_INTERNAL}`;
+      return NextResponse.rewrite(url, { status: 404 });
+    }
+  }
   // /es y /es/… no se sirven directo: 308 a la ruta pública en español (sin contenido duplicado)
   if (pathname === '/es' || pathname.startsWith('/es/')) {
     const route = matchInternalPath(pathname.slice(3));
@@ -70,8 +99,8 @@ export function proxy(req: NextRequest): NextResponse {
     return NextResponse.redirect(url, 308);
   }
 
-  if (PUBLIC_PATHS.includes(pathname)) return NextResponse.next();
-  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return NextResponse.next();
+  if (PUBLIC_PATHS.includes(pathname)) return next(req, pathname);
+  if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return next(req, pathname);
 
   if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/design-system')) {
     const refreshToken = req.cookies.get('refresh_token');
@@ -82,7 +111,7 @@ export function proxy(req: NextRequest): NextResponse {
     }
   }
 
-  return NextResponse.next();
+  return next(req, pathname);
 }
 
 export const config = {

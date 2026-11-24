@@ -2,6 +2,7 @@
 id: "agente-de-ia-o-mas-personal-de-atencion"
 title: "Agente de IA o más personal de atención: cuándo conviene cada uno"
 description: "No es una elección de todo o nada. Cuatro criterios para decidir qué parte de tu atención cubre un agente y cuál una persona."
+seoTitle: "Agente de IA o más personal de atención: cuándo conviene"
 date: "2026-09-19"
 updated: "2026-11-19"
 category: "agentes"

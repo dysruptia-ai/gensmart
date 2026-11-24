@@ -2,6 +2,8 @@
 id: "ventana-de-24-horas-de-whatsapp-business"
 title: "The WhatsApp Business 24-hour window: what it is and how not to lose the conversation"
 description: "When a day passes without a reply from the customer, WhatsApp changes the rules. Understanding it prevents messages that do not send and conversations that go cold."
+seoTitle: "The WhatsApp Business 24-hour window: what it is | GenSmart"
+seoDescription: "The WhatsApp Business 24-hour window: when a day passes without a customer reply, the rules change. How to avoid unsent messages and cold chats."
 date: "2026-07-13"
 updated: "2026-11-19"
 category: "whatsapp"

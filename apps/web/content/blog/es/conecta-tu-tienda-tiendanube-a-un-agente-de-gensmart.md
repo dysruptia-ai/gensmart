@@ -2,6 +2,8 @@
 id: "conecta-tu-tienda-tiendanube-a-un-agente-de-gensmart"
 title: "Conecta tu tienda Tiendanube a un agente de GenSmart: catálogo, carrito y enlace de pago en la conversación"
 description: "Ahora un agente de GenSmart puede consultar el catálogo de tu tienda Tiendanube, mostrar fotos del producto, armar el pedido y entregar el enlace de pago, todo dentro de la conversación."
+seoTitle: "Conecta Tiendanube a un agente de GenSmart: catálogo y pago"
+seoDescription: "Conecta Tiendanube a un agente de GenSmart: consulta el catálogo, muestra fotos, arma el pedido y entrega el enlace de pago en la conversación."
 date: "2026-11-13"
 updated: "2026-11-13"
 category: "novedades"

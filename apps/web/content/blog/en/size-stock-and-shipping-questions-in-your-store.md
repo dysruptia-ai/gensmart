@@ -2,6 +2,7 @@
 id: "preguntas-de-talla-stock-y-envio-en-tu-tienda"
 title: "Size, stock and shipping: the three questions that decide a purchase in your store"
 description: "Whoever asks about a size or shipping already wants to buy. How an AI agent answers from your catalog and takes the customer to the payment link."
+seoTitle: "Size, stock and shipping questions that decide a purchase"
 date: "2026-01-08"
 updated: "2026-11-19"
 category: "industrias"

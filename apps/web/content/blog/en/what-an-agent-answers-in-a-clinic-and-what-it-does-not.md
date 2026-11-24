@@ -2,6 +2,7 @@
 id: "que-responde-un-agente-en-una-clinica-y-que-no"
 title: "What a front desk repeats all day and an agent can answer (and what it never should)"
 description: "Services, hours, preparation and appointments yes. Medical advice no. How to split the work between the agent and your front desk in a clinic."
+seoTitle: "What a clinic agent can answer and what it never should"
 date: "2026-01-22"
 updated: "2026-11-19"
 category: "industrias"

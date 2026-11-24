@@ -2,6 +2,7 @@
 id: "que-pasa-despues-del-clic-en-un-anuncio"
 title: "What should happen after the click on an ad: from ad spend to an answered conversation"
 description: "Paying for a click and replying late is the most expensive way to lose a customer. General advice so that every person who writes gets an answer."
+seoTitle: "What should happen after the click on an ad | GenSmart"
 date: "2026-06-06"
 updated: "2026-11-19"
 category: "marketing"

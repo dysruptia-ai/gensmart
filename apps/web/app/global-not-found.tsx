@@ -1,36 +1,53 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { headers } from 'next/headers';
 import { Sora, Geist } from 'next/font/google';
+import './globals.css';
+import { FixedLanguageProvider } from '@/contexts/LanguageContext';
+import SiteRoot from '@/components/site/SiteRoot';
+import SiteLogo from '@/components/site/SiteLogo';
+import SkipLink from '@/components/site/SkipLink';
+import NotFoundContent from '@/components/site/NotFound';
+import { siteT } from '@/lib/site-i18n';
+import { SITE_LANG_HEADER, type SiteLanguage } from '@/lib/site-routes';
 import styles from './global-not-found.module.css';
 
 const sora = Sora({ subsets: ['latin'], weight: ['600'], display: 'swap', variable: '--font-sora' });
-const geist = Geist({ subsets: ['latin'], weight: ['400', '600'], display: 'swap', variable: '--font-geist' });
+const geist = Geist({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap', variable: '--font-geist' });
 
-export const metadata: Metadata = {
-  title: '404 | GenSmart',
-  robots: { index: false, follow: true },
-};
+/** Idioma que fijó `proxy.ts` según el prefijo de la URL (`/en/…` → inglés). */
+async function requestLang(): Promise<SiteLanguage> {
+  return (await headers()).get(SITE_LANG_HEADER) === 'en' ? 'en' : 'es';
+}
 
-/** 404 para URL que no coinciden con ninguna ruta (hay dos layouts raíz). Bilingüe: no sabemos el idioma. */
-export default function GlobalNotFound() {
+export async function generateMetadata(): Promise<Metadata> {
+  const t = siteT(await requestLang());
+  return {
+    title: { absolute: t('site.notFound.title') },
+    robots: { index: false, follow: true },
+  };
+}
+
+/**
+ * 404 para URL que no coinciden con ninguna ruta (hay dos layouts raíz, así que va fuera
+ * de ambos): cabecera mínima con el logo y el contenido de la 404 del sitio.
+ */
+export default async function GlobalNotFound() {
+  const lang = await requestLang();
+  const t = siteT(lang);
   return (
-    <html lang="es" className={`${sora.variable} ${geist.variable}`}>
-      <body className={styles.body}>
-        <main className={styles.main}>
-          <p className={styles.code}>404</p>
-          <h1 className={styles.title}>Esta página no existe</h1>
-          <p className={styles.text} lang="en">
-            This page does not exist.
-          </p>
-          <nav className={styles.links} aria-label="GenSmart">
-            <Link href="/" hrefLang="es" lang="es" className={styles.primary}>
-              Ir al inicio
-            </Link>
-            <Link href="/en" hrefLang="en" lang="en" className={styles.secondary}>
-              Go to home
-            </Link>
-          </nav>
-        </main>
+    <html lang={lang} className={`${sora.variable} ${geist.variable}`}>
+      <body>
+        <FixedLanguageProvider language={lang}>
+          <SiteRoot>
+            <SkipLink />
+            <header className={styles.header}>
+              <SiteLogo className={styles.logo} ariaLabel={t('site.notFound.logoHome')} />
+            </header>
+            <main id="main">
+              <NotFoundContent />
+            </main>
+          </SiteRoot>
+        </FixedLanguageProvider>
       </body>
     </html>
   );

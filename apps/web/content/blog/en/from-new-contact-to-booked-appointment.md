@@ -2,6 +2,7 @@
 id: "de-contacto-nuevo-a-cita-agendada"
 title: "From a new contact to a booked appointment in a single conversation"
 description: "When someone writes with interest, every extra message is a chance for them to leave. The short path to the appointment, step by step."
+seoTitle: "From new contact to booked appointment in one conversation"
 date: "2026-09-26"
 updated: "2026-11-19"
 category: "crm"

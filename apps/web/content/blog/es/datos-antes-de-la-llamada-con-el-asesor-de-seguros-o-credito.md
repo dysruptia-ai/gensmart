@@ -2,6 +2,8 @@
 id: "datos-antes-de-la-llamada-con-el-asesor-de-seguros-o-credito"
 title: "Seguros y créditos: qué datos reunir antes de que hable el asesor"
 description: "Un agente de IA explica productos y requisitos, pregunta lo que tu equipo defina y agenda la llamada. La asesoría, la cotización y la aprobación son de una persona."
+seoTitle: "Seguros y créditos: qué datos reunir antes del asesor"
+seoDescription: "Seguros y créditos: un agente de IA explica productos y requisitos, pregunta lo que defina tu equipo y agenda la llamada. Asesora una persona."
 date: "2026-08-20"
 updated: "2026-11-19"
 category: "industrias"

@@ -2,6 +2,7 @@
 id: "guia-para-empezar-con-ia-conversacional-en-una-pyme"
 title: "A guide to starting with conversational AI in a small business: where to begin and what to prepare"
 description: "You do not need a big project. You need one channel, a handful of well-written answers and a person to receive the handoffs."
+seoTitle: "Getting started with conversational AI in a small business"
 date: "2026-05-15"
 updated: "2026-11-19"
 category: "agentes"

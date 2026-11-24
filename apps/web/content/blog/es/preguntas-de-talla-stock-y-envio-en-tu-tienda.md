@@ -2,6 +2,7 @@
 id: "preguntas-de-talla-stock-y-envio-en-tu-tienda"
 title: "Talla, stock y envío: las tres preguntas que deciden una compra en tu tienda"
 description: "Quien pregunta por una talla o por el envío ya quiere comprar. Cómo un agente de IA responde con tu catálogo y lleva al cliente al enlace de pago."
+seoTitle: "Talla, stock y envío: las preguntas que deciden una compra"
 date: "2026-01-08"
 updated: "2026-11-19"
 category: "industrias"

@@ -2,6 +2,7 @@
 id: "que-es-geo-y-por-que-tu-negocio-debe-ser-citable-por-la-ia"
 title: "Qué es el GEO y por qué tu negocio debe poder ser citado por las respuestas de la IA"
 description: "Cada vez más gente pregunta a una IA en lugar de buscar en una lista de enlaces. El GEO es preparar tu negocio para aparecer en esas respuestas."
+seoTitle: "Qué es el GEO y por qué tu negocio debe ser citable por IA"
 date: "2026-03-01"
 updated: "2026-11-19"
 category: "marketing"

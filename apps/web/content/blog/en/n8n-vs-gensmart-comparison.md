@@ -2,6 +2,7 @@
 id: "n8n-vs-gensmart-comparativa"
 title: "N8N vs GenSmart: Why a No-Code Agentic Platform Beats DIY for WhatsApp AI Agents"
 description: "Practical comparison of building WhatsApp AI agents with N8N workflows versus GenSmart's no-code AI agent builder. Deploy in minutes, not weeks."
+seoTitle: "N8N vs GenSmart: No-Code vs DIY for WhatsApp AI Agents"
 date: "2026-02-09"
 updated: "2026-11-19"
 category: "agentes"

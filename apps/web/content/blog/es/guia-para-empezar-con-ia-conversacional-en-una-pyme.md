@@ -2,6 +2,7 @@
 id: "guia-para-empezar-con-ia-conversacional-en-una-pyme"
 title: "Guía para empezar con IA conversacional en una pyme: por dónde empezar y qué preparar"
 description: "No necesitas un proyecto grande. Necesitas un canal, un puñado de respuestas bien escritas y una persona que reciba los traspasos."
+seoTitle: "Cómo empezar con IA conversacional en una pyme | GenSmart"
 date: "2026-05-15"
 updated: "2026-11-19"
 category: "agentes"

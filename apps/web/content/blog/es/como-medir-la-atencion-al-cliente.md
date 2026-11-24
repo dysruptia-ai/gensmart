@@ -2,6 +2,7 @@
 id: "como-medir-la-atencion-al-cliente"
 title: "Cómo medir la atención al cliente: los indicadores que sí importan"
 description: "Medir no exige un tablero complicado. Cuatro indicadores sencillos para saber si tus conversaciones se atienden bien, y cómo leerlos sin autoengañarte."
+seoTitle: "Cómo medir la atención al cliente: indicadores que importan"
 date: "2026-11-03"
 updated: "2026-11-19"
 category: "atencion"

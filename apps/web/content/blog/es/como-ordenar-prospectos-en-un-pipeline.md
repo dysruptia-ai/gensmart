@@ -2,6 +2,7 @@
 id: "como-ordenar-prospectos-en-un-pipeline"
 title: "Cómo ordenar tus prospectos en un pipeline: etapas, responsables y cuándo se mueve un contacto"
 description: "Un pipeline útil tiene pocas etapas, un dueño por etapa y una regla clara para mover a cada contacto. Cómo diseñarlo sin complicarlo."
+seoTitle: "Cómo ordenar tus prospectos en un pipeline por etapas"
 date: "2026-11-18"
 updated: "2026-11-19"
 category: "crm"

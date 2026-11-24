@@ -2,6 +2,7 @@
 id: "atender-interesados-inmobiliarios-antes-que-la-competencia"
 title: "Gana la visita: así atiende un agente al interesado que escribió a tres inmobiliarias"
 description: "Del primer mensaje por un apartamento a la visita agendada con tu asesor: qué hace el agente en cada momento y dónde entra una persona."
+seoTitle: "Atender interesados inmobiliarios antes que la competencia"
 date: "2026-03-08"
 updated: "2026-11-19"
 category: "industrias"

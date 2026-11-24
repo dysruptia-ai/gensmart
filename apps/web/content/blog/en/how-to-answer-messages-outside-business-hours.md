@@ -2,6 +2,7 @@
 id: "como-responder-mensajes-fuera-de-horario"
 title: "How to answer messages outside business hours without sounding like an answering machine"
 description: "A \"we are closed, write us tomorrow\" loses sales. What an agent can resolve at night and what it should leave noted for the morning."
+seoTitle: "How to answer messages outside business hours | GenSmart"
 date: "2026-02-21"
 updated: "2026-11-19"
 category: "atencion"

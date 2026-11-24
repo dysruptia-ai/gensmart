@@ -2,6 +2,7 @@
 id: "como-funciona-un-agente-de-ia-por-dentro"
 title: "Cómo funciona un agente de IA por dentro: entiende, consulta y actúa"
 description: "Tres pasos explican a un agente: entender lo que escribe el cliente, buscar en tu información y hacer algo con ello."
+seoTitle: "Cómo funciona un agente de IA: entiende, consulta y actúa"
 date: "2026-03-16"
 updated: "2026-11-19"
 category: "agentes"

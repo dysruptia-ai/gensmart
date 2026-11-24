@@ -2,6 +2,7 @@
 id: "seguimiento-a-clientes-que-no-responden"
 title: "Seguimiento a clientes que dejaron de responder: cuándo insistir y cuándo parar"
 description: "La mayoría de las ventas se pierden por silencio, no por rechazo. Cómo hacer seguimiento sin volverse molesto."
+seoTitle: "Seguimiento a clientes que no responden: cuándo insistir"
 date: "2026-04-22"
 updated: "2026-11-19"
 category: "crm"

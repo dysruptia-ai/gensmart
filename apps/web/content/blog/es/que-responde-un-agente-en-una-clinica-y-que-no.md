@@ -2,6 +2,7 @@
 id: "que-responde-un-agente-en-una-clinica-y-que-no"
 title: "Lo que una recepción repite todo el día y un agente puede responder (y lo que nunca debe)"
 description: "Servicios, horarios, preparación y citas sí. Consejo médico no. Cómo repartir el trabajo entre el agente y tu recepción en una clínica."
+seoTitle: "Qué responde un agente en una clínica y qué nunca debe"
 date: "2026-01-22"
 updated: "2026-11-19"
 category: "industrias"

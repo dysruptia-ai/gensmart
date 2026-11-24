@@ -2,6 +2,7 @@
 id: "admisiones-en-epoca-de-matriculas-quien-llama-a-quien"
 title: "Admisiones en época de matrículas: quién llama primero a quién"
 description: "Cuando llegan cientos de mensajes en pocos días, el orden de las llamadas importa. Cómo un agente responde, sugiere programa y califica aspirantes."
+seoTitle: "Admisiones en época de matrículas: quién llama a quién"
 date: "2026-04-30"
 updated: "2026-11-19"
 category: "industrias"

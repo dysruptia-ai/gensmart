@@ -2,6 +2,7 @@
 id: "preguntas-para-calificar-a-un-prospecto"
 title: "Cinco preguntas para calificar a un prospecto en la conversación sin parecer un interrogatorio"
 description: "Calificar no es filtrar a la gente, es saber a quién atender primero. Qué preguntar, en qué orden y cómo guardarlo en el CRM."
+seoTitle: "Cinco preguntas para calificar a un prospecto por chat"
 date: "2026-02-06"
 updated: "2026-11-19"
 category: "crm"

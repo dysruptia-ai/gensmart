@@ -2,6 +2,8 @@
 id: "conecta-tu-cuenta-de-dropi-a-un-agente-de-gensmart"
 title: "Connect your Dropi account to a GenSmart agent: catalog, cash-on-delivery shipping and orders inside the conversation"
 description: "If you sell with Dropi in Colombia, a GenSmart agent can show catalog products, quote cash-on-delivery shipping, create the order in your account and tell the customer how it is going. The integration is in beta."
+seoTitle: "Connect Dropi to a GenSmart agent: catalog and orders"
+seoDescription: "Connect Dropi to a GenSmart agent: it shows catalog products, quotes cash-on-delivery shipping, creates the order and updates the customer. In beta."
 date: "2026-11-19"
 updated: "2026-11-19"
 category: "novedades"

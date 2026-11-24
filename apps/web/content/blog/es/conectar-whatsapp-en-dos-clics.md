@@ -2,6 +2,7 @@
 id: "conectar-whatsapp-en-dos-clics"
 title: "Conecta WhatsApp a tu agente de IA en 2 clics, no en 2 horas"
 description: "El nuevo Embedded Signup de GenSmart te permite conectar tu número de WhatsApp Business a un agente de IA al instante. Sin llaves de API, sin desarrollador, sin configuración manual. Haz clic, autoriza y sal al aire."
+seoDescription: "Conecta WhatsApp Business a un agente de IA con el Embedded Signup de GenSmart: sin llaves de API, sin desarrollador y sin configuración manual."
 date: "2026-03-29"
 updated: "2026-11-19"
 category: "whatsapp"

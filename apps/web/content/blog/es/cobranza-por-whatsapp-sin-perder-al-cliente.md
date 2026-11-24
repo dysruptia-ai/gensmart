@@ -2,6 +2,7 @@
 id: "cobranza-por-whatsapp-sin-perder-al-cliente"
 title: "Cobranza por WhatsApp sin perder al cliente: tono, momento y reglas"
 description: "Un recordatorio bien escrito cobra más que uno insistente. Cómo configurar un agente de cobranzas que cuide la relación."
+seoTitle: "Cobranza por WhatsApp sin perder al cliente: tono y reglas"
 date: "2026-05-07"
 updated: "2026-11-19"
 category: "atencion"

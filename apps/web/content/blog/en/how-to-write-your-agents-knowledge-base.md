@@ -2,6 +2,7 @@
 id: "como-escribir-la-base-de-conocimiento-de-tu-agente"
 title: "How to write your agent's knowledge base so it answers with facts, not detours"
 description: "An agent's quality depends more on what it knows than on how it is configured. A practical guide to writing what it needs to know."
+seoTitle: "How to write your AI agent's knowledge base | GenSmart"
 date: "2026-05-22"
 updated: "2026-11-19"
 category: "agentes"

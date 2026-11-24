@@ -2,6 +2,7 @@
 id: "agendar-citas-por-whatsapp-con-un-agente-de-ia"
 title: "Booking appointments on WhatsApp with an AI agent: how to design it for clinics and services"
 description: "A well-booked appointment is a short conversation with clear rules. How to build the flow, which data to ask for and when to hand over to a person."
+seoTitle: "Booking appointments on WhatsApp with an AI agent | GenSmart"
 date: "2026-10-19"
 updated: "2026-11-19"
 category: "agentes"

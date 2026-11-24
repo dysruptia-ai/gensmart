@@ -2,6 +2,7 @@
 id: "primera-reunion-con-contexto-en-firmas-profesionales"
 title: "La primera reunión con un cliente nuevo ya no empieza de cero"
 description: "Para firmas de abogados, contadores, consultoras y estudios: cómo un agente de IA identifica el servicio, reúne datos y agenda con el profesional adecuado."
+seoTitle: "Primera reunión con un cliente nuevo: ya no empieza de cero"
 date: "2026-10-11"
 updated: "2026-11-19"
 category: "industrias"

@@ -2,6 +2,7 @@
 id: "embudo-de-ventas-por-conversaciones"
 title: "The conversational sales funnel: what the agent does and what your team does at each stage"
 description: "A funnel that lives inside the conversation needs clear stages and an owner for each one. Here is how the work is split between the agent and your people."
+seoTitle: "The conversational sales funnel, stage by stage | GenSmart"
 date: "2026-08-05"
 updated: "2026-11-19"
 category: "crm"

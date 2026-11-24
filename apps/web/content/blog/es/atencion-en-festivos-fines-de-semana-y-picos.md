@@ -2,6 +2,7 @@
 id: "atencion-en-festivos-fines-de-semana-y-picos"
 title: "Atención en festivos, fines de semana y picos de demanda sin armar turnos de noche"
 description: "Los clientes escriben cuando pueden, no cuando tu equipo descansa. Cómo cubrir los días de menos personal y qué dejar listo para el siguiente día hábil."
+seoTitle: "Atención en festivos, fines de semana y picos de demanda"
 date: "2026-09-04"
 updated: "2026-11-19"
 category: "atencion"

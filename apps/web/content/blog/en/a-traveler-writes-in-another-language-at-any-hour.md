@@ -2,6 +2,8 @@
 id: "viajero-escribe-en-otro-idioma-a-cualquier-hora"
 title: "A traveler writes in English at dawn and your advisor is asleep"
 description: "Destination, dates and number of travelers before quoting. How an AI agent answers in each traveler's language and gives the advisor a request ready to quote."
+seoTitle: "A traveler writes at dawn and your advisor is asleep"
+seoDescription: "Destination, dates and travelers before quoting: how an AI agent answers in each traveler's language and hands the advisor a ready request."
 date: "2026-09-11"
 updated: "2026-11-19"
 category: "industrias"

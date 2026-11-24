@@ -2,6 +2,7 @@
 id: "solicitud-de-servicio-tecnico-completa-desde-el-primer-mensaje"
 title: "Service, address and time slot: the complete technical request from the first message"
 description: "Your coordinator should not have to call just to ask the basics. How an agent gathers the request, books the visit and leaves dispatching to a person."
+seoTitle: "Technical service request: complete from the first message"
 date: "2026-03-31"
 updated: "2026-11-19"
 category: "industrias"

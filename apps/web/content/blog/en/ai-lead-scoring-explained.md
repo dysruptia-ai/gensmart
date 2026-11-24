@@ -2,6 +2,8 @@
 id: "puntaje-de-leads-con-ia-explicado"
 title: "AI Lead Scoring: How a WhatsApp CRM with AI Scoring Prioritizes Your Best Prospects"
 description: "Learn how AI-powered lead scoring in GenSmart's WhatsApp CRM automatically captures and prioritizes high-value prospects. AI lead capture on WhatsApp made simple."
+seoTitle: "AI Lead Scoring: How a WhatsApp CRM Prioritizes Prospects"
+seoDescription: "AI lead scoring in GenSmart's WhatsApp CRM: how it captures and prioritizes high-value prospects automatically. AI lead capture made simple."
 date: "2026-02-14"
 updated: "2026-11-19"
 category: "crm"

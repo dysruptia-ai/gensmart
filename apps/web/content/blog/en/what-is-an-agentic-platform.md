@@ -2,6 +2,7 @@
 id: "que-es-una-plataforma-agentica"
 title: "What an agentic platform is and how it differs from a chatbot or an assistant"
 description: "An agentic platform lets you create AI agents that do not just answer: they also consult your information and carry out tasks inside the conversation."
+seoTitle: "What is an agentic platform? How it differs from a chatbot"
 date: "2026-01-15"
 updated: "2026-11-19"
 category: "agentes"

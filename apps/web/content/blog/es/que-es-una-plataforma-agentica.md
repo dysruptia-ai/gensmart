@@ -2,6 +2,7 @@
 id: "que-es-una-plataforma-agentica"
 title: "Qué es una plataforma agéntica y en qué se diferencia de un chatbot o de un asistente"
 description: "Una plataforma agéntica te deja crear agentes de IA que no solo contestan: también consultan tu información y hacen tareas dentro de la conversación."
+seoTitle: "Qué es una plataforma agéntica y en qué se diferencia"
 date: "2026-01-15"
 updated: "2026-11-19"
 category: "agentes"

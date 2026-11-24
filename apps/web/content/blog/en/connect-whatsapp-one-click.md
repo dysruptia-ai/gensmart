@@ -2,6 +2,7 @@
 id: "conectar-whatsapp-en-dos-clics"
 title: "Connect WhatsApp to Your AI Agent in 2 Clicks, Not 2 Hours"
 description: "GenSmart's new Embedded Signup lets you connect your WhatsApp Business number to an AI agent instantly. No API keys, no developer needed, no manual setup. Just click, authorize, and go live."
+seoDescription: "Connect your WhatsApp Business number to an AI agent with GenSmart's Embedded Signup. No API keys, no developer, no manual setup."
 date: "2026-03-29"
 updated: "2026-11-19"
 category: "whatsapp"

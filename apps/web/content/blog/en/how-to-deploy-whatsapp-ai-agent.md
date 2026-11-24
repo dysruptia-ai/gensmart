@@ -2,6 +2,7 @@
 id: "como-desplegar-un-agente-de-ia-en-whatsapp"
 title: "How to Deploy a WhatsApp AI Agent for Business in Under 10 Minutes"
 description: "Step-by-step guide to creating and deploying your first AI agent on WhatsApp with GenSmart, no code needed. You can be live in minutes, not weeks."
+seoTitle: "How to Deploy a WhatsApp AI Agent in Under 10 Minutes"
 date: "2026-02-19"
 updated: "2026-11-19"
 category: "whatsapp"

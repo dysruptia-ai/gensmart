@@ -2,6 +2,8 @@
 id: "conecta-tu-tienda-venndelo-a-un-agente-de-gensmart"
 title: "Conecta tu tienda Venndelo a un agente de GenSmart: catálogo con fotos, carrito, envío y pedido en la conversación"
 description: "Un agente de GenSmart ya puede atender a los clientes de tu tienda Venndelo: muestra el catálogo con fotos, arma el carrito, cotiza el envío, crea el pedido contraentrega y avisa cómo va. Conectas tu tienda en tres pasos, con un código que copias desde Venndelo y pegas en GenSmart, sin programar."
+seoTitle: "Conecta Venndelo a un agente de GenSmart: catálogo y pedidos"
+seoDescription: "Conecta Venndelo a un agente de GenSmart: catálogo con fotos, carrito, envío y pedido contraentrega en la conversación. Tres pasos, sin programar."
 date: "2026-11-19"
 updated: "2026-11-19"
 category: "novedades"

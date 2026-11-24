@@ -2,6 +2,7 @@
 id: "solicitud-de-servicio-tecnico-completa-desde-el-primer-mensaje"
 title: "Servicio, dirección y franja: la solicitud técnica completa desde el primer mensaje"
 description: "Tu coordinador no debería llamar para preguntar lo básico. Cómo un agente reúne la solicitud, agenda la visita y deja el despacho a una persona."
+seoTitle: "Servicio técnico: solicitud completa desde el primer mensaje"
 date: "2026-03-31"
 updated: "2026-11-19"
 category: "industrias"

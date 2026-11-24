@@ -2,6 +2,7 @@
 id: "agente-de-ia-o-chatbot-de-reglas"
 title: "Agente de IA o chatbot de reglas: cuál te conviene según tu negocio"
 description: "No siempre necesitas IA. Cuándo un menú de opciones es suficiente y cuándo un agente que entiende lo que escribe vale la pena."
+seoTitle: "Agente de IA o chatbot de reglas: cuál conviene a tu negocio"
 date: "2026-04-07"
 updated: "2026-11-19"
 category: "agentes"

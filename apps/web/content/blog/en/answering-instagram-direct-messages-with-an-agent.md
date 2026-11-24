@@ -2,6 +2,8 @@
 id: "responder-mensajes-directos-de-instagram-con-un-agente"
 title: "How to handle Instagram direct messages without living glued to your phone"
 description: "For many businesses the DM is both the storefront and the register. What is worth automating, what is not, and how to keep one conversation with the customer."
+seoTitle: "How to handle Instagram direct messages | GenSmart"
+seoDescription: "Instagram direct messages are both storefront and register. What is worth automating with an agent, what is not, and how to keep one conversation."
 date: "2026-03-23"
 updated: "2026-11-19"
 category: "whatsapp"

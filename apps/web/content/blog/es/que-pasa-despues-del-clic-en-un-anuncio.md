@@ -2,6 +2,7 @@
 id: "que-pasa-despues-del-clic-en-un-anuncio"
 title: "Qué debe pasar después del clic en un anuncio: de la pauta a una conversación atendida"
 description: "Pagar por un clic y responder tarde es la forma más cara de perder un cliente. Consejos generales para que cada persona que escribe sea atendida."
+seoTitle: "Qué debe pasar después del clic en un anuncio | GenSmart"
 date: "2026-06-06"
 updated: "2026-11-19"
 category: "marketing"

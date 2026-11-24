@@ -2,6 +2,7 @@
 id: "glosario-de-agentes-de-ia-y-mensajeria"
 title: "Glosario de agentes de IA y mensajería: 15 términos explicados en pocas palabras"
 description: "Agente, base de conocimiento, traspaso, embudo, ventana de 24 horas y más. Definiciones cortas para hablar el mismo idioma con tu equipo y tu proveedor."
+seoTitle: "Glosario de agentes de IA y mensajería: 15 términos"
 date: "2026-06-14"
 updated: "2026-11-19"
 category: "agentes"

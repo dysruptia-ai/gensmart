@@ -2,6 +2,7 @@
 id: "de-contacto-nuevo-a-cita-agendada"
 title: "De un contacto nuevo a una cita agendada en una sola conversación"
 description: "Cuando alguien escribe con interés, cada mensaje de más es una oportunidad de que se vaya. El camino corto hacia la cita, paso a paso."
+seoTitle: "De contacto nuevo a cita agendada en una sola conversación"
 date: "2026-09-26"
 updated: "2026-11-19"
 category: "crm"

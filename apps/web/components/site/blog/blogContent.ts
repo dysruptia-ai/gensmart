@@ -184,7 +184,9 @@ export function rssPath(lang: SiteLanguage): string {
 const TITLE_MAX = 60;
 
 /** `{título} | GenSmart`; si pasa de 60, solo el título (corrección 1). */
+/** `<title>`: `seoTitle` si existe; si no, `{title} | GenSmart` si cabe en 60, o `{title}`. */
 export function postTitle(post: BlogPost): string {
+  if (post.seoTitle) return post.seoTitle;
   const full = `${post.title} | GenSmart`;
   return full.length <= TITLE_MAX ? full : post.title;
 }
@@ -234,8 +236,13 @@ export function blogPostMetadata(post: BlogPost, lang: SiteLanguage, t: SiteT): 
   return withRss(
     {
       ...meta,
+      // `<title>` y `<meta name="description">` usan las versiones SEO; al compartir, el título completo
+      description: post.seoDescription ?? post.description,
+      twitter: { ...meta.twitter, title: post.title, description: post.description },
       openGraph: {
         ...meta.openGraph,
+        title: post.title,
+        description: post.description,
         type: 'article',
         publishedTime: post.date,
         modifiedTime: post.updated,

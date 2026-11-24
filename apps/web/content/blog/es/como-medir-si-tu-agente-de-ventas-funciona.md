@@ -2,6 +2,7 @@
 id: "como-medir-si-tu-agente-de-ventas-funciona"
 title: "Cómo medir si tu agente de ventas funciona (sin perderte en métricas)"
 description: "Cuatro preguntas que puedes responder cada semana con lo que ya tienes en tu bandeja y tu CRM."
+seoTitle: "Cómo medir si tu agente de ventas funciona | GenSmart"
 date: "2026-06-21"
 updated: "2026-11-19"
 category: "crm"

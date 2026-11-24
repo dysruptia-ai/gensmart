@@ -2,6 +2,7 @@
 id: "como-funciona-un-agente-de-ia-por-dentro"
 title: "How an AI agent works on the inside: it understands, looks things up and acts"
 description: "Three steps explain an agent: understanding what the customer writes, searching your information and doing something with it."
+seoTitle: "How an AI agent works inside: understand, look up, act"
 date: "2026-03-16"
 updated: "2026-11-19"
 category: "agentes"

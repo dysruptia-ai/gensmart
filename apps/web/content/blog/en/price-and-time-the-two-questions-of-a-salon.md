@@ -2,6 +2,8 @@
 id: "precio-y-hora-las-dos-preguntas-de-un-salon"
 title: "How much is it and what time is there? The two questions of a salon, a spa or a gym"
 description: "Prices, duration, location and time slots get asked at all hours. How an AI agent answers them, books the appointment or class and leaves payment to your team."
+seoTitle: "Price and time: the two questions of a salon, spa or gym"
+seoDescription: "Prices, duration, location and time slots get asked at all hours. How an AI agent answers them, books the slot and leaves payment to your team."
 date: "2026-07-28"
 updated: "2026-11-19"
 category: "industrias"

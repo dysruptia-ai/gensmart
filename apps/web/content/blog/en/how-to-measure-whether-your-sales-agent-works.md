@@ -2,6 +2,7 @@
 id: "como-medir-si-tu-agente-de-ventas-funciona"
 title: "How to measure whether your sales agent works (without drowning in metrics)"
 description: "Four questions you can answer every week with what you already have in your inbox and your CRM."
+seoTitle: "How to measure whether your sales agent works | GenSmart"
 date: "2026-06-21"
 updated: "2026-11-19"
 category: "crm"

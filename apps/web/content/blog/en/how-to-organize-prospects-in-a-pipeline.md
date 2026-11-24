@@ -2,6 +2,7 @@
 id: "como-ordenar-prospectos-en-un-pipeline"
 title: "How to organize your prospects in a pipeline: stages, owners and when a contact moves"
 description: "A useful pipeline has few stages, one owner per stage and a clear rule for moving each contact. How to design it without overcomplicating it."
+seoTitle: "How to organize your prospects in a pipeline by stage"
 date: "2026-11-18"
 updated: "2026-11-19"
 category: "crm"

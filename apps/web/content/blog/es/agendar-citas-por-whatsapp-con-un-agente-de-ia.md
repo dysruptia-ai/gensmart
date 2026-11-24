@@ -2,6 +2,7 @@
 id: "agendar-citas-por-whatsapp-con-un-agente-de-ia"
 title: "Agendar citas por WhatsApp con un agente de IA: cómo diseñarlo para clínicas y servicios"
 description: "Una cita bien agendada es una conversación corta con reglas claras. Así se arma el flujo, qué datos pedir y cuándo pasar a una persona."
+seoTitle: "Agendar citas por WhatsApp con un agente de IA para clínicas"
 date: "2026-10-19"
 updated: "2026-11-19"
 category: "agentes"

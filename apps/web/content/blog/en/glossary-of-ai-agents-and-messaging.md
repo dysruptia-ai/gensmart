@@ -2,6 +2,7 @@
 id: "glosario-de-agentes-de-ia-y-mensajeria"
 title: "Glossary of AI agents and messaging: 15 terms explained in a few words"
 description: "Agent, knowledge base, handoff, funnel, 24-hour window and more. Short definitions so you speak the same language as your team and your vendor."
+seoTitle: "Glossary of AI agents and messaging: 15 terms explained"
 date: "2026-06-14"
 updated: "2026-11-19"
 category: "agentes"

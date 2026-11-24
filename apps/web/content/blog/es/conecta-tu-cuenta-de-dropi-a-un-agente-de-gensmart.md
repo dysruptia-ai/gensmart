@@ -2,6 +2,8 @@
 id: "conecta-tu-cuenta-de-dropi-a-un-agente-de-gensmart"
 title: "Conecta tu cuenta de Dropi a un agente de GenSmart: catálogo, envío contra entrega y pedidos en la conversación"
 description: "Si vendes con Dropi en Colombia, un agente de GenSmart puede mostrar productos del catálogo, cotizar el envío contra entrega, crear el pedido en tu cuenta y contarle al cliente cómo va. La integración está en beta."
+seoTitle: "Conecta Dropi a un agente de GenSmart: catálogo y pedidos"
+seoDescription: "Conecta Dropi a un agente de GenSmart: muestra el catálogo, cotiza el envío contra entrega, crea el pedido y le cuenta al cliente cómo va. En beta."
 date: "2026-11-19"
 updated: "2026-11-19"
 category: "novedades"

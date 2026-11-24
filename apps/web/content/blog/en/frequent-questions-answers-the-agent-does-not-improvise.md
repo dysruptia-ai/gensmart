@@ -2,6 +2,7 @@
 id: "preguntas-frecuentes-respuestas-que-el-agente-no-improvise"
 title: "Frequently asked questions: how to turn them into answers the agent does not improvise"
 description: "Your agent answers as well as you teach it. How to collect the real questions and write answers that are clear, complete and have limits."
+seoTitle: "FAQs: turning them into answers the agent does not improvise"
 date: "2026-07-21"
 updated: "2026-11-19"
 category: "atencion"

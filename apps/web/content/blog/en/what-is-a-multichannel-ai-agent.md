@@ -2,6 +2,7 @@
 id: "que-es-un-agente-de-ia-multicanal"
 title: "What a multichannel AI agent is and why serving WhatsApp, Instagram and web from one place matters"
 description: "Your customers write wherever is convenient for them. A multichannel agent serves them on all of them and keeps a single history per person."
+seoTitle: "What a multichannel AI agent is and why it matters"
 date: "2026-01-30"
 updated: "2026-11-19"
 category: "agentes"

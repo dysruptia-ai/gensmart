@@ -2,6 +2,7 @@
 id: "como-desplegar-un-agente-de-ia-en-whatsapp"
 title: "Cómo desplegar un agente de IA en WhatsApp para tu negocio en menos de 10 minutos"
 description: "Guía paso a paso para crear y desplegar tu primer agente de IA en WhatsApp con GenSmart, sin código. Lo dejas funcionando en minutos, no en semanas."
+seoTitle: "Desplegar un agente de IA en WhatsApp en menos de 10 minutos"
 date: "2026-02-19"
 updated: "2026-11-19"
 category: "whatsapp"

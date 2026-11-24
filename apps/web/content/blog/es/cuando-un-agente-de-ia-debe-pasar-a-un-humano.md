@@ -2,6 +2,7 @@
 id: "cuando-un-agente-de-ia-debe-pasar-a-un-humano"
 title: "Cuándo un agente de IA debe pasar la conversación a una persona"
 description: "Un agente que no sabe soltar la conversación pierde clientes. Estas son las reglas de traspaso que conviene definir antes de salir al aire."
+seoTitle: "Cuándo un agente de IA debe pasar a una persona | GenSmart"
 date: "2026-02-14"
 updated: "2026-11-19"
 category: "agentes"

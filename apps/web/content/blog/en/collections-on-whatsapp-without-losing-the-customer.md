@@ -2,6 +2,7 @@
 id: "cobranza-por-whatsapp-sin-perder-al-cliente"
 title: "Collections on WhatsApp without losing the customer: tone, timing and rules"
 description: "A well-written reminder collects more than a pushy one. How to configure a collections agent that protects the relationship."
+seoTitle: "Collections on WhatsApp without losing the customer"
 date: "2026-05-07"
 updated: "2026-11-19"
 category: "atencion"

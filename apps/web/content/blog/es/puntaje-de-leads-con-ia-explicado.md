@@ -2,6 +2,8 @@
 id: "puntaje-de-leads-con-ia-explicado"
 title: "Puntaje de leads con IA: cómo un CRM de WhatsApp con puntaje de IA prioriza tus mejores prospectos"
 description: "Descubre cómo el puntaje de leads con IA del CRM de WhatsApp de GenSmart captura y prioriza automáticamente los prospectos de más valor. Captura de leads con IA en WhatsApp, simple."
+seoTitle: "Puntaje de leads con IA: cómo prioriza un CRM de WhatsApp"
+seoDescription: "Puntaje de leads con IA: cómo el CRM de WhatsApp de GenSmart captura y prioriza automáticamente los prospectos de más valor."
 date: "2026-02-14"
 updated: "2026-11-19"
 category: "crm"

@@ -6894,6 +6894,18 @@
         "title": "Blog de GenSmart",
         "description": "Guías sobre agentes de IA, WhatsApp, ventas, marketing y atención al cliente."
       }
+    },
+    "notFound": {
+      "title": "Página no encontrada | GenSmart",
+      "heading": "No encontramos esa página",
+      "lead": "Prueba con el inicio o el centro de recursos.",
+      "home": "Ir al inicio",
+      "resources": "Recursos",
+      "help": "¿Buscabas algo en particular? Mira el {blog}, la {docs} o {contact}.",
+      "blog": "blog",
+      "docs": "base de conocimiento",
+      "contact": "escríbenos",
+      "logoHome": "GenSmart inicio"
     }
   }
 }

@@ -2,6 +2,7 @@
 id: "seguimiento-a-clientes-que-no-responden"
 title: "Following up with customers who go quiet: when to push and when to stop"
 description: "Most sales are lost to silence, not rejection. How to follow up without becoming annoying."
+seoTitle: "Following up with customers who go quiet | GenSmart"
 date: "2026-04-22"
 updated: "2026-11-19"
 category: "crm"

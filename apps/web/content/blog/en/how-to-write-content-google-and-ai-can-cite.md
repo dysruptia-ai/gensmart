@@ -2,6 +2,7 @@
 id: "como-escribir-contenido-que-google-y-la-ia-puedan-citar"
 title: "How to write content that Google and AI can cite"
 description: "Direct answer first, questions as subheadings, original verifiable data and an up-to-date business profile. A way of writing that serves people and search engines."
+seoDescription: "How to write content Google and AI can cite: direct answer first, questions as subheadings, original verifiable data and an up-to-date profile."
 date: "2026-10-04"
 updated: "2026-11-19"
 category: "marketing"

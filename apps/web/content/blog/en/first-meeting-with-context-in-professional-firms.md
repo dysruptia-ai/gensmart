@@ -2,6 +2,7 @@
 id: "primera-reunion-con-contexto-en-firmas-profesionales"
 title: "The first meeting with a new client no longer starts from scratch"
 description: "For law firms, accountants, consultancies and studios: how an AI agent identifies the service, gathers details and books with the right professional."
+seoTitle: "First meetings with new clients no longer start from scratch"
 date: "2026-10-11"
 updated: "2026-11-19"
 category: "industrias"
