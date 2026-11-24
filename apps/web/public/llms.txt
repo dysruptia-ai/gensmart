@@ -105,6 +105,12 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Partner directory](https://www.gensmart.co/en/partners/directory): agencies and implementers who set up GenSmart agents, filterable by country, service and language.
 - [Directorio de partners (Spanish)](https://www.gensmart.co/partners/directorio): agencias e implementadores que montan agentes de GenSmart, con filtro por país, servicio e idioma.
 
+## Resources
+- [Resources](https://www.gensmart.co/en/resources): knowledge base, Academy courses, blog, industry use cases and community, with what each one is for.
+- [Recursos (Spanish)](https://www.gensmart.co/recursos): base de conocimiento, cursos de Academy, blog, casos por industria y comunidad.
+- [Community](https://www.gensmart.co/en/resources/community): a free community to ask setup questions with context and see how other users built their agent; not the account support channel.
+- [Comunidad (Spanish)](https://www.gensmart.co/recursos/comunidad): comunidad gratuita para resolver dudas de configuración y ver cómo otros armaron su agente.
+
 ## Company
 
 GenSmart is a product of Dysruptia LLC. Contact: hello@gensmart.co

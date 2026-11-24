@@ -2353,6 +2353,16 @@
         "title": "Directorio de partners que implementan GenSmart | GenSmart",
         "description": "Agencias, implementadores y consultores que montan agentes de GenSmart para negocios. Pide una recomendación o filtra por país y servicio.",
         "ogAlt": "Directorio de partners de GenSmart"
+      },
+      "resources": {
+        "title": "Recursos: guías, Academy, blog y comunidad | GenSmart",
+        "description": "Base de conocimiento, cursos de Academy, blog, casos por industria y comunidad: cinco lugares para aprender a sacarle el máximo a tu agente de IA.",
+        "ogAlt": "Recursos de GenSmart"
+      },
+      "community": {
+        "title": "Comunidad GenSmart: pregunta y aprende con otros usuarios",
+        "description": "Una comunidad para resolver dudas de configuración, ver cómo otros armaron su agente y enterarte primero de las novedades de GenSmart.",
+        "ogAlt": "Comunidad GenSmart"
       }
     },
     "langHint": {
@@ -2575,7 +2585,9 @@
       "ecommerce": "E-commerce",
       "cases": "Casos de uso",
       "partners": "Partners",
-      "partnersDirectory": "Directorio"
+      "partnersDirectory": "Directorio",
+      "resources": "Recursos",
+      "community": "Comunidad"
     },
     "channels": {
       "email": "Correo",
@@ -6366,6 +6378,191 @@
         "lead": "Regístrate como socio y arma tu ficha con tus servicios, países e idiomas. La revisamos y la publicamos sin costo.",
         "primary": "Quiero aparecer en el directorio",
         "secondary": "Ver el programa de socios"
+      }
+    },
+    "resources": {
+      "hero": {
+        "title": "Recursos para sacarle el máximo a tu agente de IA",
+        "lead": "Cinco lugares, cada uno para algo distinto. Mira lo que hay dentro y entra por donde te sirva."
+      },
+      "docs": {
+        "name": "Base de conocimiento",
+        "when": "Algo no funciona o necesitas el paso a paso.",
+        "lead": "Guías cortas, una por función, con lo que haces en pantalla y lo que pasa después.",
+        "cta": "Ver las guías",
+        "groups": {
+          "start": "Empezar",
+          "operate": "Operar cada día",
+          "extend": "Ampliar"
+        }
+      },
+      "academy": {
+        "name": "Academy",
+        "when": "Quieres aprender en orden.",
+        "lead": "Cursos con lecciones en secuencia. Cada uno termina con algo hecho, no con teoría.",
+        "cta": "Ver los cursos"
+      },
+      "blog": {
+        "name": "Blog",
+        "when": "Quieres entender el porqué.",
+        "lead": "Artículos para decidir mejor: qué escribir, cuándo pasar a una persona, qué revisar antes de salir al aire.",
+        "cta": "Ver todo el blog"
+      },
+      "cases": {
+        "name": "Casos de uso",
+        "when": "Quieres ver cómo quedaría en tu negocio.",
+        "lead": "Elige tu sector y mira cómo trabajaría el agente ahí, paso a paso.",
+        "cta": "Ver los casos"
+      },
+      "community": {
+        "name": "Comunidad",
+        "when": "Quieres preguntarle a otros usuarios.",
+        "lead": "Un lugar para preguntar con contexto y ver cómo lo resolvieron otros usuarios.",
+        "cta": "Entrar a la comunidad",
+        "askTitle": "Una buena pregunta lleva tres cosas",
+        "askLabel": "Ejemplo de una buena pregunta para la comunidad",
+        "ask": [
+          {
+            "label": "Qué querías lograr",
+            "text": "Que el agente agende la cita sin pedir el teléfono dos veces."
+          },
+          {
+            "label": "Qué hiciste",
+            "text": "Cambié la instrucción del agente y probé con un contacto nuevo."
+          },
+          {
+            "label": "Qué pasó",
+            "text": "Lo vuelve a pedir. Adjunto una captura de la conversación."
+          }
+        ]
+      }
+    },
+    "community": {
+      "hero": {
+        "titleBefore": "Crece con otros y",
+        "titleAccent": "construyamos juntos",
+        "lead": "La comunidad de GenSmart es para crecer entre todos. Compartes lo que te funcionó, preguntas lo que no te sale y entre varios armamos mejores agentes. Lo que uno descubre, lo aprovechan los demás. Ven y pon tu parte.",
+        "primary": "Avísame cuando abra"
+      },
+      "how": {
+        "title": "Un solo lugar, un grupo para cada tema",
+        "lead": "Un espacio de anuncios donde solo publica el equipo de GenSmart y grupos de conversación por tema. Entras una vez y eliges dónde participar.",
+        "steps": [
+          {
+            "title": "Entras con un enlace.",
+            "text": "Es gratis. No hay que ser cliente, pero todo está pensado para quien usa o prueba GenSmart."
+          },
+          {
+            "title": "Eliges tus grupos.",
+            "text": "Ayuda y dudas es para todos. Los grupos por industria sirven para ver cómo lo resolvieron quienes tienen un negocio como el tuyo."
+          },
+          {
+            "title": "Preguntas o lees.",
+            "text": "Los anuncios solo los publica el equipo de GenSmart, para que las novedades no se pierdan entre mensajes."
+          }
+        ],
+        "mockLabel": "Estructura inicial de la comunidad",
+        "mockName": "Comunidad GenSmart",
+        "mockSub": "Estructura inicial",
+        "groups": [
+          {
+            "name": "Anuncios GenSmart",
+            "tag": "Solo lectura",
+            "text": "Novedades, cambios y lo que viene."
+          },
+          {
+            "name": "Ayuda y dudas",
+            "tag": "Todos escriben",
+            "text": "Preguntas de configuración, con contexto."
+          },
+          {
+            "name": "Tiendas online",
+            "tag": "Por industria",
+            "text": "Carritos, catálogo, pedidos."
+          },
+          {
+            "name": "Salud y bienestar",
+            "tag": "Por industria",
+            "text": "Agenda de citas, límites del agente."
+          },
+          {
+            "name": "Agencias y socios",
+            "tag": "Por industria",
+            "text": "Implementación y trabajo con clientes."
+          }
+        ],
+        "foot": "Los grupos pueden cambiar según lo que pida la comunidad."
+      },
+      "ask": {
+        "title": "Una pregunta bien hecha se resuelve a la primera",
+        "lead": "Es la única regla que de verdad importa. Dices qué canal usas, qué hiciste y qué pasó, y alguien te contesta con algo útil. Si no, lo primero que te piden es eso.",
+        "example": "Ejemplo",
+        "bad": {
+          "title": "Así no",
+          "msgs": [
+            "Mi agente no sirve, ayuda",
+            "¿En qué canal? ¿Qué le pediste y qué te respondió?",
+            "No sé, no funciona"
+          ],
+          "note": "Tres mensajes y todavía nadie sabe qué pasó."
+        },
+        "good": {
+          "title": "Así sí",
+          "msgs": [
+            "Canal: WhatsApp. Activé la agenda y esperaba que ofreciera horarios, pero responde que no tiene disponibilidad.",
+            "¿Ya configuraste los días y horarios del calendario? Sin eso, el agente no tiene qué ofrecer.",
+            "Eso era. Gracias."
+          ],
+          "note": "Una pregunta, una respuesta, y el siguiente que tenga lo mismo ya lo encuentra."
+        }
+      },
+      "rules": {
+        "kicker": "Reglas de la casa",
+        "title": "Cinco reglas para que valga la pena estar",
+        "items": [
+          {
+            "title": "Nada de datos de clientes.",
+            "text": "Ni nombres, ni teléfonos, ni capturas con conversaciones reales. Si necesitas mostrar algo, tápalo."
+          },
+          {
+            "title": "Ningún dato de acceso, nunca.",
+            "text": "Ni contraseñas ni claves de API. El equipo jamás las pide por aquí."
+          },
+          {
+            "title": "Sin publicidad ni cadenas.",
+            "text": "Si ofreces un servicio, hazlo en el grupo de agencias y socios."
+          },
+          {
+            "title": "Pregunta con contexto.",
+            "text": "Qué canal usas, qué hiciste, qué esperabas y qué pasó."
+          },
+          {
+            "title": "Respeto primero.",
+            "text": "Se puede discrepar. No se puede insultar."
+          }
+        ]
+      },
+      "not": {
+        "title": "Lo que no es la comunidad",
+        "lead": "No es el canal de soporte de tu cuenta. Si es urgente, algo no carga o tiene que ver con cobros, escríbenos directo. Lo que se resuelve en la comunidad queda a la vista para el siguiente que pregunte.",
+        "primary": "Escribir al equipo",
+        "secondary": "Ver todos los recursos",
+        "faq": [
+          {
+            "question": "¿Puedo mostrar mi agente?",
+            "answer": "Sí, mientras tapes los datos de tus clientes. Es la primera regla de la casa."
+          },
+          {
+            "question": "¿Tiene costo?",
+            "answer": "Entrar es gratis."
+          },
+          {
+            "question": "¿Habrá algo más que grupos?",
+            "answer": "Si la comunidad pide cursos, sesiones grabadas o una biblioteca, sumaremos una plataforma para eso. Lo avisaremos aquí primero."
+          }
+        ],
+        "noteStrong": "Estamos abriendo las puertas.",
+        "noteText": "Déjanos tu correo en el formulario de contacto y te enviamos el enlace el día que abra."
       }
     }
   }

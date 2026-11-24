@@ -113,14 +113,16 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   teamHumanResources: { href: '/en/solutions/teams/human-resources' },
   teamCollections: { href: '/en/solutions/teams/collections' },
 
-  resources: { href: null },
+  // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
+  resources: { href: '/en/resources' },
   docs: { href: null },
   docsWhatsappSetup: { href: '/docs/whatsapp-setup' },
   // Guías de la base de conocimiento: pendientes hasta migrarla
   docsTestAgent: { href: null },
   docsHandoff: { href: null },
   academy: { href: null },
-  community: { href: null },
+  // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
+  community: { href: '/en/resources/community' },
   // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
   partners: { href: '/en/partners' },
   status: { href: null },
@@ -157,7 +159,7 @@ export function registerHref(plan: RegisterPlan): SiteHref {
 }
 
 /** Variantes de Contacto que se enlazan desde el sitio (`?tipo=`). */
-export type ContactLinkVariant = 'partner' | 'directorio' | 'recomendacion';
+export type ContactLinkVariant = 'partner' | 'directorio' | 'recomendacion' | 'comunidad';
 
 /**
  * Contacto en una variante (`/contacto?tipo=recomendacion&partner=Dysruptia`).
@@ -217,6 +219,8 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
   partners: 'partners',
   partnersTiers: { route: 'partners', hash: { es: '#niveles', en: '#tiers' } },
   partnersDirectory: 'partnersDirectory',
+  resources: 'resources',
+  community: 'community',
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

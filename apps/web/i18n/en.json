@@ -2353,6 +2353,16 @@
         "title": "Directory of partners who implement GenSmart | GenSmart",
         "description": "Agencies, implementers and consultants who set up GenSmart agents for businesses. Ask for a recommendation or filter by country and service.",
         "ogAlt": "GenSmart partner directory"
+      },
+      "resources": {
+        "title": "Resources: guides, Academy, blog and community | GenSmart",
+        "description": "Knowledge base, Academy courses, blog, industry use cases and community: five places to learn how to get the most out of your AI agent.",
+        "ogAlt": "GenSmart resources"
+      },
+      "community": {
+        "title": "GenSmart community: ask and learn with other users",
+        "description": "A community to solve setup questions, see how others built their agent and be the first to hear GenSmart news.",
+        "ogAlt": "GenSmart community"
       }
     },
     "langHint": {
@@ -2575,7 +2585,9 @@
       "ecommerce": "E-commerce",
       "cases": "Use cases",
       "partners": "Partners",
-      "partnersDirectory": "Directory"
+      "partnersDirectory": "Directory",
+      "resources": "Resources",
+      "community": "Community"
     },
     "channels": {
       "email": "Email",
@@ -6366,6 +6378,191 @@
         "lead": "Join as a partner and build your listing with your services, countries and languages. We review it and publish it at no cost.",
         "primary": "I want to be listed",
         "secondary": "See the partner program"
+      }
+    },
+    "resources": {
+      "hero": {
+        "title": "Resources to get the most out of your AI agent",
+        "lead": "Five places, each for something different. See what is inside and go in where it helps."
+      },
+      "docs": {
+        "name": "Knowledge base",
+        "when": "Something is not working or you need the step by step.",
+        "lead": "Short guides, one per feature, with what you do on screen and what happens next.",
+        "cta": "See the guides",
+        "groups": {
+          "start": "Get started",
+          "operate": "Run it day to day",
+          "extend": "Extend"
+        }
+      },
+      "academy": {
+        "name": "Academy",
+        "when": "You want to learn in order.",
+        "lead": "Courses with lessons in sequence. Each one ends with something done, not theory.",
+        "cta": "See the courses"
+      },
+      "blog": {
+        "name": "Blog",
+        "when": "You want to understand the why.",
+        "lead": "Articles to decide better: what to write, when to hand off to a person, what to check before going live.",
+        "cta": "See the whole blog"
+      },
+      "cases": {
+        "name": "Use cases",
+        "when": "You want to see how it would look in your business.",
+        "lead": "Pick your sector and see how the agent would work there, step by step.",
+        "cta": "See the use cases"
+      },
+      "community": {
+        "name": "Community",
+        "when": "You want to ask other users.",
+        "lead": "A place to ask with context and see how other users solved it.",
+        "cta": "Join the community",
+        "askTitle": "A good question has three things",
+        "askLabel": "Example of a good question for the community",
+        "ask": [
+          {
+            "label": "What you wanted",
+            "text": "For the agent to book the appointment without asking for the phone twice."
+          },
+          {
+            "label": "What you did",
+            "text": "I changed the agent instruction and tested with a new contact."
+          },
+          {
+            "label": "What happened",
+            "text": "It asks again. I attach a screenshot of the conversation."
+          }
+        ]
+      }
+    },
+    "community": {
+      "hero": {
+        "titleBefore": "Grow with others and",
+        "titleAccent": "let us build together",
+        "lead": "The GenSmart community is for growing together. You share what worked, ask what is not working and together we build better agents. What one person finds, everyone else benefits from. Come and bring your part.",
+        "primary": "Tell me when it opens"
+      },
+      "how": {
+        "title": "One place, a group for each topic",
+        "lead": "An announcements space where only the GenSmart team posts, and conversation groups by topic. You join once and choose where to take part.",
+        "steps": [
+          {
+            "title": "You join with a link.",
+            "text": "It is free. You do not have to be a customer, but everything is meant for people who use or are trying GenSmart."
+          },
+          {
+            "title": "You pick your groups.",
+            "text": "Help and questions is for everyone. The industry groups are for seeing how people with a business like yours solved it."
+          },
+          {
+            "title": "You ask or you read.",
+            "text": "Only the GenSmart team posts announcements, so news does not get lost among messages."
+          }
+        ],
+        "mockLabel": "Initial structure of the community",
+        "mockName": "GenSmart community",
+        "mockSub": "Initial structure",
+        "groups": [
+          {
+            "name": "GenSmart announcements",
+            "tag": "Read only",
+            "text": "News, changes and what is next."
+          },
+          {
+            "name": "Help and questions",
+            "tag": "Everyone posts",
+            "text": "Setup questions, with context."
+          },
+          {
+            "name": "Online stores",
+            "tag": "By industry",
+            "text": "Carts, catalog, orders."
+          },
+          {
+            "name": "Health and wellness",
+            "tag": "By industry",
+            "text": "Appointment booking, agent limits."
+          },
+          {
+            "name": "Agencies and partners",
+            "tag": "By industry",
+            "text": "Implementation and client work."
+          }
+        ],
+        "foot": "Groups may change based on what the community asks for."
+      },
+      "ask": {
+        "title": "A well asked question gets solved the first time",
+        "lead": "It is the one rule that really matters. You say which channel you use, what you did and what happened, and someone answers with something useful. If you do not, that is the first thing they ask for.",
+        "example": "Example",
+        "bad": {
+          "title": "Not like this",
+          "msgs": [
+            "My agent is useless, help",
+            "Which channel? What did you ask it and what did it answer?",
+            "I do not know, it does not work"
+          ],
+          "note": "Three messages and nobody knows what happened yet."
+        },
+        "good": {
+          "title": "Like this",
+          "msgs": [
+            "Channel: WhatsApp. I turned on scheduling and expected it to offer times, but it says it has no availability.",
+            "Have you set the calendar's days and hours? Without them, the agent has nothing to offer.",
+            "That was it. Thanks."
+          ],
+          "note": "One question, one answer, and the next person with the same problem can find it."
+        }
+      },
+      "rules": {
+        "kicker": "House rules",
+        "title": "Five rules to make it worth being here",
+        "items": [
+          {
+            "title": "No customer data.",
+            "text": "No names, phone numbers or screenshots of real conversations. If you need to show something, cover it."
+          },
+          {
+            "title": "No access credentials, ever.",
+            "text": "No passwords or API keys. The team never asks for them here."
+          },
+          {
+            "title": "No ads or chain messages.",
+            "text": "If you offer a service, do it in the agencies and partners group."
+          },
+          {
+            "title": "Ask with context.",
+            "text": "Which channel you use, what you did, what you expected and what happened."
+          },
+          {
+            "title": "Respect first.",
+            "text": "You can disagree. You cannot insult."
+          }
+        ]
+      },
+      "not": {
+        "title": "What the community is not",
+        "lead": "It is not your account support channel. If it is urgent, something will not load or it involves billing, write to us directly. What gets solved in the community stays visible for the next person who asks.",
+        "primary": "Write to the team",
+        "secondary": "See all resources",
+        "faq": [
+          {
+            "question": "Can I show my agent?",
+            "answer": "Yes, as long as you cover your customers' data. It is the first house rule."
+          },
+          {
+            "question": "Does it cost anything?",
+            "answer": "Joining is free."
+          },
+          {
+            "question": "Will there be more than groups?",
+            "answer": "If the community asks for courses, recorded sessions or a library, we will add a platform for that. We will announce it here first."
+          }
+        ],
+        "noteStrong": "We are opening the doors.",
+        "noteText": "Leave your email in the contact form and we will send you the link the day it opens."
       }
     }
   }

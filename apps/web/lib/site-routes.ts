@@ -46,7 +46,9 @@ export type SiteRouteId =
   | 'industryProfessionalServices'
   | 'industryB2b'
   | 'partners'
-  | 'partnersDirectory';
+  | 'partnersDirectory'
+  | 'resources'
+  | 'community';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -191,6 +193,13 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
     id: 'partnersDirectory',
     internal: '/partners/directory',
     paths: { es: '/partners/directorio', en: '/en/partners/directory' },
+  },
+  // Recursos: el centro y Comunidad, anidada como en las migas (Inicio / Recursos / Comunidad)
+  resources: { id: 'resources', internal: '/resources', paths: { es: '/recursos', en: '/en/resources' } },
+  community: {
+    id: 'community',
+    internal: '/resources/community',
+    paths: { es: '/recursos/comunidad', en: '/en/resources/community' },
   },
 };
 
