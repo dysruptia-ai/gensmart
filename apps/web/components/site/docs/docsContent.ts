@@ -196,7 +196,8 @@ export function docJsonLd(doc: DocData, lang: SiteLanguage, t: SiteT): object {
       contentUrl: watch,
       duration: isoDuration(video.durationSec),
       inLanguage: lang,
-      // uploadDate: pendiente (no tenemos la fecha de publicación del video)
+      // Fecha de publicación en YouTube (confirmada por el usuario el 2026-11-24)
+      uploadDate: '2026-11-09',
       hasPart:
         chapters && chapters.kind === 'chapters'
           ? chapters.items.map((c, i) => ({
