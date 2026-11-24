@@ -1,0 +1,68 @@
+/* design/web: .ar y .ar-* (ilustraciones de Academy) */
+.art {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.art :global(.ar-w) {
+  fill: rgba(255, 255, 255, 0.07);
+  stroke: rgba(255, 255, 255, 0.17);
+  stroke-width: 1.2;
+}
+
+.art :global(.ar-l) {
+  fill: rgba(255, 255, 255, 0.26);
+}
+
+.art :global(.ar-l2) {
+  fill: rgba(255, 255, 255, 0.14);
+}
+
+.art :global(.ar-l3) {
+  fill: rgba(255, 255, 255, 0.4);
+}
+
+.art :global(.ar-g) {
+  fill: var(--gs-brand-bright);
+}
+
+.art :global(.ar-gl) {
+  fill: rgba(61, 220, 132, 0.24);
+}
+
+.art :global(.ar-ga) {
+  fill: var(--gs-brand-soft);
+}
+
+.art :global(.ar-aml) {
+  fill: rgba(245, 185, 66, 0.3);
+}
+
+.art :global(.ar-gs) {
+  fill: none;
+  stroke: var(--gs-brand-bright);
+}
+
+.art :global(.ar-d) {
+  fill: #07110c;
+}
+
+.art :global(.ar-t) {
+  fill: #eafff2;
+  font-family: var(--gs-font-display);
+}
+
+.art :global(.ar-tg) {
+  fill: var(--gs-brand-bright);
+  font-family: var(--gs-font-display);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art {
+    transition: none;
+  }
+}

@@ -58,8 +58,10 @@ export type SiteLinkKey =
   | 'partnersTiers'
   | 'partnersDirectory'
   | 'partnerSignup'
-  | DocRouteId;
+  | DocRouteId
+  | AcademyRouteId;
 
+import { ACADEMY_ROUTES, academyRouteId, type AcademyRouteId } from './academy-routes';
 import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
 import { publicPath, type SiteLanguage, type SiteRouteId } from './site-routes';
 
@@ -67,6 +69,11 @@ import { publicPath, type SiteLanguage, type SiteRouteId } from './site-routes';
 const DOC_LINKS = Object.fromEntries(
   DOC_ROUTES.map((d) => [docRouteId(d.id), { href: `/en/docs/${d.slug.en}` }])
 ) as Record<DocRouteId, SiteLinkTarget>;
+
+/** Cursos de Academy (web-31). Con rutas por idioma: se resuelven en LOCALIZED_LINKS. */
+const ACADEMY_LINKS = Object.fromEntries(
+  ACADEMY_ROUTES.map((c) => [academyRouteId(c.id), { href: `/en/academy/${c.slug.en}` }])
+) as Record<AcademyRouteId, SiteLinkTarget>;
 
 export interface SiteLinkTarget {
   href: string | null;
@@ -125,7 +132,8 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   docs: { href: '/en/docs' },
   docsTestAgent: { href: '/en/docs/test-your-agent-before-publishing' },
   docsHandoff: { href: '/en/docs/handoff-to-a-person' },
-  academy: { href: null },
+  // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
+  academy: { href: '/en/academy' },
   // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
   community: { href: '/en/resources/community' },
   // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
@@ -146,6 +154,7 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   // Registro de socios: módulo pendiente (se desarrolla al final del refactor)
   partnerSignup: { href: null },
   ...DOC_LINKS,
+  ...ACADEMY_LINKS,
 };
 
 /**
@@ -228,9 +237,14 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
   resources: 'resources',
   community: 'community',
   docs: 'docs',
+  academy: 'academy',
   docsTestAgent: 'doc-probar-antes',
   docsHandoff: 'doc-traspaso',
   ...(Object.fromEntries(DOC_ROUTES.map((d) => [docRouteId(d.id), docRouteId(d.id)])) as Record<DocRouteId, DocRouteId>),
+  ...(Object.fromEntries(ACADEMY_ROUTES.map((c) => [academyRouteId(c.id), academyRouteId(c.id)])) as Record<
+    AcademyRouteId,
+    AcademyRouteId
+  >),
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

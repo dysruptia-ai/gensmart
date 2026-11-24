@@ -1,0 +1,448 @@
+/* design/web: .ac-hero, .ac-entries, .ac-sec, .ac-fg, .ac-chip, .ac-count, .ac-grid, .ac-prods, .note-band */
+.hero {
+  position: relative;
+  overflow: clip;
+  padding: clamp(36px, 5vw, 64px) 0 clamp(28px, 4vw, 48px);
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+}
+
+.crumbs {
+  margin-bottom: var(--gs-sp-5);
+}
+
+.heroText {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  max-width: 760px;
+  margin: 0 auto clamp(36px, 5vw, 64px);
+  text-align: center;
+}
+
+.eyebrow {
+  font: 500 11px/1.4 var(--gs-font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
+.title {
+  margin: 0;
+  font: 800 clamp(2.4rem, 5.4vw, 4.2rem) / 1.04 var(--gs-font-display);
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.lead {
+  max-width: 56ch;
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw, 1.2rem);
+  color: var(--gs-ink-300);
+}
+
+.search {
+  position: relative;
+  width: min(640px, 100%);
+  margin-top: 10px;
+}
+
+.search input {
+  width: 100%;
+  padding: 17px 56px 17px 24px;
+  border: 1px solid rgba(240, 244, 242, 0.16);
+  border-radius: var(--gs-r-pill);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--gs-ink-100);
+  font: inherit;
+  font-size: 1.05rem;
+}
+
+.search input::placeholder {
+  color: var(--gs-ink-300);
+}
+
+.search input:focus {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.search > span {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  display: grid;
+  color: var(--gs-ink-300);
+  transform: translateY(-50%);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Entradas: "¿No sabes por dónde empezar?" y 4 audiencias */
+.entries {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--gs-panel-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.25s var(--gs-ease), box-shadow 0.25s var(--gs-ease), transform 0.3s var(--gs-ease);
+}
+
+.entry:hover,
+.entry:focus-visible {
+  border-color: rgba(61, 220, 132, 0.55);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+  text-decoration: none;
+  transform: translateY(-4px);
+}
+
+.entry:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.entry:hover svg {
+  transform: scale(1.05);
+}
+
+.entryArt,
+.productArt {
+  position: relative;
+  display: block;
+  height: 120px;
+  overflow: hidden;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1.3px),
+    radial-gradient(circle at 50% 70%, rgba(61, 220, 132, 0.16), transparent 62%);
+  background-size: 14px 14px, 100% 100%;
+}
+
+.entryBody {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  padding: 16px 18px 18px;
+}
+
+.entryBody b {
+  font: 700 1.05rem/1.2 var(--gs-font-display);
+}
+
+.entryBody small {
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--gs-ink-300);
+}
+
+/* "Empezar →": parece botón, pero es parte del enlace de la tarjeta */
+.entryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 9px 16px;
+  border-radius: var(--gs-r-pill);
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Catálogo */
+.sec {
+  padding-block: clamp(40px, 5vw, 72px);
+}
+
+/* Las entradas del hero y los productos bajan aquí: que el header fijo no tape el título */
+.cat {
+  scroll-margin-top: var(--gs-header-h);
+}
+
+.h2 {
+  margin: 0 0 var(--gs-sp-4);
+  font: 700 clamp(1.5rem, 2.4vw, 2rem) / 1.15 var(--gs-font-display);
+}
+
+.filters {
+  display: grid;
+  gap: 10px;
+  margin-bottom: var(--gs-sp-3);
+}
+
+.filterGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.filterLabel {
+  min-width: 96px;
+  font: 500 11px/1 var(--gs-font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gs-ink-300);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 14px;
+  border: 1px solid var(--gs-panel-line);
+  border-radius: var(--gs-r-pill);
+  background: transparent;
+  color: var(--gs-ink-300);
+  font: 500 0.85rem/1 var(--gs-font-sans);
+  cursor: pointer;
+  transition: border-color 0.2s var(--gs-ease), color 0.2s var(--gs-ease), background 0.2s var(--gs-ease);
+}
+
+.chip:hover {
+  border-color: var(--gs-ink-300);
+  color: var(--gs-ink-100);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.chipOn,
+.chipOn:hover {
+  border-color: var(--gs-brand-bright);
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+  font-weight: 600;
+}
+
+.countRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
+  margin: var(--gs-sp-5) 0 var(--gs-sp-4);
+}
+
+.count {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--gs-ink-300);
+}
+
+.count b {
+  color: var(--gs-ink-100);
+}
+
+.clear {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--gs-brand-bright);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.clear:hover {
+  color: var(--gs-brand-soft);
+}
+
+.clear:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.grid > li[hidden] {
+  display: none;
+}
+
+.empty {
+  margin: 0;
+  padding: 28px 0;
+  color: var(--gs-ink-300);
+}
+
+.empty[hidden] {
+  display: none;
+}
+
+.note {
+  margin-top: var(--gs-sp-6);
+  padding: var(--gs-sp-5);
+  border: 1px solid var(--gs-panel-line);
+  border-radius: var(--gs-r-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.note p {
+  margin: 0;
+  font-size: var(--gs-fs-sm);
+  line-height: 1.65;
+  color: var(--gs-ink-300);
+}
+
+.note strong {
+  font-weight: 650;
+  color: var(--gs-ink-100);
+}
+
+/* Explora por producto */
+.products {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.product {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--gs-panel-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.25s var(--gs-ease);
+}
+
+a.product:hover,
+a.product:focus-visible {
+  border-color: rgba(61, 220, 132, 0.5);
+  text-decoration: none;
+}
+
+a.product:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+a.product:hover svg {
+  transform: scale(1.05);
+}
+
+.productArt {
+  background-color: #101a16;
+}
+
+.soon {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.productBody {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  padding: 16px 18px 18px;
+}
+
+.productBody b {
+  font: 700 1.2rem/1.2 var(--gs-font-display);
+}
+
+.productBody > span {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--gs-ink-300);
+}
+
+.productBody em {
+  margin-top: 4px;
+  font: 500 11px/1 var(--gs-font-sans);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
+@media (max-width: 1100px) {
+  .entries {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filterLabel {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .entries,
+  .grid,
+  .products {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry,
+  .chip,
+  .product {
+    transition: none;
+  }
+
+  .entry:hover,
+  .entry:focus-visible {
+    transform: none;
+  }
+
+  .entry:hover svg,
+  a.product:hover svg {
+    transform: none;
+  }
+}

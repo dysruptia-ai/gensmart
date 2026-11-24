@@ -2369,6 +2369,12 @@
         "description": "Step-by-step guides to create your agent, connect WhatsApp, load your knowledge base and run the inbox, CRM and scheduling.",
         "ogAlt": "GenSmart help center",
         "guideSuffix": "GenSmart Help"
+      },
+      "academy": {
+        "title": "Academy | Courses to learn to run your agent | GenSmart",
+        "description": "Free courses to build, run and sell with your AI agent, organized by product, level and audience.",
+        "ogAlt": "GenSmart Academy",
+        "courseSuffix": "Academy | GenSmart"
       }
     },
     "langHint": {
@@ -2594,7 +2600,8 @@
       "partnersDirectory": "Directory",
       "resources": "Resources",
       "community": "Community",
-      "docs": "Knowledge base"
+      "docs": "Knowledge base",
+      "academy": "Academy"
     },
     "channels": {
       "email": "Email",
@@ -6698,6 +6705,61 @@
         "thanks": "Thanks for your feedback.",
         "thanksDesc": "It helps us improve this guide.",
         "honeypot": "Leave this field empty"
+      }
+    },
+    "academy": {
+      "hero": {
+        "eyebrow": "Academy",
+        "title": "What do you want to learn?",
+        "lead": "Free courses on GenSmart, organized by what you need to solve. No account needed to read them.",
+        "searchLabel": "Search a course",
+        "searchPlaceholder": "Search a course or topic",
+        "startTitle": "Not sure where to start?",
+        "startCta": "Start"
+      },
+      "filters": {
+        "type": "Type",
+        "products": "Product",
+        "level": "Level",
+        "aud": "Who it's for"
+      },
+      "catalog": {
+        "title": "All courses",
+        "all": "All",
+        "courseOne": "course",
+        "courseOther": "courses",
+        "countOne": "{n} course",
+        "countOther": "{n} courses",
+        "clear": "Clear filters",
+        "empty": "No courses match these filters. Try removing one.",
+        "noteTitle": "How it works.",
+        "noteText": "Each lesson is a guide or article that is already published. You tick the ones you finish and your progress is saved only in this browser, with no account. The screens are examples with fictional data."
+      },
+      "card": {
+        "meta": "{type} · {lessons} lessons · {minutes} min",
+        "done": "{count}/{total} done"
+      },
+      "products": {
+        "title": "Explore by product",
+        "soon": "In the works"
+      },
+      "course": {
+        "lessonsTitle": "Course lessons",
+        "markDone": "Mark as done: {lesson}",
+        "kind": {
+          "doc": "Guide",
+          "post": "Article",
+          "page": "Page"
+        },
+        "minutes": "{minutes} min",
+        "progress": "Your progress",
+        "lessonsUnit": "lessons",
+        "total": "{minutes} min in total. Saved in this browser.",
+        "level": "Level",
+        "byEnd": "By the end",
+        "next": "Next course",
+        "all": "All courses",
+        "keepLearning": "Keep learning"
       }
     }
   }

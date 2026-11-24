@@ -1,0 +1,33 @@
+/* design/web: .ac-bar, .ac-pg y .ac-prog2 */
+.bar {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--gs-ink-700);
+}
+
+.bar u {
+  display: block;
+  width: var(--p, 0%);
+  height: 100%;
+  border-radius: 3px;
+  background: var(--gs-brand-bright);
+  transition: width 0.4s var(--gs-ease);
+}
+
+.card {
+  display: grid;
+  gap: 6px;
+}
+
+.cardText {
+  font-size: 0.82rem;
+  color: var(--gs-ink-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar u {
+    transition: none;
+  }
+}

@@ -38,8 +38,10 @@ export const HOW_ID: Record<SiteLanguage, string> = { es: 'como', en: 'how' };
 
 const SECTIONS: readonly ResourceSection[] = ['docs', 'academy', 'blog', 'cases', 'community'];
 
-/** URL de la página de cada sección; solo las que ya existen (docs y Academy, todavía no). */
+/** URL de la página de cada sección; solo las que ya existen. */
 function sectionUrl(section: ResourceSection, lang: SiteLanguage): string | undefined {
+  if (section === 'docs') return absoluteUrl(publicPath('docs', lang));
+  if (section === 'academy') return absoluteUrl(publicPath('academy', lang));
   if (section === 'cases') return absoluteUrl(publicPath('cases', lang));
   if (section === 'community') return absoluteUrl(publicPath('community', lang));
   if (section === 'blog' && SITE_LINKS.blog.href) return absoluteUrl(SITE_LINKS.blog.href);

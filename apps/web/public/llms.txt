@@ -140,6 +140,24 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Conecta tu tienda con tu agente](https://www.gensmart.co/docs/conectar-tu-tienda): Cómo conectar Tiendanube o WooCommerce para que tu agente busque productos, calcule envíos y cree pedidos con link de pago.
 - [Integraciones y herramientas externas](https://www.gensmart.co/docs/integraciones): Qué integraciones ya vienen listas, cómo conectar tu tienda o tu sistema, y cuándo usar una función personalizada, un servidor MCP o un aviso por correo.
 
+## Academy
+- [Academy](https://www.gensmart.co/en/academy): free courses to build, run and sell with your AI agent, organized by product, level and audience. Each lesson is a knowledge base guide, a blog article or a page of the site; progress is saved only in the browser.
+- [Your first agent, from zero to live](https://www.gensmart.co/en/academy/your-first-agent): By the end you have a tested agent, connected to WhatsApp and with handoff rules.
+- [Sell in conversations](https://www.gensmart.co/en/academy/sell-in-conversations): By the end you know who to answer first and whether your sales agent is working.
+- [Understand the lead score](https://www.gensmart.co/en/academy/understand-lead-score): By the end you know what each score means, how a contact moves through the pipeline and who to write to first.
+- [Booking and customer support](https://www.gensmart.co/en/academy/booking-and-support): By the end you have a booking flow with clear rules and a handoff that does not make the customer repeat everything.
+- [Connect your store to your agent](https://www.gensmart.co/en/academy/connect-your-store): By the end your agent searches products, checks shipping and creates orders with your store's payment link.
+- [For agencies that implement](https://www.gensmart.co/en/academy/for-agencies): By the end you have a repeatable implementation process and know how the partner program works.
+
+## Academy (Spanish)
+- [Academy](https://www.gensmart.co/academia): cursos gratuitos para crear, operar y vender con tu agente de IA, organizados por producto, nivel y audiencia.
+- [Tu primer agente, de cero a activo](https://www.gensmart.co/academia/tu-primer-agente): Al terminar tienes un agente probado, conectado a WhatsApp y con reglas de traspaso.
+- [Vender en conversaciones](https://www.gensmart.co/academia/vender-en-conversaciones): Al terminar sabes a quién responder primero y si tu agente de ventas está funcionando.
+- [Entender el puntaje de leads](https://www.gensmart.co/academia/entender-el-puntaje-de-leads): Al terminar sabes qué significa cada puntaje, cómo se mueve un contacto en el embudo y a quién escribirle primero.
+- [Agenda y atención al cliente](https://www.gensmart.co/academia/agenda-y-atencion): Al terminar tienes un flujo de citas con reglas claras y un traspaso que no obliga al cliente a repetir todo.
+- [Conectar tu tienda con tu agente](https://www.gensmart.co/academia/conectar-tu-tienda): Al terminar tu agente busca productos, consulta envíos y crea pedidos con link de pago de tu tienda.
+- [Para agencias que implementan](https://www.gensmart.co/academia/para-agencias): Al terminar tienes un proceso repetible de implementación y sabes cómo funciona el programa de socios.
+
 ## Company
 
 GenSmart is a product of Dysruptia LLC. Contact: hello@gensmart.co

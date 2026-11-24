@@ -9,6 +9,8 @@ interface PageHeroProps {
   crumbs: readonly Crumb[];
   /** Único `h1` de la página: texto, con un tramo opcional resaltado en verde. */
   title: { before: string; accent?: string; after?: string };
+  /** Etiqueta corta sobre el título (p. ej. el tipo de un curso de Academy, que no tiene página). */
+  eyebrow?: string;
   lead?: ReactNode;
   /** Subsectores en una línea bajo el lead (design/web: `.sub-line`), hasta 6. */
   subs?: readonly string[];
@@ -35,6 +37,7 @@ interface PageHeroProps {
 export default function PageHero({
   crumbs,
   title,
+  eyebrow,
   lead,
   subs,
   actions,
@@ -75,6 +78,7 @@ export default function PageHero({
       <Container className={aside ? `${styles.inner} ${styles.split}` : styles.inner}>
         <div className={styles.copy}>
           <Breadcrumbs crumbs={crumbs} />
+          {eyebrow ? <p className={styles.eyebrow}>{eyebrow}</p> : null}
           <h1 className={styles.title}>
             {title.before}
             {title.accent ? (

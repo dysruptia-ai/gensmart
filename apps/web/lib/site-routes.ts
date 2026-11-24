@@ -6,6 +6,7 @@
  */
 import type { SupportedLanguage } from '@/contexts/LanguageContext';
 import type { DocId } from '@gensmart/shared';
+import { ACADEMY_ROUTES, academyRouteId, type AcademyRouteId } from './academy-routes';
 import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
 
 export const SITE_LANGUAGES = ['es', 'en'] as const satisfies readonly SupportedLanguage[];
@@ -52,7 +53,9 @@ export type SiteRouteId =
   | 'resources'
   | 'community'
   | 'docs'
-  | DocRouteId;
+  | DocRouteId
+  | 'academy'
+  | AcademyRouteId;
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -77,6 +80,22 @@ const DOC_PAGES = Object.fromEntries(
     return [id, route];
   })
 ) as Record<DocRouteId, SiteRoute>;
+
+/**
+ * Academy: el índice y una página por curso (`/academy/[course]`). Como en la base de
+ * conocimiento, la ruta interna usa el slug en inglés y `proxy.ts` reescribe el español.
+ */
+const ACADEMY_PAGES = Object.fromEntries(
+  ACADEMY_ROUTES.map((c) => {
+    const id = academyRouteId(c.id);
+    const route: SiteRoute = {
+      id,
+      internal: `/academy/${c.slug.en}`,
+      paths: { es: `/academia/${c.slug.es}`, en: `/en/academy/${c.slug.en}` },
+    };
+    return [id, route];
+  })
+) as Record<AcademyRouteId, SiteRoute>;
 
 export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   home: { id: 'home', internal: '', paths: { es: '/', en: '/en' } },
@@ -224,6 +243,9 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   // Base de conocimiento (centro de ayuda). /docs/whatsapp-setup redirige a la guía de WhatsApp
   docs: { id: 'docs', internal: '/docs', paths: { es: '/docs', en: '/en/docs' } },
   ...DOC_PAGES,
+  // Academy: cursos hechos de guías, artículos y páginas que ya existen
+  academy: { id: 'academy', internal: '/academy', paths: { es: '/academia', en: '/en/academy' } },
+  ...ACADEMY_PAGES,
 };
 
 const ROUTE_LIST: SiteRoute[] = Object.values(SITE_ROUTES);

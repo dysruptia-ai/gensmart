@@ -1,12 +1,13 @@
 /**
- * Enlaces de Recursos a la base de conocimiento (migrada en web-30) y a las secciones
- * que todavía no lo están: Academy (web-31) y los artículos nuevos del blog (web-32).
- * Los slugs y títulos son los del diseño (design/web: `DOCS`, `ROUTES`, `RUTA_BLOG`),
- * para reutilizarlos al migrar cada sección. `docHref` ya devuelve la ruta de cada guía;
- * los de Academy y blog siguen en `null` (enlace pendiente: se ve, no navega).
+ * Enlaces de Recursos a la base de conocimiento (web-30), a Academy (web-31) y a los
+ * artículos nuevos del blog, que todavía no está migrado (web-32).
+ * Los slugs y títulos son los del diseño (design/web: `DOCS`, `ROUTES`, `RUTA_BLOG`).
+ * `docHref` y `academyHref` ya devuelven la ruta de cada guía y curso; `blogPostHref`
+ * sigue en `null` (enlace pendiente: se ve, no navega).
  * Sin `'use client'`: el JSON-LD se arma en el servidor con esto.
  */
 import type { SiteHref } from '@/lib/site-links';
+import { ACADEMY_ROUTES, academyRouteId } from '@/lib/academy-routes';
 import { DOC_ROUTES, docRouteId } from '@/lib/docs-routes';
 import { publicPath, type SiteLanguage } from '@/lib/site-routes';
 
@@ -129,22 +130,26 @@ export const RESOURCE_BLOG_POSTS: readonly BlogPost[] = [
   },
 ];
 
-/* Pendientes: devuelven `null` hasta migrar cada sección. Reciben slug e idioma para
-   que conectarlos sea cambiar solo el cuerpo. */
 /** Guía de la base de conocimiento por su slug en ese idioma (`null` si no existe). */
 export function docHref(slug: string, lang: SiteLanguage): SiteHref | null {
   const doc = DOC_ROUTES.find((d) => d.slug[lang] === slug);
   return doc ? (publicPath(docRouteId(doc.id), lang) as SiteHref) : null;
 }
 
-/* eslint-disable @typescript-eslint/no-unused-vars -- parámetros reservados para web-31 y web-32 */
-/** Curso de Academy (web-31). */
-export function academyHref(_slug: string, _lang: SiteLanguage): SiteHref | null {
-  return null;
+/** Curso de Academy por su slug en ese idioma (`null` si no existe). */
+export function academyHref(slug: string, lang: SiteLanguage): SiteHref | null {
+  const course = ACADEMY_ROUTES.find((c) => c.slug[lang] === slug);
+  return course ? (publicPath(academyRouteId(course.id), lang) as SiteHref) : null;
 }
 
-/** Artículo nuevo del blog (web-32). */
+/**
+ * Artículo nuevo del blog (web-32): devuelve `null` hasta migrar el blog.
+ * Recibe el slug del artículo **en ese idioma** (`slug[0]` en ES, `slug[1]` en EN de
+ * `design/web/posts*.mjs`). Ojo: las lecciones de Academy guardan en `ref` el slug en
+ * inglés (`slug[1]`), como el diseño; `academyData.ts` traduce `ref` al par de slugs
+ * y llama a esta función con el del idioma de la página.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- parámetros reservados para web-32
 export function blogPostHref(_slug: string, _lang: SiteLanguage): SiteHref | null {
   return null;
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */

@@ -2369,6 +2369,12 @@
         "description": "Guías paso a paso para crear tu agente, conectar WhatsApp, cargar tu base de conocimiento y operar la bandeja, el CRM y la agenda.",
         "ogAlt": "Centro de ayuda de GenSmart",
         "guideSuffix": "Ayuda de GenSmart"
+      },
+      "academy": {
+        "title": "Academy | Cursos para aprender a operar tu agente | GenSmart",
+        "description": "Cursos gratuitos para crear, operar y vender con tu agente de IA, organizados por producto, nivel y audiencia.",
+        "ogAlt": "Academy de GenSmart",
+        "courseSuffix": "Academy | GenSmart"
       }
     },
     "langHint": {
@@ -2594,7 +2600,8 @@
       "partnersDirectory": "Directorio",
       "resources": "Recursos",
       "community": "Comunidad",
-      "docs": "Base de conocimiento"
+      "docs": "Base de conocimiento",
+      "academy": "Academy"
     },
     "channels": {
       "email": "Correo",
@@ -6698,6 +6705,61 @@
         "thanks": "Gracias por tu opinión.",
         "thanksDesc": "Nos ayuda a mejorar esta guía.",
         "honeypot": "No llenes este campo"
+      }
+    },
+    "academy": {
+      "hero": {
+        "eyebrow": "Academy",
+        "title": "¿Qué quieres aprender?",
+        "lead": "Cursos gratis sobre GenSmart, organizados por lo que necesitas resolver. No necesitas cuenta para leerlos.",
+        "searchLabel": "Buscar un curso",
+        "searchPlaceholder": "Busca un curso o un tema",
+        "startTitle": "¿No sabes por dónde empezar?",
+        "startCta": "Empezar"
+      },
+      "filters": {
+        "type": "Tipo",
+        "products": "Producto",
+        "level": "Nivel",
+        "aud": "Para quién"
+      },
+      "catalog": {
+        "title": "Todos los cursos",
+        "all": "Todos",
+        "courseOne": "curso",
+        "courseOther": "cursos",
+        "countOne": "{n} curso",
+        "countOther": "{n} cursos",
+        "clear": "Quitar filtros",
+        "empty": "No hay cursos con esos filtros. Prueba quitando alguno.",
+        "noteTitle": "Cómo funciona.",
+        "noteText": "Cada lección es una guía o un artículo ya publicado. Marcas las que terminas y tu avance se guarda solo en este navegador, sin cuenta. Las pantallas son ejemplos con datos ficticios."
+      },
+      "card": {
+        "meta": "{type} · {lessons} lecciones · {minutes} min",
+        "done": "{count}/{total} hechas"
+      },
+      "products": {
+        "title": "Explora por producto",
+        "soon": "En preparación"
+      },
+      "course": {
+        "lessonsTitle": "Lecciones del curso",
+        "markDone": "Marcar como hecha: {lesson}",
+        "kind": {
+          "doc": "Guía",
+          "post": "Artículo",
+          "page": "Página"
+        },
+        "minutes": "{minutes} min",
+        "progress": "Tu avance",
+        "lessonsUnit": "lecciones",
+        "total": "{minutes} min en total. Se guarda en este navegador.",
+        "level": "Nivel",
+        "byEnd": "Al terminar",
+        "next": "Siguiente curso",
+        "all": "Todos los cursos",
+        "keepLearning": "Sigue aprendiendo"
       }
     }
   }

@@ -1,0 +1,138 @@
+/* design/web: .ac-card2, .ac-hd, .ac-lv, .ac-done, .ac-bd, .ac-ti2, .ac-goal, .ac-meta2 */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--gs-panel-line);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s var(--gs-ease);
+}
+
+.card:hover,
+.card:focus-within {
+  border-color: rgba(61, 220, 132, 0.45);
+}
+
+.head {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 164px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--gs-panel-line);
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1.3px),
+    radial-gradient(circle at 50% 70%, rgba(61, 220, 132, 0.16), transparent 62%);
+  background-size: 14px 14px, 100% 100%;
+}
+
+.card:hover .head svg {
+  transform: scale(1.05);
+}
+
+.g1 { background-color: #173a2a; }
+.g2 { background-color: #12353a; }
+.g3 { background-color: #22302b; }
+.g4 { background-color: #2b3a1c; }
+.g5 { background-color: #173a35; }
+
+.level {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--gs-r-pill);
+  background: rgba(7, 12, 10, 0.7);
+  color: var(--gs-ink-100);
+  font: 600 11px/1 var(--gs-font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.done {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+}
+
+.done[hidden] {
+  display: none;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px 20px;
+}
+
+.title {
+  margin: 0;
+  font: 700 1.3rem/1.2 var(--gs-font-display);
+}
+
+.link {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Toda la tarjeta es el enlace del título */
+.link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
+.link:hover,
+.link:focus-visible {
+  text-decoration: none;
+}
+
+.link:focus-visible {
+  outline: none;
+}
+
+.card:has(.link:focus-visible) {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+}
+
+.goal {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--gs-ink-200);
+}
+
+.meta {
+  margin: auto 0 0;
+  padding-top: 6px;
+  font: 500 12px/1.4 var(--gs-font-sans);
+  letter-spacing: 0.04em;
+  color: var(--gs-ink-300);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card:hover .head svg {
+    transform: none;
+  }
+}

@@ -7,7 +7,6 @@ import styles from './DocsHelp.module.css';
 
 const PATHS: readonly { key: 'community' | 'academy' | 'contact'; to: SiteLinkKey; icon: LucideIcon }[] = [
   { key: 'community', to: 'community', icon: Users },
-  // Academy sigue pendiente (`href: null`) hasta web-31
   { key: 'academy', to: 'academy', icon: GraduationCap },
   { key: 'contact', to: 'contact', icon: MessageCircle },
 ];

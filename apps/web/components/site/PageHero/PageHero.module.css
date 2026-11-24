@@ -32,6 +32,14 @@
   min-width: 0;
 }
 
+.eyebrow {
+  margin: 0 0 var(--gs-sp-3);
+  font: 500 12px/1.4 var(--gs-font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
 .title {
   margin: 0;
   max-width: 18ch;
