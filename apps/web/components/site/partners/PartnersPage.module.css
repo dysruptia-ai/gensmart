@@ -1,0 +1,53 @@
+/* design/web: .is-partners .deal */
+.deal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gs-sp-5);
+  margin: var(--gs-sp-6) 0 0;
+}
+
+.dealItem {
+  min-width: 0;
+  padding: 32px;
+  border: 1px solid var(--gs-line);
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--gs-ink-800), transparent 80%);
+}
+
+.dealValue {
+  margin: 0 0 16px;
+  font-family: var(--gs-font-display);
+  font-size: clamp(3.6rem, 2.6rem + 4vw, 5.6rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: var(--gs-brand-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.dealText {
+  margin: 0;
+}
+
+.dealText b {
+  display: block;
+  font-size: var(--gs-fs-lead);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.dealText span {
+  display: block;
+  max-width: 54ch;
+  margin-top: 6px;
+  font-size: var(--gs-fs-sm);
+  line-height: 1.5;
+  color: var(--gs-fg-soft);
+}
+
+@media (max-width: 899px) {
+  .deal {
+    grid-template-columns: 1fr;
+  }
+}

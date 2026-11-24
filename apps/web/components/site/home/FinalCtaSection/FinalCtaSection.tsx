@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
+import type { SiteLinkKey } from '@/lib/site-links';
 import GlowBackdrop from '../../GlowBackdrop';
 import SiteButton from '../../SiteButton';
 import styles from './FinalCtaSection.module.css';
@@ -14,6 +15,8 @@ interface FinalCtaSectionProps {
   titleAccent?: string;
   lead?: ReactNode;
   primaryLabel?: string;
+  /** Destino del botón principal (por defecto, el registro). */
+  primaryTo?: SiteLinkKey;
   /** `false` quita el botón secundario "Agenda una demo" (en Contacto no tiene sentido). */
   showDemo?: boolean;
 }
@@ -23,6 +26,7 @@ export default function FinalCtaSection({
   titleAccent,
   lead,
   primaryLabel,
+  primaryTo = 'register',
   showDemo = true,
 }: FinalCtaSectionProps = {}) {
   const { t } = useTranslation();
@@ -36,7 +40,7 @@ export default function FinalCtaSection({
         </h2>
         <p className={styles.lead}>{lead ?? t(`${P}.lead`)}</p>
         <div className={styles.actions}>
-          <SiteButton to="register" size="lg" className={styles.action}>
+          <SiteButton to={primaryTo} size="lg" className={styles.action}>
             {primaryLabel ?? t(`${P}.primary`)}
           </SiteButton>
           {showDemo ? (

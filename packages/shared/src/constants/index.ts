@@ -138,6 +138,21 @@ export const PRICING = {
   },
 } as const;
 
+/**
+ * Condiciones del programa de socios (sitio público, `/partners`). El módulo de socios
+ * (registro, panel, comisiones) debe usar estos mismos valores cuando se construya.
+ */
+export const PARTNER_PROGRAM = {
+  /** Porcentaje de cada factura pagada por el cliente referido. */
+  commissionPercent: 25,
+  /** Facturas del cliente que generan comisión, empezando por la primera. */
+  commissionInvoices: 12,
+  /** Bono único por cliente, en USD. */
+  bonusUsd: 20,
+  /** Número de factura (a precio completo) con la que se gana el bono. */
+  bonusOnInvoice: 2,
+} as const;
+
 export const MESSAGE_ADDONS = [
   { messages: 500, price: 10 },
   { messages: 2000, price: 30 },

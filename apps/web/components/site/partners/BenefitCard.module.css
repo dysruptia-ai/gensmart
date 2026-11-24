@@ -1,0 +1,71 @@
+/* design/web: .paycard y .paycard.benefit */
+.card {
+  max-width: 440px;
+  margin-left: auto;
+  padding: 28px;
+  border: 1px solid color-mix(in oklab, var(--gs-brand-bright) 40%, transparent);
+  border-radius: 20px;
+  background: color-mix(in oklab, #0b1411 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.7);
+}
+
+.kicker {
+  margin: 0 0 14px;
+  font-family: var(--gs-font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gs-brand-bright);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--gs-panel-line);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--gs-panel-line);
+}
+
+.value {
+  font-family: var(--gs-font-display);
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+  color: var(--gs-brand-bright);
+  font-variant-numeric: tabular-nums;
+}
+
+.text {
+  font-size: var(--gs-fs-sm);
+  color: var(--gs-ink-100);
+}
+
+.cta {
+  width: 100%;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+@media (max-width: 899px) {
+  .card {
+    max-width: none;
+    margin: var(--gs-sp-6) 0 0;
+  }
+
+  .row {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+}

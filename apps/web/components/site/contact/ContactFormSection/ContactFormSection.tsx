@@ -10,6 +10,7 @@ import Section from '../../Section';
 import SiteLink from '../../SiteLink';
 import TurnstileField, { TURNSTILE_SITE_KEY } from '../../TurnstileField';
 import { SITE_TRIAL_DAYS } from '../../siteTrial';
+import { findDirectoryPartner } from '../../partners/partnersData';
 import {
   CONTACT_CHECK_COUNT,
   CONTACT_NEXT_COUNT,
@@ -72,6 +73,18 @@ export default function ContactFormSection({ variant }: ContactFormSectionProps)
     observer.observe(document.head, { subtree: true, childList: true, characterData: true });
     return () => observer.disconnect();
   }, [variantTitle]);
+
+  // "Contactar" de una ficha del directorio (`?tipo=recomendacion&partner=Dysruptia`): mensaje
+  // inicial editable. Solo con un partner de partnersData; el texto de la URL nunca se pega tal cual.
+  const prefill = V === null || variant !== 'recomendacion' ? null : V;
+  useEffect(() => {
+    if (!prefill) return;
+    const partner = findDirectoryPartner(new URLSearchParams(window.location.search).get('partner'));
+    if (!partner) return;
+    const message = t(`${prefill}.partnerPrefill`, { partner: partner.name });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- la URL solo existe en el cliente
+    setValues((prev) => (prev.message ? prev : { ...prev, message }));
+  }, [prefill, t]);
 
   const fieldId = (name: FieldName) => `${id}-${name}`;
   const errorId = (name: FieldName) => `${id}-${name}-error`;

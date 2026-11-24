@@ -1,0 +1,50 @@
+/* design/web: .entrega y .is-partners .entrega */
+.list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--gs-sp-5);
+  margin: var(--gs-sp-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  gap: var(--gs-sp-4);
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--gs-line);
+  border-radius: 18px;
+  background: var(--gs-ink-800);
+}
+
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--gs-r-md);
+  background: var(--gs-brand-tint);
+  color: var(--gs-brand-bright);
+}
+
+.title {
+  display: block;
+  font-size: var(--gs-fs-base);
+  font-weight: 600;
+}
+
+.text {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--gs-fs-sm);
+  line-height: 1.55;
+  color: var(--gs-fg-soft);
+}
+
+@media (max-width: 760px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
+}

@@ -12,8 +12,8 @@ interface SolutionShellProps {
   /** JSON-LD de la página (se serializa en el servidor). */
   jsonLd: object;
   children: ReactNode;
-  /** Textos propios del CTA final (sin ellos, el del home). */
-  cta?: ComponentProps<typeof FinalCtaSection>;
+  /** Textos propios del CTA final (sin ellos, el del home). `false` lo quita. */
+  cta?: ComponentProps<typeof FinalCtaSection> | false;
 }
 
 /** Marco de las páginas de Soluciones: cabecera, `main` con el CTA final y pie. */
@@ -26,7 +26,7 @@ export default function SolutionShell({ jsonLd, children, cta }: SolutionShellPr
       <SiteHeader />
       <main id="main">
         {children}
-        <FinalCtaSection {...cta} />
+        {cta === false ? null : <FinalCtaSection {...cta} />}
       </main>
       <SiteFooter />
       <SiteChatWidget />

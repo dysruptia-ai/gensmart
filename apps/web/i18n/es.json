@@ -2343,6 +2343,16 @@
         "title": "Casos de uso de agentes de IA para tu negocio | GenSmart",
         "description": "Vender, calificar, agendar, consultar tus sistemas, aclarar cobros y atender siempre: lo que hace el agente de GenSmart y lo que queda para tu equipo.",
         "ogAlt": "Casos de uso de los agentes de IA de GenSmart"
+      },
+      "partners": {
+        "title": "Programa de socios: gana el {percent} durante {months} meses | GenSmart",
+        "description": "Recomienda GenSmart y gana el {percent} de cada pago de tu cliente durante {months} meses, más un bono de {bonus} USD por cliente. Entrar es gratis y toma dos minutos.",
+        "ogAlt": "Programa de socios de GenSmart"
+      },
+      "partnersDirectory": {
+        "title": "Directorio de partners que implementan GenSmart | GenSmart",
+        "description": "Agencias, implementadores y consultores que montan agentes de GenSmart para negocios. Pide una recomendación o filtra por país y servicio.",
+        "ogAlt": "Directorio de partners de GenSmart"
       }
     },
     "langHint": {
@@ -2563,7 +2573,9 @@
       "industryProfessionalServices": "Servicios profesionales",
       "industryB2b": "B2B, industria y SaaS",
       "ecommerce": "E-commerce",
-      "cases": "Casos de uso"
+      "cases": "Casos de uso",
+      "partners": "Partners",
+      "partnersDirectory": "Directorio"
     },
     "channels": {
       "email": "Correo",
@@ -3211,7 +3223,8 @@
             "Empiezas con la prueba gratis de {days} días"
           ],
           "msg": "¿Qué quieres automatizar y en qué país y idioma atiendes?",
-          "title": "Pedir una recomendación | GenSmart"
+          "title": "Pedir una recomendación | GenSmart",
+          "partnerPrefill": "Me interesa trabajar con {partner}."
         },
         "comunidad": {
           "h1": "Avísame cuando abra la comunidad",
@@ -6105,6 +6118,254 @@
         "title": "¿Ya tienes tu agente trabajando?",
         "lead": "Si quieres contar lo que cambió en tu negocio, armamos el caso contigo. Tú apruebas el texto y decides qué cifras se publican.",
         "cta": "Quiero contar mi caso"
+      }
+    },
+    "partners": {
+      "ordinals": {
+        "1": "primera",
+        "2": "segunda",
+        "3": "tercera",
+        "4": "cuarta",
+        "5": "quinta",
+        "6": "sexta"
+      },
+      "hero": {
+        "titleBefore": "Recomienda GenSmart y gana el",
+        "titleAfter": "de cada pago de tu cliente durante {months} meses",
+        "lead": "Un link con tu nombre, un panel donde ves cada cliente y cada comisión, y una prueba de {days} días gratis para quien recomiendas. Entrar es gratis y toma dos minutos.",
+        "primary": "Quiero ser socio",
+        "secondary": "Ver por qué es fácil de recomendar"
+      },
+      "benefit": {
+        "label": "Lo que incluye ser socio",
+        "kicker": "Ser socio incluye",
+        "commission": "de cada pago, durante {months} meses",
+        "bonus": "de bono por cliente, en su {ordinal} factura",
+        "trial": "días gratis para quien recomiendas",
+        "panelValue": "Panel",
+        "panel": "con tu link, tu QR y cada comisión",
+        "cta": "Crear mi cuenta de socio"
+      },
+      "steps": {
+        "title": "Tres pasos y el primero toma dos minutos",
+        "items": [
+          {
+            "title": "Regístrate",
+            "text": "Nombre, correo, país y cómo piensas recomendar GenSmart. Tu ID sale al instante."
+          },
+          {
+            "title": "Comparte tu link",
+            "text": "Es un link corto con tu ID. Quien entra por ahí queda atribuido a ti. También funciona el ID escrito a mano."
+          },
+          {
+            "title": "Cobra",
+            "text": "Cada comisión aparece en tu panel con su estado y su fecha. Tú sigues recomendando y el panel hace la cuenta."
+          }
+        ]
+      },
+      "why": {
+        "title": "Un producto fácil de recomendar",
+        "lead": "Recomiendas algo que resuelve un problema que tus contactos ya tienen, y que pueden probar sin arriesgar nada.",
+        "items": [
+          {
+            "title": "Un problema que ya tienen",
+            "text": "Sus clientes escriben por WhatsApp, Instagram o la web a cualquier hora, y alguien tiene que responder. El agente de GenSmart responde en {channels} canales y califica a cada prospecto de 0 a 10."
+          },
+          {
+            "title": "{days} días gratis para probar",
+            "text": "Tu recomendado prueba GenSmart {days} días sin pagar y ve al agente atender a sus propios clientes. Cuando elige un plan y paga, empieza tu comisión."
+          },
+          {
+            "title": "Con respaldo para arrancar",
+            "text": "Base de conocimiento y Academy para que tu recomendado cree su primer agente sin depender de ti, y un panel donde ves cada clic, cada registro y cada comisión."
+          }
+        ]
+      },
+      "earn": {
+        "title": "Dos formas de ganar con cada cliente",
+        "lead": "Lo esencial. Las condiciones completas las ves en tu panel al registrarte.",
+        "commissionTitle": "de cada factura que paga tu cliente",
+        "commissionText": "Calculado sobre el precio de lista del plan que elija tu cliente, en cada una de sus primeras {months} facturas, empezando por la primera.",
+        "bonusTitle": "de bono por cada cliente",
+        "bonusText": "Lo ganas cuando tu cliente paga su {ordinal} factura a precio completo, sin descuento. Es un solo bono por cliente y se paga con tus comisiones en el siguiente corte mensual."
+      },
+      "kit": {
+        "title": "Lo que tienes desde el primer día",
+        "lead": "Todo listo para que solo compartas.",
+        "items": [
+          {
+            "title": "Textos listos para copiar",
+            "text": "Mensajes de WhatsApp, pies de foto, guion de 30 segundos y correo de presentación, cada uno con tu link puesto."
+          },
+          {
+            "title": "Tu link y tu QR",
+            "text": "El link corto con tu ID, el QR descargable y el botón de compartir por WhatsApp."
+          },
+          {
+            "title": "El panel de comisiones",
+            "text": "Cada clic, cada registro, cada cliente pagando y en qué estado está cada comisión, con la fecha en que se libera."
+          },
+          {
+            "title": "Soporte que revisa a mano",
+            "text": "Si una atribución no quedó o una comisión no cuadra, lo revisamos y te respondemos con el detalle del cálculo."
+          }
+        ]
+      },
+      "agency": {
+        "pill": "Para agencias",
+        "title": "¿Tienes una agencia?",
+        "lead": "Si ya implementas agentes para tus clientes, hay una ruta con más comisión, reventa y marca blanca. Los porcentajes no se publican: dependen de tu cartera y se acuerdan en una llamada.",
+        "primary": "Hablar de la ruta de agencia",
+        "secondary": "Ver el directorio de partners"
+      },
+      "faq": {
+        "kicker": "Preguntas",
+        "titleBefore": "¿Dudas antes de entrar?",
+        "titleAccent": "Resuélvelas aquí",
+        "helpBefore": "¿Tu pregunta no está aquí?",
+        "helpAccent": "Escríbenos",
+        "helpAfter": "y te respondemos.",
+        "cta": "Hablar con el equipo",
+        "items": {
+          "q1": {
+            "question": "¿Cómo se calcula mi comisión?",
+            "answer": "Es el {percent} del precio de lista de cada factura que paga tu cliente, durante sus primeras {months} facturas y empezando por la primera. El precio de cada plan está en la página de Precios, así que la cuenta la haces tú con el plan que recomiendes."
+          },
+          "q2": {
+            "question": "¿Cuándo gano el bono de {bonus} dólares y cuándo se paga?",
+            "answer": "Lo ganas cuando tu cliente paga su {ordinal} factura a precio completo, sin descuento. Es un solo bono por cliente. Se aprueba y se paga igual que tus comisiones, en el siguiente corte mensual. Si esa factura se reembolsa antes de que te paguemos, el bono se anula. En tu panel ves cada bono con su estado y su fecha."
+          },
+          "q3": {
+            "question": "¿Dónde veo las condiciones completas?",
+            "answer": "En tu panel de socio, desde el primer día: cómo y cuándo se pagan las comisiones, las reglas de atribución y los formularios que corresponden según tu país."
+          },
+          "q4": {
+            "question": "¿Puedo ser socio si ya soy cliente?",
+            "answer": "Sí. Es la misma cuenta y la misma sesión: entras al panel de socio sin volver a iniciar sesión."
+          }
+        }
+      },
+      "cta": {
+        "titleBefore": "Entra en",
+        "titleAccent": "dos minutos",
+        "lead": "Es gratis, tu cuenta se activa al instante y tu link sale con tu ID.",
+        "primary": "Crear mi cuenta de socio"
+      }
+    },
+    "partnerDirectory": {
+      "hero": {
+        "titleBefore": "Encuentra quién",
+        "titleAccent": "implemente",
+        "titleAfter": "GenSmart en tu país",
+        "lead": "Agencias que montan, entrenan y mantienen agentes de GenSmart en Latinoamérica y Estados Unidos. Elige tu país, o cuéntanos tu caso y te presentamos a quien encaja.",
+        "primary": "Pedir una recomendación",
+        "secondary": "Buscar yo mismo"
+      },
+      "how": {
+        "title": "De tu necesidad a una conversación, en tres pasos",
+        "items": [
+          {
+            "title": "Cuéntanos qué necesitas",
+            "text": "Qué quieres automatizar, en qué país estás y en qué idioma atiendes a tus clientes. Toma dos minutos."
+          },
+          {
+            "title": "Te presentamos a quien encaja",
+            "text": "Una persona de GenSmart revisa tu caso y te recomienda a un partner del directorio. No tienes que comparar fichas a ciegas."
+          },
+          {
+            "title": "Hablas directo y pruebas",
+            "text": "Conversas con el partner y empiezas con la prueba gratis de {days} días, con tu propio negocio, antes de decidir."
+          }
+        ]
+      },
+      "search": {
+        "label": "Filtrar el directorio",
+        "title": "Busca un partner",
+        "q": "Buscar",
+        "qPlaceholder": "Nombre del partner",
+        "service": "Servicio",
+        "country": "País",
+        "language": "Idioma",
+        "all": "Todos",
+        "allCountries": "Todos los países",
+        "reset": "Limpiar filtros",
+        "services": {
+          "implementation": "Implementación",
+          "training": "Entrenamiento del agente",
+          "maintenance": "Mantenimiento"
+        },
+        "languages": {
+          "es": "Español",
+          "en": "Spanish"
+        },
+        "matchStrong": "¿No sabes a quién elegir?",
+        "matchText": "Cuéntanos qué necesitas y te recomendamos a quien encaja.",
+        "matchCta": "Pedir una recomendación",
+        "countOne": "1 partner",
+        "countOther": "{count} partners",
+        "emptyTitle": "Todavía no hay un partner con esa combinación",
+        "emptyText": "El directorio está abriendo. Cuéntanos qué necesitas y te recomendamos a alguien que encaje, o te avisamos cuando haya uno en tu país.",
+        "emptyCta": "Pedir una recomendación"
+      },
+      "card": {
+        "services": "Servicios",
+        "where": "Dónde trabaja",
+        "languages": "Idiomas",
+        "contact": "Contactar",
+        "contactSr": "a {name}",
+        "site": "Ver sitio",
+        "siteSr": "de {name} (se abre en una pestaña nueva)"
+      },
+      "partners": {
+        "dysruptia": {
+          "tag": "Agencia de marketing digital y servicios con IA",
+          "description": "Agencia bilingüe que monta, entrena y mantiene agentes de GenSmart para negocios.",
+          "where": "Colombia, Latinoamérica y Estados Unidos",
+          "languages": "Español e inglés"
+        },
+        "dataSolutions": {
+          "tag": "Agencia de inbound marketing 360°",
+          "description": "Agencia de inbound marketing, diseño web, SEO y redes sociales. Conecta agentes de GenSmart con las campañas y los sitios de sus clientes.",
+          "where": "Colombia y Latinoamérica",
+          "languages": "Español e inglés"
+        }
+      },
+      "ask": {
+        "title": "Lo que puedes pedirle a un partner",
+        "lead": "Servicios concretos, listos para pedir desde la primera conversación.",
+        "items": [
+          {
+            "title": "Conectar tus canales",
+            "text": "WhatsApp, Instagram, Messenger y el chat de tu sitio, todos atendidos por el mismo agente."
+          },
+          {
+            "title": "Cargar tu información",
+            "text": "Catálogo, precios, preguntas frecuentes y políticas, para que el agente responda con datos de tu negocio."
+          },
+          {
+            "title": "Entrenar al agente",
+            "text": "Tu tono, tus reglas y el momento en que pasa la conversación a una persona de tu equipo."
+          },
+          {
+            "title": "Conectar tus herramientas",
+            "text": "Tu CRM, tu agenda o tu tienda, para que el agente agende, registre contactos y consulte pedidos."
+          },
+          {
+            "title": "Probar antes de salir en vivo",
+            "text": "Conversaciones de prueba con casos reales de tus clientes antes de encender el agente."
+          },
+          {
+            "title": "Mantenerlo mejorando",
+            "text": "Revisan las conversaciones reales y ajustan respuestas para que el agente cierre más y falle menos."
+          }
+        ]
+      },
+      "band": {
+        "pill": "Para quien implementa",
+        "title": "¿Implementas GenSmart? Aparece aquí",
+        "lead": "Regístrate como socio y arma tu ficha con tus servicios, países e idiomas. La revisamos y la publicamos sin costo.",
+        "primary": "Quiero aparecer en el directorio",
+        "secondary": "Ver el programa de socios"
       }
     }
   }

@@ -57,7 +57,8 @@ export type SiteLinkKey =
   | 'socialYoutube'
   | 'socialFacebook'
   | 'partnersTiers'
-  | 'partnersDirectory';
+  | 'partnersDirectory'
+  | 'partnerSignup';
 
 import { publicPath, type SiteLanguage, type SiteRouteId } from './site-routes';
 
@@ -120,7 +121,8 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   docsHandoff: { href: null },
   academy: { href: null },
   community: { href: null },
-  partners: { href: null },
+  // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
+  partners: { href: '/en/partners' },
   status: { href: null },
   // Landing E-commerce (tiendas online). Con rutas por idioma: se resuelve en LOCALIZED_LINKS
   ecommerce: { href: '/en/solutions/ecommerce' },
@@ -131,8 +133,11 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   socialTiktok: { href: 'https://www.tiktok.com/@gensmart.co', external: true },
   socialYoutube: { href: 'https://www.youtube.com/@gensmartco', external: true },
   socialFacebook: { href: 'https://facebook.com/gensmartai', external: true },
-  partnersTiers: { href: null },
-  partnersDirectory: { href: null },
+  // Con rutas por idioma: se resuelven en LOCALIZED_LINKS
+  partnersTiers: { href: '/en/partners#tiers' },
+  partnersDirectory: { href: '/en/partners/directory' },
+  // Registro de socios: módulo pendiente (se desarrolla al final del refactor)
+  partnerSignup: { href: null },
 };
 
 /**
@@ -149,6 +154,23 @@ export function registerHref(plan: RegisterPlan): SiteHref {
   const base = SITE_LINKS.register.href ?? '/register';
   const params = new URLSearchParams({ plan });
   return `${base}?${params.toString()}` as SiteHref;
+}
+
+/** Variantes de Contacto que se enlazan desde el sitio (`?tipo=`). */
+export type ContactLinkVariant = 'partner' | 'directorio' | 'recomendacion';
+
+/**
+ * Contacto en una variante (`/contacto?tipo=recomendacion&partner=Dysruptia`).
+ * El canonical de Contacto sigue sin query.
+ */
+export function contactVariantHref(
+  lang: SiteLanguage,
+  tipo: ContactLinkVariant,
+  partner?: string
+): SiteHref {
+  const params = new URLSearchParams({ tipo });
+  if (partner) params.set('partner', partner);
+  return `${publicPath('contact', lang)}?${params.toString()}` as SiteHref;
 }
 
 /** Página del registro, con un ancla opcional por idioma (`/soluciones#equipos`). */
@@ -192,6 +214,9 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
   industryTravel: 'industryTravel',
   industryProfessionalServices: 'industryProfessionalServices',
   industryB2b: 'industryB2b',
+  partners: 'partners',
+  partnersTiers: { route: 'partners', hash: { es: '#niveles', en: '#tiers' } },
+  partnersDirectory: 'partnersDirectory',
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

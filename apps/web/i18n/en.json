@@ -2343,6 +2343,16 @@
         "title": "AI agent use cases for your business | GenSmart",
         "description": "Sell, qualify, book, query your systems, clear up payments and stay always on: the work the GenSmart agent does and what is left for your team.",
         "ogAlt": "GenSmart AI agent use cases"
+      },
+      "partners": {
+        "title": "Partner program: earn {percent} for {months} months | GenSmart",
+        "description": "Recommend GenSmart and earn {percent} of every payment your client makes for {months} months, plus a {bonus} USD bonus per client. Joining is free and takes two minutes.",
+        "ogAlt": "GenSmart partner program"
+      },
+      "partnersDirectory": {
+        "title": "Directory of partners who implement GenSmart | GenSmart",
+        "description": "Agencies, implementers and consultants who set up GenSmart agents for businesses. Ask for a recommendation or filter by country and service.",
+        "ogAlt": "GenSmart partner directory"
       }
     },
     "langHint": {
@@ -2563,7 +2573,9 @@
       "industryProfessionalServices": "Professional services",
       "industryB2b": "B2B, industrial and SaaS",
       "ecommerce": "E-commerce",
-      "cases": "Use cases"
+      "cases": "Use cases",
+      "partners": "Partners",
+      "partnersDirectory": "Directory"
     },
     "channels": {
       "email": "Email",
@@ -3211,7 +3223,8 @@
             "You start with the {days} day free trial"
           ],
           "msg": "What do you want to automate and in which country and language do you serve customers?",
-          "title": "Ask for a recommendation | GenSmart"
+          "title": "Ask for a recommendation | GenSmart",
+          "partnerPrefill": "I'm interested in working with {partner}."
         },
         "comunidad": {
           "h1": "Tell me when the community opens",
@@ -6105,6 +6118,254 @@
         "title": "Is your agent already working?",
         "lead": "If you want to tell what changed in your business, we build the story with you. You approve the text and decide which figures go public.",
         "cta": "I want to tell my story"
+      }
+    },
+    "partners": {
+      "ordinals": {
+        "1": "first",
+        "2": "second",
+        "3": "third",
+        "4": "fourth",
+        "5": "fifth",
+        "6": "sixth"
+      },
+      "hero": {
+        "titleBefore": "Recommend GenSmart and earn",
+        "titleAfter": "of every payment your customer makes for {months} months",
+        "lead": "A link with your name, a dashboard where you see every customer and every commission, and a {days} day free trial for the people you refer. Joining is free and takes two minutes.",
+        "primary": "I want to be a partner",
+        "secondary": "See why it is easy to recommend"
+      },
+      "benefit": {
+        "label": "What being a partner includes",
+        "kicker": "Being a partner includes",
+        "commission": "of every payment, for {months} months",
+        "bonus": "bonus per customer, on their {ordinal} invoice",
+        "trial": "free days for the people you refer",
+        "panelValue": "Dashboard",
+        "panel": "with your link, your QR and every commission",
+        "cta": "Create my partner account"
+      },
+      "steps": {
+        "title": "Three steps and the first one takes two minutes",
+        "items": [
+          {
+            "title": "Sign up",
+            "text": "Name, email, country and how you plan to recommend GenSmart. Your ID is issued instantly."
+          },
+          {
+            "title": "Share your link",
+            "text": "It is a short link with your ID. Whoever comes through it is attributed to you. The ID typed by hand works too."
+          },
+          {
+            "title": "Get paid",
+            "text": "Each commission shows up in your dashboard with its status and date. You keep recommending and the dashboard does the math."
+          }
+        ]
+      },
+      "why": {
+        "title": "A product that is easy to recommend",
+        "lead": "You recommend something that solves a problem your contacts already have, and that they can try with nothing at stake.",
+        "items": [
+          {
+            "title": "A problem they already have",
+            "text": "Their customers write on WhatsApp, Instagram or the web at any hour, and someone has to answer. The GenSmart agent replies on {channels} channels and scores every prospect from 0 to 10."
+          },
+          {
+            "title": "{days} free days to try it",
+            "text": "The person you refer tries GenSmart for {days} days without paying and sees the agent handle their own customers. When they pick a plan and pay, your commission starts."
+          },
+          {
+            "title": "Backed up to get started",
+            "text": "Knowledge base and an Academy so your referral can build a first agent without depending on you, and a dashboard where you see every click, signup and commission."
+          }
+        ]
+      },
+      "earn": {
+        "title": "Two ways to earn on every customer",
+        "lead": "The essentials. You see the full terms in your dashboard when you sign up.",
+        "commissionTitle": "of every invoice your customer pays",
+        "commissionText": "Calculated on the list price of the plan your customer chooses, on each of their first {months} invoices, starting with the first.",
+        "bonusTitle": "bonus for each customer",
+        "bonusText": "You earn it when your customer pays their {ordinal} invoice at full price, with no discount. It is one bonus per customer and it is paid with your commissions on the next monthly payout."
+      },
+      "kit": {
+        "title": "What you have from day one",
+        "lead": "Everything ready so you only have to share.",
+        "items": [
+          {
+            "title": "Ready made copy",
+            "text": "WhatsApp messages, captions, a 30 second script and an intro email, each with your link already in it."
+          },
+          {
+            "title": "Your link and your QR",
+            "text": "The short link with your ID, a downloadable QR and the WhatsApp share button."
+          },
+          {
+            "title": "The commission dashboard",
+            "text": "Every click, every signup, every paying customer and the state of each commission, with the date it is released."
+          },
+          {
+            "title": "Support that checks by hand",
+            "text": "If an attribution did not register or a commission does not add up, we review it and reply with the detail of the calculation."
+          }
+        ]
+      },
+      "agency": {
+        "pill": "For agencies",
+        "title": "Do you run an agency?",
+        "lead": "If you already implement agents for your customers, there is a track with a higher commission, resale and white label. The percentages are not published: they depend on your portfolio and are agreed on a call.",
+        "primary": "Talk about the agency track",
+        "secondary": "See the partner directory"
+      },
+      "faq": {
+        "kicker": "Questions",
+        "titleBefore": "Questions before joining?",
+        "titleAccent": "Get answers here",
+        "helpBefore": "Is your question not here?",
+        "helpAccent": "Write to us",
+        "helpAfter": "and we will answer.",
+        "cta": "Talk to the team",
+        "items": {
+          "q1": {
+            "question": "How is my commission calculated?",
+            "answer": "It is {percent} of the list price of every invoice your customer pays, over their first {months} invoices, starting with the first. The price of each plan is on the Pricing page, so you can do the math with the plan you recommend."
+          },
+          "q2": {
+            "question": "When do I earn the {bonus} dollar bonus and when is it paid?",
+            "answer": "You earn it when your customer pays their {ordinal} invoice at full price, with no discount. It is one bonus per customer. It is approved and paid the same way as your commissions, on the next monthly payout. If that invoice is refunded before we pay you, the bonus is voided. In your dashboard you see each bonus with its status and date."
+          },
+          "q3": {
+            "question": "Where do I see the full terms?",
+            "answer": "In your partner dashboard, from day one: how and when commissions are paid, the attribution rules and the forms that apply in your country."
+          },
+          "q4": {
+            "question": "Can I be a partner if I am already a customer?",
+            "answer": "Yes. It is the same account and the same session: you get into the partner dashboard without logging in again."
+          }
+        }
+      },
+      "cta": {
+        "titleBefore": "Join in",
+        "titleAccent": "two minutes",
+        "lead": "It is free, your account is active right away and your link comes with your ID.",
+        "primary": "Create my partner account"
+      }
+    },
+    "partnerDirectory": {
+      "hero": {
+        "titleBefore": "Find who will",
+        "titleAccent": "implement",
+        "titleAfter": "GenSmart in your country",
+        "lead": "Agencies that build, train and maintain GenSmart agents across Latin America and the United States. Pick your country, or tell us your case and we introduce you to the right fit.",
+        "primary": "Ask for a recommendation",
+        "secondary": "Search myself"
+      },
+      "how": {
+        "title": "From your need to a conversation, in three steps",
+        "items": [
+          {
+            "title": "Tell us what you need",
+            "text": "What you want to automate, which country you are in and which language you serve your customers in. It takes two minutes."
+          },
+          {
+            "title": "We introduce you to the right fit",
+            "text": "A GenSmart person reviews your case and recommends a partner from the directory. You do not have to compare listings blind."
+          },
+          {
+            "title": "You talk directly and try it",
+            "text": "You talk to the partner and start with the {days} day free trial, with your own business, before you decide."
+          }
+        ]
+      },
+      "search": {
+        "label": "Filter the directory",
+        "title": "Find a partner",
+        "q": "Search",
+        "qPlaceholder": "Partner name",
+        "service": "Service",
+        "country": "Country",
+        "language": "Language",
+        "all": "All",
+        "allCountries": "All countries",
+        "reset": "Reset filters",
+        "services": {
+          "implementation": "Implementation",
+          "training": "Agent training",
+          "maintenance": "Maintenance"
+        },
+        "languages": {
+          "es": "Inglés",
+          "en": "English"
+        },
+        "matchStrong": "Not sure who to pick?",
+        "matchText": "Tell us what you need and we recommend the right fit.",
+        "matchCta": "Ask for a recommendation",
+        "countOne": "1 partner",
+        "countOther": "{count} partners",
+        "emptyTitle": "There is no partner with that combination yet",
+        "emptyText": "The directory is opening. Tell us what you need and we recommend someone who fits, or we let you know when there is one in your country.",
+        "emptyCta": "Ask for a recommendation"
+      },
+      "card": {
+        "services": "Services",
+        "where": "Where it works",
+        "languages": "Languages",
+        "contact": "Contact",
+        "contactSr": "{name}",
+        "site": "Visit site",
+        "siteSr": "of {name} (opens in a new tab)"
+      },
+      "partners": {
+        "dysruptia": {
+          "tag": "Digital marketing and AI services agency",
+          "description": "Bilingual agency that builds, trains and maintains GenSmart agents for businesses.",
+          "where": "Colombia, Latin America and the United States",
+          "languages": "Spanish and English"
+        },
+        "dataSolutions": {
+          "tag": "360° inbound marketing agency",
+          "description": "Inbound marketing, web design, SEO and social media agency. Connects GenSmart agents to its clients' campaigns and websites.",
+          "where": "Colombia and Latin America",
+          "languages": "Spanish and English"
+        }
+      },
+      "ask": {
+        "title": "What you can ask a partner for",
+        "lead": "Concrete services you can ask for from the first conversation.",
+        "items": [
+          {
+            "title": "Connect your channels",
+            "text": "WhatsApp, Instagram, Messenger and your website chat, all answered by the same agent."
+          },
+          {
+            "title": "Load your information",
+            "text": "Catalog, prices, FAQs and policies, so the agent answers with your business data."
+          },
+          {
+            "title": "Train the agent",
+            "text": "Your tone, your rules and the moment a conversation is handed to someone on your team."
+          },
+          {
+            "title": "Connect your tools",
+            "text": "Your CRM, calendar or store, so the agent books, logs contacts and checks orders."
+          },
+          {
+            "title": "Test before going live",
+            "text": "Test conversations with real customer cases before the agent goes live."
+          },
+          {
+            "title": "Keep it improving",
+            "text": "They review real conversations and adjust answers so the agent closes more and fails less."
+          }
+        ]
+      },
+      "band": {
+        "pill": "For implementers",
+        "title": "Do you implement GenSmart? List yourself here",
+        "lead": "Join as a partner and build your listing with your services, countries and languages. We review it and publish it at no cost.",
+        "primary": "I want to be listed",
+        "secondary": "See the partner program"
       }
     }
   }

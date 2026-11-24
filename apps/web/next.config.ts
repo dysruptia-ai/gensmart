@@ -48,6 +48,9 @@ const nextConfig: NextConfig = {
       { source: '/soluciones/industrias', destination: '/soluciones', permanent: true },
       { source: '/en/solutions/teams', destination: '/en/solutions', permanent: true },
       { source: '/en/solutions/industries', destination: '/en/solutions', permanent: true },
+      // El programa de referidos se mudó a Partners (design/web: referidos.html solo decía "se mudó")
+      { source: '/referidos', destination: '/partners', permanent: true },
+      { source: '/en/referrals', destination: '/en/partners', permanent: true },
     ];
   },
   async headers() {

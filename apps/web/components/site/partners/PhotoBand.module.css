@@ -1,0 +1,104 @@
+/* design/web: .band-ph, .band-ph .hero-ph, .hero-tone e .is-partners .band-ph */
+.band {
+  /* Tokens que SiteButton espera de una Section */
+  --gs-fg: var(--gs-ink-100);
+  --gs-fg-soft: var(--gs-ink-300);
+  --gs-bg-raised: var(--gs-panel);
+  --gs-line-strong: rgba(240, 244, 242, 0.16);
+  --gs-btn-bg: var(--gs-brand-bright);
+  --gs-btn-fg: var(--gs-brand-ink);
+
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  display: grid;
+  align-items: center;
+  min-height: min(52vh, 460px);
+  padding-block: var(--gs-y-m);
+  background: var(--gs-ground);
+  color: var(--gs-ink-100);
+}
+
+.photoLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.photo {
+  object-fit: cover;
+  object-position: 50% 42%;
+  filter: grayscale(1) contrast(1.3) brightness(1.02);
+}
+
+.tone {
+  position: absolute;
+  inset: 0;
+  background: #2cc470;
+  mix-blend-mode: multiply;
+  opacity: 0.94;
+}
+
+.tone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #0a3321;
+  mix-blend-mode: screen;
+}
+
+/* Velo para el contraste del texto, fundido con el fondo arriba y abajo */
+.band::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, var(--gs-ground) 0%, rgba(7, 9, 12, 0.5) 16%, rgba(7, 9, 12, 0.46) 84%, var(--gs-ground) 100%),
+    linear-gradient(90deg, rgba(7, 9, 12, 0.8) 0%, rgba(7, 9, 12, 0.42) 52%, rgba(7, 9, 12, 0.66) 100%);
+}
+
+.inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 20px;
+  width: 100%;
+}
+
+.pill {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid var(--gs-brand-line);
+  border-radius: var(--gs-r-pill);
+  background: var(--gs-brand-tint);
+  color: var(--gs-brand-bright);
+  font-size: var(--gs-fs-sm);
+  font-weight: 600;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--gs-font-display);
+  font-size: var(--gs-fs-h2);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: var(--gs-ls-h2);
+  text-wrap: balance;
+}
+
+.lead {
+  margin: 0;
+  max-width: 58ch;
+  font-size: var(--gs-fs-lead);
+  line-height: 1.55;
+  color: var(--gs-ink-200);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

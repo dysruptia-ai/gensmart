@@ -99,6 +99,12 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Collections](https://www.gensmart.co/en/solutions/teams/collections): Looks after customers who write about a payment, clarifies the balance and shares how to pay.
 - [Cobranzas (Spanish)](https://www.gensmart.co/soluciones/equipos/cobranzas): Atiende a los clientes que escriben por un pago, aclara el saldo y comparte cómo pagar.
 
+## Partners
+- [Partner program](https://www.gensmart.co/en/partners): recommend GenSmart and earn 25% of every payment your client makes for 12 months, plus a 20 USD bonus per client; agency track on request.
+- [Programa de socios (Spanish)](https://www.gensmart.co/partners): recomienda GenSmart y gana el 25 % de cada pago de tu cliente durante 12 meses, más un bono de 20 USD por cliente.
+- [Partner directory](https://www.gensmart.co/en/partners/directory): agencies and implementers who set up GenSmart agents, filterable by country, service and language.
+- [Directorio de partners (Spanish)](https://www.gensmart.co/partners/directorio): agencias e implementadores que montan agentes de GenSmart, con filtro por país, servicio e idioma.
+
 ## Company
 
 GenSmart is a product of Dysruptia LLC. Contact: hello@gensmart.co

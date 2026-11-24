@@ -44,7 +44,9 @@ export type SiteRouteId =
   | 'industryFinanceInsurance'
   | 'industryTravel'
   | 'industryProfessionalServices'
-  | 'industryB2b';
+  | 'industryB2b'
+  | 'partners'
+  | 'partnersDirectory';
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -182,6 +184,13 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
     id: 'industryB2b',
     internal: '/solutions/industries/b2b-and-saas',
     paths: { es: '/soluciones/industrias/b2b-y-saas', en: '/en/solutions/industries/b2b-and-saas' },
+  },
+  // Partners: programa de socios y directorio (/referidos y /en/referrals redirigen aquí)
+  partners: { id: 'partners', internal: '/partners', paths: { es: '/partners', en: '/en/partners' } },
+  partnersDirectory: {
+    id: 'partnersDirectory',
+    internal: '/partners/directory',
+    paths: { es: '/partners/directorio', en: '/en/partners/directory' },
   },
 };
 
