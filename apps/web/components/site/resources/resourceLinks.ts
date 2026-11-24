@@ -1,13 +1,14 @@
 /**
- * Enlaces de Recursos a secciones que todavía no están migradas: base de conocimiento
- * (web-30), Academy (web-31) y los artículos nuevos del blog (web-32).
+ * Enlaces de Recursos a la base de conocimiento (migrada en web-30) y a las secciones
+ * que todavía no lo están: Academy (web-31) y los artículos nuevos del blog (web-32).
  * Los slugs y títulos son los del diseño (design/web: `DOCS`, `ROUTES`, `RUTA_BLOG`),
- * para reutilizarlos al migrar cada sección. Hoy los helpers devuelven `null`
- * (enlace pendiente: se ve, no navega); cada prompt futuro los conecta con su ruta.
+ * para reutilizarlos al migrar cada sección. `docHref` ya devuelve la ruta de cada guía;
+ * los de Academy y blog siguen en `null` (enlace pendiente: se ve, no navega).
  * Sin `'use client'`: el JSON-LD se arma en el servidor con esto.
  */
 import type { SiteHref } from '@/lib/site-links';
-import type { SiteLanguage } from '@/lib/site-routes';
+import { DOC_ROUTES, docRouteId } from '@/lib/docs-routes';
+import { publicPath, type SiteLanguage } from '@/lib/site-routes';
 
 type ByLang = Record<SiteLanguage, string>;
 
@@ -130,12 +131,13 @@ export const RESOURCE_BLOG_POSTS: readonly BlogPost[] = [
 
 /* Pendientes: devuelven `null` hasta migrar cada sección. Reciben slug e idioma para
    que conectarlos sea cambiar solo el cuerpo. */
-/* eslint-disable @typescript-eslint/no-unused-vars -- parámetros reservados para web-30 a web-32 */
-/** Guía de la base de conocimiento (web-30). */
-export function docHref(_slug: string, _lang: SiteLanguage): SiteHref | null {
-  return null;
+/** Guía de la base de conocimiento por su slug en ese idioma (`null` si no existe). */
+export function docHref(slug: string, lang: SiteLanguage): SiteHref | null {
+  const doc = DOC_ROUTES.find((d) => d.slug[lang] === slug);
+  return doc ? (publicPath(docRouteId(doc.id), lang) as SiteHref) : null;
 }
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- parámetros reservados para web-31 y web-32 */
 /** Curso de Academy (web-31). */
 export function academyHref(_slug: string, _lang: SiteLanguage): SiteHref | null {
   return null;

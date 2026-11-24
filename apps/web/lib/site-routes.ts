@@ -5,6 +5,8 @@
  * las rutas públicas en español a `/es{interna}`.
  */
 import type { SupportedLanguage } from '@/contexts/LanguageContext';
+import type { DocId } from '@gensmart/shared';
+import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
 
 export const SITE_LANGUAGES = ['es', 'en'] as const satisfies readonly SupportedLanguage[];
 export type SiteLanguage = (typeof SITE_LANGUAGES)[number];
@@ -48,7 +50,9 @@ export type SiteRouteId =
   | 'partners'
   | 'partnersDirectory'
   | 'resources'
-  | 'community';
+  | 'community'
+  | 'docs'
+  | DocRouteId;
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -57,6 +61,22 @@ export interface SiteRoute {
   /** Ruta pública por idioma. */
   paths: Record<SiteLanguage, string>;
 }
+
+/**
+ * Base de conocimiento: el índice y una página por guía (`/docs/[doc]`). La ruta interna usa
+ * el slug en inglés; `proxy.ts` reescribe `/docs/<slug-es>` a `/es/docs/<slug-en>`.
+ */
+const DOC_PAGES = Object.fromEntries(
+  DOC_ROUTES.map((d) => {
+    const id = docRouteId(d.id);
+    const route: SiteRoute = {
+      id,
+      internal: `/docs/${d.slug.en}`,
+      paths: { es: `/docs/${d.slug.es}`, en: `/en/docs/${d.slug.en}` },
+    };
+    return [id, route];
+  })
+) as Record<DocRouteId, SiteRoute>;
 
 export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   home: { id: 'home', internal: '', paths: { es: '/', en: '/en' } },
@@ -201,6 +221,9 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
     internal: '/resources/community',
     paths: { es: '/recursos/comunidad', en: '/en/resources/community' },
   },
+  // Base de conocimiento (centro de ayuda). /docs/whatsapp-setup redirige a la guía de WhatsApp
+  docs: { id: 'docs', internal: '/docs', paths: { es: '/docs', en: '/en/docs' } },
+  ...DOC_PAGES,
 };
 
 const ROUTE_LIST: SiteRoute[] = Object.values(SITE_ROUTES);
@@ -228,6 +251,16 @@ export function pricingHref(language: SupportedLanguage): string {
 /** Página de contacto en el idioma del usuario (componentes viejos y enlaces fuera de `SiteLink`). */
 export function contactHref(language: SupportedLanguage): string {
   return publicPath('contact', isSiteLanguage(language) ? language : DEFAULT_SITE_LANGUAGE);
+}
+
+/** Guía de la base de conocimiento en el idioma del usuario (dashboard y componentes viejos). */
+export function docGuideHref(id: DocId, language: SupportedLanguage): string {
+  return publicPath(docRouteId(id), isSiteLanguage(language) ? language : DEFAULT_SITE_LANGUAGE);
+}
+
+/** Índice de la base de conocimiento en el idioma del usuario. */
+export function docsHref(language: SupportedLanguage): string {
+  return publicPath('docs', isSiteLanguage(language) ? language : DEFAULT_SITE_LANGUAGE);
 }
 
 export function absoluteUrl(path: string): string {

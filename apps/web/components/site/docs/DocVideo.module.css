@@ -1,0 +1,117 @@
+/* design/web: .dx-video, .dx-vf, .dx-play, .dx-chap */
+.video {
+  margin: var(--gs-sp-5) 0;
+  border: 1px solid var(--dx-line);
+  border-radius: var(--gs-r-md);
+  overflow: hidden;
+  background: var(--gs-ink-950);
+}
+
+.frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--gs-ink-950);
+}
+
+.frame img,
+.frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.frame img {
+  object-fit: cover;
+  filter: saturate(0.85) brightness(0.78);
+}
+
+.play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 72px;
+  height: 72px;
+  margin: -36px 0 0 -36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gs-brand-bright);
+  color: var(--gs-brand-ink);
+  cursor: pointer;
+  box-shadow: 0 0 0 10px rgba(61, 220, 132, 0.18);
+  transition:
+    transform var(--gs-t-fast) var(--gs-ease),
+    box-shadow var(--gs-t-fast) var(--gs-ease);
+}
+
+.play:hover,
+.play:focus-visible {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 14px rgba(61, 220, 132, 0.22);
+}
+
+.play:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 4px;
+}
+
+.video figcaption {
+  padding: 10px 14px;
+  border-top: 1px solid var(--dx-line);
+  background: var(--dx-bg);
+  color: var(--dx-soft);
+  font-size: 15px;
+}
+
+.chapters {
+  margin: 0 0 var(--gs-sp-5);
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--dx-line);
+}
+
+.chapters li {
+  border-bottom: 1px solid var(--dx-line);
+}
+
+.chapters button {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: baseline;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 4px;
+  border: 0;
+  background: none;
+  color: var(--dx-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--gs-t-fast) var(--gs-ease);
+}
+
+.chapters button:hover,
+.chapters button:focus-visible {
+  background: var(--dx-accent-tint);
+}
+
+.chapters button:focus-visible {
+  outline: 2px solid var(--dx-accent);
+  outline-offset: -2px;
+}
+
+.chapters time {
+  font: 600 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--dx-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play,
+  .chapters button {
+    transition: none;
+  }
+}

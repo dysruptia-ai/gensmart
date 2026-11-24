@@ -22,9 +22,7 @@ export const PRODUCT_ITEMS: DropItem[] = [
 export const RESOURCES_ITEMS: DropItem[] = [
   { key: 'resources' },
   { key: 'blog' },
-  // Base de conocimiento: hoy la única guía en Next es la de WhatsApp.
-  // Cuando migremos la base de conocimiento, cambiar a `docs`.
-  { key: 'docsWhatsappSetup' },
+  { key: 'docs' },
   { key: 'academy' },
   { key: 'community' },
 ];

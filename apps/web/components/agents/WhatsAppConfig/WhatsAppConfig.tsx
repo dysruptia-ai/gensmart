@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import { useToast } from '@/components/ui/Toast';
 import { useTranslation } from '@/hooks/useTranslation';
+import { docGuideHref } from '@/lib/site-routes';
 import { fbLoginEmbeddedSignup } from './fbLogin';
 import { parseSignupMessage, isFinishEvent, isAbortEvent, type SignupEvent } from './signupEvent';
 import styles from './WhatsAppConfig.module.css';
@@ -32,7 +33,7 @@ const MANUAL_FALLBACK_CODES = new Set(['NO_WABA_SHARED', 'NO_PHONE_FOUND']);
 
 export default function WhatsAppConfig({ agentId }: WhatsAppConfigProps) {
   const { success, error: toastError } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const tw = (key: string, values?: Record<string, string | number>) => t('agents.channels.whatsappConfig.' + key, values);
 
   const [status, setStatus] = useState<WhatsAppStatus | null>(null);
@@ -617,7 +618,7 @@ export default function WhatsAppConfig({ agentId }: WhatsAppConfigProps) {
 
           <div className={styles.docsLink}>
             <AlertCircle size={13} color="var(--color-info)" aria-hidden="true" />
-            <a href="/docs/whatsapp-setup" target="_blank" rel="noopener noreferrer" className={styles.link}>
+            <a href={docGuideHref('conectar-whatsapp', language)} target="_blank" rel="noopener noreferrer" className={styles.link}>
               {tw('setupGuide')}
             </a>
           </div>

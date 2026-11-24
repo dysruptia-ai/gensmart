@@ -3,3 +3,4 @@ export * from './constants/index';
 export * from './validators/index';
 export * from './config-variables';
 export * from './handoff';
+export * from './docs';

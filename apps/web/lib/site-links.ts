@@ -43,7 +43,6 @@ export type SiteLinkKey =
   | 'teamCollections'
   | 'resources'
   | 'docs'
-  | 'docsWhatsappSetup'
   | 'docsTestAgent'
   | 'docsHandoff'
   | 'academy'
@@ -58,9 +57,16 @@ export type SiteLinkKey =
   | 'socialFacebook'
   | 'partnersTiers'
   | 'partnersDirectory'
-  | 'partnerSignup';
+  | 'partnerSignup'
+  | DocRouteId;
 
+import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
 import { publicPath, type SiteLanguage, type SiteRouteId } from './site-routes';
+
+/** Una clave por guía de la base de conocimiento (`doc-<id>`), con la ruta en inglés de respaldo. */
+const DOC_LINKS = Object.fromEntries(
+  DOC_ROUTES.map((d) => [docRouteId(d.id), { href: `/en/docs/${d.slug.en}` }])
+) as Record<DocRouteId, SiteLinkTarget>;
 
 export interface SiteLinkTarget {
   href: string | null;
@@ -115,11 +121,10 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
 
   // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
   resources: { href: '/en/resources' },
-  docs: { href: null },
-  docsWhatsappSetup: { href: '/docs/whatsapp-setup' },
-  // Guías de la base de conocimiento: pendientes hasta migrarla
-  docsTestAgent: { href: null },
-  docsHandoff: { href: null },
+  // Base de conocimiento y las guías que enlaza Agentes de IA. Con rutas por idioma: LOCALIZED_LINKS
+  docs: { href: '/en/docs' },
+  docsTestAgent: { href: '/en/docs/test-your-agent-before-publishing' },
+  docsHandoff: { href: '/en/docs/handoff-to-a-person' },
   academy: { href: null },
   // Con rutas por idioma: se resuelve en LOCALIZED_LINKS
   community: { href: '/en/resources/community' },
@@ -140,6 +145,7 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   partnersDirectory: { href: '/en/partners/directory' },
   // Registro de socios: módulo pendiente (se desarrolla al final del refactor)
   partnerSignup: { href: null },
+  ...DOC_LINKS,
 };
 
 /**
@@ -221,6 +227,10 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
   partnersDirectory: 'partnersDirectory',
   resources: 'resources',
   community: 'community',
+  docs: 'docs',
+  docsTestAgent: 'doc-probar-antes',
+  docsHandoff: 'doc-traspaso',
+  ...(Object.fromEntries(DOC_ROUTES.map((d) => [docRouteId(d.id), docRouteId(d.id)])) as Record<DocRouteId, DocRouteId>),
 };
 
 /** `href` de una clave en el idioma dado (`null` = enlace pendiente). */

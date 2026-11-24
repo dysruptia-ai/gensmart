@@ -10,7 +10,8 @@ const BASE_CSP = [
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://api.gensmart.co wss://api.gensmart.co https://challenges.cloudflare.com https://connect.facebook.net",
   // 'self': el widget del sitio (public/widget.js) abre /widget/:agentId en un iframe del mismo origen
-  "frame-src 'self' https://challenges.cloudflare.com https://www.facebook.com",
+  // youtube-nocookie: el video de la base de conocimiento (solo se carga al hacer clic)
+  "frame-src 'self' https://challenges.cloudflare.com https://www.facebook.com https://www.youtube-nocookie.com",
   "frame-ancestors 'self'",
   "object-src 'none'",
   "base-uri 'self'",
@@ -51,6 +52,9 @@ const nextConfig: NextConfig = {
       // El programa de referidos se mudó a Partners (design/web: referidos.html solo decía "se mudó")
       { source: '/referidos', destination: '/partners', permanent: true },
       { source: '/en/referrals', destination: '/en/partners', permanent: true },
+      // La guía vieja de WhatsApp (en inglés) se reemplazó por la de la base de conocimiento
+      // 301 (no 308): pedido explícito para la URL indexada
+      { source: '/docs/whatsapp-setup', destination: '/en/docs/connect-whatsapp', statusCode: 301 },
     ];
   },
   async headers() {

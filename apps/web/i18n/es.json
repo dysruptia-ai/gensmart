@@ -1798,7 +1798,7 @@
         "title": "Guías y blog",
         "desc": "Cómo montar, probar y medir tu agente"
       },
-      "docsWhatsappSetup": {
+      "docs": {
         "title": "Base de conocimiento",
         "desc": "Guías para configurar y operar"
       },
@@ -2363,6 +2363,12 @@
         "title": "Comunidad GenSmart: pregunta y aprende con otros usuarios",
         "description": "Una comunidad para resolver dudas de configuración, ver cómo otros armaron su agente y enterarte primero de las novedades de GenSmart.",
         "ogAlt": "Comunidad GenSmart"
+      },
+      "docs": {
+        "title": "Centro de ayuda de GenSmart: guías paso a paso",
+        "description": "Guías paso a paso para crear tu agente, conectar WhatsApp, cargar tu base de conocimiento y operar la bandeja, el CRM y la agenda.",
+        "ogAlt": "Centro de ayuda de GenSmart",
+        "guideSuffix": "Ayuda de GenSmart"
       }
     },
     "langHint": {
@@ -2587,7 +2593,8 @@
       "partners": "Partners",
       "partnersDirectory": "Directorio",
       "resources": "Recursos",
-      "community": "Comunidad"
+      "community": "Comunidad",
+      "docs": "Base de conocimiento"
     },
     "channels": {
       "email": "Correo",
@@ -6563,6 +6570,134 @@
         ],
         "noteStrong": "Estamos abriendo las puertas.",
         "noteText": "Déjanos tu correo en el formulario de contacto y te enviamos el enlace el día que abra."
+      }
+    },
+    "docs": {
+      "nav": {
+        "label": "Navegación de la base de conocimiento",
+        "overview": "Resumen",
+        "mobile": "Menú de la base de conocimiento"
+      },
+      "types": {
+        "guide": "Guía",
+        "video": "Video"
+      },
+      "theme": {
+        "label": "Cambiar entre modo claro y oscuro",
+        "light": "Modo claro",
+        "dark": "Modo oscuro"
+      },
+      "search": {
+        "open": "Buscar en la base de conocimiento",
+        "short": "Buscar",
+        "placeholder": "Busca una guía, un tema o una palabra",
+        "label": "Buscar",
+        "close": "Cerrar",
+        "empty": "No encontramos nada con esa búsqueda. Prueba con otra palabra, por ejemplo \"WhatsApp\", \"citas\" o \"CRM\".",
+        "results": "{count} resultados",
+        "result": "1 resultado",
+        "loading": "Cargando el buscador…",
+        "error": "No pudimos cargar el buscador. Cierra y vuelve a intentarlo.",
+        "keyMove": "moverte",
+        "keyOpen": "abrir",
+        "keyClose": "cerrar"
+      },
+      "hub": {
+        "titleBefore": "Centro de ayuda de ",
+        "titleHl": "GenSmart",
+        "titleAfter": "",
+        "lead": "Guías paso a paso para poner tu agente a trabajar, operar tus conversaciones y sacarle más al producto.",
+        "suggested": "Búsquedas sugeridas",
+        "chips": {
+          "whatsapp": "WhatsApp",
+          "knowledge": "Base de conocimiento",
+          "handoff": "Traspaso a una persona",
+          "test": "Probar el agente"
+        },
+        "essTitle": "Guías esenciales",
+        "essLead": "Las que más usa quien está empezando, en el orden en que conviene leerlas.",
+        "min": "{n} min",
+        "catsTitle": "Explora por tema",
+        "guides": "{n} guías",
+        "guideOne": "1 guía"
+      },
+      "help": {
+        "title": "¿Necesitas más ayuda?",
+        "lead": "Prueba estos caminos. Si algo de la plataforma no coincide con lo que lees aquí, avísanos y lo corregimos.",
+        "community": {
+          "title": "Pregunta a la comunidad",
+          "desc": "Lo que a otros les funcionó, y lo que no."
+        },
+        "academy": {
+          "title": "Aprende con una ruta",
+          "desc": "Lecciones en orden, con un resultado claro al final."
+        },
+        "contact": {
+          "title": "Habla con una persona",
+          "desc": "Cuéntanos qué necesitas y te respondemos."
+        }
+      },
+      "guide": {
+        "minRead": "{n} min de lectura",
+        "updated": "Actualizado",
+        "plans": "Disponible en los planes",
+        "toc": "En esta página",
+        "tocFeedback": "¿Te resultó útil?",
+        "related": "Sigue con",
+        "pager": "Navegación entre guías",
+        "prev": "Anterior",
+        "next": "Siguiente",
+        "note": "Nota",
+        "noteTag": "Consejo"
+      },
+      "video": {
+        "play": "Reproducir video: {title}",
+        "chapters": "Capítulos del video"
+      },
+      "feedback": {
+        "title": "¿Te resultó útil esta guía?",
+        "yes": "Sí",
+        "no": "No",
+        "legend": "¿Qué pasó?",
+        "reasons": {
+          "inexacto": {
+            "title": "Impreciso",
+            "desc": "No coincide con lo que veo en la plataforma"
+          },
+          "dificil": {
+            "title": "Difícil de entender",
+            "desc": "Los pasos no son claros"
+          },
+          "falta": {
+            "title": "Falta información",
+            "desc": "Es lo que buscaba, pero está incompleto"
+          },
+          "irrelevante": {
+            "title": "No era lo que buscaba",
+            "desc": "No responde a mi duda"
+          },
+          "errores": {
+            "title": "Errores menores",
+            "desc": "Ortografía, formato o enlaces rotos"
+          },
+          "otro": {
+            "title": "Otra sugerencia",
+            "desc": "Una idea para mejorarla"
+          }
+        },
+        "comment": "Cuéntanos más (opcional)",
+        "privacy": "No incluyas datos personales ni contraseñas.",
+        "count": "{n} de {max} caracteres",
+        "send": "Enviar",
+        "sending": "Enviando…",
+        "cancel": "Cancelar",
+        "errReason": "Elige una opción para poder enviarlo.",
+        "errSend": "No pudimos enviar tu opinión. Inténtalo de nuevo en unos minutos.",
+        "errRate": "Enviaste varias opiniones seguidas. Inténtalo de nuevo en unos minutos.",
+        "retry": "Reintentar",
+        "thanks": "Gracias por tu opinión.",
+        "thanksDesc": "Nos ayuda a mejorar esta guía.",
+        "honeypot": "No llenes este campo"
       }
     }
   }

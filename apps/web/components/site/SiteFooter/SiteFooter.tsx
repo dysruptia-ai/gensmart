@@ -42,7 +42,7 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { to: 'resources', label: 'resources' },
       { to: 'blog', label: 'blog' },
-      { to: 'docsWhatsappSetup', label: 'docs' },
+      { to: 'docs', label: 'docs' },
       { to: 'academy', label: 'academy' },
       { to: 'community', label: 'community' },
     ],

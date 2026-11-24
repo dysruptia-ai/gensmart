@@ -1798,7 +1798,7 @@
         "title": "Guides and blog",
         "desc": "How to build, test and measure your agent"
       },
-      "docsWhatsappSetup": {
+      "docs": {
         "title": "Knowledge base",
         "desc": "Guides to set up and run"
       },
@@ -2363,6 +2363,12 @@
         "title": "GenSmart community: ask and learn with other users",
         "description": "A community to solve setup questions, see how others built their agent and be the first to hear GenSmart news.",
         "ogAlt": "GenSmart community"
+      },
+      "docs": {
+        "title": "GenSmart help center: step-by-step guides",
+        "description": "Step-by-step guides to create your agent, connect WhatsApp, load your knowledge base and run the inbox, CRM and scheduling.",
+        "ogAlt": "GenSmart help center",
+        "guideSuffix": "GenSmart Help"
       }
     },
     "langHint": {
@@ -2587,7 +2593,8 @@
       "partners": "Partners",
       "partnersDirectory": "Directory",
       "resources": "Resources",
-      "community": "Community"
+      "community": "Community",
+      "docs": "Knowledge base"
     },
     "channels": {
       "email": "Email",
@@ -6563,6 +6570,134 @@
         ],
         "noteStrong": "We are opening the doors.",
         "noteText": "Leave your email in the contact form and we will send you the link the day it opens."
+      }
+    },
+    "docs": {
+      "nav": {
+        "label": "Knowledge base navigation",
+        "overview": "Overview",
+        "mobile": "Knowledge base menu"
+      },
+      "types": {
+        "guide": "Guide",
+        "video": "Video"
+      },
+      "theme": {
+        "label": "Switch between light and dark mode",
+        "light": "Light mode",
+        "dark": "Dark mode"
+      },
+      "search": {
+        "open": "Search the knowledge base",
+        "short": "Search",
+        "placeholder": "Search a guide, a topic or a word",
+        "label": "Search",
+        "close": "Close",
+        "empty": "We found nothing for that search. Try another word, for example \"WhatsApp\", \"appointments\" or \"CRM\".",
+        "results": "{count} results",
+        "result": "1 result",
+        "loading": "Loading search…",
+        "error": "We could not load search. Close it and try again.",
+        "keyMove": "move",
+        "keyOpen": "open",
+        "keyClose": "close"
+      },
+      "hub": {
+        "titleBefore": "GenSmart ",
+        "titleHl": "help center",
+        "titleAfter": "",
+        "lead": "Step by step guides to put your agent to work, run your conversations and get more out of the product.",
+        "suggested": "Suggested searches",
+        "chips": {
+          "whatsapp": "WhatsApp",
+          "knowledge": "Knowledge base",
+          "handoff": "Handoff to a person",
+          "test": "Test the agent"
+        },
+        "essTitle": "Essential guides",
+        "essLead": "The ones people starting out use the most, in the order worth reading them.",
+        "min": "{n} min",
+        "catsTitle": "Browse by topic",
+        "guides": "{n} guides",
+        "guideOne": "1 guide"
+      },
+      "help": {
+        "title": "Need more help?",
+        "lead": "Try these paths. If something in the platform does not match what you read here, tell us and we will fix it.",
+        "community": {
+          "title": "Ask the community",
+          "desc": "What worked for others, and what did not."
+        },
+        "academy": {
+          "title": "Learn with a path",
+          "desc": "Lessons in order, with a clear result at the end."
+        },
+        "contact": {
+          "title": "Talk to a person",
+          "desc": "Tell us what you need and we will reply."
+        }
+      },
+      "guide": {
+        "minRead": "{n} min read",
+        "updated": "Updated",
+        "plans": "Available on plans",
+        "toc": "On this page",
+        "tocFeedback": "Was this helpful?",
+        "related": "Continue with",
+        "pager": "Guide navigation",
+        "prev": "Previous",
+        "next": "Next",
+        "note": "Note",
+        "noteTag": "Tip"
+      },
+      "video": {
+        "play": "Play video: {title}",
+        "chapters": "Video chapters"
+      },
+      "feedback": {
+        "title": "Was this guide helpful?",
+        "yes": "Yes",
+        "no": "No",
+        "legend": "What went wrong?",
+        "reasons": {
+          "inexacto": {
+            "title": "Inaccurate",
+            "desc": "It does not match what I see in the platform"
+          },
+          "dificil": {
+            "title": "Hard to follow",
+            "desc": "The steps are not clear"
+          },
+          "falta": {
+            "title": "Missing information",
+            "desc": "It is what I was looking for, but incomplete"
+          },
+          "irrelevante": {
+            "title": "Not what I needed",
+            "desc": "It does not answer my question"
+          },
+          "errores": {
+            "title": "Minor errors",
+            "desc": "Spelling, formatting or broken links"
+          },
+          "otro": {
+            "title": "Other suggestion",
+            "desc": "An idea to improve it"
+          }
+        },
+        "comment": "Tell us more (optional)",
+        "privacy": "Do not include personal data or passwords.",
+        "count": "{n} of {max} characters",
+        "send": "Send",
+        "sending": "Sending…",
+        "cancel": "Cancel",
+        "errReason": "Choose an option so we can send it.",
+        "errSend": "We could not send your feedback. Please try again in a few minutes.",
+        "errRate": "You sent several ratings in a row. Please try again in a few minutes.",
+        "retry": "Try again",
+        "thanks": "Thanks for your feedback.",
+        "thanksDesc": "It helps us improve this guide.",
+        "honeypot": "Leave this field empty"
       }
     }
   }

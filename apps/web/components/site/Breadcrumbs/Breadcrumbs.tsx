@@ -2,7 +2,7 @@
 
 import { useTranslation } from '@/hooks/useTranslation';
 import SiteLink from '../SiteLink';
-import type { Crumb } from './crumbs';
+import { crumbLabel, type Crumb } from './crumbs';
 import styles from './Breadcrumbs.module.css';
 
 interface BreadcrumbsProps {
@@ -20,11 +20,11 @@ export default function Breadcrumbs({ crumbs, className }: BreadcrumbsProps) {
         {crumbs.map((crumb, i) =>
           i === last ? (
             <li key={crumb.labelKey} aria-current="page">
-              {t(crumb.labelKey)}
+              {crumbLabel(crumb, t)}
             </li>
           ) : (
             <li key={crumb.labelKey}>
-              {crumb.id ? <SiteLink to={crumb.id}>{t(crumb.labelKey)}</SiteLink> : t(crumb.labelKey)}
+              {crumb.id ? <SiteLink to={crumb.id}>{crumbLabel(crumb, t)}</SiteLink> : crumbLabel(crumb, t)}
             </li>
           )
         )}

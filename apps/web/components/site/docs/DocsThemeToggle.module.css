@@ -1,0 +1,30 @@
+/* design/web: .dxt */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 8px 13px;
+  border: 1px solid var(--dx-line-strong);
+  border-radius: var(--gs-r-pill);
+  background: var(--dx-ov);
+  color: var(--dx-fg);
+  font: 600 14px/1 var(--gs-font-sans);
+  cursor: pointer;
+  transition: border-color var(--gs-t-fast) var(--gs-ease);
+}
+
+.toggle:hover {
+  border-color: var(--dx-accent);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--dx-accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle {
+    transition: none;
+  }
+}

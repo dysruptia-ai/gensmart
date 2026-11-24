@@ -1,0 +1,100 @@
+/*
+ * Base de conocimiento (design/web: .dxl-shell y el modo claro `data-docs-theme="light"`).
+ * Los colores de la base de conocimiento son variables locales `--dx-*` armadas con los
+ * tokens `--gs-*`: el tema claro solo cambia estas variables y solo dentro de `.shell`,
+ * así que el resto del sitio (cabecera, pie, otras páginas) no se entera.
+ */
+.shell {
+  --dx-bg: var(--gs-ground);
+  --dx-raised: var(--gs-panel);
+  --dx-fg: var(--gs-ink-100);
+  --dx-soft: var(--gs-ink-300);
+  --dx-line: var(--gs-panel-line);
+  --dx-line-strong: rgba(240, 244, 242, 0.22);
+  --dx-ov: rgba(255, 255, 255, 0.03);
+  --dx-accent: var(--gs-brand-bright);
+  --dx-accent-tint: rgba(61, 220, 132, 0.07);
+  --dx-accent-line: var(--gs-brand-line);
+  --dx-fill: var(--gs-brand-bright);
+  --dx-on-fill: var(--gs-brand-ink);
+  --dx-warn: var(--gs-wait);
+  --dx-warn-bg: rgba(232, 183, 101, 0.06);
+  --dx-warn-line: rgba(232, 183, 101, 0.3);
+  --dx-backdrop: rgba(3, 5, 8, 0.78);
+  --dx-sticky: calc(var(--gs-header-h) + 16px);
+
+  position: relative;
+  background: var(--dx-bg);
+  color: var(--dx-fg);
+  border-bottom: 1px solid var(--dx-line);
+  color-scheme: dark;
+}
+
+/* Tema claro: el script inline del shell pone el atributo en <html> antes del primer pintado */
+:global(:root[data-docs-theme='light']) .shell {
+  --dx-bg: var(--gs-light-raised);
+  --dx-raised: var(--gs-light-bg);
+  --dx-fg: var(--gs-light-ink);
+  --dx-soft: var(--gs-light-soft);
+  --dx-line: var(--gs-light-line);
+  --dx-line-strong: #bccbc2;
+  --dx-ov: rgba(11, 18, 14, 0.035);
+  --dx-accent: var(--gs-brand-deep);
+  --dx-accent-tint: rgba(15, 122, 61, 0.08);
+  --dx-accent-line: rgba(15, 122, 61, 0.4);
+  --dx-fill: var(--gs-brand-deep);
+  --dx-on-fill: #ffffff;
+  --dx-warn: #8a5a10;
+  --dx-warn-bg: rgba(255, 196, 87, 0.14);
+  --dx-warn-line: rgba(176, 112, 10, 0.35);
+  --dx-backdrop: rgba(11, 18, 14, 0.45);
+  color-scheme: light;
+}
+
+.shell ::selection {
+  background: var(--dx-accent-line);
+}
+
+.wrap {
+  max-width: var(--gs-maxw);
+  margin-inline: auto;
+  padding-inline: var(--gs-gutter);
+}
+
+/* Migas + botón de tema */
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: var(--gs-sp-4);
+}
+
+.crumbs {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.crumbs ol {
+  margin: 0;
+  color: var(--dx-soft);
+  font-size: 13px;
+}
+
+.crumbs ol a {
+  color: var(--dx-accent);
+}
+
+/* Texto solo para lectores de pantalla */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

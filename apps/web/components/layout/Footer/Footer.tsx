@@ -4,17 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Facebook, Globe } from 'lucide-react';
 import { Logo } from '@/components/ui/Logo';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useLanguage, type SupportedLanguage } from '@/contexts/LanguageContext';
 import { useTranslation } from '@/hooks/useTranslation';
-import { pricingHref } from '@/lib/site-routes';
+import { docsHref, pricingHref } from '@/lib/site-routes';
 import styles from './Footer.module.css';
 
-// `href: null` = precios: se resuelve con el idioma actual (pricingHref)
-const PRODUCT_LINKS: Array<{ labelKey: string; href: string | null }> = [
+// `href` como función: rutas por idioma (precios, base de conocimiento), se resuelven con el idioma actual
+const PRODUCT_LINKS: Array<{ labelKey: string; href: string | ((language: SupportedLanguage) => string) }> = [
   { labelKey: 'landing.footer.features', href: '/#features' },
-  { labelKey: 'landing.footer.pricing', href: null },
+  { labelKey: 'landing.footer.pricing', href: pricingHref },
   { labelKey: 'landing.footer.blog', href: '/blog' },
-  { labelKey: 'landing.footer.docs', href: '/docs/whatsapp-setup' },
+  { labelKey: 'landing.footer.docs', href: docsHref },
 ];
 
 const LEGAL_LINKS = [
@@ -53,7 +53,7 @@ export function Footer() {
             <ul className={styles.linkList}>
               {PRODUCT_LINKS.map((l) => (
                 <li key={l.labelKey}>
-                  <Link href={l.href ?? pricingHref(language)} className={styles.link}>
+                  <Link href={typeof l.href === 'function' ? l.href(language) : l.href} className={styles.link}>
                     {t(l.labelKey)}
                   </Link>
                 </li>

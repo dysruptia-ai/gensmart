@@ -42,7 +42,6 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Integrations](https://www.gensmart.co/en/integrations): the three ways to connect tools (ready integrations, custom functions, MCP servers), limits by plan and the tool directory.
 - [Integrations (Spanish)](https://www.gensmart.co/integraciones): formas de conectar tus herramientas, límites por plan y directorio.
 - [Blog](https://www.gensmart.co/blog): guides and articles.
-- [WhatsApp setup guide](https://www.gensmart.co/docs/whatsapp-setup): how to connect a WhatsApp number.
 - [Contact](https://www.gensmart.co/en/contact): book a demo or talk to the team; a consultant reviews your case.
 - [Contact (Spanish)](https://www.gensmart.co/contacto): agenda una demo o habla con el equipo.
 - [Terms of service](https://www.gensmart.co/legal/terms-of-service)
@@ -110,6 +109,36 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Recursos (Spanish)](https://www.gensmart.co/recursos): base de conocimiento, cursos de Academy, blog, casos por industria y comunidad.
 - [Community](https://www.gensmart.co/en/resources/community): a free community to ask setup questions with context and see how other users built their agent; not the account support channel.
 - [Comunidad (Spanish)](https://www.gensmart.co/recursos/comunidad): comunidad gratuita para resolver dudas de configuración y ver cómo otros armaron su agente.
+
+## Knowledge base
+- [Help center](https://www.gensmart.co/en/docs): step-by-step guides to create your agent, connect WhatsApp, load your knowledge base and run the inbox, CRM and scheduling.
+- [What is GenSmart](https://www.gensmart.co/en/docs/what-is-gensmart): In two minutes: what the platform is, what your agent does and how it connects to your business.
+- [Create your first agent](https://www.gensmart.co/en/docs/create-your-first-agent): From the Create agent button to a published agent: template or blank, prompt, your business information, test and channel.
+- [Connect your WhatsApp Business number](https://www.gensmart.co/en/docs/connect-whatsapp): You authorize with Facebook from the browser and GenSmart sets up the account, the webhook and the number for you.
+- [Knowledge base: what your agent knows](https://www.gensmart.co/en/docs/knowledge-base): How to load files and web pages, which formats and limits apply, how to write the content and how to check the agent uses it.
+- [Test your agent before publishing](https://www.gensmart.co/en/docs/test-your-agent-before-publishing): How to use Preview, what to test, what really happens during a test and how to roll back if something goes wrong.
+- [Handoff to a person](https://www.gensmart.co/en/docs/handoff-to-a-person): The two ways a person joins the conversation: the button the agent sends and Take control from the inbox. How to set them up and what your team sees.
+- [Unified inbox](https://www.gensmart.co/en/docs/unified-inbox): Where to see the conversations of all your agents and channels, how to filter them, which ones need attention and what you can do inside each.
+- [CRM and lead score](https://www.gensmart.co/en/docs/crm-and-lead-score): What each contact stores, when and how the AI gives it a score from 0 to 10, how it moves through the pipeline and what to do with hot leads.
+- [Appointment booking](https://www.gensmart.co/en/docs/appointment-booking): How to create your calendars, give your agent the scheduling tool and what happens when a customer books: emails, alerts and how to see the appointments.
+- [The WhatsApp 24-hour window](https://www.gensmart.co/en/docs/24-hour-window): What the 24-hour rule is, how it affects your agent and your team, and what to do when a customer takes long to reply.
+- [Connect your store to your agent](https://www.gensmart.co/en/docs/connect-your-store): How to connect Tiendanube or WooCommerce so your agent searches products, checks shipping and creates orders with a payment link.
+- [Integrations and external tools](https://www.gensmart.co/en/docs/integrations): Which integrations come ready, how to connect your store or system, and when to use a custom function, an MCP server or an email alert.
+
+## Base de conocimiento (Spanish)
+- [Centro de ayuda](https://www.gensmart.co/docs): guías paso a paso para crear tu agente, conectar WhatsApp, cargar tu base de conocimiento y operar la bandeja, el CRM y la agenda.
+- [Qué es GenSmart](https://www.gensmart.co/docs/que-es-gensmart): En dos minutos: qué es la plataforma, qué hace tu agente y cómo se conecta a tu negocio.
+- [Crea tu primer agente](https://www.gensmart.co/docs/crear-tu-primer-agente): Del botón Crear agente al agente publicado: plantilla o cero, prompt, información de tu negocio, prueba y canal.
+- [Conecta tu número de WhatsApp Business](https://www.gensmart.co/docs/conectar-whatsapp): Autorizas con Facebook desde el navegador y GenSmart configura la cuenta, el webhook y el número por ti.
+- [Base de conocimiento: lo que sabe tu agente](https://www.gensmart.co/docs/base-de-conocimiento): Cómo cargar archivos y páginas web, qué formatos y límites hay, cómo escribir el contenido y cómo comprobar que el agente lo usa.
+- [Prueba tu agente antes de publicarlo](https://www.gensmart.co/docs/prueba-tu-agente-antes-de-publicarlo): Cómo usar la Vista previa, qué probar, qué sí ocurre de verdad durante la prueba y cómo volver atrás si algo sale mal.
+- [Traspaso a una persona](https://www.gensmart.co/docs/traspaso-a-una-persona): Las dos formas en que una persona entra a la conversación: el botón que envía el agente y Tomar control desde la bandeja. Cómo configurarlas y qué ve tu equipo.
+- [Bandeja unificada](https://www.gensmart.co/docs/bandeja-unificada): Dónde ver las conversaciones de todos tus agentes y canales, cómo filtrarlas, cuáles piden atención y qué puedes hacer dentro de cada una.
+- [CRM y puntaje de leads](https://www.gensmart.co/docs/crm-y-puntaje-de-leads): Qué guarda cada contacto, cuándo y cómo la IA le pone un puntaje de 0 a 10, cómo se mueve en el embudo y qué hacer con los leads calientes.
+- [Agenda de citas](https://www.gensmart.co/docs/agenda-de-citas): Cómo crear tus calendarios, darle la herramienta de agendamiento a tu agente y qué pasa cuando un cliente reserva: correos, avisos y cómo ver las citas.
+- [La ventana de 24 horas de WhatsApp](https://www.gensmart.co/docs/ventana-de-24-horas): Qué es la regla de las 24 horas, cómo afecta a tu agente y a tu equipo, y qué hacer cuando un cliente tarda en responder.
+- [Conecta tu tienda con tu agente](https://www.gensmart.co/docs/conectar-tu-tienda): Cómo conectar Tiendanube o WooCommerce para que tu agente busque productos, calcule envíos y cree pedidos con link de pago.
+- [Integraciones y herramientas externas](https://www.gensmart.co/docs/integraciones): Qué integraciones ya vienen listas, cómo conectar tu tienda o tu sistema, y cuándo usar una función personalizada, un servidor MCP o un aviso por correo.
 
 ## Company
 

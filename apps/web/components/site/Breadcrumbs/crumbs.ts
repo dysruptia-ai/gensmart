@@ -14,6 +14,13 @@ export interface Crumb {
   id: SiteRouteId | null;
   /** Clave de i18n del texto de la miga. */
   labelKey: string;
+  /** Texto ya traducido (contenido que no vive en i18n, p. ej. el título de una guía). Gana a `labelKey`. */
+  label?: string;
+}
+
+/** Texto visible de una miga. */
+export function crumbLabel(crumb: Crumb, t: SiteT): string {
+  return crumb.label ?? t(crumb.labelKey);
 }
 
 /**
@@ -33,7 +40,7 @@ export function breadcrumbJsonLd(crumbs: readonly Crumb[], t: SiteT, lang: SiteL
     itemListElement: linked.map((crumb, i) => ({
       '@type': 'ListItem',
       position: i + 1,
-      name: t(crumb.labelKey),
+      name: crumbLabel(crumb, t),
       item: absoluteUrl(publicPath(crumb.id, lang)),
     })),
   };
