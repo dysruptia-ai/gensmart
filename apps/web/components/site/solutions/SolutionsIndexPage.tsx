@@ -6,6 +6,7 @@ import PageHero from '../PageHero';
 import Section from '../Section';
 import SectionHead from '../SectionHead';
 import SiteButton from '../SiteButton';
+import SiteLink from '../SiteLink';
 import IndustryCards from './IndustryCards';
 import IndustryTabs from './IndustryTabs';
 import TeamIndexList from './TeamIndexList';
@@ -35,12 +36,23 @@ export default function SolutionsIndexPage() {
         <Container>
           <SectionHead title={t(`${P}.industriesTitle`)} lead={t(`${P}.industriesLead`)} />
           <IndustryCards />
+          {/* La landing E-commerce (agente comercial) es distinta de la industria E-commerce */}
+          <p className={styles.storeLine}>
+            <SiteLink to="ecommerce" className={styles.storeLink}>
+              {t(`${P}.ecommerceLine`)} <span aria-hidden="true">→</span>
+            </SiteLink>
+          </p>
         </Container>
       </Section>
       <Section surface="dark" id={ids.teams}>
         <Container>
           <SectionHead title={t(`${P}.teamsTitle`)} lead={t(`${P}.teamsLead`)} />
           <TeamIndexList />
+          <p className={styles.storeLine}>
+            <SiteLink to="cases" className={styles.storeLink}>
+              {t(`${P}.casesLine`)} <span aria-hidden="true">→</span>
+            </SiteLink>
+          </p>
         </Container>
       </Section>
       <Section surface="alt">

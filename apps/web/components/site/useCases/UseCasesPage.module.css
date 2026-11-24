@@ -1,0 +1,12 @@
+/* "¿Ya tienes tu agente trabajando?": bloque centrado (design/web: .center.stack, 720px) */
+.story {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 760px;
+  text-align: center;
+}
+
+.story > div {
+  margin-bottom: var(--gs-sp-5);
+}

@@ -32,6 +32,7 @@ export type SiteRouteId =
   | 'teamCollections'
   | 'solutions'
   | 'ecommerce'
+  | 'cases'
   | 'industryEcommerce'
   | 'industryClinics'
   | 'industryRealEstate'
@@ -119,6 +120,8 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   solutions: { id: 'solutions', internal: '/solutions', paths: { es: '/soluciones', en: '/en/solutions' } },
   // Landing E-commerce (agente comercial para tiendas online); la industria va aparte
   ecommerce: { id: 'ecommerce', internal: '/solutions/ecommerce', paths: { es: '/soluciones/ecommerce', en: '/en/solutions/ecommerce' } },
+  // Casos de uso: los 6 trabajos del agente
+  cases: { id: 'cases', internal: '/solutions/use-cases', paths: { es: '/soluciones/casos-de-uso', en: '/en/solutions/use-cases' } },
   // Soluciones por industria: /soluciones/industrias/… y /en/solutions/industries/…
   industryEcommerce: {
     id: 'industryEcommerce',

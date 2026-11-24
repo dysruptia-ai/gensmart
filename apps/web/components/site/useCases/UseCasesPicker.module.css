@@ -1,0 +1,184 @@
+/* design/web: .cu-go, .cu-gc, .cu-gq, .cu-gch, .cu-gl, .cu-gt, .cu-act */
+.go {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(16px, 2.4vw, 28px);
+  align-items: stretch;
+  margin-top: var(--gs-sp-6);
+}
+
+.gc {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+  padding: clamp(22px, 2.8vw, 34px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--gs-r-lg);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.gq {
+  margin: 0;
+  font: 700 clamp(1.3rem, 1.1rem + 0.8vw, 1.75rem) / 1.15 var(--gs-font-display);
+  letter-spacing: -0.03em;
+  color: var(--gs-fg);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-block;
+  padding: 9px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: var(--gs-fg);
+  font-size: 0.95rem;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.chip:hover,
+.chip:focus-visible {
+  border-color: var(--gs-brand-line);
+  background: var(--gs-brand-tint);
+  color: var(--gs-brand-bright);
+}
+
+.all {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 6px;
+  align-self: flex-start;
+  font-weight: 600;
+  color: var(--gs-brand-bright);
+}
+
+.all :global(svg) {
+  transition: transform 0.2s ease;
+}
+
+.all:hover :global(svg) {
+  transform: translateX(5px);
+}
+
+.teams {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px;
+  gap: 2px 12px;
+  align-items: center;
+  padding: 14px 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+.teams li:first-child .team {
+  padding-top: 4px;
+  border-top: 0;
+}
+
+.teamName {
+  font: 600 1.1rem / 1.3 var(--gs-font-display);
+  letter-spacing: -0.02em;
+  color: var(--gs-fg);
+  transition: color 0.2s ease;
+}
+
+.teamShort {
+  grid-column: 1;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--gs-fg-soft);
+}
+
+.arrow {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  color: var(--gs-brand-bright);
+  transition: transform 0.2s ease;
+}
+
+.team:hover .teamName,
+.team:focus-visible .teamName {
+  color: var(--gs-brand-bright);
+}
+
+.team:hover .arrow {
+  transform: translateX(5px);
+}
+
+.chip:focus-visible,
+.all:focus-visible,
+.team:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.chip:focus-visible {
+  border-radius: 999px;
+}
+
+.act {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px 40px;
+  margin-top: clamp(28px, 4vw, 48px);
+  padding: clamp(22px, 3vw, 32px) clamp(22px, 3vw, 36px);
+  border: 1px solid var(--gs-brand-line);
+  border-radius: var(--gs-r-lg);
+  background: var(--gs-brand-tint);
+}
+
+.act p {
+  max-width: 44ch;
+  margin: 0;
+  font: 600 clamp(1.15rem, 1rem + 0.6vw, 1.5rem) / 1.25 var(--gs-font-display);
+  letter-spacing: -0.02em;
+  color: var(--gs-fg);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .go {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .act {
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip,
+  .teamName,
+  .arrow,
+  .all :global(svg) {
+    transition: none;
+  }
+}

@@ -10,3 +10,25 @@
 .missing > div {
   margin-bottom: var(--gs-sp-5);
 }
+
+/* Línea hacia la landing E-commerce, bajo las tarjetas de industria */
+.storeLine {
+  margin: var(--gs-sp-5) 0 0;
+}
+
+.storeLink {
+  font-weight: 600;
+  color: var(--gs-brand-bright);
+  overflow-wrap: anywhere;
+}
+
+.storeLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.storeLink:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 3px;
+  border-radius: 4px;
+}

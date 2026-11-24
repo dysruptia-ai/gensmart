@@ -2338,6 +2338,11 @@
         "title": "Agente comercial con IA para tu tienda online | GenSmart",
         "description": "Un agente de IA dentro de tu tienda online: resuelve dudas de producto, envío y pago y lleva al cliente al checkout. Con Tiendanube, Shopify y WooCommerce.",
         "ogAlt": "Agente comercial de GenSmart para tiendas online"
+      },
+      "cases": {
+        "title": "Casos de uso de agentes de IA para tu negocio | GenSmart",
+        "description": "Vender, calificar, agendar, consultar tus sistemas, aclarar cobros y atender siempre: lo que hace el agente de GenSmart y lo que queda para tu equipo.",
+        "ogAlt": "Casos de uso de los agentes de IA de GenSmart"
       }
     },
     "langHint": {
@@ -2557,7 +2562,8 @@
       "industryTravel": "Turismo y viajes",
       "industryProfessionalServices": "Servicios profesionales",
       "industryB2b": "B2B, industria y SaaS",
-      "ecommerce": "E-commerce"
+      "ecommerce": "E-commerce",
+      "cases": "Casos de uso"
     },
     "channels": {
       "email": "Correo",
@@ -5468,7 +5474,9 @@
       "missingTitle": "¿Tu industria no está en la lista?",
       "missingText": "GenSmart se configura para cualquier negocio que atienda clientes por conversación.",
       "missingCta": "Cuéntanos tu caso",
-      "listName": "Soluciones de GenSmart por industria y por equipo"
+      "listName": "Soluciones de GenSmart por industria y por equipo",
+      "ecommerceLine": "¿Tienes tienda online? Mira el agente comercial para Tiendanube, Shopify y WooCommerce",
+      "casesLine": "¿Quieres verlo trabajar? Mira los seis casos de uso del agente, mensaje por mensaje"
     },
     "ecommerce": {
       "hero": {
@@ -5928,6 +5936,175 @@
         "titleBefore": "Cada pregunta sin responder",
         "titleAccent": "es una venta perdida",
         "lead": "Conecta tu tienda, carga tus políticas y el agente empieza a atender."
+      }
+    },
+    "useCases": {
+      "hero": {
+        "titleBefore": "Un agente que no solo responde:",
+        "titleAccent": "hace el trabajo",
+        "lead": "Vende, califica, agenda, consulta tus sistemas y pasa el caso a una persona con todo el contexto. Estos son sus seis casos de uso, mensaje por mensaje y acción por acción.",
+        "primary": "Crea tu primer agente",
+        "secondary": "Ver por industria"
+      },
+      "jobsLabel": "Elige el trabajo",
+      "legendMsg": "Mensajes del cliente y del agente",
+      "legendAct": "Lo que el agente hace en tus sistemas",
+      "timelineLabel": "Ejemplo de conversación: {job}",
+      "customer": "Cliente:",
+      "agent": "Agente:",
+      "actionPrefix": "Acción del agente:",
+      "resTitle": "Lo que recibe tu equipo",
+      "jobs": {
+        "sell": {
+          "k": "Vender en la conversación",
+          "s": "Tiendas en línea y dropshipping",
+          "h": "El cliente pregunta por talla, stock y envío, y se va sin comprar",
+          "p": "El agente muestra el catálogo con fotos, resuelve las dudas y deja el pedido creado en tu tienda, en la misma conversación donde el cliente ya estaba preguntando.",
+          "res": "Tu equipo ve el pedido creado. Reclamos, devoluciones y casos especiales los atiende una persona.",
+          "link": "Ver e-commerce",
+          "steps": {
+            "s1": "Busco la chaqueta negra en talla M",
+            "s2": "Consulta el catálogo y el stock de tu tienda",
+            "s3": "Tengo dos en talla M. Te las muestro con foto y precio. ¿Cuál te gusta?",
+            "s4": "Envía las fotos de los dos productos",
+            "s5": "La primera. ¿Cuánto cuesta el envío a Cali?",
+            "s6": "Calcula el envío con la dirección",
+            "s7": "Te lo calculo con tu dirección y dejo el pedido listo. ¿Me la compartes?",
+            "s8": "Crea el pedido en tu tienda",
+            "s9": "Guarda el nombre y la ciudad en el CRM"
+          }
+        },
+        "qualify": {
+          "k": "Calificar prospectos",
+          "s": "B2B, inmobiliarias, autos y servicios",
+          "h": "El prospecto bueno se enfría mientras atiendes al curioso",
+          "p": "El agente hace las preguntas que tú harías, guarda las respuestas en la ficha, le pone un puntaje de 0 a 10 y avisa a tu equipo cuando vale la pena una llamada.",
+          "res": "Tu equipo empieza por los de más puntaje, con lo que el prospecto ya contó. Una persona cotiza, negocia y cierra.",
+          "link": "Ver el CRM",
+          "steps": {
+            "s1": "Quiero cotizar 200 uniformes",
+            "s2": "Claro. ¿Para qué fecha los necesitas y a qué ciudad van?",
+            "s3": "Para el 15 de diciembre, en Medellín",
+            "s4": "Guarda fecha, cantidad y ciudad en la ficha del contacto",
+            "s5": "Calcula el puntaje del lead: 9 de 10",
+            "s6": "Envía un correo de aviso a tu vendedor con el resumen",
+            "s7": "Listo. Le paso tu solicitud a una asesora con todo lo que me contaste. La cotización la prepara ella.",
+            "s8": "Pasa la conversación a una persona, con el resumen"
+          }
+        },
+        "book": {
+          "k": "Agendar citas",
+          "s": "Clínicas, belleza y servicios",
+          "h": "Nadie contesta el teléfono y la agenda queda con huecos",
+          "p": "El agente revisa tus horarios libres, deja la cita en el calendario de GenSmart o en tu Google Calendar y guarda el contacto, sin llamadas de ida y vuelta.",
+          "res": "La cita aparece en tu agenda sin que nadie la haya digitado. Cancelar o reprogramar lo hace tu equipo.",
+          "link": "Ver la agenda",
+          "steps": {
+            "s1": "Quiero una valoración esta semana",
+            "s2": "Revisa los horarios libres de tu calendario",
+            "s3": "Tengo el jueves a las 10:00 a. m. o el viernes a las 3:00 p. m. ¿Cuál te sirve?",
+            "s4": "El jueves",
+            "s5": "Agenda la cita en el calendario",
+            "s6": "Guarda el contacto en el CRM",
+            "s7": "Te avisa por correo y confirma al cliente si dejó el suyo",
+            "s8": "Agendado: jueves a las 10:00 a. m. Quedó en el calendario del equipo."
+          }
+        },
+        "systems": {
+          "k": "Consultar tus sistemas",
+          "s": "Pedidos, inventario y facturas",
+          "h": "Tu equipo pierde el día buscando el mismo dato en tres programas",
+          "p": "Conectas tu API o un servidor MCP y defines qué acciones puede ejecutar el agente. Consulta el dato en tu sistema y responde con él, sin que nadie lo busque a mano.",
+          "res": "El agente hace lo que tu API le permita y nada más: tú decides qué puede consultar y qué no.",
+          "link": "Ver las integraciones",
+          "steps": {
+            "s1": "¿Dónde está mi pedido 4821?",
+            "s2": "Consulta el estado del pedido en tu sistema",
+            "s3": "Tu pedido 4821 salió hoy con la transportadora. Te comparto la guía para seguirlo.",
+            "s4": "Necesito cambiar la dirección de entrega",
+            "s5": "Eso lo gestiona una persona del equipo. Te paso con ella y con tu número de pedido.",
+            "s6": "Pasa la conversación a una persona, con el resumen"
+          }
+        },
+        "collect": {
+          "k": "Aclarar cobros",
+          "s": "Cobranza, finanzas y suscripciones",
+          "h": "Escriben por un pago y nadie sabe qué contestar",
+          "p": "El agente atiende a quien escribe por un saldo: aclara lo pendiente con la información que cargaste o consultas, y comparte cómo pagar. Si hay que negociar, lo toma una persona.",
+          "res": "Los acuerdos y los pagos los maneja una persona. El agente le entrega el caso aclarado.",
+          "link": "Ver el equipo de cobranzas",
+          "steps": {
+            "s1": "¿Cuánto debo de la factura de octubre?",
+            "s2": "Busca la factura en la información de tu negocio",
+            "s3": "Tu factura de octubre aparece pendiente. Te comparto cómo pagarla.",
+            "s4": "Comparte los datos o el enlace de pago",
+            "s5": "Prefiero hablar de un plan de pagos",
+            "s6": "Pasa la conversación a una persona, con el historial"
+          }
+        },
+        "always": {
+          "k": "Atender siempre",
+          "s": "De noche, en festivos y por cualquier canal",
+          "h": "Escriben a las 11:40 p. m. por Instagram y la respuesta llega al día siguiente",
+          "p": "WhatsApp, web, Instagram, Messenger, Telegram y correo llegan a una sola bandeja. El agente responde en el momento y tu equipo encuentra la conversación lista en la mañana.",
+          "res": "En la mañana tu equipo ve todo en la misma bandeja. El agente responde cuando el cliente escribe: no abre conversaciones nuevas ni manda recordatorios.",
+          "link": "Ver la bandeja",
+          "steps": {
+            "s1": "Vi su publicación, ¿hacen envíos a Cali?",
+            "s2": "Responde en el momento, por Instagram",
+            "s3": "Sí, enviamos a todo el país. Si me dejas tu nombre, te armo la compra por aquí mismo.",
+            "s4": "Soy Laura, quiero dos",
+            "s5": "Guarda el contacto en el CRM",
+            "s6": "Deja la conversación en la bandeja con el resumen"
+          }
+        }
+      },
+      "limits": {
+        "title": "Tú defines hasta dónde llega el agente",
+        "lead": "Negociar, cotizar, cerrar o cobrar se programa en sus instrucciones y en las herramientas que le conectas. Estos son los puntos que cambian según cómo lo configures y los pocos límites que no dependen de ti.",
+        "configurable": "Lo configuras tú",
+        "fixed": "Límite fijo",
+        "items": {
+          "l1": {
+            "k": "Negociar, cotizar y cerrar",
+            "v": "Lo programas tú: qué puede ofrecer, hasta qué descuento, cuándo cierra y cuándo llama a una persona. Con tu tienda o tu API conectada, crea el pedido."
+          },
+          "l2": {
+            "k": "Cobrar y acordar pagos",
+            "v": "Comparte cómo pagar con lo que cargaste. Si conectas tu sistema o tu pasarela, consulta saldos y comparte el enlace de pago, con las reglas que tú pongas."
+          },
+          "l3": {
+            "k": "Cancelar o reprogramar citas",
+            "v": "De fábrica consulta disponibilidad y agenda. Cancelar o mover una cita se suma conectando tu sistema por API o MCP, o lo hace tu equipo."
+          },
+          "l4": {
+            "k": "Cuándo pasa a una persona",
+            "v": "Responde con lo que cargaste o consultó. Lo que no tiene, o lo que tú marques como delicado, lo pasa a una persona con la conversación completa."
+          },
+          "l5": {
+            "k": "Escribir primero o recordar",
+            "v": "Responde cuando el cliente escribe. No abre conversaciones nuevas ni manda recordatorios de citas. Solo avisa los cambios de un pedido que nació en la conversación, si tu plataforma los informa."
+          },
+          "l6": {
+            "k": "WhatsApp fuera de las 24 horas",
+            "v": "Es una regla de Meta: se responde dentro de las 24 horas desde el último mensaje del cliente."
+          }
+        }
+      },
+      "go": {
+        "title": "Cada negocio conversa distinto",
+        "lead": "Un paciente que pide cita, un cliente que pregunta dónde está su pedido y alguien que quiere ver un apartamento no escriben igual ni esperan lo mismo. Entra por tu sector y mira esas conversaciones paso a paso, o por el área de tu equipo que más mensajes recibe.",
+        "industriesQ": "¿A qué se dedica tu negocio?",
+        "allIndustries": "Ver todas las industrias",
+        "teamsQ": "¿Quién en tu equipo no da abasto?",
+        "actText": "¿No sabes por dónde empezar? Crea tu agente y pruébalo con tus propias conversaciones.",
+        "actPrimary": "Empieza la prueba gratis",
+        "actSecondary": "Hablar con una persona"
+      },
+      "story": {
+        "title": "¿Ya tienes tu agente trabajando?",
+        "lead": "Si quieres contar lo que cambió en tu negocio, armamos el caso contigo. Tú apruebas el texto y decides qué cifras se publican.",
+        "cta": "Quiero contar mi caso"
       }
     }
   }

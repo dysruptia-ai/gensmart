@@ -2338,6 +2338,11 @@
         "title": "AI sales agent for your online store | GenSmart",
         "description": "An AI agent in your online store answers product, shipping and payment questions and takes buyers to checkout. With Tiendanube, Shopify and WooCommerce.",
         "ogAlt": "GenSmart sales agent for online stores"
+      },
+      "cases": {
+        "title": "AI agent use cases for your business | GenSmart",
+        "description": "Sell, qualify, book, query your systems, clear up payments and stay always on: the work the GenSmart agent does and what is left for your team.",
+        "ogAlt": "GenSmart AI agent use cases"
       }
     },
     "langHint": {
@@ -2557,7 +2562,8 @@
       "industryTravel": "Travel and tourism",
       "industryProfessionalServices": "Professional services",
       "industryB2b": "B2B, industrial and SaaS",
-      "ecommerce": "E-commerce"
+      "ecommerce": "E-commerce",
+      "cases": "Use cases"
     },
     "channels": {
       "email": "Email",
@@ -5468,7 +5474,9 @@
       "missingTitle": "Is your industry not listed?",
       "missingText": "GenSmart is configured for any business that serves customers through conversation.",
       "missingCta": "Tell us your case",
-      "listName": "GenSmart solutions by industry and by team"
+      "listName": "GenSmart solutions by industry and by team",
+      "ecommerceLine": "Have an online store? See the sales agent for Tiendanube, Shopify and WooCommerce",
+      "casesLine": "Want to see it at work? Explore the agent's six use cases, message by message"
     },
     "ecommerce": {
       "hero": {
@@ -5928,6 +5936,175 @@
         "titleBefore": "Every unanswered question",
         "titleAccent": "is a lost sale",
         "lead": "Connect your store, load your policies and the agent starts answering."
+      }
+    },
+    "useCases": {
+      "hero": {
+        "titleBefore": "An agent that does not just answer:",
+        "titleAccent": "it does the work",
+        "lead": "It sells, qualifies, books, queries your systems and hands the case to a person with the full context. These are its six use cases, message by message and action by action.",
+        "primary": "Create your first agent",
+        "secondary": "See by industry"
+      },
+      "jobsLabel": "Pick the job",
+      "legendMsg": "Customer and agent messages",
+      "legendAct": "What the agent does in your systems",
+      "timelineLabel": "Example conversation: {job}",
+      "customer": "Customer:",
+      "agent": "Agent:",
+      "actionPrefix": "Agent action:",
+      "resTitle": "What your team gets",
+      "jobs": {
+        "sell": {
+          "k": "Sell in the conversation",
+          "s": "Online stores and dropshipping",
+          "h": "The customer asks about size, stock and shipping, and leaves without buying",
+          "p": "The agent shows the catalog with photos, answers the questions and leaves the order created in your store, in the same conversation where the customer was already asking.",
+          "res": "Your team sees the order created. Complaints, returns and special cases are handled by a person.",
+          "link": "See e-commerce",
+          "steps": {
+            "s1": "I am looking for the black jacket in size M",
+            "s2": "Checks your store catalog and stock",
+            "s3": "I have two in size M. I will show you both with photo and price. Which do you like?",
+            "s4": "Sends photos of both products",
+            "s5": "The first one. How much is shipping to Cali?",
+            "s6": "Works out shipping from the address",
+            "s7": "I will work it out with your address and get the order ready. Can you share it?",
+            "s8": "Creates the order in your store",
+            "s9": "Saves the name and city in the CRM"
+          }
+        },
+        "qualify": {
+          "k": "Qualify prospects",
+          "s": "B2B, real estate, cars and services",
+          "h": "The good prospect goes cold while you answer the curious one",
+          "p": "The agent asks the questions you would ask, saves the answers on the record, scores the lead from 0 to 10 and tells your team when a call is worth it.",
+          "res": "Your team starts with the highest scores, with what the prospect already said. A person quotes, negotiates and closes.",
+          "link": "See the CRM",
+          "steps": {
+            "s1": "I want a quote for 200 uniforms",
+            "s2": "Of course. What date do you need them and which city are they going to?",
+            "s3": "For December 15, in Medellín",
+            "s4": "Saves date, quantity and city on the contact record",
+            "s5": "Scores the lead: 9 out of 10",
+            "s6": "Sends an alert email to your salesperson with the summary",
+            "s7": "Done. I am passing your request to an advisor with everything you told me. She prepares the quote.",
+            "s8": "Hands the conversation to a person, with the summary"
+          }
+        },
+        "book": {
+          "k": "Book appointments",
+          "s": "Clinics, beauty and services",
+          "h": "Nobody answers the phone and the calendar has gaps",
+          "p": "The agent checks your open times, puts the appointment on the GenSmart calendar or your Google Calendar and saves the contact, with no back and forth calls.",
+          "res": "The appointment shows on your calendar without anyone typing it. Your team handles cancelling or rescheduling.",
+          "link": "See scheduling",
+          "steps": {
+            "s1": "I want an assessment this week",
+            "s2": "Checks the open times on your calendar",
+            "s3": "I have Thursday at 10:00 a.m. or Friday at 3:00 p.m. Which works for you?",
+            "s4": "Thursday",
+            "s5": "Books the appointment on the calendar",
+            "s6": "Saves the contact in the CRM",
+            "s7": "Emails you, and confirms to the customer if they left theirs",
+            "s8": "Booked: Thursday at 10:00 a.m. It is on the team calendar."
+          }
+        },
+        "systems": {
+          "k": "Query your systems",
+          "s": "Orders, inventory and invoices",
+          "h": "Your team loses the day looking for the same data in three programs",
+          "p": "You connect your API or an MCP server and define which actions the agent can run. It looks the data up in your system and answers with it, without anyone searching by hand.",
+          "res": "The agent does what your API allows and nothing more: you decide what it can query and what it cannot.",
+          "link": "See integrations",
+          "steps": {
+            "s1": "Where is my order 4821?",
+            "s2": "Looks up the order status in your system",
+            "s3": "Your order 4821 shipped today with the carrier. I am sharing the tracking number.",
+            "s4": "I need to change the delivery address",
+            "s5": "A team member handles that. I am passing you to her with your order number.",
+            "s6": "Hands the conversation to a person, with the summary"
+          }
+        },
+        "collect": {
+          "k": "Clear up payments",
+          "s": "Collections, finance and subscriptions",
+          "h": "They write about a payment and nobody knows what to answer",
+          "p": "The agent handles whoever writes about a balance: it clarifies what is pending with the information you loaded or query, and shares how to pay. If there is something to negotiate, a person takes over.",
+          "res": "Agreements and payments are handled by a person. The agent hands over the case already clarified.",
+          "link": "See the collections team",
+          "steps": {
+            "s1": "How much do I owe on the October invoice?",
+            "s2": "Looks up the invoice in your business information",
+            "s3": "Your October invoice shows as pending. I will share how to pay it.",
+            "s4": "Shares the payment details or link",
+            "s5": "I would rather talk about a payment plan",
+            "s6": "Hands the conversation to a person, with the history"
+          }
+        },
+        "always": {
+          "k": "Always on",
+          "s": "At night, on holidays and on any channel",
+          "h": "They write at 11:40 p.m. on Instagram and the answer arrives the next day",
+          "p": "WhatsApp, web, Instagram, Messenger, Telegram and email land in one inbox. The agent answers right then and your team finds the conversation ready in the morning.",
+          "res": "In the morning your team sees everything in the same inbox. The agent answers when the customer writes: it does not open new conversations or send reminders.",
+          "link": "See the inbox",
+          "steps": {
+            "s1": "I saw your post, do you ship to Cali?",
+            "s2": "Replies right then, on Instagram",
+            "s3": "Yes, we ship nationwide. If you leave me your name, I will set up the purchase right here.",
+            "s4": "I am Laura, I want two",
+            "s5": "Saves the contact in the CRM",
+            "s6": "Leaves the conversation in the inbox with the summary"
+          }
+        }
+      },
+      "limits": {
+        "title": "You define how far the agent goes",
+        "lead": "Negotiating, quoting, closing or collecting is set in its instructions and in the tools you connect. These are the points that change with how you set it up, and the few limits that do not depend on you.",
+        "configurable": "You configure it",
+        "fixed": "Fixed limit",
+        "items": {
+          "l1": {
+            "k": "Negotiate, quote and close",
+            "v": "You program it: what it can offer, up to what discount, when it closes and when it calls a person. With your store or API connected, it creates the order."
+          },
+          "l2": {
+            "k": "Collect and agree on payments",
+            "v": "It shares how to pay using what you loaded. If you connect your system or payment gateway, it checks balances and shares the payment link, under the rules you set."
+          },
+          "l3": {
+            "k": "Cancel or reschedule appointments",
+            "v": "Out of the box it checks availability and books. Cancelling or moving an appointment is added by connecting your system through API or MCP, or your team does it."
+          },
+          "l4": {
+            "k": "When it hands over to a person",
+            "v": "It answers with what you loaded or queried. What it does not have, or what you mark as sensitive, goes to a person with the full conversation."
+          },
+          "l5": {
+            "k": "Write first or send reminders",
+            "v": "It replies when the customer writes. It does not open new conversations or send appointment reminders. It only sends updates on an order that started in the conversation, if your platform reports them."
+          },
+          "l6": {
+            "k": "WhatsApp outside the 24 hours",
+            "v": "It is a Meta rule: replies go out within 24 hours of the customer's last message."
+          }
+        }
+      },
+      "go": {
+        "title": "Every business talks differently",
+        "lead": "A patient asking for an appointment, a customer asking where their order is and someone who wants to see an apartment do not write the same way or expect the same thing. Go in through your sector and follow those conversations step by step, or through the area of your team that gets the most messages.",
+        "industriesQ": "What does your business do?",
+        "allIndustries": "See all industries",
+        "teamsQ": "Who on your team is overwhelmed?",
+        "actText": "Not sure where to start? Create your agent and try it with your own conversations.",
+        "actPrimary": "Start your free trial",
+        "actSecondary": "Talk to a person"
+      },
+      "story": {
+        "title": "Is your agent already working?",
+        "lead": "If you want to tell what changed in your business, we build the story with you. You approve the text and decide which figures go public.",
+        "cta": "I want to tell my story"
       }
     }
   }
