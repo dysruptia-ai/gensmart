@@ -90,8 +90,8 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
 
   const SAVINGS: Record<Interval, string | null> = {
     monthly: null,
-    quarterly: t('landing.pricing.save10'),
-    yearly: t('landing.pricing.save20'),
+    quarterly: t('billing.cycle.save10'),
+    yearly: t('billing.cycle.save20'),
   };
 
   function handleSelect(plan: PlanName) {
@@ -106,9 +106,9 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
 
   const intervalLabel = (i: Interval) => {
     switch (i) {
-      case 'monthly': return t('landing.pricing.monthly');
-      case 'quarterly': return t('landing.pricing.quarterly');
-      case 'yearly': return t('landing.pricing.yearly');
+      case 'monthly': return t('billing.cycle.monthly');
+      case 'quarterly': return t('billing.cycle.quarterly');
+      case 'yearly': return t('billing.cycle.yearly');
     }
   };
 

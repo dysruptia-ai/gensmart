@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import { SITE_TRIAL_DAYS } from '../../siteTrial';
@@ -11,7 +11,7 @@ const F = 'site.product.figs';
 
 /** Cifras (design/web: `.pr-figs`). Todas salen del código. */
 export default function ProductFigures() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const figures = [
     { value: String(CHANNEL_COUNT), label: t(`${F}.channels`) },
     { value: `${toolsCount(language)}+`, label: t(`${F}.tools`) },

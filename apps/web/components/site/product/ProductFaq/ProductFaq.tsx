@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import FaqSection from '../../FaqSection';
 import SiteButton from '../../SiteButton';
 import { productFaqItems } from '../productData';
@@ -9,7 +9,7 @@ const F = 'site.product.faq';
 
 /** Mismo texto que el JSON-LD `FAQPage` de la página (`productFaqItems`). */
 export default function ProductFaq() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   return (
     <FaqSection
       headingId="faq-heading"

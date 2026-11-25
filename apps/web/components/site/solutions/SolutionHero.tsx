@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import PageHero from '../PageHero';
 import SiteButton from '../SiteButton';
 import SolutionHeroChat from './SolutionHeroChat';
@@ -12,7 +12,7 @@ interface SolutionHeroProps {
 
 /** Hero con foto de fondo, migas, `h1`, subsectores y el chat de ejemplo (design/web: `pageHero` con foto). */
 export default function SolutionHero({ page }: SolutionHeroProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = page.base;
   const after = t(`${k}.h1.after`);
   return (

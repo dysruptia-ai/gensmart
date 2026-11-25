@@ -3,7 +3,7 @@
 import { Search } from 'lucide-react';
 import { useId, type ChangeEvent, type FormEvent } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { publicPath, isSiteLanguage, DEFAULT_SITE_LANGUAGE } from '@/lib/site-routes';
 import { useBlogFilter } from './BlogFilterContext';
 import styles from './BlogSearchForm.module.css';
@@ -13,7 +13,7 @@ import styles from './BlogSearchForm.module.css';
  * En el índice filtra "Todos los artículos" mientras se escribe.
  */
 export default function BlogSearchForm() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { language } = useLanguage();
   const lang = isSiteLanguage(language) ? language : DEFAULT_SITE_LANGUAGE;
   const filter = useBlogFilter();

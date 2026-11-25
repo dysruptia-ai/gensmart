@@ -44,8 +44,12 @@ Solo, Starter and Pro include a 15-day free trial; Enterprise is arranged with s
 - [Blog](https://www.gensmart.co/en/blog): guides on AI agents, WhatsApp, sales, marketing and customer support (full list under "Blog" below).
 - [Contact](https://www.gensmart.co/en/contact): book a demo or talk to the team; a consultant reviews your case.
 - [Contact (Spanish)](https://www.gensmart.co/contacto): agenda una demo o habla con el equipo.
-- [Terms of service](https://www.gensmart.co/legal/terms-of-service)
-- [Privacy policy](https://www.gensmart.co/legal/privacy-policy)
+- [Terms of service](https://www.gensmart.co/en/legal/terms-of-service)
+- [Términos del servicio (Spanish)](https://www.gensmart.co/legal/terminos-del-servicio)
+- [Privacy policy](https://www.gensmart.co/en/legal/privacy-policy)
+- [Política de privacidad (Spanish)](https://www.gensmart.co/legal/politica-de-privacidad)
+- [Cookie policy](https://www.gensmart.co/en/legal/cookie-policy)
+- [Política de cookies (Spanish)](https://www.gensmart.co/legal/politica-de-cookies)
 
 ## Solutions
 

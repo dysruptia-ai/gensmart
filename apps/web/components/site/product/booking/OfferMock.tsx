@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { cx } from '../ProductSubpage/cx';
 
 const P = 'site.productBooking.steps';
@@ -8,7 +8,7 @@ const OFFER = ['10:20', '11:00', '11:40'];
 
 /** Paso 3: el recorrido hasta proponer horarios y los horarios propuestos. */
 export default function OfferMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <div className={cx('dy-vis')} role="group" aria-label={t(`${P}.s3Label`)}>
       <ol className={cx('dy-flow')}>

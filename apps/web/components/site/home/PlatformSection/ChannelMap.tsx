@@ -20,7 +20,7 @@ import {
   Plug,
   type LucideIcon,
 } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteLogo from '../../SiteLogo';
 import { AnthropicLogo, OpenAILogo, OpenRouterLogo } from './AiProviderLogos';
 import styles from './ChannelMap.module.css';
@@ -104,7 +104,7 @@ function useOffsetPathSupport(): boolean {
 }
 
 export default function ChannelMap() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const uid = useId().replace(/:/g, '');
   const wrapRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement>(null);

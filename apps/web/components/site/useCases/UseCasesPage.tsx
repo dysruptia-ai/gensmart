@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import PageHero from '../PageHero';
 import Section from '../Section';
@@ -14,7 +14,7 @@ import styles from './UseCasesPage.module.css';
 
 /** Casos de uso: los 6 trabajos del agente y lo que queda para tu equipo (design/web: `casos`). */
 export default function UseCasesPage() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <>
       <PageHero

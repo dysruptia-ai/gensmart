@@ -1,10 +1,11 @@
 /**
  * Traducción del sitio público fuera de un hook: para metadatos, JSON-LD y datos
- * que se arman igual en el servidor y en el cliente. Misma búsqueda e interpolación
- * que `useTranslation` (idioma pedido, luego inglés, luego la clave).
+ * que se arman igual en el servidor y en el cliente. Solo carga el diccionario del sitio
+ * (`i18n/site/*`); la plataforma usa `i18n/app/*` con `useTranslation`. Misma búsqueda e interpolación
+ * que `useSiteTranslation` (idioma pedido, luego inglés, luego la clave).
  */
-import en from '@/i18n/en.json';
-import es from '@/i18n/es.json';
+import en from '@/i18n/site/en.json';
+import es from '@/i18n/site/es.json';
 import type { SiteLanguage } from './site-routes';
 
 export type SiteT = (key: string, values?: Record<string, string | number>) => string;

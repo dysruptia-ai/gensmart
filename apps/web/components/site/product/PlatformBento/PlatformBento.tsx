@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { ArrowRight, Globe, Mail } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import type { SiteLinkKey } from '@/lib/site-links';
 import Container from '../../Container';
 import LogoTile, { BRAND_LOGOS } from '../../LogoTile';
@@ -45,7 +45,7 @@ function Tile({ to, n, title, desc, className, children }: TileProps) {
 }
 
 export default function PlatformBento() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const values = productValues(t, language);
   const week = t(`${B}.week`).split(',');
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Clock } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import LogoTile, { BRAND_LOGOS } from '../LogoTile';
 import Section from '../Section';
@@ -25,7 +25,7 @@ const HAND = [1, 2, 3] as const;
  * menos la activa con `hidden`. Teclado como en el índice de Soluciones.
  */
 export default function PlatformTabs({ active, onChange }: PlatformTabsProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { select, listRef, tabRef, onKeyDown } = useRovingTabs(PLATFORMS.length, { active, onChange });
   const k = `${E}.platforms`;
 

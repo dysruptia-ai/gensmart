@@ -1,0 +1,20 @@
+.soon {
+  font-weight: 600;
+  color: var(--gs-ink-100);
+}
+
+.link {
+  color: var(--gs-brand-bright);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  color: var(--gs-brand-soft);
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--gs-brand-bright);
+  outline-offset: 2px;
+  border-radius: 2px;
+}

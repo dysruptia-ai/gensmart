@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import SectionHead from '../../SectionHead';
 import { packs, packsNote } from '../pricingData';
@@ -9,7 +9,7 @@ import styles from './PacksSection.module.css';
 const P = 'site.pricing.packs';
 
 export default function PacksSection() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   return (
     <section className={styles.section}>
       <Container>

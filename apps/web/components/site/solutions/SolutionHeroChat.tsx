@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChatBubble from '../ChatBubble';
 import { range, type SolutionData } from './solutionsData';
 import styles from './SolutionHeroChat.module.css';
@@ -14,7 +14,7 @@ interface SolutionHeroChatProps {
  * Maqueta: nada enfocable. El rótulo sale de `{base}.label` (bilingüe).
  */
 export default function SolutionHeroChat({ page }: SolutionHeroChatProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const agent = t(`${page.base}.label`);
   return (
     <div className={styles.chat} role="group" aria-label={t(`${page.common}.chatLabel`, { agent })}>

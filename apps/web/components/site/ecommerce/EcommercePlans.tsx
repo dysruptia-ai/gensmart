@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PRICING } from '@gensmart/shared';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { registerHref } from '@/lib/site-links';
 import Container from '../Container';
 import Reveal from '../Reveal';
@@ -38,7 +38,7 @@ function lowerFirst(text: string, lang: string): string {
  * Enterprise no tiene prueba: abre `SalesDialog`.
  */
 export default function EcommercePlans() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const [salesOpen, setSalesOpen] = useState(false);
   const k = `${E}.plans`;
   const trialCta = t(`${P}.trialCta`, { days: SITE_TRIAL_DAYS });

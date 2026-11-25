@@ -1,0 +1,54 @@
+/*
+ * Estilos base del sitio público (web-34). Lo importan `app/(site)/[lang]/layout.tsx` y
+ * `app/global-not-found.tsx`; el dashboard tiene los suyos en `app/(platform)/platform.css`.
+ * Los tokens `--gs-*` viven en `SiteRoot` (no en `body`), así que aquí van sus valores.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Misma tipografía y colores que `SiteRoot` (`--gs-font-sans`, `--gs-ground`, `--gs-ink-100`) */
+body {
+  font-family: var(--font-geist), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #f0f4f2;
+  background-color: #0c1014;
+}
+
+/* Sin subrayado en hover: las tarjetas y los botones son enlaces completos. Los enlaces de
+   texto que sí subrayan (prosa, migas, `.link`…) lo declaran en su propia clase. El color
+   por defecto es el que tenía con `globals.css` (los enlaces del sitio casi siempre lo fijan). */
+a {
+  color: #128c7e;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e5e0db;
+  border-radius: 9999px;
+}

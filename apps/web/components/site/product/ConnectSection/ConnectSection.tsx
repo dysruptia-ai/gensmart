@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChannelsStrip from '../../ChannelsStrip';
 import Container from '../../Container';
 import LogoTile, { BRAND_LOGOS } from '../../LogoTile';
@@ -15,7 +15,7 @@ const C = 'site.product.connect';
 const TOOLS = ['Shopify', 'Tiendanube', 'WooCommerce', 'HubSpot', 'Google Calendar', 'Stripe'];
 
 export default function ConnectSection() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const values = productValues(t, language);
   return (
     <Section id="conexion" rhythm="m">

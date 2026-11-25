@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { CheckCircle2, Send, X } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { isSiteLanguage } from '@/lib/site-routes';
 import TurnstileField, { TURNSTILE_SITE_KEY } from '../TurnstileField';
 import styles from './SalesDialog.module.css';
@@ -27,7 +27,7 @@ const FOCUSABLE =
  * Se renderiza dentro de SiteRoot para heredar los tokens --gs-*.
  */
 export default function SalesDialog({ open, onClose }: SalesDialogProps) {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const lang = isSiteLanguage(language) ? language : 'en';
   const titleId = useId();
   const descId = useId();

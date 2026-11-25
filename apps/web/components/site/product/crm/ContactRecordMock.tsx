@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { cx } from '../ProductSubpage/cx';
 
 const R = 'site.productCrm.record';
@@ -8,7 +8,7 @@ const S = 'site.productShared';
 
 /** Ficha de Valentina (design: `.cx-fic`). Los botones son texto: ilustración, no controles. */
 export default function ContactRecordMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <div className={cx('cx-fic')} role="group" aria-label={t(`${R}.mockLabel`)}>
       <div className={cx('cx-fic-h')}>

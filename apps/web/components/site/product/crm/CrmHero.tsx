@@ -1,13 +1,13 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SubpageHero from '../ProductSubpage/SubpageHero';
 import CrmRecordMock from './CrmRecordMock';
 
 const H = 'site.productCrm.hero';
 
 export default function CrmHero() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <SubpageHero
       id="productCrm"

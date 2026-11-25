@@ -74,6 +74,7 @@ import {
   type BlogPostRouteId,
 } from './blog-routes';
 import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
+import type { LegalRouteId } from './legal-routes';
 import { publicPath, type SiteLanguage, type SiteRouteId } from './site-routes';
 
 /** Una clave por guía de la base de conocimiento (`doc-<id>`), con la ruta en inglés de respaldo. */
@@ -105,12 +106,14 @@ export const SITE_LINKS: Record<SiteLinkKey, SiteLinkTarget> = {
   blog: { href: '/blog' },
   // Con ruta por idioma: se resuelve en LOCALIZED_LINKS (`/contacto` o `/en/contact`)
   contact: { href: '/en/contact' },
-  about: { href: '/about' },
+  // Acerca de: solo un marcador (noindex). Pendiente hasta que llegue el contenido
+  about: { href: null },
   login: { href: '/login' },
   register: { href: '/register' },
-  legalTerms: { href: '/legal/terms-of-service' },
-  legalPrivacy: { href: '/legal/privacy-policy' },
-  legalCookies: { href: '/legal/cookie-policy' },
+  // Con rutas por idioma: se resuelven en LOCALIZED_LINKS
+  legalTerms: { href: '/en/legal/terms-of-service' },
+  legalPrivacy: { href: '/en/legal/privacy-policy' },
+  legalCookies: { href: '/en/legal/cookie-policy' },
 
   // Con rutas por idioma: se resuelven en LOCALIZED_LINKS
   product: { href: '/en/product' },
@@ -273,6 +276,9 @@ const LOCALIZED_LINKS: Partial<Record<SiteLinkKey, LocalizedLink>> = {
   docs: 'docs',
   academy: 'academy',
   blog: 'blog',
+  legalTerms: 'legalTerms',
+  legalPrivacy: 'legalPrivacy',
+  legalCookies: 'legalCookies',
   docsTestAgent: 'doc-probar-antes',
   docsHandoff: 'doc-traspaso',
   ...(Object.fromEntries(DOC_ROUTES.map((d) => [docRouteId(d.id), docRouteId(d.id)])) as Record<DocRouteId, DocRouteId>),
@@ -293,4 +299,9 @@ export function resolveSiteHref(key: SiteLinkKey, lang: SiteLanguage): string | 
   const link = LOCALIZED_LINKS[key];
   if (!link) return SITE_LINKS[key].href;
   return typeof link === 'string' ? publicPath(link, lang) : `${publicPath(link.route, lang)}${link.hash[lang]}`;
+}
+
+/** Una legal en un idioma dado (la nota de traducción enlaza a la versión en inglés). */
+export function legalHref(routeId: LegalRouteId, lang: SiteLanguage): SiteHref {
+  return publicPath(routeId, lang) as SiteHref;
 }

@@ -3,7 +3,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
 import { DOC_FEEDBACK_COMMENT_MAX, DOC_FEEDBACK_REASONS, type DocFeedbackReason, type DocId } from '@gensmart/shared';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import styles from './DocFeedback.module.css';
 
 const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? '';
@@ -22,7 +22,7 @@ interface DocFeedbackProps {
  * `{ page, language, helpful, reason?, comment? }`; el "Gracias" solo aparece si el envío salió bien.
  */
 export default function DocFeedback({ page, headingId }: DocFeedbackProps) {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const [phase, setPhase] = useState<Phase>('ask');
   const [reason, setReason] = useState<DocFeedbackReason | null>(null);
   const [comment, setComment] = useState('');

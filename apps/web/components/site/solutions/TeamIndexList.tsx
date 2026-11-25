@@ -1,14 +1,14 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteLink from '../SiteLink';
 import { TEAMS } from '../teams/teamsData';
 import styles from './TeamIndexList.module.css';
 
 /** "Entra por la función": los 6 equipos (design/web: `.index.index-lg.index-noimg`). */
 export default function TeamIndexList() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <ol className={styles.index}>
       {TEAMS.map((team, i) => (

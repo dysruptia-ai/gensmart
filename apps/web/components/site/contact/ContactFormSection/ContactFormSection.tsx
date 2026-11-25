@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { isSiteLanguage } from '@/lib/site-routes';
 import CheckList from '../../CheckList';
 import Container from '../../Container';
@@ -45,7 +45,7 @@ interface ContactFormSectionProps {
 }
 
 export default function ContactFormSection({ variant }: ContactFormSectionProps) {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const lang = isSiteLanguage(language) ? language : 'en';
   const id = useId();
   const [values, setValues] = useState<Values>(EMPTY);

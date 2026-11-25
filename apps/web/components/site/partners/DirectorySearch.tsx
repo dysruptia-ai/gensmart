@@ -3,7 +3,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import { ExternalLink } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { contactVariantHref } from '@/lib/site-links';
 import { isSiteLanguage } from '@/lib/site-routes';
 import SiteButton from '../SiteButton';
@@ -41,7 +41,7 @@ function matches(p: DirectoryPartner, f: Filters): boolean {
  * completas en el HTML del servidor; el filtro solo las oculta en el cliente.
  */
 export default function DirectorySearch() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const lang = isSiteLanguage(language) ? language : 'en';
   const id = useId();
   const [filters, setFilters] = useState<Filters>(EMPTY);

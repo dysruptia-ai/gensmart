@@ -1,12 +1,15 @@
 ---
+id: terms
+slug: terms-of-service
 title: Terms of Service
-description: The terms and conditions governing your use of GenSmart.
+description: The terms that govern your use of GenSmart: your account, plans and billing, usage limits, acceptable use, your content, termination and liability.
 lastUpdated: "2026-03-21"
 ---
 
 # Terms of Service
 
 **Effective Date:** March 21, 2026
+
 **Last Updated:** March 21, 2026
 
 These Terms of Service ("Terms") govern your use of GenSmart (www.gensmart.co), a SaaS platform operated by Dysruptia LLC ("Dysruptia", "we", "us", "our"). By creating an account or using the platform, you agree to these Terms.

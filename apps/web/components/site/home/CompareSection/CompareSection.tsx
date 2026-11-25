@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -9,7 +9,7 @@ import styles from './CompareSection.module.css';
 const ROW_IDS = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6'] as const;
 
 export default function CompareSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = (id: string, field: string) => t(`site.home.compare.rows.${id}.${field}`);
 
   return (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import LogoTile, { BRAND_LOGOS } from '../../LogoTile';
 import Section from '../../Section';
@@ -31,7 +31,7 @@ const NAMES = [
 ];
 
 export default function IntegrationsSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const P = 'site.home.integrations';
   return (
     <Section surface="light" className={styles.integrations}>

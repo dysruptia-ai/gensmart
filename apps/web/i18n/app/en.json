@@ -1,0 +1,1250 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "loading": "Loading...",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "all": "All",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "active": "Active",
+    "optional": "Optional"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "agents": "Agents",
+    "conversations": "Conversations",
+    "contacts": "Contacts",
+    "funnel": "Funnel",
+    "calendar": "Calendar",
+    "billing": "Billing",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account",
+      "email": "Email address",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgotPassword": "Forgot password?",
+      "noAccount": "Don't have an account?",
+      "register": "Sign up",
+      "emailNotVerified": "Please verify your email before logging in.",
+      "resendVerification": "Resend verification email",
+      "verificationResent": "Verification email sent. Check your inbox."
+    },
+    "register": {
+      "title": "Create your account",
+      "subtitle": "Start building AI agents for free",
+      "name": "Full name",
+      "orgName": "Organization name",
+      "email": "Email address",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "hasAccount": "Already have an account?",
+      "login": "Sign in",
+      "checkEmailTitle": "Check your email",
+      "checkEmailSubtitle": "We sent a verification link to your email. Click it to activate your account and start using GenSmart.",
+      "promoActivatedPendingVerification": "Your promo code is valid — your 30-day Pro trial will activate once you verify your email."
+    },
+    "forgotPassword": {
+      "title": "Forgot your password?",
+      "subtitle": "Enter your email and we'll send you a reset link",
+      "email": "Email address",
+      "submit": "Send reset link",
+      "backToLogin": "Back to login",
+      "successMessage": "Check your inbox! We've sent a password reset link."
+    },
+    "resetPassword": {
+      "title": "Reset your password",
+      "subtitle": "Choose a new password for your account",
+      "password": "New password",
+      "confirmPassword": "Confirm new password",
+      "submit": "Reset password"
+    },
+    "verifyEmail": {
+      "loading": "Confirming your email…",
+      "successTitle": "Email confirmed!",
+      "successSubtitle": "Thanks for confirming your address. Your GenSmart account is all set.",
+      "goToDashboard": "Go to dashboard",
+      "invalidTitle": "This link is no longer valid",
+      "invalidSubtitle": "It may have already been used or expired. Try again, or contact support and we'll help you.",
+      "retry": "Try again",
+      "contactSupport": "Contact support",
+      "backToLogin": "Back to login"
+    },
+    "orgAccess": {
+      "loading": "Signing you in…",
+      "invalidTitle": "This link is no longer valid",
+      "invalidSubtitle": "It may have already been used or expired. Contact support and we'll help you get access.",
+      "resendButton": "Resend access",
+      "resendSuccess": "If this link corresponds to a valid account, we resent access to it. Check your inbox.",
+      "contactSupport": "Contact support",
+      "backToLogin": "Back to login"
+    },
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "subtitle": "Enter the 6-digit code from your authenticator app",
+      "code": "Verification code",
+      "submit": "Verify",
+      "backToLogin": "Back to login",
+      "invalidCode": "Invalid or expired code"
+    }
+  },
+  "dashboard": {
+    "stats": {
+      "leadsThisMonth": "Leads this month",
+      "activeConversations": "Active conversations",
+      "avgLeadScore": "Avg Lead Score",
+      "messagesUsed": "Messages used",
+      "vsLastMonth": "vs last month",
+      "today": "Today: {count}",
+      "thisWeek": "Week: {count}",
+      "currentlyOpen": "Currently open",
+      "acrossAllContacts": "Across all scored contacts",
+      "messagesCount": "{used} / {limit} messages"
+    },
+    "leadsChart": {
+      "title": "New Leads",
+      "noData": "No leads data for this period"
+    },
+    "funnelOverview": {
+      "title": "Funnel Overview",
+      "totalContacts": "Total contacts",
+      "lead": "Lead",
+      "opportunity": "Opportunity",
+      "customer": "Customer"
+    },
+    "topAgents": {
+      "title": "Top Agents",
+      "agent": "Agent",
+      "convos": "Convos",
+      "contacts": "Contacts",
+      "score": "Score",
+      "noAgents": "No agents yet"
+    },
+    "recentLeads": {
+      "title": "Recent High-Score Leads",
+      "name": "Name",
+      "score": "Score",
+      "agent": "Agent",
+      "date": "Date",
+      "noLeads": "No high-score leads yet"
+    }
+  },
+  "agents": {
+    "title": "AI Agents",
+    "pageDescription": "Create and manage your conversational AI agents.",
+    "newAgent": "New Agent",
+    "search": "Search agents...",
+    "usageCount": "{used} / {limit} agents",
+    "usageUnlimited": "{used} / ∞ agents",
+    "searchEmpty": "No agents match your search.",
+    "empty": {
+      "title": "No agents yet",
+      "description": "Create your first AI agent to start capturing leads and automating conversations.",
+      "cta": "Create Agent"
+    },
+    "card": {
+      "conversations": "{count} conversations",
+      "lastActive": "Last active {date}",
+      "active": "Active",
+      "draft": "Draft",
+      "published": "Published",
+      "paused": "Paused",
+      "whatsapp": "WhatsApp",
+      "web": "Web",
+      "noChannels": "No channels",
+      "updated": "Updated {date}",
+      "edit": "Edit",
+      "duplicate": "Duplicate",
+      "delete": "Delete",
+      "menuLabel": "Agent options",
+      "deleteTitle": "Delete Agent",
+      "deleteConfirm": "Are you sure you want to delete {name}? This action cannot be undone and all versions will be lost."
+    },
+    "editor": {
+      "handoff": {
+        "title": "Human handoff",
+        "description": "When a customer asks for a person, the agent sends a button that opens a WhatsApp chat with an available member of your team.",
+        "enable": "Enable",
+        "freePlanNotice": "Available from the Starter plan.",
+        "viewPlans": "View plans",
+        "contactsTitle": "Support contacts",
+        "manageCalendars": "Manage schedules in Calendar",
+        "calendarsHelp": "Without a calendar, the contact is always available.",
+        "contactName": "Name",
+        "contactNamePlaceholder": "e.g. Ana (Sales)",
+        "contactPhone": "WhatsApp number",
+        "phoneHelp": "With country code, for example 573001234567. Use a number different from the agent's, or the link will reopen the chat with the bot.",
+        "calendars": "Availability calendars",
+        "noCalendars": "You have no calendars yet. The contact will always be available.",
+        "applyToAll": "Apply these calendars to all",
+        "removeContact": "Remove contact",
+        "addContact": "Add contact",
+        "contactsMax": "Up to {max} contacts.",
+        "buttonText": "Button text",
+        "advanced": "Advanced",
+        "cooldownMinutes": "Minutes between buttons",
+        "cooldownHelp": "The agent will not send another button in the same conversation before this time passes.",
+        "labelTtlHours": "Hours to show the \"Handed off\" label",
+        "labelTtlHelp": "How long the conversation keeps the label in the list.",
+        "save": "Save",
+        "saved": "Human handoff settings saved",
+        "saveFailed": "Could not save the human handoff settings",
+        "planLimit": "Human handoff requires the Starter plan or higher.",
+        "errors": {
+          "nameRequired": "Enter a name",
+          "nameTooLong": "The name can have up to 60 characters",
+          "phoneInvalid": "Enter a number with 10 to 15 digits",
+          "phoneDuplicate": "This number is repeated",
+          "needContact": "Add at least one contact to enable human handoff",
+          "buttonText": "The button text must have 1 to {max} characters",
+          "cooldownRange": "Enter a whole number between 1 and 1440",
+          "labelTtlRange": "Enter a whole number between 1 and 720"
+        }
+      },
+      "tabs": {
+        "prompt": "Prompt",
+        "configuration": "Configuration",
+        "capturedVariables": "Captured Variables",
+        "tools": "Tools",
+        "pricing": "Pricing",
+        "settings": "Settings",
+        "channels": "Channels",
+        "versions": "Versions"
+      },
+      "save": "Save",
+      "preview": "Preview",
+      "publish": "Publish",
+      "publishTitle": "Publish Agent",
+      "publishConfirm": "Publishing will save current changes and make this version live. Continue?",
+      "published": "Agent published as v{version}",
+      "publishedLive": "Your agent is now live.",
+      "publishFailed": "Failed to publish",
+      "loadFailed": "Failed to load agent",
+      "saveFailed": "Failed to save",
+      "saved": "Changes saved",
+      "unsavedChanges": "Unsaved changes",
+      "rollbackTitle": "Rollback to v{version}",
+      "rollbackConfirm": "This will restore the agent to version {version}. Current changes will be saved first.",
+      "rolledBack": "Rolled back to v{version}",
+      "rollbackFailed": "Failed to rollback",
+      "avatarUpdated": "Avatar updated",
+      "avatarSizeFailed": "Image must be under 2MB",
+      "avatarTypeFailed": "File must be an image",
+      "avatarFailed": "Failed to upload avatar",
+      "channelFailed": "Failed to update channel",
+      "status": {
+        "active": "Active",
+        "draft": "Draft",
+        "paused": "Paused"
+      },
+      "prompt": {
+        "label": "System Prompt",
+        "generate": "Generate with AI",
+        "placeholder": "Enter the system prompt for your agent...",
+        "characters": "{count} characters"
+      },
+      "settings": {
+        "llmConfig": "LLM Configuration",
+        "provider": "Provider",
+        "model": "Model",
+        "temperature": "Temperature",
+        "temperatureHint": "Lower = more focused, Higher = more creative",
+        "maxTokens": "Max Tokens",
+        "planMax": "Max for your plan: {max}",
+        "noModels": "No models available for this provider in your plan",
+        "upgradeModel": "Upgrade your plan to use {provider} models.",
+        "conversation": "Conversation",
+        "contextWindow": "Context Window Messages",
+        "messageBuffer": "Message Buffer",
+        "messageBufferHint": "Wait time before processing a user's message",
+        "channels": "Channels"
+      },
+      "channels": {
+        "webWidget": "Web Widget",
+        "webDesc": "Embed a chat widget on any website",
+        "webOffHint": "Enable Web Widget to configure and get your embed code.",
+        "whatsapp": "WhatsApp",
+        "whatsappDesc": "Connect your WhatsApp Business number",
+        "messenger": "Messenger",
+        "messengerDesc": "Connect your Facebook Page to answer in Messenger",
+        "instagram": "Instagram",
+        "instagramDesc": "Connect your Instagram professional account to answer DMs",
+        "telegram": "Telegram",
+        "telegramDesc": "Connect a Telegram bot to answer messages from your customers",
+        "email": "Email",
+        "emailDesc": "Forward your emails to this agent and let it reply in the same thread",
+        "tiktok": "TikTok",
+        "tiktokDesc": "Answer TikTok DMs from your business account",
+        "tiktokComingSoon": "Coming soon"
+      },
+      "versions": {
+        "noVersions": "No published versions yet.",
+        "by": "by {name}",
+        "rollback": "Rollback"
+      },
+      "previewModal": {
+        "banner": "PREVIEW MODE — Messages are not counted towards your plan usage",
+        "empty": "Send a message to start chatting with your agent.",
+        "capturedVars": "Captured Variables:",
+        "inputPlaceholder": "Type a message...",
+        "send": "Send",
+        "reset": "Reset"
+      }
+    },
+    "pricing": {
+      "title": "Sale prices",
+      "save": "Save changes",
+      "override": "Custom",
+      "noMastershop": "This agent doesn't have Mastershop connected",
+      "noMastershopHint": "Connect a Mastershop MCP tool in the Tools tab to manage sale prices.",
+      "columns": {
+        "product": "Product",
+        "basePrice": "Provider price",
+        "salePrice": "Sale price",
+        "netProfit": "Net profit",
+        "minSuggestedPrice": "Min. suggested price"
+      }
+    },
+    "configVariables": {
+      "title": "Configuration",
+      "description": "These are the settings your agent uses to respond. Fill in the values specific to your business.",
+      "emptyState": "This agent has no configuration variables. Add custom variables in Advanced Configuration.",
+      "poweredByTemplate": "Powered by template: {name}",
+      "advancedSection": "Advanced Configuration",
+      "advancedDescription": "Add custom variables not in the template.",
+      "addCustomVariable": "Add custom variable",
+      "editCustomVariable": "Edit custom variable",
+      "saveOverrides": "Save",
+      "warnReplacesTemplate": "A template variable with this key already exists — this override will replace it.",
+      "publishBlocked": {
+        "title": "Configuration incomplete",
+        "message": "Complete these fields in Configuration to publish: {keys}",
+        "goToTab": "Go to Configuration"
+      },
+      "fields": {
+        "key": "Key",
+        "type": "Type",
+        "labelEn": "Label (English)",
+        "labelEs": "Label (Spanish)",
+        "descriptionEn": "Description (English)",
+        "descriptionEs": "Description (Spanish)",
+        "required": "Required",
+        "defaultValue": "Default value",
+        "options": "Options (for enum)",
+        "addOption": "Add option"
+      },
+      "errors": {
+        "noOptions": "Enum has no options defined",
+        "invalidKey": "Key must be snake_case (lowercase letters, numbers, underscores)",
+        "duplicateKey": "A variable with this key already exists",
+        "invalidLabel": "Both English and Spanish labels are required"
+      }
+    },
+    "tools": {
+      "title": "Tools",
+      "add": "Add Tool",
+      "noTools": "No tools configured",
+      "addFirstBtn": "Add First Tool",
+      "noToolsDesc": "Add tools to extend your agent with scheduling, knowledge bases, custom API calls, and more.",
+      "modal": {
+        "addTitle": "Add Tool",
+        "editTitle": "Edit Tool",
+        "toolType": "TOOL TYPE",
+        "toolName": "Tool Name",
+        "toolNamePlaceholder": "My Tool",
+        "description": "Description",
+        "descriptionPlaceholder": "What does this tool do?",
+        "cancel": "Cancel",
+        "addButton": "Add Tool",
+        "saveButton": "Save Changes",
+        "upgradeTooltip": "Upgrade your plan to use this tool",
+        "limitTooltip": "Tool limit reached for your plan",
+        "upgradeBadge": "Upgrade",
+        "limitBadge": "Limit"
+      },
+      "types": {
+        "customFunction": "Custom Function",
+        "customFunctionDesc": "Call any HTTP endpoint",
+        "scheduling": "Scheduling",
+        "schedulingDesc": "Appointment / reminder booking",
+        "knowledgeBase": "Knowledge Base",
+        "knowledgeBaseDesc": "Upload docs & web pages for retrieval",
+        "mcpServer": "MCP Server",
+        "mcpServerDesc": "Model Context Protocol server",
+        "emailNotification": "Email Notification",
+        "emailNotificationDesc": "Notify your team via email"
+      },
+      "emailNotification": {
+        "recipientEmail": "Recipient email",
+        "ccEmails": "CC (comma-separated, optional)",
+        "fromName": "From name (optional)",
+        "replyTo": "Reply-to email (optional)",
+        "subject": "Subject template",
+        "subjectHelp": "Use {{placeholders}} to insert dynamic values",
+        "bodyTemplate": "Body template (HTML supported)",
+        "parameters": "Parameters",
+        "parameterName": "Parameter name",
+        "parameterDescription": "What this parameter captures",
+        "addParameter": "Add parameter",
+        "testSend": "Send test email",
+        "testSending": "Sending...",
+        "testSentSuccess": "Test email sent successfully",
+        "testSentError": "Failed to send test email",
+        "systemPlaceholders": "System: {{contact_name}}, {{agent_name}}, {{conversation_url}}, {{timestamp}}"
+      },
+      "multiCalendarHint": "Multiple calendars selected. The AI agent will determine the correct calendar based on the conversation context and your prompt logic — it will NOT ask the user directly.",
+      "selectCalendars": "Calendars",
+      "selectCalendarsDesc": "Select one or more calendars. When multiple are selected, the AI agent determines which to use based on the conversation and your prompt logic.",
+      "createNewCalendar": "Create New Calendar",
+      "mcp": {
+        "serverName": "Server Name",
+        "serverNamePlaceholder": "My MCP Server",
+        "serverUrl": "Server URL",
+        "serverUrlPlaceholder": "https://mcp.example.com/sse",
+        "transport": "Transport",
+        "transportSse": "SSE (Server-Sent Events)",
+        "transportStreamableHttp": "Streamable HTTP",
+        "transportHint": "SSE (legacy, spec 2024-11-05) and Streamable HTTP (spec 2025-03-26) — GenSmart supports both MCP transports",
+        "testConnection": "Test Connection",
+        "testing": "Testing...",
+        "connectionSuccess": "Connection successful! {count} tools available.",
+        "availableTools": "Available Tools",
+        "selectAll": "Select All",
+        "deselectAll": "Deselect All",
+        "selectedTools": "{count} selected",
+        "noToolsSelected": "Select at least one tool",
+        "retestNeeded": "URL changed. Please test connection again.",
+        "customHeaders": "Custom Headers",
+        "addHeader": "Add Header",
+        "headerKeyPlaceholder": "Header name (e.g. X-API-Key)",
+        "headerValuePlaceholder": "Value (encrypted)",
+        "noHeadersYet": "No custom headers configured yet.",
+        "headersHint": "Values are encrypted at rest. GenSmart auto-injects X-Agent-ID, X-Session-ID, and X-Webhook-Secret — don't add them here.",
+        "headerShow": "Show",
+        "headerHide": "Hide",
+        "headerCopy": "Copy",
+        "headerRemove": "Remove",
+        "copied": "Copied",
+        "webhookSecret": "Webhook Secret",
+        "webhookSecretHint": "Copy this secret and configure it in your MCP server. It's used to sign incoming webhooks. Shown only once — store it safely.",
+        "webhookSecretRotateHint": "The secret is hidden. Use Regenerate to create a new one (you'll need to update your MCP server with the new value).",
+        "webhookSecretCreated": "Webhook secret generated. Copy it now — it won't be shown again.",
+        "webhookSecretRegenerated": "Webhook secret regenerated. Copy the new value and update your MCP server.",
+        "regenerate": "Regenerate",
+        "regenerateConfirm": "This will invalidate the current secret. You must update your MCP server with the new value or webhooks will fail. Continue?",
+        "advancedSecurity": "Advanced: webhook security",
+        "autoManagedNote": "Auto-managed by GenSmart. You don't need to configure this in your {providerName} dashboard.",
+        "testResult": {
+          "fullAuth": "Connection verified end-to-end ({tools} tools).",
+          "handshakeOnly": "Handshake OK ({tools} tools), but credentials were not verified.",
+          "authFailed": "Authentication failed. Verify your {providerName} API key is valid and not revoked.",
+          "handshakeFailed": "Could not reach the MCP server."
+        },
+        "provider": {
+          "detectedBanner": "Detected: {name}",
+          "emptyStateTitle": "Connect an MCP",
+          "emptyStateSubtitle": "Choose a provider or enter a custom URL",
+          "customUrlLink": "Connect another MCP (custom URL)",
+          "howToGetKey": "How to get this key →",
+          "advancedModeLink": "Advanced mode",
+          "advancedModeConfirmTitle": "Switch to advanced mode?",
+          "advancedModeConfirmBody": "This lets you view and edit all headers manually. Continue?",
+          "loadingProviders": "Loading providers...",
+          "resolvingProvider": "Detecting provider...",
+          "requiredHeaderMissing": "{label} is required",
+          "minLengthError": "{label} must be at least {min} characters",
+          "backToProviders": "Back to providers",
+          "oauthConnectHint": "Tiendanube will open so you can authorize GenSmart to access your store. You will come back here when you finish.",
+          "oauthConnectButton": "Connect with my {name} store",
+          "oauthConnecting": "Redirecting...",
+          "oauthConnectFailed": "Could not start the connection. Try again.",
+          "oauthConnectedStatus": "Connected to your {name} store",
+          "oauthReconnectButton": "Reconnect",
+          "mcpOauthHint": "{name} will open so you can authorize GenSmart to access your account. You will come back here when you finish.",
+          "mcpOauthConnectButton": "Connect my {name} account",
+          "mcpOauthConnected": "Connected to your {name} account",
+          "mcpOauthNeedsReconnect": "Your {name} connection expired. Reconnect to keep using it.",
+          "mcpOauthToastConnected": "{name} connected successfully.",
+          "mcpOauthToastDenied": "You did not authorize the connection to {name}.",
+          "mcpOauthToastExpired": "The connection session expired. Try connecting again.",
+          "mcpOauthToastError": "Could not connect {name}. Try again.",
+          "mcpOauthGenericProvider": "the provider"
+        }
+      }
+    },
+    "channels": {
+      "whatsappConnected": "Connected",
+      "whatsappStatus": "WhatsApp Status",
+      "whatsappConfig": {
+        "notConnected": "Not Connected",
+        "metaCostNotice": "From the 1,000th service message per month, Meta charges your WhatsApp Business account directly — this is a cost from Meta to your business, not a GenSmart fee. We add no markup or commission on top.",
+        "phoneNumberIdInfo": "Phone Number ID",
+        "webhookTitle": "Webhook Configuration",
+        "webhookHint": "Set these values in your",
+        "metaDashboard": "Meta Developer Dashboard",
+        "webhookUrl": "Webhook URL",
+        "verifyToken": "Verify Token",
+        "copyWebhookUrl": "Copy webhook URL",
+        "copyVerifyToken": "Copy verify token",
+        "disconnectButton": "Disconnect WhatsApp",
+        "quickSetupTitle": "Quick Setup (Recommended)",
+        "quickSetupDesc": "Connect using Facebook Login — we'll automatically configure your WhatsApp Business account, subscribe the webhook, and register your number.",
+        "connectFacebook": "Connect with Facebook",
+        "selectWaba": "Select your WhatsApp Business Account",
+        "selectPhone": "Select your phone number",
+        "cancelUseManual": "Cancel — use Manual Setup instead",
+        "connectTitle": "Connect WhatsApp",
+        "orSetupManually": "or setup manually",
+        "hideManual": "▲ Hide Manual Setup",
+        "showManual": "▼ Manual Setup",
+        "manualTitle": "Manual Setup",
+        "manualHint": "Enter your WhatsApp Business credentials from the",
+        "phoneNumberIdLabel": "Phone Number ID",
+        "phoneNumberIdPlaceholder": "e.g. 123456789012345",
+        "wabaIdLabel": "WABA ID (WhatsApp Business Account ID)",
+        "wabaIdPlaceholder": "e.g. 987654321098765",
+        "accessTokenLabel": "Permanent Access Token",
+        "accessTokenHint": "Generate a permanent token in Meta Business Manager → System Users",
+        "connectButton": "Connect",
+        "setupGuide": "View WhatsApp Setup Guide",
+        "toast": {
+          "fillFields": "Please fill in Phone Number ID and WABA ID",
+          "connected": "Connected! Phone: {phone}",
+          "connectFailed": "Failed to connect WhatsApp",
+          "disconnectConfirm": "Disconnect WhatsApp from this agent? The agent will no longer receive or send WhatsApp messages.",
+          "disconnected": "WhatsApp disconnected",
+          "disconnectFailed": "Failed to disconnect",
+          "copyFailed": "Failed to copy",
+          "sdkNotLoaded": "Facebook SDK not loaded. Please refresh and try again.",
+          "signupConnected": "WhatsApp connected! Phone: {phone}",
+          "abortFacebookError": "Facebook reported a problem: {message}. Click \"{button}\" to try again.",
+          "abortPhoneStep": "Connection cancelled while adding your phone number. Click \"{button}\" to try again and finish the phone step.",
+          "abortGeneric": "Connection cancelled. Click \"{button}\" to try again. Make sure to complete all steps in the Facebook popup."
+        },
+        "steps": {
+          "discovering": "Discovering your WhatsApp account...",
+          "connectingWaba": "Connecting your WhatsApp account...",
+          "registeringPhone": "Registering your phone number..."
+        },
+        "errors": {
+          "generic": "Failed to connect WhatsApp.",
+          "noWaba": "We couldn't find your WhatsApp Business Account. Make sure you completed all steps in the Facebook popup, or use Manual Setup below.",
+          "noPhone": "No phone number found in your WhatsApp Business Account. Complete your WhatsApp Business setup in Meta Business Manager first.",
+          "sessionExpired": "Connection session expired. Click \"{button}\" to start again.",
+          "sessionUnavailable": "We couldn't start the connection session. Please try again.",
+          "planLimit": "WhatsApp is not available on your current plan.",
+          "phoneNotAdded": "Your WhatsApp Business Account was created but no phone number was added. Click \"{button}\" again and add a phone number to finish.",
+          "phoneNotVerified": "Your phone number was added but not verified yet. Click \"{button}\" again and complete the verification code step.",
+          "phoneAlreadyConnected": "This WhatsApp number or account is already connected to another agent. Choose a different one.",
+          "invalidSelection": "The selected WhatsApp account or phone number is not valid. Click \"{button}\" to start again.",
+          "invalidFbToken": "Your Facebook session is invalid or expired. Click \"{button}\" to try again.",
+          "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
+          "webhookSubscribeFailed": "We couldn't subscribe the webhook for your WhatsApp account. Click \"{button}\" to try again."
+        }
+      },
+      "messengerConfig": {
+        "gateTitle": "Messenger Is Not Available on Your Plan",
+        "gateDesc": "Connect your Facebook Page to deploy this agent on Messenger. Upgrade your plan to enable this channel.",
+        "upgrade": "Upgrade Plan",
+        "statusLabel": "Messenger status",
+        "connected": "Connected",
+        "notConnected": "Not Connected",
+        "pageInfo": "Facebook Page",
+        "disconnectButton": "Disconnect Messenger",
+        "quickSetupTitle": "Connect your Facebook Page",
+        "quickSetupDesc": "Connect using Facebook Login — we'll list the Pages you manage and subscribe the one you choose to this agent.",
+        "connectMessenger": "Connect Messenger",
+        "unavailable": "Messenger connection is not available on this server yet.",
+        "selectPage": "Select the Facebook Page to connect",
+        "cancelSelection": "Cancel",
+        "toast": {
+          "disconnectConfirm": "Disconnect Messenger from this agent? The agent will no longer receive or send Messenger messages.",
+          "disconnected": "Messenger disconnected",
+          "disconnectFailed": "Failed to disconnect",
+          "sdkNotLoaded": "Facebook SDK not loaded. Please refresh and try again.",
+          "signupConnected": "Messenger connected! Page: {page}",
+          "abortGeneric": "Connection cancelled. Click \"{button}\" to try again and complete all steps in the Facebook popup."
+        },
+        "steps": {
+          "connecting": "Connecting your Facebook Page...",
+          "connectingPage": "Subscribing the selected Page..."
+        },
+        "errors": {
+          "generic": "Failed to connect Messenger.",
+          "noPages": "We could not find any Facebook Page you manage. Make sure you granted access to your Page in the Facebook popup.",
+          "pageListFailed": "We could not list your Facebook Pages. Please try again.",
+          "sessionExpired": "Connection session expired. Click \"{button}\" to start again.",
+          "sessionUnavailable": "We could not start the connection session. Please try again.",
+          "planLimit": "Messenger is not available on your current plan.",
+          "pageAlreadyConnected": "This Facebook Page is already connected to another agent. Choose a different one.",
+          "invalidSelection": "The selected Facebook Page is not valid. Click \"{button}\" to start again.",
+          "invalidFbToken": "Your Facebook session is invalid or expired. Click \"{button}\" to try again.",
+          "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
+          "webhookSubscribeFailed": "We could not subscribe your Page to Messenger. Check that you granted all permissions and click \"{button}\" to try again.",
+          "notConfigured": "Messenger is not configured on this server. Contact support."
+        }
+      },
+      "instagramConfig": {
+        "gateTitle": "Instagram Is Not Available on Your Plan",
+        "gateDesc": "Connect your Instagram professional account to deploy this agent on Instagram DM. Upgrade your plan to enable this channel.",
+        "upgrade": "Upgrade Plan",
+        "statusLabel": "Instagram status",
+        "connected": "Connected",
+        "notConnected": "Not Connected",
+        "accountInfo": "Instagram account",
+        "disconnectButton": "Disconnect Instagram",
+        "quickSetupTitle": "Connect your Instagram account",
+        "quickSetupDesc": "Connect using Facebook Login — we'll list the Instagram professional accounts linked to the Facebook Pages you manage and connect the one you choose to this agent. The account must be Business or Creator.",
+        "connectInstagram": "Connect Instagram",
+        "unavailable": "Instagram connection is not available on this server yet.",
+        "selectAccount": "Select the Instagram account to connect",
+        "cancelSelection": "Cancel",
+        "toast": {
+          "disconnectConfirm": "Disconnect Instagram from this agent? The agent will no longer receive or send Instagram messages.",
+          "disconnected": "Instagram disconnected",
+          "disconnectFailed": "Failed to disconnect",
+          "sdkNotLoaded": "Facebook SDK not loaded. Please refresh and try again.",
+          "signupConnected": "Instagram connected! Account: {account}",
+          "abortGeneric": "Connection cancelled. Click \"{button}\" to try again and complete all steps in the Facebook popup."
+        },
+        "steps": {
+          "connecting": "Connecting your Instagram account...",
+          "connectingAccount": "Subscribing the selected account..."
+        },
+        "errors": {
+          "generic": "Failed to connect Instagram.",
+          "noAccounts": "We could not find any Instagram professional account linked to a Facebook Page you manage. Make sure the account is Business or Creator, linked to your Page, and that you granted access in the Facebook popup.",
+          "accountListFailed": "We could not list your Instagram accounts. Please try again.",
+          "sessionExpired": "Connection session expired. Click \"{button}\" to start again.",
+          "sessionUnavailable": "We could not start the connection session. Please try again.",
+          "planLimit": "Instagram is not available on your current plan.",
+          "accountAlreadyConnected": "This Instagram account is already connected to another agent. Choose a different one.",
+          "invalidSelection": "The selected Instagram account is not valid. Click \"{button}\" to start again.",
+          "invalidFbToken": "Your Facebook session is invalid or expired. Click \"{button}\" to try again.",
+          "codeExchangeFailed": "The Facebook authorization expired before we could use it. Click \"{button}\" to try again.",
+          "webhookSubscribeFailed": "We could not subscribe your account's Page to Instagram messages. Check that you granted all permissions and click \"{button}\" to try again.",
+          "notConfigured": "Instagram is not configured on this server. Contact support.",
+          "messagingDisabled": "This Instagram account has not enabled third-party access to messages. Ask the account owner to go to Instagram → Settings → Messages and story replies → Message controls → Connected tools, and turn on 'Allow access to messages'. Then try connecting again."
+        }
+      },
+      "telegramConfig": {
+        "gateTitle": "Telegram Is Not Available on Your Plan",
+        "gateDesc": "Connect a Telegram bot to deploy this agent on Telegram. Upgrade your plan to enable this channel.",
+        "upgrade": "Upgrade Plan",
+        "statusLabel": "Telegram status",
+        "connected": "Connected",
+        "notConnected": "Not Connected",
+        "botInfo": "Telegram bot",
+        "tokenInfo": "Bot token",
+        "disconnectButton": "Disconnect Telegram",
+        "setupTitle": "Connect your Telegram bot",
+        "setupDesc": "Get your Bot Token by messaging @BotFather on Telegram: send /newbot, follow the steps, and copy the token it gives you. Then paste it below.",
+        "tokenLabel": "Bot Token",
+        "tokenPlaceholder": "123456789:AAH...",
+        "tokenHint": "Your token is stored encrypted and is never shown again.",
+        "connectButton": "Connect Telegram",
+        "validation": {
+          "required": "Paste your Bot Token to continue.",
+          "format": "This doesn't look like a Telegram Bot Token. It should look like 123456789:AAH..."
+        },
+        "toast": {
+          "connected": "Telegram connected! Bot: {bot}",
+          "disconnectConfirm": "Disconnect Telegram from this agent? The agent will no longer receive or send Telegram messages.",
+          "disconnected": "Telegram disconnected",
+          "disconnectFailed": "Failed to disconnect"
+        },
+        "steps": {
+          "connecting": "Verifying your bot and setting up the webhook..."
+        },
+        "errors": {
+          "generic": "Failed to connect Telegram. Please try again.",
+          "invalidBotToken": "Telegram rejected this Bot Token. Check that you copied it completely from @BotFather.",
+          "botAlreadyConnected": "This bot is already connected to another agent. Use a different bot or disconnect it first.",
+          "telegramUnavailable": "We could not reach Telegram. Please try again in a moment.",
+          "webhookSetFailed": "Telegram accepted the token but we could not set up the webhook. Please try again.",
+          "notConfigured": "Telegram is not configured on this server. Contact support."
+        }
+      },
+      "emailConfig": {
+        "gateTitle": "Email Is Not Available on Your Plan",
+        "gateDesc": "Let this agent answer your customers' emails. Upgrade your plan to enable this channel.",
+        "upgrade": "Upgrade Plan",
+        "statusLabel": "Email status",
+        "connected": "Active",
+        "notConnected": "Not active",
+        "addressLabel": "Your agent's email address",
+        "copy": "Copy",
+        "copied": "Copied",
+        "addressHint": "This is not a mailbox you log into. Anything sent or forwarded to this address is answered by your agent.",
+        "useCaseDirectTitle": "Case 1 · Direct email to the agent",
+        "useCaseDirectDesc": "Someone emails your agent's address directly (or you forward a regular email there). The agent replies as a normal chat conversation — this already works exactly as it does today.",
+        "useCaseFormTitle": "Case 2 · Your website's contact form",
+        "useCaseFormDesc": "Set your form plugin (Contact Form 7, WPForms, Gravity Forms, Elementor, etc.) to notify by email, and forward those notifications to your agent's address. GenSmart detects it's a form submission and creates the contact with the visitor's real name, email and phone — not the plugin's technical sender address (e.g. wordpress@yoursite.com). Important: the notification must come from a real plugin address, not noreply@ or no-reply@ — those are blocked to prevent email loops.",
+        "howTitle": "How to connect your email",
+        "step1": "Copy the address above.",
+        "step2": "In your own email provider (Gmail, Outlook, your domain's mail panel), create an automatic forwarding rule that sends the emails you want answered to that address.",
+        "step3": "Gmail asks you to confirm the forwarding address: the confirmation code arrives as a new conversation in GenSmart. Then send yourself a test email to check the reply.",
+        "settingsTitle": "Reply settings",
+        "fromNameLabel": "Sender name",
+        "fromNamePlaceholder": "Acme Support",
+        "fromNameHint": "Shown as the sender of replies. Leave empty to use the agent's name.",
+        "signatureLabel": "Signature",
+        "signaturePlaceholder": "Best regards,\nThe Acme team\nwww.acme.com",
+        "signatureHint": "Plain text added at the end of every reply. Line breaks are kept.",
+        "autoReplyLabel": "Auto-reply",
+        "formSeparatorLabel": "Form field format",
+        "formSeparatorHint": "How your website's contact form notifications format each field (e.g. \"Name: John\"). Only change this if form data isn't being captured correctly.",
+        "formSeparatorColon": "Colon (Field: Value) — most common",
+        "formSeparatorEquals": "Equals sign (Field=Value)",
+        "formSeparatorBoth": "Both",
+        "autoReplyHint": "Sent once, right when a new email conversation starts. The agent's own answer follows as a separate email.",
+        "autoReplyTextLabel": "Auto-reply message",
+        "autoReplyTextPlaceholder": "Thanks for writing to us! We received your message and will reply shortly.",
+        "activateButton": "Activate email",
+        "saveButton": "Save changes",
+        "disconnectButton": "Deactivate email",
+        "validation": {
+          "autoReplyRequired": "Write the auto-reply message or turn the auto-reply off."
+        },
+        "toast": {
+          "connected": "Email activated",
+          "saved": "Email settings saved",
+          "disconnectConfirm": "Deactivate email for this agent? It will stop answering emails sent to its address.",
+          "disconnected": "Email deactivated",
+          "disconnectFailed": "Failed to deactivate"
+        },
+        "errors": {
+          "generic": "Something went wrong with the email channel. Please try again.",
+          "planLimit": "Email is not available on your current plan.",
+          "notConfigured": "Email is not configured on this server. Contact support.",
+          "copyFailed": "Could not copy the address. Select it and copy it manually."
+        }
+      }
+    }
+  },
+  "conversations": {
+    "title": "Conversations",
+    "search": "Search conversations...",
+    "alerts": {
+      "enable": "Enable conversation notifications",
+      "newMessageTitle": "New customer message",
+      "handoffTitle": "Human help requested",
+      "badgeLabel": "{count} conversations need attention",
+      "channelRestrictedTitle": "Channel unavailable",
+      "channelRestrictedMessage": "{channel} stopped responding — your current plan doesn't include this channel. Upgrade to {plan} to keep using it.",
+      "channelRestrictedFallbackPlan": "a higher plan",
+      "toolRestrictedTitle": "Tool unavailable",
+      "toolRestrictedMessage": "{tool} is no longer available — your current plan doesn't include it. Upgrade to {plan} to keep using it.",
+      "toolType": {
+        "custom_function": "A custom function",
+        "mcp": "An MCP server",
+        "email_notification": "An email notification tool"
+      }
+    },
+    "searchHelp": "Search by contact name, phone or email",
+    "showAll": "Show all (no 8-day limit)",
+    "showRecent": "Show last 8 days only",
+    "backToList": "Back to conversations",
+    "closeConversation": "Close conversation",
+    "empty": {
+      "title": "No conversations yet",
+      "description": "Conversations will appear here when visitors chat with your agents"
+    },
+    "filters": {
+      "active": "Active",
+      "closed": "Closed",
+      "takeover": "Human Takeover"
+    },
+    "chat": {
+      "takeover": "Take Over",
+      "release": "Release to AI",
+      "humanAgent": "Human Agent",
+      "viewDocument": "View document",
+      "mediaSentByAgent": "Media sent"
+    },
+    "variables": {
+      "title": "Captured Variables",
+      "noVariables": "No variables captured yet",
+      "contact": "Contact",
+      "pending": "Pending (required)",
+      "notCaptured": "Not captured"
+    },
+    "contactInfo": {
+      "noContact": "No contact linked yet"
+    },
+    "refresh": "Refresh",
+    "noMessages": "No messages yet",
+    "score": "Score:",
+    "allStatuses": "All statuses",
+    "allChannels": "All channels",
+    "takeover": {
+      "closed": "This conversation is closed.",
+      "inControl": "You are in control of this conversation.",
+      "takenBy": "Taken over by {name}",
+      "aiHandling": "AI Agent is handling this conversation.",
+      "upgradeTakeover": "Upgrade to enable takeover"
+    },
+    "messageBubble": {
+      "aiResumed": "AI Agent resumed",
+      "handedOffTo": "Handed off to {name}"
+    },
+    "deleteConfirm": "Delete this conversation? This will also delete the associated contact if they have no other conversations.",
+    "deleteSelected": "Delete Selected",
+    "bulkDeleteConfirm": "Delete {count} conversations? Associated contacts with no other conversations will also be deleted.",
+    "allAgents": "All agents",
+    "filterByAgent": "Filter by agent",
+    "needsHelp": "Needs Help",
+    "handoff": {
+      "badge": "Handed off",
+      "since": "Handed off {time}"
+    },
+    "live": "Live"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "export": "Export CSV",
+    "empty": {
+      "title": "No contacts yet",
+      "description": "Contacts are created automatically when visitors interact with your agents"
+    },
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "agent": "Agent",
+      "score": "Score",
+      "stage": "Stage",
+      "service": "Service",
+      "date": "Created"
+    },
+    "detail": {
+      "aiSummary": "AI Summary",
+      "conversations": "Conversations",
+      "timeline": "Timeline",
+      "notes": "Notes",
+      "customVariables": "Captured Variables",
+      "deleteContact": "Delete Contact",
+      "noConversations": "No conversations yet",
+      "reanalyze": "Re-analyze with AI",
+      "back": "Back to Contacts",
+      "contactSince": "Contact since {date}",
+      "save": "Save",
+      "edit": "Edit",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "deleteTitle": "Delete Contact",
+      "deleteWarning": "Are you sure you want to delete this contact? This action cannot be undone. All conversations associated with this contact will also be deleted.",
+      "noSummary": "No analysis available yet. Re-analyze to generate an AI summary.",
+      "queued": "Queued!",
+      "detectedService": "Detected Service",
+      "notesPlaceholderFull": "Add notes about this contact…",
+      "noVariables": "No variables captured yet.",
+      "noActivity": "No activity yet.",
+      "messages": "{count} messages",
+      "unknownAgent": "Unknown agent",
+      "stageLabel": "Stage",
+      "updateSuccess": "Contact updated",
+      "updateFailed": "Failed to update contact",
+      "stageSuccess": "Stage updated",
+      "stageFailed": "Failed to update stage",
+      "notesSaved": "Notes saved",
+      "notesFailed": "Failed to save notes",
+      "deleted": "Contact deleted",
+      "analyzeFailed": "No conversation found to analyze",
+      "analyzeQueued": "Analysis queued — results will appear shortly",
+      "loadFailed": "Failed to load contact",
+      "notFound": "Contact not found."
+    },
+    "stages": {
+      "lead": "Lead",
+      "opportunity": "Opportunity",
+      "customer": "Customer"
+    },
+    "total": "{count} total",
+    "pageInfo": "Page {page} of {total}"
+  },
+  "funnel": {
+    "title": "Sales Funnel",
+    "stats": {
+      "leads": "Leads",
+      "opportunities": "Opportunities",
+      "customers": "Customers",
+      "leadToOpp": "Lead → Opp",
+      "oppToCustomer": "Opp → Customer",
+      "avgScore": "Avg Score"
+    },
+    "empty": {
+      "description": "Contacts move here automatically based on their AI score"
+    },
+    "filterByAgent": "Filter by agent",
+    "allAgents": "All agents",
+    "contacts": "{count} contacts",
+    "noContacts": "No contacts in funnel",
+    "movedTo": "Moved to {stage}",
+    "failedToMove": "Failed to move contact",
+    "failedToLoad": "Failed to load funnel data"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "appointment": {
+      "new": "New Appointment",
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "noSlots": "No available slots for this date",
+      "newButton": "New",
+      "editTitle": "Edit Appointment",
+      "newTitle": "New Appointment",
+      "titleLabel": "Title",
+      "calendarLabel": "Calendar",
+      "dateLabel": "Date",
+      "timeLabel": "Time",
+      "loadingSlots": "Loading slots…",
+      "descriptionOptional": "Description (optional)",
+      "addDetails": "Add details…",
+      "statusLabel": "Status",
+      "titleRequired": "Title is required",
+      "missingFields": "Calendar, date and time are required",
+      "updated": "Appointment updated",
+      "booked": "Appointment booked",
+      "cancelSuccess": "Appointment cancelled",
+      "cancelFailed": "Failed to cancel appointment",
+      "saveFailed": "Failed to save appointment",
+      "loadSlotsFailed": "Could not load available slots",
+      "saveChanges": "Save Changes",
+      "bookAppointment": "Book Appointment",
+      "cancelButton": "Cancel Appointment",
+      "noAppointments": "No appointments this day"
+    },
+    "allCalendars": "All Calendars",
+    "allStatuses": "All Statuses",
+    "loadFailed": "Failed to load calendar data",
+    "more": "+{count} more",
+    "prevMonth": "Previous month",
+    "nextMonth": "Next month"
+  },
+  "billing": {
+    "currentPlan": {
+      "changePlan": "Change Plan",
+      "manageSubscription": "Manage Subscription",
+      "subscriptionActive": "Active",
+      "subscriptionCancelled": "Cancelled",
+      "cancelsAtPeriodEnd": "Cancels at period end",
+      "paymentPastDue": "Payment past due",
+      "trial": "Trial",
+      "cancels": "Cancels",
+      "renews": "Renews"
+    },
+    "usage": {
+      "title": "Usage This Month",
+      "messages": "Messages",
+      "agents": "Agents",
+      "contacts": "Contacts",
+      "knowledgeFiles": "Knowledge Files",
+      "unlimited": "Unlimited",
+      "loadingUsage": "Loading usage data...",
+      "addonNote": "Includes {count} add-on messages"
+    },
+    "addons": {
+      "sectionTitle": "Message Add-ons",
+      "oneTimePurchase": "One-time purchase — valid for the current month",
+      "extraMessages": "extra messages",
+      "perMessage": "per message",
+      "buyNow": "Buy Now"
+    },
+    "invoices": {
+      "title": "Invoice History",
+      "date": "Date",
+      "amount": "Amount",
+      "status": "Status",
+      "download": "Download",
+      "loading": "Loading invoices...",
+      "noneYet": "No invoices yet. They will appear here after your first payment.",
+      "invoice": "Invoice",
+      "view": "View"
+    },
+    "upgrade": {
+      "title": "Upgrade your plan",
+      "choosePlan": "Choose the plan that fits your needs. Cancel anytime.",
+      "popular": "Popular",
+      "current": "Current",
+      "upgradeTo": "Upgrade to {plan}",
+      "selectPlan": "Select a Plan",
+      "currentlyOn": "Currently on {plan} plan · Powered by Stripe"
+    },
+    "banner": {
+      "allUsed": "You've used all {limit} of your monthly messages. Your agents are paused.",
+      "partialUsed": "You've used {percent}% of your monthly messages ({used} / {limit}).",
+      "buyAddon": "Buy Add-on",
+      "upgradePlan": "Upgrade Plan"
+    },
+    "suspendedBanner": {
+      "message": "Your subscription is paused — your agents have stopped responding to new messages.",
+      "cta": "Reactivate Subscription"
+    },
+    "cycle": {
+      "monthly": "Monthly",
+      "quarterly": "Quarterly",
+      "yearly": "Yearly",
+      "save10": "Save 10%",
+      "save20": "Save 20%"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "general": {
+      "title": "General Settings",
+      "description": "Manage your organization details and preferences.",
+      "organization": "Organization",
+      "orgName": "Organization name",
+      "plan": "Plan",
+      "timezone": "Timezone",
+      "language": "Language",
+      "save": "Save changes",
+      "saved": "Settings saved successfully",
+      "preferences": "Preferences"
+    },
+    "team": {
+      "title": "Team Members",
+      "description": "Manage who has access to your workspace.",
+      "inviteMember": "Invite Member",
+      "inviteTitle": "Invite Team Member",
+      "emailLabel": "Email address",
+      "roleLabel": "Role",
+      "sendInvite": "Send Invite",
+      "inviteSent": "Invitation sent!",
+      "inviteFailed": "Failed to send invitation",
+      "memberRemoved": "Member removed",
+      "removeFailed": "Failed to remove member",
+      "loadFailed": "Failed to load team members",
+      "roleUpdated": "Role updated",
+      "roleFailed": "Failed to update role",
+      "changeToMember": "Change to Member",
+      "changeToAdmin": "Change to Admin",
+      "removeMember": "Remove Member",
+      "removeTitle": "Remove Member",
+      "removeConfirm": "Are you sure you want to remove {name} from the team? They will lose access immediately.",
+      "roles": {
+        "memberDesc": "Member — Use agents, view CRM",
+        "adminDesc": "Admin — Manage agents, team, CRM"
+      }
+    },
+    "security": {
+      "title": "Security",
+      "description": "Manage your account security settings.",
+      "twoFA": {
+        "section": "Two-Factor Authentication",
+        "enabled": "Enabled",
+        "notEnabled": "Not enabled",
+        "protected": "Your account is protected with 2FA.",
+        "addLayer": "Add an extra layer of security to your account.",
+        "enable": "Enable 2FA",
+        "disable": "Disable 2FA",
+        "step1": "Step 1: Scan the QR code",
+        "useApp": "Use Google Authenticator, Authy, or any TOTP app.",
+        "orManual": "Or enter the code manually:",
+        "step2": "Step 2: Enter the 6-digit code",
+        "verifyCode": "Verification Code",
+        "verifyEnable": "Verify & Enable",
+        "backupWarning": "Save these backup codes in a secure place. They can each be used once if you lose access to your authenticator.",
+        "copyAll": "Copy All",
+        "copied": "Copied!",
+        "savedCodes": "I've Saved My Backup Codes",
+        "disableTitle": "Disable Two-Factor Authentication",
+        "disableConfirm": "Enter your password to confirm disabling 2FA.",
+        "disableBtn": "Disable 2FA",
+        "disabled": "Two-factor authentication disabled",
+        "setupFailed": "Failed to set up 2FA",
+        "disableFailed": "Failed to disable 2FA",
+        "invalidCode": "Invalid code. Please try again."
+      },
+      "account": {
+        "section": "Account",
+        "email": "Email",
+        "role": "Role"
+      }
+    },
+    "data": {
+      "title": "Data & Privacy",
+      "description": "Manage your data and account deletion.",
+      "export": {
+        "title": "Export My Data",
+        "description": "Download a complete copy of all your data including organization info, contacts, conversations, agents, and billing history. The export will be prepared as a ZIP file.",
+        "request": "Request Data Export",
+        "requesting": "Requesting export...",
+        "processing": "Preparing your data export...",
+        "processingSubtitle": "This may take a few minutes. You can leave this page and come back.",
+        "ready": "Your data export is ready",
+        "download": "Download ZIP",
+        "expiresIn": "Download expires in {days} days",
+        "requestNew": "Request New Export",
+        "alreadyQueued": "An export is already being prepared",
+        "errorRequesting": "Failed to request export"
+      },
+      "deleteAccount": {
+        "title": "Delete Account",
+        "description": "Permanently delete your account, organization, and all associated data. This action cannot be undone.",
+        "warning": "This will permanently delete:",
+        "warningItems": {
+          "org": "Your organization and all settings",
+          "agents": "All AI agents and their configurations",
+          "conversations": "All conversations and messages",
+          "contacts": "All contacts and CRM data",
+          "subscription": "Your Stripe subscription (cancelled immediately)"
+        },
+        "gracePeriod": "You have a 30-day grace period to cancel the deletion before it takes effect.",
+        "scheduledFor": "Account scheduled for deletion on {date}",
+        "cancelDeletion": "Cancel Deletion",
+        "deletionCancelled": "Account deletion cancelled",
+        "confirmButton": "Delete My Account",
+        "confirmImmediately": "Delete Immediately",
+        "confirmImmediatelyWarning": "This will permanently delete everything RIGHT NOW. No grace period. This cannot be undone.",
+        "enterPassword": "Enter your password to confirm",
+        "reason": "Reason for leaving (optional)",
+        "reasonPlaceholder": "Tell us why you're leaving...",
+        "reasons": {
+          "tooExpensive": "Too expensive",
+          "notUseful": "Not useful for my needs",
+          "switchingProvider": "Switching to another provider",
+          "other": "Other"
+        },
+        "deleteModal": {
+          "title": "Delete Account",
+          "warning": "This will schedule your account for deletion in 30 days. Your Stripe subscription will be cancelled immediately.",
+          "immediateTitle": "Delete Everything Now",
+          "cancelButton": "Cancel",
+          "confirmButton": "Delete My Account",
+          "confirmImmediateButton": "Delete Everything Now"
+        },
+        "deleting": "Deleting..."
+      }
+    },
+    "subAccounts": {
+      "title": "Sub-accounts",
+      "description": "Manage child organizations linked to your account.",
+      "create": "Create Sub-account",
+      "createTitle": "Create Sub-account",
+      "orgName": "Organization Name",
+      "label": "Label",
+      "labelHint": "A short identifier for this sub-account",
+      "switch": "Switch",
+      "empty": "No sub-accounts yet. Create one to manage multiple organizations.",
+      "created": "Sub-account created",
+      "removed": "Sub-account removed",
+      "switched": "Reloading dashboard...",
+      "removeTitle": "Remove Sub-account",
+      "removeWarning": "This will only unlink the sub-account. The organization itself will not be deleted.",
+      "removeConfirm": "Remove {name} ({label}) from your sub-accounts?",
+      "plan": "plan",
+      "loadFailed": "Failed to load sub-accounts",
+      "createFailed": "Failed to create sub-account",
+      "removeFailed": "Failed to remove sub-account",
+      "switchFailed": "Failed to switch account"
+    },
+    "apiKeys": {
+      "title": "API Keys"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "noNotificationsYet": "No notifications yet"
+  },
+  "errors": {
+    "captchaFailed": "Captcha verification failed. Please try again.",
+    "invalidEmail": "Invalid email address",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordsNotMatch": "Passwords do not match",
+    "generic": "Something went wrong. Please try again.",
+    "nameTooShort": "Name must be at least 2 characters",
+    "orgNameTooShort": "Organization name must be at least 2 characters",
+    "passwordNeedsUppercase": "Password must contain at least one uppercase letter",
+    "passwordNeedsNumber": "Password must contain at least one number",
+    "invalidResetToken": "This reset link is invalid or has expired. Please request a new one.",
+    "somethingWentWrong": "Something went wrong. Please try again."
+  },
+  "onboarding": {
+    "welcome": {
+      "title": "Welcome to GenSmart!",
+      "description": "Let's create your first AI agent in minutes. This quick tour will show you the key features."
+    },
+    "createAgent": {
+      "title": "Create Your First Agent",
+      "description": "Click here to create a new AI agent. You can start from a template or build from scratch."
+    },
+    "chooseMethod": {
+      "title": "Choose How to Start",
+      "description": "Pick a pre-built template for common use cases, or start from scratch for full customization."
+    },
+    "configurePrompt": {
+      "title": "Configure the AI Prompt",
+      "description": "This is the brain of your agent. Write instructions for how it should behave and respond to users."
+    },
+    "addVariables": {
+      "title": "Add Smart Variables",
+      "description": "Variables let your agent capture information like names, emails, or preferences during conversations."
+    },
+    "configureChannel": {
+      "title": "Set Up a Channel",
+      "description": "Deploy your agent on WhatsApp or add a Web Widget to your website. You can enable both!"
+    },
+    "publish": {
+      "title": "Publish Your Agent",
+      "description": "When you're ready, publish to make your agent live. You can always edit and re-publish later."
+    },
+    "preview": {
+      "title": "Test in Preview",
+      "description": "Try your agent right here before going live. Test different scenarios to make sure it works perfectly."
+    },
+    "getSnippet": {
+      "title": "Get Your Widget Code",
+      "description": "Copy this code snippet and paste it into your website. Your AI agent will appear as a chat widget!"
+    },
+    "skipTour": "Skip tour",
+    "next": "Next",
+    "back": "Back",
+    "finish": "Got it!",
+    "stepOf": "Step {current} of {total}",
+    "restartTour": "Restart onboarding tour"
+  },
+  "chat_image_indicator": "Image",
+  "chat_images_indicator": "images",
+  "chat_voice_message": "Voice message",
+  "admin": {
+    "settings": {
+      "title": "Platform Settings",
+      "description": "Configure platform-wide credentials and integrations",
+      "loadError": "Failed to load settings",
+      "save": "Save",
+      "saved": "Setting updated",
+      "saveError": "Failed to save setting",
+      "emptyValueWarning": "Enter a value before saving",
+      "configuredPlaceholder": "•••• (configured)",
+      "newValuePlaceholder": "Enter new value to update",
+      "testWhatsApp": "Test WhatsApp Connection",
+      "testValid": "Valid — App ID: {appId}, Expires: {expiresAt}",
+      "testInvalid": "Invalid token",
+      "testSuccess": "WhatsApp token is valid",
+      "testFailed": "Failed to test token",
+      "categories": {
+        "whatsapp": "WhatsApp Configuration",
+        "mastershop": "Mastershop MCP",
+        "dropi": "Dropi MCP",
+        "zendrop": "Zendrop MCP",
+        "synchroteam": "Synchroteam MCP",
+        "other": "Other Settings"
+      }
+    }
+  }
+}

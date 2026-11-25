@@ -6,7 +6,7 @@ import { Facebook, Instagram, Youtube } from 'lucide-react';
 // Se usa react-icons/fa6 (el mismo paquete que ya usa el proyecto para logos de marca).
 import { FaTiktok } from 'react-icons/fa6';
 import type { SiteLinkKey } from '@/lib/site-links';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import SiteLink from '../SiteLink';
 import SiteLogo from '../SiteLogo';
@@ -81,7 +81,7 @@ const getClientYear = () => new Date().getFullYear();
 const getServerYear = () => SSR_YEAR;
 
 export default function SiteFooter() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const year = useSyncExternalStore(subscribeNoop, getClientYear, getServerYear);
 
   return (

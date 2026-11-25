@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -12,7 +12,7 @@ const S = 'site.product.steps';
 
 /** "Tu agente, en tres pasos" (design/web: `.steps.steps-3`). */
 export default function SetupSteps() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section surface="light" rhythm="l">
       <Container>

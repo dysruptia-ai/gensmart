@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import type { SiteLinkKey } from '@/lib/site-links';
 import Container from '../Container';
 import SiteButton from '../SiteButton';
@@ -12,7 +12,7 @@ const HELP_LINKS: Record<string, SiteLinkKey> = { blog: 'blog', docs: 'docs', co
 
 /** Plantilla `nf` del diseño: "404" decorativo, mensaje, botones y una línea de ayuda. */
 export default function NotFoundContent() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   // "… el {blog}, la {docs} o {contact}." → texto y enlaces en el orden de cada idioma
   const help = t('site.notFound.help')
     .split(/(\{\w+\})/)

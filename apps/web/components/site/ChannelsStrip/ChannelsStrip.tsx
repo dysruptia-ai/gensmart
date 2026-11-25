@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { Globe, Mail } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import styles from './ChannelsStrip.module.css';
 
 interface LogoChannel {
@@ -27,7 +27,7 @@ interface ChannelsStripProps {
 
 /** Fila de los seis canales (hero del home, Producto y subpáginas). */
 export default function ChannelsStrip({ label, align = 'center', className }: ChannelsStripProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const classes = [styles.channels, align === 'start' ? styles.start : '', className]
     .filter(Boolean)
     .join(' ');

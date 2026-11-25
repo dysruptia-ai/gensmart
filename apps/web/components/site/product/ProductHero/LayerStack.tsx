@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import styles from './LayerStack.module.css';
 
 const H = 'site.product.hero';
@@ -8,7 +8,7 @@ const SCORE = 8.4;
 
 /** Las cuatro capas (canal, agente, CRM y agenda): lista con texto real; el cable y la barra son decorativos. */
 export default function LayerStack() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <div className={styles.stack}>
       <span className={styles.wire} aria-hidden="true">

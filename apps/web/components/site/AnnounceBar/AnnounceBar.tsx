@@ -1,13 +1,13 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import SiteLink from '../SiteLink';
 import styles from './AnnounceBar.module.css';
 
 export default function AnnounceBar() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <div className={styles.bar} role="region" aria-label={t('site.announce.region')}>
       <Container className={styles.inner}>

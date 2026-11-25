@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, type ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import type { BlogCategoryId } from '@/lib/blog-routes';
 import { ALL_POSTS_HEADING_ID, useBlogFilter } from './BlogFilterContext';
 import { normalizeSearch } from './normalizeSearch';
@@ -28,7 +28,7 @@ interface AllPostsProps {
  * el filtro y el "Ver más" solo las ocultan.
  */
 export default function AllPosts({ items, categories, pageSize }: AllPostsProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const filter = useBlogFilter();
   const [category, setCategory] = useState<BlogCategoryId | 'all'>('all');
   const [limit, setLimit] = useState(pageSize);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import CheckList from '../../CheckList';
 import Container from '../../Container';
 import Section from '../../Section';
@@ -9,7 +9,7 @@ import styles from './AgentsSection.module.css';
 const A = 'site.product.agents';
 
 export default function AgentsSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section id="agentes" rhythm="l">
       <Container>

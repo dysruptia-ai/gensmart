@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -11,7 +11,7 @@ const STEPS = [1, 2, 3, 4] as const;
 
 /** "Un mensaje, cuatro pasos": lista ordenada y el registro del agente con el ejemplo. */
 export default function AgentsSteps() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section surface="alt" rhythm="l">
       <Container>

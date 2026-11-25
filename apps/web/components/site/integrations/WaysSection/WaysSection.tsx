@@ -2,7 +2,7 @@
 
 import { Blocks, Braces, Link2 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -55,7 +55,7 @@ function PlanLimits({ label, cells }: { label: string; cells: PlanLimitCell[] })
 
 /** "Tres formas de conectar": los límites por plan salen de `PLAN_LIMITS`. */
 export default function WaysSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const whenLabel = t(`${W}.when`);
   const byPlan = t(`${W}.byPlan`);
   return (

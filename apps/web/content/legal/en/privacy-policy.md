@@ -1,12 +1,15 @@
 ---
+id: privacy
+slug: privacy-policy
 title: Privacy Policy
-description: How we collect, use, and protect your data.
+description: What data GenSmart collects, how we use it and process it with AI, which third parties we work with, how long we keep it and your rights over it.
 lastUpdated: "2026-03-21"
 ---
 
 # Privacy Policy
 
 **Effective Date:** March 21, 2026
+
 **Last Updated:** March 21, 2026
 
 Dysruptia LLC ("we", "us", "our") operates GenSmart (www.gensmart.co), a SaaS platform for creating and deploying AI conversational agents. This Privacy Policy explains how we collect, use, disclose, and safeguard your information.

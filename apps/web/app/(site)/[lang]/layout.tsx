@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { Sora, Geist } from 'next/font/google';
-import '../../globals.css';
+import '../site-base.css';
 import { FixedLanguageProvider } from '@/contexts/LanguageContext';
 import { SITE_LANGUAGES, SITE_ORIGIN, isSiteLanguage } from '@/lib/site-routes';
 

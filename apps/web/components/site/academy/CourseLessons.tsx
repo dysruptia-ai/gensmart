@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import PendingLink from '../resources/PendingLink';
 import type { LessonView } from './academyContent';
 import { ProgressBar } from './CourseProgress';
@@ -15,7 +15,7 @@ interface CourseLessonsProps {
 
 /** Lecciones del curso, en orden, con "Marcar como hecha" (design/web: `.ac-list`). */
 export function CourseLessons({ courseId, lessons }: CourseLessonsProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { isDone, toggle } = useCourseProgress(courseId, lessons.length);
   return (
     <ol className={styles.list}>
@@ -51,7 +51,7 @@ export function CourseLessons({ courseId, lessons }: CourseLessonsProps) {
 
 /** "x/N lecciones" con la barra, en la barra lateral. */
 export function CourseProgressBox({ courseId, total }: { courseId: string; total: number }) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { count } = useCourseProgress(courseId, total);
   return (
     <>

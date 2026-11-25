@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import PageHero from '../PageHero';
 import Section from '../Section';
@@ -17,7 +17,7 @@ const P = 'site.solutions';
 
 /** Índice de Soluciones: industrias y equipos (design/web: `industrias`). */
 export default function SolutionsIndexPage() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const ids = SOLUTIONS_SECTION_IDS[language === 'en' ? 'en' : 'es'];
   return (
     <>

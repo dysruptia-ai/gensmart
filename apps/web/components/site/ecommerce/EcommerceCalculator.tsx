@@ -3,7 +3,7 @@
 import { useId, useState, type ReactNode } from 'react';
 import { Check, Clock, ShoppingBag } from 'lucide-react';
 import { PRICING } from '@gensmart/shared';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import Section from '../Section';
 import SectionHead from '../SectionHead';
@@ -48,7 +48,7 @@ function parse(raw: string, max?: number): number | null {
  * El HTML del servidor trae la calculadora vacía (todos los resultados en "–").
  */
 export default function EcommerceCalculator() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const uid = useId();
   const [values, setValues] = useState<Record<FieldKey, string>>(EMPTY);
   const k = `${E}.calc`;

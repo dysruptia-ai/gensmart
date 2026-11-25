@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteButton from '../SiteButton';
 import { range } from '../solutions/solutionsData';
 import { TEAM_COMMON, type TeamData } from './teamsData';
@@ -12,7 +12,7 @@ interface TeamControlProps {
 
 /** "Tú defines hasta dónde llega el agente": solo en equipos (design/web: `.tm-ctl`, `.cu-lim`). */
 export default function TeamControl({ team }: TeamControlProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = team.base;
   return (
     <div className={styles.ctl}>

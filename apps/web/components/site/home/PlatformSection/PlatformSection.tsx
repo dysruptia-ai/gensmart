@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import CheckList from '../../CheckList';
 import Container from '../../Container';
 import Section from '../../Section';
@@ -9,7 +9,7 @@ import ChannelMap from './ChannelMap';
 import styles from './PlatformSection.module.css';
 
 export default function PlatformSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section surface="light" className={styles.platform}>
       <Container>

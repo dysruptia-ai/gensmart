@@ -1,7 +1,7 @@
 'use client';
 
 import { Heart, MessageCircle, ShoppingCart, Sparkles, Users, type LucideIcon } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { contactVariantHref } from '@/lib/site-links';
 import { isSiteLanguage } from '@/lib/site-routes';
 import ChatBubble from '../ChatBubble';
@@ -29,7 +29,7 @@ const DIRECTIONS = ['in', 'out', 'in'] as const;
 
 /** Comunidad (design/web: `comunidad`). */
 export default function CommunityPage() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const lang = isSiteLanguage(language) ? language : 'en';
   const contact = contactVariantHref(lang, 'comunidad');
 

@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Play } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import styles from './DocVideo.module.css';
 
 interface PlayState {
@@ -56,7 +56,7 @@ interface DocVideoProps {
  * (o al elegir un capítulo), con `start` en el segundo pedido.
  */
 export function DocVideo({ videoId, title, caption }: DocVideoProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { playing, play, register } = useVideo();
   const state = playing[videoId];
   const src = state
@@ -106,7 +106,7 @@ interface DocChaptersProps {
 
 /** Capítulos: cada uno carga el video (o lo mueve) a su segundo. */
 export function DocChapters({ videoId, items }: DocChaptersProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { play } = useVideo();
   return (
     <ol className={styles.chapters} aria-label={t('site.docs.video.chapters')}>

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { counterpart, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import Container from '../Container';
 import LogoTile from '../LogoTile';
@@ -38,7 +38,7 @@ function cx(...parts: Array<string | false | undefined>): string {
 }
 
 export default function SiteHeader() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { language } = useLanguage();
   const pathname = usePathname();
 

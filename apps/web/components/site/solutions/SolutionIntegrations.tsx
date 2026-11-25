@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import LogoTile from '../LogoTile';
 import { BRAND_LOGOS } from '../LogoTile/logoData';
@@ -18,7 +18,7 @@ interface SolutionIntegrationsProps {
 
 /** Integraciones de la página (design/web: `.logo-strip.ints-strip`). */
 export default function SolutionIntegrations({ page, withLead = false }: SolutionIntegrationsProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const lead = withLead ? t(`${page.common}.intsLead`) : undefined;
   return (
     <Section surface="dark">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SolutionHero from '../solutions/SolutionHero';
 import SolutionMethod from '../solutions/SolutionMethod';
 import SolutionInbox from '../solutions/SolutionInbox';
@@ -18,7 +18,7 @@ interface TeamPageProps {
 
 /** Secciones de una página de equipo (design/web: `teamPage` en build.mjs). */
 export default function TeamPage({ team }: TeamPageProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <>
       <SolutionHero page={team} />

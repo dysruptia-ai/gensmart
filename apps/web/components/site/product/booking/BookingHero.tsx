@@ -1,13 +1,13 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SubpageHero from '../ProductSubpage/SubpageHero';
 import BookingDayMock from './BookingDayMock';
 
 const H = 'site.productBooking.hero';
 
 export default function BookingHero() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <SubpageHero
       id="productBooking"

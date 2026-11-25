@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteLink from '../SiteLink';
 import { crumbLabel, type Crumb } from './crumbs';
 import styles from './Breadcrumbs.module.css';
@@ -17,7 +17,7 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ crumbs, className, linkLast = false }: BreadcrumbsProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const last = linkLast ? -1 : crumbs.length - 1;
   return (
     <nav aria-label={t('site.crumbs.label')} className={className}>

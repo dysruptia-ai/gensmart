@@ -1,7 +1,7 @@
 'use client';
 
 import { Bell } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -13,7 +13,7 @@ const SCORE = 9;
 
 /** "Tres cosas pasan sin que muevas un dedo": anota, puntúa y avisa, cada una con su maqueta. */
 export default function CrmAuto() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const vars = [
     { label: t(`${S}.fields.name`), value: 'Valentina' },
     { label: t(`${S}.fields.email`), value: 'valentina@correo.com' },

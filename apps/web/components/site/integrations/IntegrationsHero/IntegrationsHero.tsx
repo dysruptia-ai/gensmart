@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import PageHero from '../../PageHero';
 import SiteButton from '../../SiteButton';
 import { INTEGRATIONS_CRUMBS, toolsCount } from '../../product/productData';
@@ -9,7 +9,7 @@ import HubCollage from './HubCollage';
 const H = 'site.integrations.hero';
 
 export default function IntegrationsHero() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   return (
     <PageHero
       crumbs={INTEGRATIONS_CRUMBS}

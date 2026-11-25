@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useSyncExternalStore } from 'react';
 import { Moon, Sun } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import styles from './DocsThemeToggle.module.css';
 
 const STORAGE_KEY = 'gs-docs-theme';
@@ -37,7 +37,7 @@ function storedLight(): boolean {
  * con el estado, lo que deja nombre y estado en contradicción para un lector de pantalla.
  */
 export default function DocsThemeToggle() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const light = useSyncExternalStore(subscribe, isLight, () => false);
 
   // Antes de pintar: en la navegación del cliente el script inline no vuelve a correr

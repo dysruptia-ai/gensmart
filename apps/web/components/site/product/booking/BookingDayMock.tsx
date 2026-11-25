@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import MockChat, { type MockMessage } from '../ProductSubpage/MockChat';
 import MockWindow from '../ProductSubpage/MockWindow';
 import { cx } from '../ProductSubpage/cx';
@@ -26,7 +26,7 @@ const PILL: Record<Exclude<SlotState, 'free'>, { cls: string; key: string }> = {
 
 /** Hero de la agenda: la reserva de Valentina y el sábado con sus estados. */
 export default function BookingDayMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const messages: MockMessage[] = [1, 2, 3, 4].map((i) => ({
     dir: i % 2 === 1 ? 'in' : 'out',
     text: t(`${H}.m${i}`),

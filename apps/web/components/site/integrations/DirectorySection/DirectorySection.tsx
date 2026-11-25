@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import LogoTile, { BRAND_LOGOS } from '../../LogoTile';
 import Section from '../../Section';
@@ -14,7 +14,7 @@ const D = 'site.integrations.dir';
 
 /** Directorio por categoría (design/web: `.int-dir`), como listas semánticas. */
 export default function DirectorySection() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   return (
     <Section id="directorio" surface="alt" rhythm="l">
       <Container>

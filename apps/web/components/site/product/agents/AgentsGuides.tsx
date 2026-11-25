@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import type { SiteLinkKey } from '@/lib/site-links';
 import Container from '../../Container';
 import Section from '../../Section';
@@ -18,7 +18,7 @@ const GUIDES: ReadonlyArray<{ n: 1 | 2; to: SiteLinkKey }> = [
 ];
 
 export default function AgentsGuides() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section rhythm="m">
       <Container>

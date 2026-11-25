@@ -1,7 +1,7 @@
 'use client';
 
 import { PRICING } from '@gensmart/shared';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Breadcrumbs from '../../Breadcrumbs';
 import Container from '../../Container';
 import GlowBackdrop from '../../GlowBackdrop';
@@ -12,7 +12,7 @@ import styles from './PricingHero.module.css';
 const P = 'site.pricing';
 
 export default function PricingHero() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <section className={styles.hero}>
       <GlowBackdrop />

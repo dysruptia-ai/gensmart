@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -40,7 +40,7 @@ function scoreClass(score: number): string {
 
 /** El embudo de tres etapas con sus tarjetas y el resumen (el promedio sale de las tarjetas). */
 export default function CrmFunnel() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const count = (s: Stage) => CARDS.filter((c) => c.stage === s).length;
   const avg = CARDS.reduce((sum, c) => sum + c.score, 0) / CARDS.length;
   const stats = [

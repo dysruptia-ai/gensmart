@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import type { SiteLinkKey } from '@/lib/site-links';
 import SiteLink from '../SiteLink';
 import { handjetLogo } from './fonts';
@@ -25,7 +25,7 @@ export default function SiteLogo({
   ariaLabel,
   className,
 }: SiteLogoProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const classes = [handjetLogo.variable, styles.logo, tone === 'onLight' ? styles.onLight : styles.onDark, className]
     .filter(Boolean)
     .join(' ');

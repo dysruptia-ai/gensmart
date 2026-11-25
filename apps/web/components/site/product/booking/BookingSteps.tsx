@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -15,7 +15,7 @@ const P = 'site.productBooking.steps';
 
 /** "Una cita, cuatro pasos": lista ordenada, cada paso con su maqueta. */
 export default function BookingSteps() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const steps: ReadonlyArray<{ n: number; visual: ReactNode }> = [
     { n: 1, visual: <div className={cx('dy-vis')}><CalendarRulesMock /></div> },
     { n: 2, visual: <SlotsMock /> },

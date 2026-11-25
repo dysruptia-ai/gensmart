@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import { cx } from '../ProductSubpage/cx';
@@ -10,7 +10,7 @@ const P = 'site.productInbox.handoff';
 
 /** "Pasa a una persona": la tarjeta del traspaso y los tres puntos. */
 export default function InboxHandoff() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section rhythm="l">
       <Container className={cx('split')}>

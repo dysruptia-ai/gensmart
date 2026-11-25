@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import MockChat from '../ProductSubpage/MockChat';
 import MockWindow from '../ProductSubpage/MockWindow';
 import { cx } from '../ProductSubpage/cx';
@@ -12,7 +12,7 @@ const S = 'site.productShared';
 
 /** Hero del CRM: la conversación numerada y la ficha donde cae cada dato. */
 export default function CrmRecordMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const fields = [
     { n: 1, label: t(`${H}.interest`), value: t(`${S}.apt2`), tag: 'scored' },
     { n: 2, label: t(`${S}.fields.downPayment`), value: t(`${S}.fields.downPaymentValue`), tag: 'noted' },

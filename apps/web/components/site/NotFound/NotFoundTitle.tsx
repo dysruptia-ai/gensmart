@@ -1,10 +1,10 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 
 /** `<title>` y `robots` de la 404 del sitio (React los sube al `<head>`). */
 export default function NotFoundTitle() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <>
       <title>{t('site.notFound.title')}</title>

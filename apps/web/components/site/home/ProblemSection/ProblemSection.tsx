@@ -3,7 +3,7 @@
 import { useRef, type CSSProperties } from 'react';
 import Image from 'next/image';
 import { Clock, MessageCircleQuestion, NotebookPen, type LucideIcon } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChatBubble from '../../ChatBubble';
 import Container from '../../Container';
 import RichText from '../../RichText';
@@ -35,7 +35,7 @@ const VARS = ['ocasion', 'producto_interes', 'etapa', 'puntaje'] as const;
 const seq = (i: number) => ({ '--i': i }) as CSSProperties;
 
 export default function ProblemSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const proofRef = useRef<HTMLDivElement>(null);
   useSequenceReveal(proofRef);
 

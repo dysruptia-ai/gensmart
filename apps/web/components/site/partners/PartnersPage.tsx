@@ -1,7 +1,7 @@
 'use client';
 
 import { FileText, LifeBuoy, LineChart, QrCode } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { contactVariantHref } from '@/lib/site-links';
 import { isSiteLanguage } from '@/lib/site-routes';
 import Container from '../Container';
@@ -21,7 +21,7 @@ const KIT_ICONS = [FileText, QrCode, LineChart, LifeBuoy] as const;
 
 /** Programa de socios (design/web: `partners`). */
 export default function PartnersPage() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const lang = isSiteLanguage(language) ? language : 'en';
   const v = programValues(t, lang);
   const cards = (key: string, count: number) =>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import PageHero from '../../PageHero';
 import SiteButton from '../../SiteButton';
 import { PRODUCT_CRUMBS, productValues } from '../productData';
@@ -9,7 +9,7 @@ import LayerStack from './LayerStack';
 const H = 'site.product.hero';
 
 export default function ProductHero() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const values = productValues(t, language);
   return (
     <PageHero

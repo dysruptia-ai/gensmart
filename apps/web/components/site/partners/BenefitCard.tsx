@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { isSiteLanguage } from '@/lib/site-routes';
 import SiteButton from '../SiteButton';
 import { P, programValues } from './partnersData';
@@ -8,7 +8,7 @@ import styles from './BenefitCard.module.css';
 
 /** "Ser socio incluye": los 4 puntos del programa (design/web: `.paycard.benefit`). */
 export default function BenefitCard() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const v = programValues(t, isSiteLanguage(language) ? language : 'en');
   const B = `${P}.benefit`;
   const rows = [

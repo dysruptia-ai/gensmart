@@ -1,7 +1,7 @@
 'use client';
 
 import { FileText, Play, Plug, type LucideIcon } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import Reveal from '../Reveal';
 import Section from '../Section';
@@ -13,7 +13,7 @@ const ICONS: readonly LucideIcon[] = [Plug, FileText, Play];
 
 /** "Tu agente de tienda online, en tres pasos" (design/web: `.flow3`). Los números son texto. */
 export default function StartSteps() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = `${E}.steps`;
   return (
     <Section surface="light">

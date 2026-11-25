@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import type { SiteLinkKey } from '@/lib/site-links';
 import CheckList from '../../CheckList';
 import Container from '../../Container';
@@ -24,7 +24,7 @@ const TEAM_KEYS: SiteLinkKey[] = [
 const range = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
 
 export default function TeamsSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const p = 'site.home.teams';
   return (
     <Section surface="light" className={styles.teams}>

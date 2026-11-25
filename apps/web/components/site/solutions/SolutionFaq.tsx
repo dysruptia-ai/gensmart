@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import FaqSection from '../FaqSection';
 import SiteButton from '../SiteButton';
 import { solutionFaqItems, type SolutionData } from './solutionsData';
@@ -11,7 +11,7 @@ interface SolutionFaqProps {
 
 /** Mismo texto que el JSON-LD `FAQPage` de la página (`solutionFaqItems`). */
 export default function SolutionFaq({ page }: SolutionFaqProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const c = page.common;
   return (
     <FaqSection

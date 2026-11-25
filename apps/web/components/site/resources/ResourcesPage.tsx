@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { isSiteLanguage } from '@/lib/site-routes';
 import PageHero from '../PageHero';
 import SiteButton from '../SiteButton';
@@ -25,7 +25,7 @@ const ASK_STEPS = 3;
 
 /** Centro de recursos (design/web: `recursos`). */
 export default function ResourcesPage() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const lang = isSiteLanguage(language) ? language : 'en';
   const go = <ArrowRight className={styles.go} size={20} aria-hidden="true" />;
 

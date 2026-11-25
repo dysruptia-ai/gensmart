@@ -1,7 +1,7 @@
 'use client';
 
 import type { CSSProperties, ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { useCourseProgress } from './useCourseProgress';
 import styles from './CourseProgress.module.css';
 
@@ -25,7 +25,7 @@ export function ProgressBar({ count, total, className }: { count: number; total:
  * avance guardado al hidratar no mueva el layout.
  */
 export function CardProgress({ courseId, total }: ProgressProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { count } = useCourseProgress(courseId, total);
   return (
     <div className={styles.card}>

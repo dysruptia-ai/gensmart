@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import { cx } from '../ProductSubpage/cx';
@@ -10,7 +10,7 @@ const H = 'site.productAgents.hero';
 
 /** "Cómo empiezas": plantilla o desde cero, con la ficha de ejemplo. */
 export default function AgentsStart() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const options = [
     { key: 'sales', small: t(`${S}.template`), on: true },
     { key: 'support', small: t(`${S}.template`) },

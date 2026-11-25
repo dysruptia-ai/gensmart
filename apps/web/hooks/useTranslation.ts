@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useLanguage, type SupportedLanguage } from '@/contexts/LanguageContext';
-import en from '@/i18n/en.json';
-import es from '@/i18n/es.json';
+import en from '@/i18n/app/en.json';
+import es from '@/i18n/app/es.json';
 
 type Translations = typeof en;
 type InterpolationValues = Record<string, string | number>;
@@ -40,7 +40,8 @@ interface UseTranslationReturn {
 }
 
 /**
- * Hook to access translations.
+ * Hook to access the platform translations (dashboard, auth, admin, widget).
+ * The public site uses `useSiteTranslation` (`i18n/site/*`).
  *
  * @example
  * const { t } = useTranslation();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import SiteButton from '../../SiteButton';
 import styles from './AgencyBanner.module.css';
@@ -8,7 +8,7 @@ import styles from './AgencyBanner.module.css';
 const A = 'site.pricing.agency';
 
 export default function AgencyBanner() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <section className={styles.section}>
       <Container>

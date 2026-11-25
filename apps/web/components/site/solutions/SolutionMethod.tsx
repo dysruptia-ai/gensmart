@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import Reveal from '../Reveal';
 import Section from '../Section';
@@ -17,7 +17,7 @@ interface SolutionMethodProps {
 
 /** "Cómo trabaja": los pasos con su resultado y el cierre (design/web: `.method`). */
 export default function SolutionMethod({ page, children }: SolutionMethodProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = page.base;
   return (
     <Section surface="dark">

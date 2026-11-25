@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Check } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChatBubble from '../../ChatBubble';
 import { useReducedMotion } from '../../useReducedMotion';
 import styles from './StepBuilder.module.css';
@@ -32,7 +32,7 @@ const INITIAL_CHANNELS: Record<ChannelId, boolean> = {
 };
 
 export default function StepBuilder() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const uid = useId().replace(/:/g, '');
   const reduced = useReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);

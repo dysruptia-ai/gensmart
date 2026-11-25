@@ -27,8 +27,8 @@ import {
   publicPath,
   type SiteLanguage,
 } from '@/lib/site-routes';
-import en from '@/i18n/en.json';
-import es from '@/i18n/es.json';
+import en from '@/i18n/site/en.json';
+import es from '@/i18n/site/es.json';
 
 const META: Record<SiteLanguage, typeof en.site.meta.home> = {
   en: en.site.meta.home,

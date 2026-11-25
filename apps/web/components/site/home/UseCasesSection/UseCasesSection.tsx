@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChatBubble from '../../ChatBubble';
 import Container from '../../Container';
 import Section from '../../Section';
@@ -13,7 +13,7 @@ type UseCaseId = 'clinic' | 'store' | 'realEstate' | 'restaurant';
 const CASES: readonly UseCaseId[] = ['clinic', 'store', 'realEstate', 'restaurant'];
 
 export default function UseCasesSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = (id: UseCaseId, field: string) => t(`${P}.${id}.${field}`);
 
   return (

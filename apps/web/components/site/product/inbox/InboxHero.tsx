@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SubpageHero from '../ProductSubpage/SubpageHero';
 import { subpageValues } from '../ProductSubpage/subpageData';
 import InboxMock from './InboxMock';
@@ -8,7 +8,7 @@ import InboxMock from './InboxMock';
 const H = 'site.productInbox.hero';
 
 export default function InboxHero() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const values = subpageValues(language);
   return (
     <SubpageHero

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChannelsStrip from '../ChannelsStrip';
 import Container from '../Container';
 import Section from '../Section';
@@ -13,7 +13,7 @@ interface SolutionChannelsProps {
 
 /** "La misma conversación en cualquier canal". */
 export default function SolutionChannels({ common }: SolutionChannelsProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section surface="alt">
       <Container>

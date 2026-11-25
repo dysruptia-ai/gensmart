@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useSyncExternalStore } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import SectionHead from '../../SectionHead';
 import {
@@ -26,7 +26,7 @@ function useHydrated(): boolean {
 }
 
 export default function CompareTable() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const groups = compareGroups(t, language);
   const allIds = groups.map((g) => g.id);
   // Sin JS (HTML del servidor): todo abierto y sin controles

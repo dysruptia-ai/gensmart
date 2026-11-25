@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PLAN_LIMITS, PRICING } from '@gensmart/shared';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { registerHref, type RegisterPlan } from '@/lib/site-links';
 import Container from '../../Container';
 import Reveal from '../../Reveal';
@@ -25,7 +25,7 @@ const PLANS: Array<{ id: PlanId; name: string; featured?: boolean }> = [
 ];
 
 export default function PricingLadderSection() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const [salesOpen, setSalesOpen] = useState(false);
   // useGrouping 'always': en español 1.000 y 5.000 (por defecto 'es' no agrupa los 4 dígitos)
   const nf = new Intl.NumberFormat(language, { useGrouping: 'always' });

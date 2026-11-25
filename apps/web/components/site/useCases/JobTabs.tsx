@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChatBubble from '../ChatBubble';
 import SiteLink from '../SiteLink';
 import { useRovingTabs } from '../solutions/useRovingTabs';
@@ -14,7 +14,7 @@ import styles from './JobTabs.module.css';
  * En móvil la lista pasa arriba y se desplaza dentro de sí misma, nunca la página.
  */
 export default function JobTabs() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { active, select, listRef, tabRef, onKeyDown } = useRovingTabs(JOBS.length);
 
   return (

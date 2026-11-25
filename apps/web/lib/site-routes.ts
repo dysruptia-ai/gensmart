@@ -16,6 +16,7 @@ import {
   type BlogPostRouteId,
 } from './blog-routes';
 import { DOC_ROUTES, docRouteId, type DocRouteId } from './docs-routes';
+import { LEGAL_ROUTES, type LegalRouteId } from './legal-routes';
 
 export const SITE_LANGUAGES = ['es', 'en'] as const satisfies readonly SupportedLanguage[];
 export type SiteLanguage = (typeof SITE_LANGUAGES)[number];
@@ -69,7 +70,9 @@ export type SiteRouteId =
   | AcademyRouteId
   | 'blog'
   | BlogCategoryRouteId
-  | BlogPostRouteId;
+  | BlogPostRouteId
+  | 'about'
+  | LegalRouteId;
 
 export interface SiteRoute {
   id: SiteRouteId;
@@ -77,6 +80,8 @@ export interface SiteRoute {
   internal: string;
   /** Ruta pública por idioma. */
   paths: Record<SiteLanguage, string>;
+  /** `noindex`: fuera del sitemap (y de `llms.txt`). P. ej. Acerca de mientras no tenga contenido. */
+  noindex?: true;
 }
 
 /**
@@ -139,6 +144,21 @@ const BLOG_POST_PAGES = Object.fromEntries(
     return [id, route];
   })
 ) as Record<BlogPostRouteId, SiteRoute>;
+
+/**
+ * Legales: `/legal/<slug-es>` y `/en/legal/<slug-en>`. La ruta interna usa el slug en inglés;
+ * `/legal` y `/en/legal` no tienen página (308 a Términos en `next.config.ts`).
+ */
+const LEGAL_PAGES = Object.fromEntries(
+  LEGAL_ROUTES.map((l) => {
+    const route: SiteRoute = {
+      id: l.routeId,
+      internal: `/legal/${l.slug.en}`,
+      paths: { es: `/legal/${l.slug.es}`, en: `/en/legal/${l.slug.en}` },
+    };
+    return [l.routeId, route];
+  })
+) as Record<LegalRouteId, SiteRoute>;
 
 export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   home: { id: 'home', internal: '', paths: { es: '/', en: '/en' } },
@@ -293,6 +313,10 @@ export const SITE_ROUTES: Record<SiteRouteId, SiteRoute> = {
   blog: { id: 'blog', internal: '/blog', paths: { es: '/blog', en: '/en/blog' } },
   ...BLOG_CATEGORY_PAGES,
   ...BLOG_POST_PAGES,
+  // Acerca de: marcador sin contenido todavía (noindex). /about redirige a /en/about
+  about: { id: 'about', internal: '/about', paths: { es: '/acerca-de', en: '/en/about' }, noindex: true },
+  // Legales en los dos idiomas (web-34). Las URL viejas en inglés (/legal/privacy-policy…) dan 301
+  ...LEGAL_PAGES,
 };
 
 const ROUTE_LIST: SiteRoute[] = Object.values(SITE_ROUTES);

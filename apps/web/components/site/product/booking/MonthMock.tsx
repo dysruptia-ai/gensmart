@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import MockWindow from '../ProductSubpage/MockWindow';
 import { cx } from '../ProductSubpage/cx';
 
@@ -12,7 +12,7 @@ const SELECTED = 21;
 
 /** Paso 4: la vista mensual. Filtros y flechas son texto: ilustración, no controles. */
 export default function MonthMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const weekdays = t(`${P}.weekdays`).split(',');
   return (
     <MockWindow label={t(`${P}.s4Label`)} bar={t(`${P}.s4Bar`)} variant={['dy-mon']}>

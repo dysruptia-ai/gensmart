@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import Reveal from '../Reveal';
 import Section from '../Section';
@@ -12,7 +12,7 @@ const ITEMS = [1, 2, 3, 4] as const;
 
 /** "Lo que el agente hace solo y lo que decide tu equipo" (design/web: `.role2`). */
 export default function RoleSplit() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = `${E}.split`;
   return (
     <Section surface="dark">

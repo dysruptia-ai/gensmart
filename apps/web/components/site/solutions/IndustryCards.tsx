@@ -1,14 +1,14 @@
 'use client';
 
 import Image from 'next/image';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteLink from '../SiteLink';
 import { INDUSTRIES } from '../industries/industriesData';
 import styles from './IndustryCards.module.css';
 
 /** "Una página por industria": las 12 tarjetas con foto (design/web: `indCards(…, true)`). */
 export default function IndustryCards() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <ul className={styles.grid}>
       {INDUSTRIES.map((industry, i) => {

@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import type { SiteLinkKey } from '@/lib/site-links';
 import GlowBackdrop from '../../GlowBackdrop';
 import SiteButton from '../../SiteButton';
@@ -29,7 +29,7 @@ export default function FinalCtaSection({
   primaryTo = 'register',
   showDemo = true,
 }: FinalCtaSectionProps = {}) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <section className={styles.cta}>
       <GlowBackdrop variant="cta" />

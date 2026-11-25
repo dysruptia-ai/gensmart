@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -14,7 +14,7 @@ const STATUSES: readonly ConversationStatus[] = ['active', 'human', 'closed'];
 
 /** Estados de la conversación: maqueta de búsqueda y filtros, y los tres estados (`dl`). */
 export default function InboxStatus() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const chips = [
     { label: t(`${P}.search`), value: t('site.productInbox.hero.search'), find: true },
     { label: t(`${P}.status`), value: t(`${P}.allStatuses`) },

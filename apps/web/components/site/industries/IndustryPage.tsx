@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteButton from '../SiteButton';
 import SiteLink from '../SiteLink';
 import SolutionHero from '../solutions/SolutionHero';
@@ -20,7 +20,7 @@ interface IndustryPageProps {
 
 /** Secciones de una página de industria (design/web: `industryPage`, rama con `method`). */
 export default function IndustryPage({ industry }: IndustryPageProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const c = INDUSTRY_COMMON;
   return (
     <>

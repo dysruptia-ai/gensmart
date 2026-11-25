@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import Section from '../Section';
 import styles from './NewsletterBand.module.css';
@@ -20,7 +20,7 @@ type Status = 'idle' | 'invalid' | 'sending' | 'error' | 'ok';
 
 /** Banda de suscripción del blog (design/web: `newsletter`). */
 export default function NewsletterBand() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const inputId = useId();

@@ -2,7 +2,7 @@
 
 import { Search } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { fold } from '../docs/searchMatch';
 import styles from './AcademyIndexPage.module.css';
 
@@ -91,7 +91,7 @@ export function AcademyCatalogProvider({ items, children }: { items: readonly Ca
 
 /** Buscador del hero: no recarga la página; al enviarlo baja al catálogo. */
 export function CatalogSearch({ targetId }: { targetId: string }) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { query, setQuery } = useCatalog();
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -140,7 +140,7 @@ export function FilterLink({
 }
 
 export function CatalogFilters({ groups }: { groups: readonly FilterGroup[] }) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { filters, setFilter } = useCatalog();
   return (
     <div className={styles.filters}>
@@ -172,7 +172,7 @@ export function CatalogFilters({ groups }: { groups: readonly FilterGroup[] }) {
 }
 
 export function CatalogCount() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { visible, active, clear } = useCatalog();
   const n = visible.size;
   return (
@@ -189,7 +189,7 @@ export function CatalogCount() {
 
 /** Rejilla de tarjetas: todas en el HTML; el filtro solo oculta (`hidden`). */
 export function CatalogGrid({ cards }: { cards: readonly { id: string; node: ReactNode }[] }) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { visible } = useCatalog();
   return (
     <>

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { Sora, Geist } from 'next/font/google';
-import './globals.css';
+import './(site)/site-base.css';
 import { FixedLanguageProvider } from '@/contexts/LanguageContext';
 import SiteRoot from '@/components/site/SiteRoot';
 import SiteLogo from '@/components/site/SiteLogo';

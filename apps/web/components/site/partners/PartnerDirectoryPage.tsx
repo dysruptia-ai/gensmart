@@ -1,7 +1,7 @@
 'use client';
 
 import { Database, FlaskConical, MessagesSquare, Plug, SlidersHorizontal, TrendingUp } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { contactVariantHref } from '@/lib/site-links';
 import { isSiteLanguage } from '@/lib/site-routes';
 import Container from '../Container';
@@ -20,7 +20,7 @@ const ASK_ICONS = [MessagesSquare, Database, SlidersHorizontal, Plug, FlaskConic
 
 /** Directorio de partners (design/web: `directorio`). */
 export default function PartnerDirectoryPage() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const lang = isSiteLanguage(language) ? language : 'en';
   const recommend = contactVariantHref(lang, 'recomendacion');
 

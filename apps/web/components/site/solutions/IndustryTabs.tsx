@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteButton from '../SiteButton';
 import { INDUSTRIES } from '../industries/industriesData';
 import SolutionHeroChat from './SolutionHeroChat';
@@ -18,7 +18,7 @@ const LIST = INDUSTRIES;
  * activa está en el orden de tabulación.
  */
 export default function IndustryTabs() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { active, select, listRef, tabRef, onKeyDown } = useRovingTabs(LIST.length);
 
   return (

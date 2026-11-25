@@ -1,7 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChannelIcon, { MOCK_CHANNELS } from '../ProductSubpage/ChannelIcon';
 import { useChannelName } from '../ProductSubpage/useChannelName';
 import MockChat from '../ProductSubpage/MockChat';
@@ -14,7 +14,7 @@ const H = 'site.productAgents.hero';
 
 /** Hero de Agentes: la ficha del agente inmobiliario y su conversación con Valentina. */
 export default function AgentBuilderMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const channelName = useChannelName();
   const tabs = ['tabInstructions', 'tabKnowledge', 'tabActions'];
   return (

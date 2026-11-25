@@ -14,7 +14,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { highlight, searchDocs, type SearchEntry } from './searchMatch';
 import styles from './DocsSearch.module.css';
 
@@ -100,7 +100,7 @@ interface DocsSearchButtonProps {
 
 /** Botón que abre el buscador: el de la barra lateral y el grande del índice. */
 export function DocsSearchButton({ variant }: DocsSearchButtonProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const ctx = useContext(SearchContext);
   const hero = variant === 'hero';
   return (
@@ -121,7 +121,7 @@ export function DocsSearchButton({ variant }: DocsSearchButtonProps) {
 type IndexState = { status: 'loading' } | { status: 'ready'; entries: SearchEntry[] } | { status: 'error' };
 
 function SearchDialog({ onClose }: { onClose: () => void }) {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const router = useRouter();
   const [index, setIndex] = useState<IndexState>({ status: 'loading' });
   const [query, setQuery] = useState('');

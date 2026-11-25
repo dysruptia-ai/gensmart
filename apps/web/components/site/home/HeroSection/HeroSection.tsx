@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChannelsStrip from '../../ChannelsStrip';
 import GlowBackdrop from '../../GlowBackdrop';
 import SiteButton from '../../SiteButton';
@@ -9,7 +9,7 @@ import styles from './HeroSection.module.css';
 
 
 export default function HeroSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <section className={styles.hero}>
       <GlowBackdrop variant="hero" />

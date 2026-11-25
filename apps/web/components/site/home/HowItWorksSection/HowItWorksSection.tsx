@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Reveal from '../../Reveal';
 import Section from '../../Section';
@@ -11,7 +11,7 @@ import StepBuilder from './StepBuilder';
 import styles from './HowItWorksSection.module.css';
 
 export default function HowItWorksSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section id="como" surface="dark" className={styles.how}>
       <Container>

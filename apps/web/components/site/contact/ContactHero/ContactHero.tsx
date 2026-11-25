@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import PageHero from '../../PageHero';
 import { CONTACT_CRUMBS, type ContactVariant } from '../contactData';
 
@@ -12,7 +12,7 @@ interface ContactHeroProps {
 
 /** Hero de Contacto: versión base (demo) desde el servidor; la variante de `?tipo=` cambia h1 y lead. */
 export default function ContactHero({ variant }: ContactHeroProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   if (variant) {
     const V = `site.contact.tipos.${variant}`;
     return <PageHero crumbs={CONTACT_CRUMBS} title={{ before: t(`${V}.h1`) }} lead={t(`${V}.lead`)} />;

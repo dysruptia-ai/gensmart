@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { cx } from '../ProductSubpage/cx';
 
 const P = 'site.productInbox.handoff';
@@ -8,7 +8,7 @@ const S = 'site.productShared';
 
 /** Tarjeta del traspaso a Camila (design: `.hoff`). Maqueta: grupo con nombre, sin controles. */
 export default function HandoffCard() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const rows = [
     { label: t(`${P}.channel`), value: 'WhatsApp' },
     { label: t(`${S}.fields.stage`), value: t(`${S}.stage.opportunity`) },

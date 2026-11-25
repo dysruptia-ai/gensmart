@@ -1,12 +1,15 @@
 ---
+id: cookies
+slug: cookie-policy
 title: Cookie Policy
-description: How we use cookies and similar tracking technologies.
+description: Which cookies GenSmart and its web widget use, what each one is for, what we don't use and how you can manage cookies in your browser.
 lastUpdated: "2026-03-21"
 ---
 
 # Cookie Policy
 
 **Effective Date:** March 21, 2026
+
 **Last Updated:** March 21, 2026
 
 This Cookie Policy explains how Dysruptia LLC ("we", "us", "our") uses cookies on GenSmart (www.gensmart.co).

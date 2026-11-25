@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import Section from '../Section';
 import SectionHead from '../SectionHead';
@@ -20,7 +20,7 @@ interface SolutionMoreProps {
 
 /** "Explora más": tarjetas de otras páginas de Soluciones (design/web: `.index`). */
 export default function SolutionMore({ title, pages, footer }: SolutionMoreProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section surface="alt">
       <Container>

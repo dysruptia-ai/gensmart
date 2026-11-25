@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import FaqSection from '../FaqSection';
 import PageHero from '../PageHero';
 import SiteButton from '../SiteButton';
@@ -19,7 +19,7 @@ import { CALC_ID, E, ECOMMERCE_CRUMBS, ecommerceFaqItems } from './ecommerceData
  * Se diferencia de la industria E-commerce y dropshipping (atención por chat) y se enlazan entre sí.
  */
 export default function EcommercePage() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   // Pestaña de plataforma activa: la comparten las pestañas y las tarjetas de "Ubica tu tienda"
   const [platform, setPlatform] = useState(0);
   const f = `${E}.faq`;

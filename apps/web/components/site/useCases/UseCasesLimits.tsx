@@ -1,12 +1,12 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { LIMITS, U } from './useCasesData';
 import styles from './UseCasesLimits.module.css';
 
 /** "Tú defines hasta dónde llega el agente" (design/web: `.cu-lim`, `.cu-tag`). */
 export default function UseCasesLimits() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <dl className={styles.lim}>
       {LIMITS.map((configurable, i) => {

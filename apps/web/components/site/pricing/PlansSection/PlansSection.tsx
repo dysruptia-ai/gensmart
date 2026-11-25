@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PLAN_LIMITS } from '@gensmart/shared';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { registerHref } from '@/lib/site-links';
 import Container from '../../Container';
 import SalesDialog from '../../SalesDialog';
@@ -29,7 +29,7 @@ const P = 'site.pricing';
 const BILLINGS: readonly Billing[] = ['monthly', 'yearly'];
 
 export default function PlansSection() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   // Mensual por defecto: es lo que trae el HTML del servidor
   const [billing, setBilling] = useState<Billing>('monthly');
   const [salesOpen, setSalesOpen] = useState(false);

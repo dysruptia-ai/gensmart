@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import AgentConsole, { type ConsoleExample } from '../../AgentConsole';
 import Container from '../../Container';
 import Reveal from '../../Reveal';
@@ -35,7 +35,7 @@ const BOOKING_EXAMPLE: ConsoleExample = {
 };
 
 export default function InboxSection() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <Section id="bandeja" surface="alt" rhythm="l">
       <Container>

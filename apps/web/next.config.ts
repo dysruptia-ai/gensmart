@@ -72,6 +72,15 @@ const nextConfig: NextConfig = {
       // Blog viejo (web-32): sus 9 URLs estaban indexadas. 301 a su equivalente nuevo; los artículos
       // en inglés vivían en /blog/<slug> y ahora van bajo /en/blog
       ...OLD_BLOG_REDIRECTS.map(([source, destination]) => ({ source, destination, statusCode: 301 as const })),
+      // Acerca de y legales (web-34): las URL viejas solo tenían contenido en inglés, van a /en/…
+      // (/legal/privacy-policy está registrada en Meta y quizá en Google: actualizarla tras el despliegue)
+      { source: '/about', destination: '/en/about', statusCode: 301 },
+      { source: '/legal/privacy-policy', destination: '/en/legal/privacy-policy', statusCode: 301 },
+      { source: '/legal/terms-of-service', destination: '/en/legal/terms-of-service', statusCode: 301 },
+      { source: '/legal/cookie-policy', destination: '/en/legal/cookie-policy', statusCode: 301 },
+      // `/legal` y `/en/legal` no tienen página propia: a Términos de su idioma
+      { source: '/legal', destination: '/legal/terminos-del-servicio', permanent: true },
+      { source: '/en/legal', destination: '/en/legal/terms-of-service', permanent: true },
     ];
   },
   async headers() {

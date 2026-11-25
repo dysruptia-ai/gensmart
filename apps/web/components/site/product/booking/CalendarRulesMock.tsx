@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import MockWindow from '../ProductSubpage/MockWindow';
 import { cx } from '../ProductSubpage/cx';
 
@@ -8,7 +8,7 @@ const P = 'site.productBooking.steps';
 
 /** Paso 1: las reglas de un calendario. El domingo (último día) está apagado. */
 export default function CalendarRulesMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const days = t(`${P}.daysValue`).split(',');
   const rows = [
     { key: 'hours', value: t(`${P}.hoursValue`) },

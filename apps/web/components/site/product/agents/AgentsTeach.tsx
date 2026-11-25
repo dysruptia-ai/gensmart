@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../../Container';
 import Section from '../../Section';
 import SectionHead from '../../SectionHead';
@@ -25,7 +25,7 @@ const FUNCTIONS: ReadonlyArray<string> = [
 
 /** "Lo que le enseñas": base de conocimiento, funciones personalizadas y servidores MCP. */
 export default function AgentsTeach() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const plan = byoKeyPlanName();
   return (
     <Section rhythm="l">

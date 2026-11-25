@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowRight } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SiteButton from '../SiteButton';
 import SiteLink from '../SiteLink';
 import { INDUSTRIES } from '../industries/industriesData';
@@ -14,7 +14,7 @@ import styles from './UseCasesPicker.module.css';
  * Nombres y textos de las páginas de industria y equipo, no copiados.
  */
 export default function UseCasesPicker() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const g = `${U}.go`;
   return (
     <>

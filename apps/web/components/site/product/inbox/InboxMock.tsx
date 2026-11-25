@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChannelIcon from '../ProductSubpage/ChannelIcon';
 import MockChat from '../ProductSubpage/MockChat';
 import MockWindow from '../ProductSubpage/MockWindow';
@@ -14,7 +14,7 @@ const S = 'site.productShared';
 
 /** Hero de la bandeja: la lista con pestañas de estado, el hilo de Valentina y su contacto. */
 export default function InboxMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const list = HERO_ORDER.map((n) => CONVERSATIONS.find((c) => c.name === n)).filter(
     (c): c is (typeof CONVERSATIONS)[number] => Boolean(c)
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import LogoTile, { BRAND_LOGOS } from '../LogoTile';
 import Reveal from '../Reveal';
@@ -17,7 +17,7 @@ interface StoreCasesProps {
 
 /** "Ubica tu tienda y empieza por donde más te sirve" (design/web: `.case3`). */
 export default function StoreCases({ onPickPlatform }: StoreCasesProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const k = `${E}.cases`;
   return (
     <Section surface="alt">

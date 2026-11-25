@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChannelsStrip from '../../ChannelsStrip';
 import Container from '../../Container';
 import Section from '../../Section';
@@ -13,7 +13,7 @@ const W = 'site.productAgents.where';
 
 /** "Dónde vive cada agente": los canales y el enlace a Integraciones. */
 export default function AgentsWhere() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   return (
     <Section surface="alt" rhythm="s">
       <Container>

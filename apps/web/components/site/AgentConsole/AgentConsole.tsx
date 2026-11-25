@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react';
 import Image from 'next/image';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import ChatBubble from '../ChatBubble';
 import styles from './AgentConsole.module.css';
 
@@ -81,7 +81,7 @@ interface AgentConsoleProps {
 
 /** Vista de la bandeja de la plataforma (riel, hilo y contexto del lead). */
 export default function AgentConsole({ example = SALES_EXAMPLE, label }: AgentConsoleProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const { score, vars } = example;
   const meta = typeof example.metaKey === 'string'
     ? t(example.metaKey)

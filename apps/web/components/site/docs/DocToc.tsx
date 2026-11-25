@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ArrowDown } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import styles from './DocToc.module.css';
 
 export interface TocItem {
@@ -20,7 +20,7 @@ interface DocTocProps {
 
 /** "En esta página": índice de los `h2` con la sección visible resaltada (`aria-current="location"`). */
 export default function DocToc({ items, variant, feedbackId }: DocTocProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {

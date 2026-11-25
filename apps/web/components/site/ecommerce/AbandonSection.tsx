@@ -1,7 +1,7 @@
 'use client';
 
 import { Check } from 'lucide-react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import Container from '../Container';
 import Reveal from '../Reveal';
 import Section from '../Section';
@@ -13,7 +13,7 @@ const MAX = Math.max(...ABANDON_REASONS);
 
 /** "Siete de cada diez carritos se quedan sin pagar" (design/web: `.ab-wrap`). */
 export default function AbandonSection() {
-  const { t, language } = useTranslation();
+  const { t, language } = useSiteTranslation();
   const k = `${E}.abandon`;
   return (
     <Section surface="dark">

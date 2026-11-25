@@ -1,13 +1,13 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import SubpageHero from '../ProductSubpage/SubpageHero';
 import AgentBuilderMock from './AgentBuilderMock';
 
 const H = 'site.productAgents.hero';
 
 export default function AgentsHero() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <SubpageHero
       id="productAgents"

@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import AgentConsole from '../AgentConsole';
 import Container from '../Container';
 import Reveal from '../Reveal';
@@ -16,7 +16,7 @@ interface SolutionInboxProps {
 
 /** "En la bandeja": la consola con la conversación de la página. */
 export default function SolutionInbox({ page, withLead = false }: SolutionInboxProps) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const lead = withLead
     ? t(`${page.common}.${page.score === undefined ? 'inboxLeadNoScore' : 'inboxLeadScore'}`)
     : undefined;

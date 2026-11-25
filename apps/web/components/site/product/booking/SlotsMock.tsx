@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import { cx } from '../ProductSubpage/cx';
 
 const P = 'site.productBooking.steps';
@@ -14,7 +14,7 @@ const ROWS: ReadonlyArray<ReadonlyArray<{ time: string; booked?: boolean }>> = [
 
 /** Paso 2: la rejilla del día con su leyenda. */
 export default function SlotsMock() {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   return (
     <div className={cx('dy-vis', 'dy-out')} role="group" aria-label={t(`${P}.s2Label`)}>
       <div className={cx('dy-bars')}>

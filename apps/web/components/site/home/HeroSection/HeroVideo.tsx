@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { useReducedMotion } from '../../useReducedMotion';
 import { useLanguage, type SupportedLanguage } from '@/contexts/LanguageContext';
-import { useTranslation } from '@/hooks/useTranslation';
+import { useSiteTranslation } from '@/hooks/useSiteTranslation';
 import styles from './HeroVideo.module.css';
 
 const HD_QUERY = '(min-width: 760px)';
 
 function VideoPlayer({ lang, resolved }: { lang: SupportedLanguage; resolved: boolean }) {
-  const { t } = useTranslation();
+  const { t } = useSiteTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [soundOn, setSoundOn] = useState(false);
   const reduced = useReducedMotion();
