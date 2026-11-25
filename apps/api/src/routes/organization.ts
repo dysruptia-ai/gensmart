@@ -7,10 +7,12 @@ import { requireRole } from '../middleware/requireRole';
 import { validate } from '../middleware/validate';
 import { query } from '../config/database';
 import { encrypt, decrypt } from '../config/encryption';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { PLAN_LIMITS, welcomeSurveyPatchSchema, type WelcomeSurveyPatch } from '@gensmart/shared';
 import { AppError } from '../middleware/errorHandler';
 import * as orgService from '../services/organization.service';
 import * as subAccountService from '../services/sub-account.service';
+import { languageFromRequest } from '../utils/language';
+import * as welcomeSurveyService from '../services/welcome-survey.service';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -71,6 +73,35 @@ router.put(
   }
 );
 
+// ── Cuestionario de bienvenida (web-37) ──
+// Solo el dueño (rol `owner`); los demás reciben 403.
+router.get('/onboarding', requireRole('owner'), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    res.json(await welcomeSurveyService.getWelcomeSurvey(req.user!.orgId, req.user!.role, req.user!.isSuperAdmin ?? false));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.patch(
+  '/onboarding',
+  requireRole('owner'),
+  validate(welcomeSurveyPatchSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const state = await welcomeSurveyService.patchWelcomeSurvey(
+        req.user!.orgId,
+        req.user!.role,
+        req.user!.isSuperAdmin ?? false,
+        req.body as WelcomeSurveyPatch
+      );
+      res.json(state);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 // ── Members ──
 router.get('/members', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -87,7 +118,8 @@ router.post(
   validate(inviteMemberSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await orgService.inviteMember(req.user!.orgId, req.user!.userId, req.body);
+      // Idioma inicial: el de quien invita (Accept-Language); se corrige al aceptar en /reset-password
+      await orgService.inviteMember(req.user!.orgId, req.user!.userId, { ...req.body, language: languageFromRequest(req) });
       res.status(201).json({ message: 'Invitation sent' });
     } catch (err) {
       next(err);

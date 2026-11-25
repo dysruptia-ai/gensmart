@@ -8,7 +8,7 @@ import AuthPanel from '../AuthPanel/AuthPanel';
 import { AuthScreenProvider, useAuthPanel } from '../AuthScreenContext';
 import styles from './AuthShell.module.css';
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, welcomePanel }: { children: React.ReactNode; welcomePanel?: React.ReactNode }) {
   const { t, language } = useTranslation();
   const panel = useAuthPanel();
   return (
@@ -33,16 +33,22 @@ function Shell({ children }: { children: React.ReactNode }) {
           <p>{t('access.shell.rights')}</p>
         </footer>
       </div>
-      {panel && <AuthPanel variant={panel} />}
+      {panel === 'welcome' ? welcomePanel ?? null : panel && <AuthPanel variant={panel} />}
     </div>
   );
 }
 
+export interface AuthShellProps {
+  children: React.ReactNode;
+  /** Panel del cuestionario de bienvenida (variante `welcome`). */
+  welcomePanel?: React.ReactNode;
+}
+
 /** Layout de acceso del diseño 2026: formulario a la izquierda y panel de ejemplo a la derecha. */
-export default function AuthShell({ children }: { children: React.ReactNode }) {
+export default function AuthShell({ children, welcomePanel }: AuthShellProps) {
   return (
     <AuthScreenProvider>
-      <Shell>{children}</Shell>
+      <Shell welcomePanel={welcomePanel}>{children}</Shell>
     </AuthScreenProvider>
   );
 }

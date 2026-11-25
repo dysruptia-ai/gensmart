@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import { signupRefSchema } from '../welcome-survey';
+
+/** Idiomas de la plataforma (users.language). */
+export const userLanguageSchema = z.enum(['es', 'en']);
+export type UserLanguage = z.infer<typeof userLanguageSchema>;
 
 const passwordSchema = z
   .string()
@@ -14,6 +19,10 @@ export const registerSchema = z.object({
   promoCode: z.string().max(100).optional(),
   plan: z.enum(['solo', 'starter', 'pro']).optional(),
   turnstileToken: z.string().min(1, 'Captcha verification is required'),
+  /** `?ref=` del enlace de registro, solo para atribución (organizations.signup_ref_code). */
+  ref: signupRefSchema.optional(),
+  /** Idioma activo de la pantalla de registro; si no llega, la API usa Accept-Language. */
+  language: userLanguageSchema.optional(),
   /** The Terms of Service and the Privacy Policy must be accepted to create an account. */
   acceptTerms: z.literal(true, {
     errorMap: () => ({ message: 'You must accept the Terms of Service and the Privacy Policy' }),

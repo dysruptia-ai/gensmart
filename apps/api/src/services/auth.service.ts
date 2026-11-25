@@ -22,6 +22,8 @@ import { AppError } from '../middleware/errorHandler';
 import { TERMS_VERSION } from '@gensmart/shared';
 import { pickSessionMembership } from './access-rules';
 import { getSettingValue } from './platform-settings.service';
+import { resolveWelcomeStatus, WELCOME_SURVEY_COLUMNS, type WelcomeSurveyFlagsRow } from './welcome-survey.service';
+import type { WelcomeSurveyStatus } from '@gensmart/shared';
 import {
   ATTEMPT_LIMITS,
   buildAttemptKey,
@@ -46,10 +48,9 @@ export interface AuthTokens {
     orgTrialEndsAt: string | null;
     totpEnabled: boolean;
     language: string;
-    onboardingCompleted: boolean;
-    onboardingStep: number;
-    editorTourCompleted: boolean;
     isSuperAdmin: boolean;
+    /** Cuestionario de bienvenida (web-37): la web decide con esto si manda a /welcome al ingresar. */
+    welcomeSurvey: WelcomeSurveyStatus;
   };
 }
 
@@ -69,19 +70,18 @@ interface UserRow {
   totp_secret_encrypted: string | null;
   last_login_at: string | null;
   language: string;
-  onboarding_completed: boolean;
-  onboarding_step: number;
-  editor_tour_completed: boolean;
   is_super_admin: boolean;
   email_verified: boolean;
 }
 
-interface OrgRow {
+interface OrgRow extends Partial<WelcomeSurveyFlagsRow> {
   id: string;
   name: string;
   is_suspended: boolean;
   trial_ends_at: string | null;
 }
+
+const SESSION_ORG_SQL = `SELECT id, name, is_suspended, trial_ends_at, ${WELCOME_SURVEY_COLUMNS} FROM organizations WHERE id = $1`;
 
 interface RefreshTokenRow {
   id: string;
@@ -196,10 +196,16 @@ async function buildAuthTokens(user: UserRow, org: OrgRow): Promise<AuthTokens> 
       orgTrialEndsAt: org.trial_ends_at,
       totpEnabled: user.totp_enabled,
       language: user.language ?? 'en',
-      onboardingCompleted: user.onboarding_completed ?? false,
-      onboardingStep: user.onboarding_step ?? 0,
-      editorTourCompleted: user.editor_tour_completed ?? false,
       isSuperAdmin: user.is_super_admin || false,
+      welcomeSurvey: resolveWelcomeStatus(
+        {
+          onboarding_survey_eligible: org.onboarding_survey_eligible ?? false,
+          onboarding_completed_at: org.onboarding_completed_at ?? null,
+          onboarding_skipped_at: org.onboarding_skipped_at ?? null,
+        },
+        user.role,
+        user.is_super_admin || false
+      ),
     },
   };
 }
@@ -261,6 +267,10 @@ export async function register(input: {
   promoCode?: string;
   plan?: string;
   acceptTerms: true;
+  /** `?ref=` del enlace (ya validado por registerSchema): solo atribución. */
+  ref?: string;
+  /** Idioma de la pantalla de registro (o de Accept-Language), en users.language. */
+  language: 'es' | 'en';
 }): Promise<RegisterResult> {
   const existing = await query<{ id: string }>(
     'SELECT id FROM users WHERE email = $1',
@@ -291,18 +301,18 @@ export async function register(input: {
 
     const orgSlug = slugify(input.organizationName);
     const orgResult = await client.query<OrgRow>(
-      `INSERT INTO organizations (id, name, slug, plan, subscription_status, trial_ends_at, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, 'active', $4, NOW(), NOW())
+      `INSERT INTO organizations (id, name, slug, plan, subscription_status, trial_ends_at, onboarding_survey_eligible, signup_ref_code, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, 'active', $4, TRUE, $5, NOW(), NOW())
        RETURNING id, name`,
-      [input.organizationName, orgSlug, plan, trialEndsAt?.toISOString() ?? null]
+      [input.organizationName, orgSlug, plan, trialEndsAt?.toISOString() ?? null, input.ref ?? null]
     );
     const org = orgResult.rows[0];
 
     const userResult = await client.query<UserRow>(
-      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, terms_accepted_at, terms_version, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), $5, NOW(), NOW())
+      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, terms_accepted_at, terms_version, language, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), $5, $6, NOW(), NOW())
        RETURNING id, email, name, role, organization_id, password_hash, totp_enabled, totp_secret_encrypted, last_login_at, language, is_super_admin`,
-      [org.id, input.email.toLowerCase(), input.name, passwordHash, TERMS_VERSION]
+      [org.id, input.email.toLowerCase(), input.name, passwordHash, TERMS_VERSION, input.language]
     );
     const user = userResult.rows[0];
 
@@ -377,7 +387,7 @@ export async function login(input: {
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
             u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
-            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed, u.is_super_admin,
+            u.is_super_admin,
             u.email_verified
      FROM users u
      WHERE u.email = $1`,
@@ -410,7 +420,7 @@ export async function login(input: {
   const membership = await resolveSessionMembership(user);
   const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
   const orgResult = await query<OrgRow>(
-    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
+    SESSION_ORG_SQL,
     [sessionUser.organization_id]
   );
   const org = orgResult.rows[0];
@@ -446,7 +456,7 @@ export async function verify2FA(input: {
   const result = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
             u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
-            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed, u.is_super_admin
+            u.is_super_admin
      FROM users u WHERE u.id = $1`,
     [payload.userId]
   );
@@ -492,7 +502,7 @@ export async function verify2FA(input: {
   }
   const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
   const orgResult = await query<OrgRow>(
-    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
+    SESSION_ORG_SQL,
     [sessionUser.organization_id]
   );
   const org = orgResult.rows[0];
@@ -623,7 +633,7 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
   const userResult = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
             u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
-            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed, u.is_super_admin
+            u.is_super_admin
      FROM users u WHERE u.id = $1`,
     [storedToken.user_id]
   );
@@ -642,7 +652,7 @@ export async function refreshToken(currentRefreshToken: string): Promise<AuthTok
   }
 
   const orgResult = await query<OrgRow>(
-    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
+    SESSION_ORG_SQL,
     [payload.orgId]
   );
   const org = orgResult.rows[0];
@@ -829,6 +839,8 @@ export async function forgotPassword(email: string): Promise<void> {
 export async function resetPassword(input: {
   token: string;
   password: string;
+  /** Idioma de la pantalla. Solo se guarda si la cuenta nunca ingresó (aceptar una invitación). */
+  language?: 'es' | 'en';
 }): Promise<void> {
   const tokenHash = hashToken(input.token);
 
@@ -856,6 +868,13 @@ export async function resetPassword(input: {
       'UPDATE users SET password_hash = $1, email_verified = true, updated_at = NOW() WHERE id = $2',
       [passwordHash, row.user_id]
     );
+    // Aceptar una invitación (cuenta que nunca ingresó): el idioma de la pantalla pasa a ser el suyo
+    if (input.language) {
+      await client.query(
+        'UPDATE users SET language = $1 WHERE id = $2 AND last_login_at IS NULL',
+        [input.language, row.user_id]
+      );
+    }
     // Invalidate all refresh tokens
     await client.query('UPDATE refresh_tokens SET used = true WHERE user_id = $1', [row.user_id]);
 
@@ -941,6 +960,8 @@ export async function provisionOrganization(input: {
   plan: string;
   billingSource: string;
   externalSubscriptionId: string;
+  /** Sin pantalla: Accept-Language de la llamada. Se corrige al aceptar en /org-access. */
+  language: 'es' | 'en';
 }): Promise<{ userId: string; organizationId: string; isNewUser: boolean }> {
   const email = input.email.toLowerCase();
   const client = await getClient();
@@ -969,10 +990,10 @@ export async function provisionOrganization(input: {
     if (isNewUser) {
       const tempPasswordHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
       const userResult = await client.query<{ id: string }>(
-        `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, onboarding_completed, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, true, NOW(), NOW())
+        `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, language, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, $5, NOW(), NOW())
          RETURNING id`,
-        [organizationId, email, input.name, tempPasswordHash]
+        [organizationId, email, input.name, tempPasswordHash, input.language]
       );
       userId = userResult.rows[0]!.id;
     } else {
@@ -1052,7 +1073,10 @@ export async function sendOrgAccessLinkEmail(
  * from the user's `users.organization_id` (their other, primary org). Reads
  * the effective role from `user_organizations` for that specific org.
  */
-export async function consumeOrgAccessToken(token: string): Promise<AuthTokens | TwoFactorRequired> {
+export async function consumeOrgAccessToken(
+  token: string,
+  language?: 'es' | 'en'
+): Promise<AuthTokens | TwoFactorRequired> {
   const tokenHash = hashToken(token);
 
   // Atomic gate: the first request to flip used from false to true gets the token
@@ -1076,10 +1100,15 @@ export async function consumeOrgAccessToken(token: string): Promise<AuthTokens |
     throw new AppError(403, 'User is not a member of this organization', 'NOT_A_MEMBER');
   }
 
+  // Primer ingreso por el enlace (Tiendanube): el idioma de la pantalla pasa a ser el suyo
+  if (language) {
+    await query('UPDATE users SET language = $1 WHERE id = $2 AND last_login_at IS NULL', [language, tokenRow.user_id]);
+  }
+
   const userResult = await query<UserRow>(
     `SELECT u.id, u.email, u.name, u.role, u.organization_id, u.password_hash,
             u.totp_enabled, u.totp_secret_encrypted, u.last_login_at, u.language,
-            u.onboarding_completed, u.onboarding_step, u.editor_tour_completed, u.is_super_admin
+            u.is_super_admin
      FROM users u WHERE u.id = $1`,
     [tokenRow.user_id]
   );
@@ -1087,7 +1116,7 @@ export async function consumeOrgAccessToken(token: string): Promise<AuthTokens |
   if (!user) throw new AppError(404, 'User not found', 'USER_NOT_FOUND');
 
   const orgResult = await query<OrgRow>(
-    'SELECT id, name, is_suspended, trial_ends_at FROM organizations WHERE id = $1',
+    SESSION_ORG_SQL,
     [tokenRow.organization_id]
   );
   const org = orgResult.rows[0];

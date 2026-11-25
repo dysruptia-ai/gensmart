@@ -34,6 +34,8 @@ const TIENDANUBE_PROVIDER_ID = 'tiendanube';
 const TIENDANUBE_SERVER_URL = process.env['TIENDANUBE_MCP_URL'] ?? 'https://tiendanube-mcp.gensmart.co/mcp';
 
 export interface ProvisionTiendanubeStoreInput {
+  /** Idioma inicial del usuario nuevo (Accept-Language de la llamada); se corrige al aceptar en /org-access. */
+  language?: 'es' | 'en';
   storeId: string;
   storeName: string;
   email: string;
@@ -361,6 +363,7 @@ export async function provisionTiendanubeStore(
     plan: 'pro',
     billingSource: 'tiendanube',
     externalSubscriptionId: input.storeId,
+    language: input.language ?? 'en',
   });
 
   // 2. Email de acceso (magic link, no password)

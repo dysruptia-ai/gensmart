@@ -2,53 +2,86 @@
 
 import React from 'react';
 import { useTranslation } from '@/hooks/useTranslation';
-import type { AuthPanelVariant } from '../AuthScreenContext';
 import styles from './AuthPanel.module.css';
+
+export interface AuthPanelMessage {
+  dir: 'in' | 'out';
+  text: string;
+}
+
+export interface AuthPanelFrameProps {
+  eyebrow: string;
+  /** Título; `em` va en verde. */
+  heading: { before: string; em?: string; after?: string };
+  text?: string;
+  caption: string;
+  live: string;
+  messages: AuthPanelMessage[];
+  /** Cambia cuando cambia la conversación (vuelve a animar los mensajes). */
+  conversationKey: string;
+  /** Contenido debajo de la conversación (la lista del cuestionario). */
+  children?: React.ReactNode;
+}
 
 /**
  * Panel oscuro de la derecha (siempre oscuro, en los dos temas): mensaje de marca y una
  * conversación de ejemplo, rotulada como ilustrativa. Se oculta bajo 960 px.
  */
-export default function AuthPanel({ variant }: { variant: Exclude<AuthPanelVariant, null> }) {
-  const { t } = useTranslation();
-  const k = variant === 'login' ? 'login' : 'register';
-  const messages: Array<{ dir: 'in' | 'out'; key: string }> = [
-    { dir: 'in', key: 'm1' },
-    { dir: 'out', key: 'm2' },
-    { dir: 'in', key: 'm3' },
-    { dir: 'out', key: 'm4' },
-  ];
+export function AuthPanelFrame({ eyebrow, heading, text, caption, live, messages, conversationKey, children }: AuthPanelFrameProps) {
   return (
     <aside className={styles.panel} aria-hidden="true">
       <div>
-        <span className={styles.eyebrow}>{t('access.panel.eyebrow')}</span>
+        <span className={styles.eyebrow}>{eyebrow}</span>
         <h2 className={styles.heading}>
-          {t(`access.panel.${k}TitleA`)}
-          <em>{t(`access.panel.${k}TitleEm`)}</em>
-          {t(`access.panel.${k}TitleB`)}
+          {heading.before}
+          {heading.em && <em>{heading.em}</em>}
+          {heading.after}
         </h2>
-        <p className={styles.text}>{t(`access.panel.${k}Text`)}</p>
+        {text && <p className={styles.text}>{text}</p>}
       </div>
       <div>
-        <p className={styles.caption}>{t('access.panel.caption', { industry: t('access.panel.industry') })}</p>
+        <p className={styles.caption}>{caption}</p>
         <div className={styles.conv}>
           <header className={styles.convHead}>
             <i className={styles.dot} />
-            <b>{t('access.panel.live')}</b>
+            <b>{live}</b>
           </header>
           <div className={styles.msgs}>
             {messages.map((m, i) => (
               <div
-                key={`${variant}-${m.key}`}
+                key={`${conversationKey}-${i}`}
                 className={`${styles.msg} ${m.dir === 'in' ? styles.in : styles.out}`}
                 style={{ animationDelay: `${i * 450}ms` }}
               >
-                {t(`access.panel.${m.key}`)}
+                {m.text}
               </div>
             ))}
           </div>
         </div>
       </div>
+      {children}
     </aside>
+  );
+}
+
+/** Panel del ingreso y del registro. */
+export default function AuthPanel({ variant }: { variant: 'login' | 'register' }) {
+  const { t } = useTranslation();
+  const k = variant;
+  const dirs: Array<'in' | 'out'> = ['in', 'out', 'in', 'out'];
+  return (
+    <AuthPanelFrame
+      eyebrow={t('access.panel.eyebrow')}
+      heading={{
+        before: t(`access.panel.${k}TitleA`),
+        em: t(`access.panel.${k}TitleEm`),
+        after: t(`access.panel.${k}TitleB`),
+      }}
+      text={t(`access.panel.${k}Text`)}
+      caption={t('access.panel.caption', { industry: t('access.panel.industry') })}
+      live={t('access.panel.live')}
+      messages={dirs.map((dir, i) => ({ dir, text: t(`access.panel.m${i + 1}`) }))}
+      conversationKey={variant}
+    />
   );
 }

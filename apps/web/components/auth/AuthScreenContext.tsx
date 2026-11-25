@@ -3,8 +3,11 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-/** Panel oscuro de la derecha: solo en el ingreso y el registro (no en los pasos de apoyo). */
-export type AuthPanelVariant = 'login' | 'register' | null;
+/**
+ * Panel oscuro de la derecha: en el ingreso, el registro y los pasos del cuestionario de
+ * bienvenida (`welcome`, que dibuja su propio contenido); no en los pasos de apoyo.
+ */
+export type AuthPanelVariant = 'login' | 'register' | 'welcome' | null;
 
 interface AuthScreenContextValue {
   panel: AuthPanelVariant;
@@ -16,6 +19,7 @@ const AuthScreenContext = createContext<AuthScreenContextValue | null>(null);
 function panelForPath(pathname: string): AuthPanelVariant {
   if (pathname === '/login') return 'login';
   if (pathname === '/register') return 'register';
+  if (/^\/welcome\/[1-5]$/.test(pathname)) return 'welcome';
   return null;
 }
 

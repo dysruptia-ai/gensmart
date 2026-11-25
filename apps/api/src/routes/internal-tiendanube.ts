@@ -20,6 +20,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { validate } from '../middleware/validate';
 import { rateLimiter } from '../middleware/rateLimiter';
+import { languageFromRequest } from '../utils/language';
 import {
   provisionTiendanubeStore,
   attachTiendanubeStoreToAgent,
@@ -75,7 +76,7 @@ router.post(
         return;
       }
 
-      const result = await provisionTiendanubeStore(req.body);
+      const result = await provisionTiendanubeStore({ ...req.body, language: languageFromRequest(req) });
       res.status(200).json(result);
     } catch (err) {
       next(err);

@@ -15,7 +15,7 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const params = useParams<{ token: string }>();
   const token = String(params.token ?? '');
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [password, setPassword] = useState('');
   const [fieldError, setFieldError] = useState('');
@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
     setError('');
     setLoading(true);
     try {
-      await api.post('/api/auth/reset-password', { token, password });
+      await api.post('/api/auth/reset-password', { token, password, language });
       router.replace('/login?reset=1');
       return;
     } catch (err) {

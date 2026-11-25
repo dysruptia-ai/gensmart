@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Building2, RotateCcw } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Building2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -46,8 +45,7 @@ const selectStyle: React.CSSProperties = {
 };
 
 export default function GeneralSettingsPage() {
-  const router = useRouter();
-  const { refreshUser, updateOnboarding, isSuspended } = useAuth();
+  const { refreshUser, isSuspended } = useAuth();
   const { language: ctxLanguage, setLanguage } = useLanguage();
   const { t } = useTranslation();
   const { success, error: toastError } = useToast();
@@ -177,20 +175,6 @@ export default function GeneralSettingsPage() {
           </Button>
         </div>
       </form>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>{t('onboarding.restartTour')}</h2>
-        <Button
-          variant="secondary"
-          icon={RotateCcw}
-          onClick={async () => {
-            await updateOnboarding(0, false, false);
-            router.push('/dashboard');
-          }}
-        >
-          {t('onboarding.restartTour')}
-        </Button>
-      </section>
     </div>
   );
 }

@@ -5,7 +5,8 @@ import { verifyTurnstileToken } from '../services/turnstile.service';
 import { validate } from '../middleware/validate';
 import { requireAuth } from '../middleware/auth';
 import * as authService from '../services/auth.service';
-import { registerSchema, loginSchema } from '@gensmart/shared';
+import { registerSchema, loginSchema, userLanguageSchema } from '@gensmart/shared';
+import { resolveUserLanguage } from '../utils/language';
 import { query } from '../config/database';
 import { env } from '../config/env';
 import { requireTrustedOrigin } from '../middleware/trustedOrigin';
@@ -44,6 +45,7 @@ const forgotPasswordSchema = z.object({
 const resetPasswordSchema = z.object({
   token: z.string().min(1),
   password: z.string().min(8),
+  language: userLanguageSchema.optional(),
 });
 
 const verifyEmailSchema = z.object({
@@ -56,6 +58,7 @@ const resendVerificationSchema = z.object({
 
 const orgAccessConsumeSchema = z.object({
   token: z.string().min(1),
+  language: userLanguageSchema.optional(),
 });
 
 const orgAccessResendParamsSchema = z.object({
@@ -108,7 +111,7 @@ router.post(
         return;
       }
 
-      const result = await authService.register(req.body);
+      const result = await authService.register({ ...req.body, language: resolveUserLanguage(req.body.language, req) });
       res.status(201).json({
         message: 'Registration successful. Please check your email to verify your account before logging in.',
         email: result.email,
@@ -271,7 +274,7 @@ router.post(
   validate(orgAccessConsumeSchema),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const result = await authService.consumeOrgAccessToken(req.body.token);
+      const result = await authService.consumeOrgAccessToken(req.body.token, req.body.language);
 
       // Users with 2FA finish the sign-in at /auth/2fa/verify, exactly like a password login
       if ('requires2FA' in result) {
@@ -400,63 +403,6 @@ router.put(
       );
 
       res.json({ message: 'Profile updated' });
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-// Update onboarding progress
-const onboardingSchema = z.object({
-  step: z.number().int().min(0).max(10).optional(),
-  completed: z.boolean().optional(),
-  editorTourCompleted: z.boolean().optional(),
-});
-
-router.put(
-  '/onboarding',
-  requireAuth,
-  validate(onboardingSchema),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const { step, completed, editorTourCompleted } = req.body as z.infer<typeof onboardingSchema>;
-      const sets: string[] = [];
-      const params: unknown[] = [];
-      let idx = 1;
-
-      if (completed === true) {
-        sets.push(`onboarding_completed = TRUE`);
-        sets.push(`onboarding_step = 0`);
-      } else {
-        if (completed === false) {
-          sets.push(`onboarding_completed = FALSE`);
-        }
-        if (step !== undefined) {
-          sets.push(`onboarding_step = $${idx++}`);
-          params.push(step);
-        }
-      }
-
-      if (editorTourCompleted === true) {
-        sets.push(`editor_tour_completed = TRUE`);
-      } else if (editorTourCompleted === false) {
-        sets.push(`editor_tour_completed = FALSE`);
-      }
-
-      if (sets.length === 0) {
-        res.json({ success: true });
-        return;
-      }
-
-      sets.push(`updated_at = NOW()`);
-      params.push(req.user!.userId);
-
-      await query(
-        `UPDATE users SET ${sets.join(', ')} WHERE id = $${idx}`,
-        params
-      );
-
-      res.json({ success: true });
     } catch (err) {
       next(err);
     }

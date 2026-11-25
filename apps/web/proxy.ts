@@ -102,7 +102,13 @@ export function proxy(req: NextRequest): NextResponse {
   if (PUBLIC_PATHS.includes(pathname)) return next(req, pathname);
   if (PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))) return next(req, pathname);
 
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/design-system')) {
+  if (
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/design-system') ||
+    pathname === '/welcome' ||
+    pathname.startsWith('/welcome/')
+  ) {
     const refreshToken = req.cookies.get('refresh_token');
     if (!refreshToken) {
       const loginUrl = new URL('/login', req.url);

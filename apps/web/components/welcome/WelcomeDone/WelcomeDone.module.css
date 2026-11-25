@@ -1,0 +1,77 @@
+.sum {
+  display: grid;
+  gap: 0;
+  margin: 0 0 24px;
+  border: 1px solid var(--app-line-soft);
+  border-radius: var(--app-r-lg);
+  background: var(--app-card);
+  overflow: hidden;
+}
+
+.sum > div {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.sum > div + div {
+  border-top: 1px solid var(--app-line-soft);
+}
+
+.sum dt {
+  color: var(--app-soft);
+}
+
+.sum dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.empty dd {
+  color: var(--app-soft);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.rec {
+  border: 1px solid var(--app-link);
+  background: var(--app-ok-bg);
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+}
+
+.rec small {
+  display: block;
+  color: var(--app-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.rec b {
+  font: 700 18px var(--app-font-display);
+}
+
+.rec p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--app-mute);
+}
+
+.dash {
+  text-align: center;
+  margin: 14px 0 0;
+}
+
+@media (max-width: 420px) {
+  .sum > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}

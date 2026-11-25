@@ -4,12 +4,12 @@ import React, { Suspense, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, type AuthUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import { AppButton, CodeInput, Notice, PasswordField, TextButton, TextField } from '@/components/app';
 import { AuthHeading, useAuthScreen } from '@/components/auth';
-import { EMAIL_RE, isNetworkError, isRateLimited, safeFrom } from '@/components/auth/authForm';
+import { EMAIL_RE, afterLoginHref, isNetworkError, isRateLimited, safeFrom } from '@/components/auth/authForm';
 import s from '@/components/auth/auth-screens.module.css';
 
 type LoginError = '' | 'bad' | 'unverified' | 'locked' | 'generic' | 'network';
@@ -56,7 +56,7 @@ function LoginScreen() {
       if (result.requires2FA && result.tempToken) {
         setTempToken(result.tempToken);
       } else {
-        router.replace(from);
+        router.replace(afterLoginHref(from, result.user?.welcomeSurvey));
         return;
       }
     } catch (err) {
@@ -96,7 +96,7 @@ function LoginScreen() {
           setPassword('');
           setError('');
         }}
-        onDone={() => router.replace(from)}
+        onDone={(user) => router.replace(afterLoginHref(from, user.welcomeSurvey))}
         verify2FA={verify2FA}
       />
     );
@@ -180,8 +180,8 @@ function LoginScreen() {
 interface TwoFactorStepProps {
   tempToken: string;
   onBack: () => void;
-  onDone: () => void;
-  verify2FA: (tempToken: string, code: string) => Promise<void>;
+  onDone: (user: AuthUser) => void;
+  verify2FA: (tempToken: string, code: string) => Promise<AuthUser>;
 }
 
 function TwoFactorStep({ tempToken, onBack, onDone, verify2FA }: TwoFactorStepProps) {
@@ -199,8 +199,7 @@ function TwoFactorStep({ tempToken, onBack, onDone, verify2FA }: TwoFactorStepPr
     setError('');
     setLoading(true);
     try {
-      await verify2FA(tempToken, value);
-      onDone();
+      onDone(await verify2FA(tempToken, value));
       return;
     } catch (err) {
       if (isRateLimited(err)) setError('locked');

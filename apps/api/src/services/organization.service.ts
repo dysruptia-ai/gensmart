@@ -95,7 +95,7 @@ export async function getMembers(orgId: string): Promise<OrgMember[]> {
 export async function inviteMember(
   orgId: string,
   inviterId: string,
-  data: { email: string; role: string }
+  data: { email: string; role: string; language: 'es' | 'en' }
 ): Promise<void> {
   // The inviter's role is read from the database (membership first, primary user row as fallback)
   const membership = await query<{ role: string }>(
@@ -155,10 +155,10 @@ export async function inviteMember(
     await client.query('BEGIN');
 
     const userResult = await client.query<{ id: string }>(
-      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, false, NOW(), NOW())
+      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, language, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, false, $6, NOW(), NOW())
        RETURNING id`,
-      [orgId, data.email.toLowerCase(), data.email.split('@')[0], tempPasswordHash, data.role]
+      [orgId, data.email.toLowerCase(), data.email.split('@')[0], tempPasswordHash, data.role, data.language]
     );
     const newUserId = userResult.rows[0]!.id;
 

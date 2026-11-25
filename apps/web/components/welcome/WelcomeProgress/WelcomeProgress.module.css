@@ -1,0 +1,30 @@
+.prog {
+  margin: 0 0 26px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 28px;
+  font-size: 13px;
+  color: var(--app-soft);
+  margin-bottom: 8px;
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.bar i {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--app-line);
+  transition: background 0.3s;
+}
+
+.bar i.on {
+  background: var(--app-link);
+}

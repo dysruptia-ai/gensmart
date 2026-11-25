@@ -9,6 +9,7 @@ import React, {
   useRef,
 } from 'react';
 import { api, setAccessToken, ApiError } from '@/lib/api';
+import type { WelcomeSurveyStatus } from '@gensmart/shared';
 import { disconnectSharedSocket, useWebSocket, type WebSocketEvents } from '@/hooks/useWebSocket';
 
 export interface AuthUser {
@@ -22,15 +23,15 @@ export interface AuthUser {
   orgTrialEndsAt: string | null;
   totpEnabled: boolean;
   language: string;
-  onboardingCompleted: boolean;
-  onboardingStep: number;
-  editorTourCompleted: boolean;
   isSuperAdmin: boolean;
+  /** Cuestionario de bienvenida (web-37): `pending` = el ingreso manda a /welcome. No es el tour guiado. */
+  welcomeSurvey: WelcomeSurveyStatus;
 }
 
 interface LoginResult {
   requires2FA?: boolean;
   tempToken?: string;
+  user?: AuthUser;
 }
 
 interface RegisterResult {
@@ -48,6 +49,10 @@ interface RegisterOptions {
   plan?: string;
   /** Casilla de Términos y Privacidad: la API exige `true`. */
   acceptTerms: boolean;
+  /** Idioma activo de la pantalla: queda en users.language. */
+  language?: 'es' | 'en';
+  /** `?ref=` del enlace (atribución de socios), ya filtrado por `signupRefSchema`. */
+  ref?: string;
 }
 
 interface AuthContextValue {
@@ -57,11 +62,10 @@ interface AuthContextValue {
   /** Convenience alias for user?.orgIsSuspended ?? false — gates mutation buttons across the dashboard. */
   isSuspended: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
-  verify2FA: (tempToken: string, code: string) => Promise<void>;
+  verify2FA: (tempToken: string, code: string) => Promise<AuthUser>;
   register: (options: RegisterOptions) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  updateOnboarding: (step?: number, completed?: boolean, editorTourCompleted?: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -157,24 +161,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setAccessToken(data.accessToken);
       setUser(data.user);
       scheduleRefresh();
-      return {};
+      return { user: data.user };
     },
     [scheduleRefresh]
   );
 
   const verify2FA = useCallback(
-    async (tempToken: string, code: string): Promise<void> => {
+    async (tempToken: string, code: string): Promise<AuthUser> => {
       const data = await api.post<AuthResponse>('/api/auth/2fa/verify', { tempToken, code });
       setAccessToken(data.accessToken);
       setUser(data.user);
       scheduleRefresh();
+      return data.user;
     },
     [scheduleRefresh]
   );
 
   const register = useCallback(
     async (options: RegisterOptions): Promise<RegisterResult> => {
-      const { email, password, name, organizationName, turnstileToken, promoCode, plan, acceptTerms } = options;
+      const { email, password, name, organizationName, turnstileToken, promoCode, plan, acceptTerms, ref, language } = options;
       // No session is created: the account becomes usable once the emailed link is confirmed
       const data = await api.post<{ message: string; email: string; promoApplied: boolean }>('/api/auth/register', {
         email,
@@ -183,8 +188,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         organizationName,
         turnstileToken,
         acceptTerms,
+        ...(language ? { language } : {}),
         ...(promoCode ? { promoCode } : {}),
         ...(plan ? { plan } : {}),
+        ...(ref ? { ref } : {}),
       });
       return { email: data.email, promoApplied: data.promoApplied };
     },
@@ -211,18 +218,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(data.user);
   }, []);
 
-  const updateOnboarding = useCallback(async (step?: number, completed?: boolean, editorTourCompleted?: boolean): Promise<void> => {
-    await api.put('/api/auth/onboarding', { step, completed, editorTourCompleted });
-    setUser((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        onboardingCompleted: completed === true ? true : (completed === false ? false : prev.onboardingCompleted),
-        onboardingStep: completed === true ? 0 : (step !== undefined ? step : prev.onboardingStep),
-        editorTourCompleted: editorTourCompleted !== undefined ? editorTourCompleted : prev.editorTourCompleted,
-      };
-    });
-  }, []);
 
   return (
     <AuthContext.Provider
@@ -236,7 +231,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         refreshUser,
-        updateOnboarding,
       }}
     >
       {children}

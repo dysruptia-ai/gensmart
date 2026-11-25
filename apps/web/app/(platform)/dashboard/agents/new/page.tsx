@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Bot, Wand2, Loader2 } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,11 +24,13 @@ interface Agent {
   id: string;
 }
 
-export default function NewAgentPage() {
+function NewAgentScreen() {
   const router = useRouter();
+  // `?template=<id>` (pantalla final del cuestionario de bienvenida): abre las plantillas con esa elegida
+  const templateParam = useSearchParams().get('template');
   const { error: toastError, success: toastSuccess } = useToast();
   const { isSuspended } = useAuth();
-  const [method, setMethod] = useState<Method | null>(null);
+  const [method, setMethod] = useState<Method | null>(templateParam ? 'template' : null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -40,11 +42,14 @@ export default function NewAgentPage() {
     if (method === 'template') {
       setLoadingTemplates(true);
       api.get<{ templates: Template[] }>('/api/agents/templates')
-        .then((d) => setTemplates(d.templates))
+        .then((d) => {
+          setTemplates(d.templates);
+          if (templateParam) setSelectedTemplate((cur) => cur ?? d.templates.find((tpl) => tpl.id === templateParam) ?? null);
+        })
         .catch(() => toastError('Failed to load templates'))
         .finally(() => setLoadingTemplates(false));
     }
-  }, [method, toastError]);
+  }, [method, toastError, templateParam]);
 
   async function handleCreateFromScratch(e: React.FormEvent) {
     e.preventDefault();
@@ -102,7 +107,7 @@ export default function NewAgentPage() {
         <div className={styles.step}>
           <h2 className={styles.stepTitle}>How would you like to start?</h2>
           <p className={styles.stepDesc}>You can always customize everything later.</p>
-          <div className={styles.methods} data-tour="agent-method">
+          <div className={styles.methods}>
             <button className={styles.methodCard} onClick={() => setMethod('template')}>
               <div className={styles.methodIcon}>
                 <Wand2 size={22} />
@@ -199,5 +204,13 @@ export default function NewAgentPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function NewAgentPage() {
+  return (
+    <Suspense fallback={null}>
+      <NewAgentScreen />
+    </Suspense>
   );
 }

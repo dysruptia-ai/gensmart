@@ -16,7 +16,7 @@ export default function OrgAccessPage() {
   const router = useRouter();
   const params = useParams<{ token: string }>();
   const token = String(params.token ?? '');
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { refreshUser } = useAuth();
 
   const [status, setStatus] = useState<'loading' | 'invalid'>('loading');
@@ -44,14 +44,14 @@ export default function OrgAccessPage() {
     (async () => {
       try {
         // Pone la cookie httpOnly de refresco; refreshUser() reutiliza el arranque de sesión normal
-        await api.post('/api/auth/org-access/consume', { token });
+        await api.post('/api/auth/org-access/consume', { token, language });
         await refreshUser();
         router.replace('/dashboard');
       } catch {
         setStatus('invalid');
       }
     })();
-  }, [token, refreshUser, router]);
+  }, [token, refreshUser, router, language]);
 
   if (status === 'loading') {
     return (

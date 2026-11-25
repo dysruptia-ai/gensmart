@@ -1282,50 +1282,6 @@
     "invalidResetToken": "Este enlace de restablecimiento es inválido o ha expirado. Por favor solicita uno nuevo.",
     "somethingWentWrong": "Algo salió mal. Por favor intenta de nuevo."
   },
-  "onboarding": {
-    "welcome": {
-      "title": "¡Bienvenido a GenSmart!",
-      "description": "Vamos a crear tu primer agente IA en minutos. Este tour rápido te mostrará las funciones principales."
-    },
-    "createAgent": {
-      "title": "Crea Tu Primer Agente",
-      "description": "Haz clic aquí para crear un nuevo agente IA. Puedes empezar desde una plantilla o desde cero."
-    },
-    "chooseMethod": {
-      "title": "Elige Cómo Empezar",
-      "description": "Escoge una plantilla predefinida para casos comunes, o empieza desde cero para personalización total."
-    },
-    "configurePrompt": {
-      "title": "Configura el Prompt del IA",
-      "description": "Este es el cerebro de tu agente. Escribe instrucciones sobre cómo debe comportarse y responder a los usuarios."
-    },
-    "addVariables": {
-      "title": "Agrega Variables Inteligentes",
-      "description": "Las variables permiten que tu agente capture información como nombres, emails o preferencias durante las conversaciones."
-    },
-    "configureChannel": {
-      "title": "Configura un Canal",
-      "description": "Despliega tu agente en WhatsApp o agrega un Widget Web a tu sitio. ¡Puedes activar ambos!"
-    },
-    "publish": {
-      "title": "Publica Tu Agente",
-      "description": "Cuando estés listo, publica para activar tu agente. Siempre puedes editar y volver a publicar después."
-    },
-    "preview": {
-      "title": "Prueba en Preview",
-      "description": "Prueba tu agente aquí antes de activarlo. Prueba diferentes escenarios para asegurarte de que funciona perfecto."
-    },
-    "getSnippet": {
-      "title": "Obtén el Código del Widget",
-      "description": "Copia este código y pégalo en tu sitio web. ¡Tu agente IA aparecerá como un widget de chat!"
-    },
-    "skipTour": "Saltar tour",
-    "next": "Siguiente",
-    "back": "Atrás",
-    "finish": "¡Entendido!",
-    "stepOf": "Paso {current} de {total}",
-    "restartTour": "Reiniciar tour de onboarding"
-  },
   "chat_image_indicator": "Imagen",
   "chat_images_indicator": "imágenes",
   "chat_voice_message": "Mensaje de voz",
@@ -1352,6 +1308,218 @@
         "zendrop": "Zendrop MCP",
         "synchroteam": "Synchroteam MCP",
         "other": "Otras Configuraciones"
+      }
+    }
+  },
+  "welcome": {
+    "meta": {
+      "title": "Bienvenida",
+      "done": "Todo listo"
+    },
+    "stepOf": "Paso {n} de 5",
+    "progress": "Progreso del cuestionario",
+    "back": "Atrás",
+    "skip": "Omitir por ahora",
+    "skipAll": "Omitir todo",
+    "continue": "Continuar",
+    "finish": "Terminar",
+    "saveError": "No pudimos guardar tu respuesta. Revisa tu conexión e inténtalo de nuevo.",
+    "loadError": "No pudimos cargar el cuestionario.",
+    "retry": "Reintentar",
+    "loading": "Cargando…",
+    "s1": {
+      "title": "¿A qué se dedica tu negocio?",
+      "subtitle": "Con esto te mostramos ejemplos y una plantilla pensados para tu industria.",
+      "other": "Otro",
+      "otherPh": "Cuéntanos a qué se dedica"
+    },
+    "s2": {
+      "title": "¿Qué tamaño tiene tu operación?",
+      "subtitle": "Así te recomendamos el plan que se ajusta.",
+      "qTeam": "¿Cuántas personas atienden clientes hoy?",
+      "qVolume": "¿Cuántas conversaciones recibes al mes, más o menos?",
+      "team": {
+        "t1": "Solo yo",
+        "t2": "2 a 5",
+        "t3": "6 a 20",
+        "t4": "Más de 20"
+      },
+      "volume": {
+        "v1": "Menos de 100",
+        "v2": "100 a 500",
+        "v3": "500 a 2.000",
+        "v4": "Más de 2.000",
+        "v0": "No lo sé"
+      }
+    },
+    "s3": {
+      "title": "¿Qué quieres que haga tu agente primero?",
+      "subtitle": "Elige hasta dos. Puedes cambiarlo cuando quieras.",
+      "limit": "Ya elegiste dos. Quita una si quieres cambiarla.",
+      "goals": {
+        "sales": {
+          "label": "Vender y calificar prospectos",
+          "desc": "Responde, pide datos y marca qué tan listo está cada prospecto."
+        },
+        "support": {
+          "label": "Atender a mis clientes",
+          "desc": "Responde con lo que cargues de tu negocio, a toda hora."
+        },
+        "booking": {
+          "label": "Agendar citas y reservas",
+          "desc": "Propone horarios y agenda en tu calendario."
+        },
+        "store": {
+          "label": "Atender mi tienda en línea",
+          "desc": "Consulta productos, stock y pedidos de tu tienda."
+        },
+        "collections": {
+          "label": "Atender cobranzas",
+          "desc": "Responde a quien escribe por un saldo o un pago."
+        },
+        "hr": {
+          "label": "Recursos humanos",
+          "desc": "Atiende a candidatos y empleados."
+        }
+      }
+    },
+    "s4": {
+      "title": "¿Por dónde te escriben tus clientes?",
+      "subtitle": "Marca los canales que usas o quieres usar. Los conectas después.",
+      "email": "Correo",
+      "web": "Tu sitio web",
+      "unknown": "Aún no lo sé",
+      "unknownHint": "Si eliges \"Aún no lo sé\", los demás canales quedan sin marcar."
+    },
+    "s5": {
+      "title": "¿Cómo nos conociste?",
+      "subtitle": "Última pregunta. Nos ayuda a saber dónde aparecer.",
+      "sources": {
+        "google": "Buscando en Google",
+        "social": "Redes sociales",
+        "referral": "Me lo recomendó alguien",
+        "partner": "Un socio o agencia",
+        "event": "Un evento o webinar",
+        "ai_tool": "Una herramienta de IA",
+        "other": "Otro"
+      },
+      "partnerLabel": "Nombre o código del socio",
+      "partnerPh": "Opcional",
+      "partnerFound": "Tomamos este código de tu enlace:"
+    },
+    "done": {
+      "title": "Todo listo, {name}",
+      "fallbackName": "bienvenido",
+      "subtitle": "Tu prueba gratis está activa. Este es el resumen de lo que nos contaste.",
+      "summary": "Resumen de tus respuestas",
+      "industry": "Industria",
+      "team": "Personas que atienden",
+      "volume": "Conversaciones al mes",
+      "goals": "Primer objetivo",
+      "channels": "Canales",
+      "source": "Cómo nos conociste",
+      "notAnswered": "Sin responder",
+      "recKicker": "Te sugerimos empezar con",
+      "recText": "Es una plantilla que ya trae las preguntas y los datos que tu industria suele necesitar. La ajustas a tu gusto.",
+      "create": "Crear mi primer agente",
+      "goDash": "Ir al panel"
+    },
+    "panel": {
+      "eyebrow": "Tu agente, paso a paso",
+      "pick": "Elige tu industria y mira cómo respondería tu agente.",
+      "industry": "Así respondería tu agente en tu industria.",
+      "done": "Este es el punto de partida de tu agente.",
+      "caption": "Ejemplo ilustrativo: {industry}",
+      "live": "Agente en WhatsApp",
+      "clIndustry": "Industria",
+      "clGoal": "Primer objetivo",
+      "clChannels": "Canales",
+      "pending": "Pendiente"
+    },
+    "industries": {
+      "industryClinics": {
+        "name": "Clínicas y salud",
+        "m1": "Hola, quiero agendar una limpieza dental.",
+        "m2": "Con gusto. Tengo el martes a las 10:00 a. m. o el miércoles a las 4:00 p. m. ¿Cuál te sirve?",
+        "m3": "El martes.",
+        "m4": "Listo, tu cita quedó agendada para el martes a las 10:00 a. m. Te envío la confirmación por correo con el enlace para guardarla en tu calendario."
+      },
+      "industryEcommerce": {
+        "name": "E-commerce y dropshipping",
+        "m1": "Hola, busco una chaqueta impermeable talla M",
+        "m2": "Tengo la Trail Pro en talla M, $189.000. ¿Te comparto el enlace para comprarla?",
+        "m3": "Sí, por favor",
+        "m4": "Aquí tienes el enlace de pago de la tienda. Si tienes dudas del envío, dime tu ciudad."
+      },
+      "industryRealEstate": {
+        "name": "Inmobiliarias y constructoras",
+        "m1": "Hola, vi el apartamento de tres habitaciones en su publicación. ¿Todavía está disponible?",
+        "m2": "Hola, con gusto te ayudo. ¿Para cuándo lo necesitas y cuántas personas vivirían allí?",
+        "m3": "Para el próximo mes, somos cuatro.",
+        "m4": "Tengo el jueves a las 5:00 p. m. o el sábado a las 11:00 a. m. para visitarlo con un asesor. ¿Cuál te sirve?"
+      },
+      "industryFieldServices": {
+        "name": "Servicios en campo y contratistas",
+        "m1": "Hola, necesito mantenimiento de dos aires acondicionados en mi oficina.",
+        "m2": "Con gusto. ¿En qué dirección está la oficina y para qué día lo necesitas?",
+        "m3": "120 W 23rd Street, el martes si se puede.",
+        "m4": "Tengo el martes a las 9:00 a. m. o a las 2:00 p. m. ¿Cuál prefieres?"
+      },
+      "industryEducation": {
+        "name": "Educación y formación",
+        "m1": "Hola, quiero saber del programa de administración de empresas.",
+        "m2": "Con gusto. ¿Lo buscas presencial o virtual, y para qué periodo quieres empezar?",
+        "m3": "Virtual, para el próximo semestre.",
+        "m4": "Perfecto. Un asesor de admisiones te explica el proceso. ¿Te llama el jueves a las 3:00 p. m. o el viernes a las 10:00 a. m.?"
+      },
+      "industryRestaurants": {
+        "name": "Restaurantes y hospitalidad",
+        "m1": "Hola, necesitamos cotizar un almuerzo para 40 personas de la empresa.",
+        "m2": "Con gusto. ¿Para qué fecha lo necesitan y en cuál de nuestras sedes les gustaría hacerlo?",
+        "m3": "El 12 de diciembre, en la sede norte.",
+        "m4": "Perfecto. Un asesor de eventos les prepara la propuesta. ¿A qué correo y teléfono los contacta?"
+      },
+      "industryAutomotive": {
+        "name": "Automotriz",
+        "m1": "Hola, quiero cotizar una camioneta familiar para 5 personas.",
+        "m2": "Con gusto. ¿Qué presupuesto manejas y para cuándo quieres tenerla?",
+        "m3": "Hasta 120 millones, para este mes.",
+        "m4": "Tengo dos versiones que encajan. Un asesor te las muestra en una prueba de manejo. ¿Te va bien el jueves a las 4:00 p. m. o el viernes a las 9:00 a. m.?"
+      },
+      "industryBeautyWellness": {
+        "name": "Belleza y bienestar",
+        "m1": "Hola, ¿cuánto cuesta el tratamiento facial?",
+        "m2": "El facial hidratante cuesta $120.000 y dura 60 minutos. ¿En qué sede te queda mejor y qué día?",
+        "m3": "En la sede norte, el jueves en la tarde.",
+        "m4": "Tengo jueves a las 4:00 p. m. o a las 5:30 p. m. ¿Cuál prefieres?"
+      },
+      "industryFinanceInsurance": {
+        "name": "Finanzas y seguros",
+        "m1": "Quiero cotizar un seguro para mi carro",
+        "m2": "Con gusto. ¿Me indicas marca, modelo y año del vehículo?",
+        "m3": "Mazda 3, 2022.",
+        "m4": "Gracias. Tengo hoy a las 4:00 p. m. o mañana a las 10:00 a. m. con un asesor. ¿Cuál prefieres?"
+      },
+      "industryTravel": {
+        "name": "Turismo y viajes",
+        "m1": "Hola, ¿tienen algún tour a Cartagena este fin de semana?",
+        "m2": "Con gusto. ¿Para qué fecha y cuántas personas viajan?",
+        "m3": "El sábado, cuatro adultos.",
+        "m4": "Gracias. Un asesor puede llamarte mañana a las 9:00 a. m. o a las 3:00 p. m. para cotizarte. ¿Cuál prefieres?"
+      },
+      "industryProfessionalServices": {
+        "name": "Servicios profesionales",
+        "m1": "Hola, necesito asesoría para constituir una empresa",
+        "m2": "Con gusto. ¿Cuántos socios serían?",
+        "m3": "Somos tres.",
+        "m4": "Gracias. Tengo mañana a las 10:00 a. m. o a las 3:00 p. m. con un asesor de la firma. ¿Cuál prefieres?"
+      },
+      "industryB2b": {
+        "name": "B2B, industria y SaaS",
+        "m1": "Necesito cotizar 200 unidades de este instrumento",
+        "m2": "Con gusto. ¿Para qué empresa sería y en qué ciudad se entregaría?",
+        "m3": "Somos una constructora en Medellín.",
+        "m4": "Gracias. Tengo mañana a las 9:00 a. m. o a las 2:00 p. m. para una llamada con un asesor técnico. ¿Cuál prefieres?"
       }
     }
   }

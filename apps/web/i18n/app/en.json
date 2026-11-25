@@ -1282,50 +1282,6 @@
     "invalidResetToken": "This reset link is invalid or has expired. Please request a new one.",
     "somethingWentWrong": "Something went wrong. Please try again."
   },
-  "onboarding": {
-    "welcome": {
-      "title": "Welcome to GenSmart!",
-      "description": "Let's create your first AI agent in minutes. This quick tour will show you the key features."
-    },
-    "createAgent": {
-      "title": "Create Your First Agent",
-      "description": "Click here to create a new AI agent. You can start from a template or build from scratch."
-    },
-    "chooseMethod": {
-      "title": "Choose How to Start",
-      "description": "Pick a pre-built template for common use cases, or start from scratch for full customization."
-    },
-    "configurePrompt": {
-      "title": "Configure the AI Prompt",
-      "description": "This is the brain of your agent. Write instructions for how it should behave and respond to users."
-    },
-    "addVariables": {
-      "title": "Add Smart Variables",
-      "description": "Variables let your agent capture information like names, emails, or preferences during conversations."
-    },
-    "configureChannel": {
-      "title": "Set Up a Channel",
-      "description": "Deploy your agent on WhatsApp or add a Web Widget to your website. You can enable both!"
-    },
-    "publish": {
-      "title": "Publish Your Agent",
-      "description": "When you're ready, publish to make your agent live. You can always edit and re-publish later."
-    },
-    "preview": {
-      "title": "Test in Preview",
-      "description": "Try your agent right here before going live. Test different scenarios to make sure it works perfectly."
-    },
-    "getSnippet": {
-      "title": "Get Your Widget Code",
-      "description": "Copy this code snippet and paste it into your website. Your AI agent will appear as a chat widget!"
-    },
-    "skipTour": "Skip tour",
-    "next": "Next",
-    "back": "Back",
-    "finish": "Got it!",
-    "stepOf": "Step {current} of {total}",
-    "restartTour": "Restart onboarding tour"
-  },
   "chat_image_indicator": "Image",
   "chat_images_indicator": "images",
   "chat_voice_message": "Voice message",
@@ -1352,6 +1308,218 @@
         "zendrop": "Zendrop MCP",
         "synchroteam": "Synchroteam MCP",
         "other": "Other Settings"
+      }
+    }
+  },
+  "welcome": {
+    "meta": {
+      "title": "Welcome",
+      "done": "All set"
+    },
+    "stepOf": "Step {n} of 5",
+    "progress": "Questionnaire progress",
+    "back": "Back",
+    "skip": "Skip for now",
+    "skipAll": "Skip all",
+    "continue": "Continue",
+    "finish": "Finish",
+    "saveError": "We couldn't save your answer. Check your connection and try again.",
+    "loadError": "We couldn't load the questionnaire.",
+    "retry": "Try again",
+    "loading": "Loading…",
+    "s1": {
+      "title": "What does your business do?",
+      "subtitle": "We use this to show you examples and a template built for your industry.",
+      "other": "Other",
+      "otherPh": "Tell us what it does"
+    },
+    "s2": {
+      "title": "How big is your operation?",
+      "subtitle": "So we can recommend the plan that fits.",
+      "qTeam": "How many people handle customers today?",
+      "qVolume": "Roughly how many conversations do you get per month?",
+      "team": {
+        "t1": "Just me",
+        "t2": "2 to 5",
+        "t3": "6 to 20",
+        "t4": "More than 20"
+      },
+      "volume": {
+        "v1": "Under 100",
+        "v2": "100 to 500",
+        "v3": "500 to 2,000",
+        "v4": "More than 2,000",
+        "v0": "I don't know"
+      }
+    },
+    "s3": {
+      "title": "What should your agent do first?",
+      "subtitle": "Pick up to two. You can change it anytime.",
+      "limit": "You already picked two. Remove one if you want to change it.",
+      "goals": {
+        "sales": {
+          "label": "Sell and qualify prospects",
+          "desc": "Answers, asks for details and flags how ready each prospect is."
+        },
+        "support": {
+          "label": "Serve my customers",
+          "desc": "Answers with what you load about your business, around the clock."
+        },
+        "booking": {
+          "label": "Book appointments and reservations",
+          "desc": "Proposes times and books on your calendar."
+        },
+        "store": {
+          "label": "Serve my online store",
+          "desc": "Looks up products, stock and orders in your store."
+        },
+        "collections": {
+          "label": "Handle collections",
+          "desc": "Answers whoever writes about a balance or a payment."
+        },
+        "hr": {
+          "label": "Human resources",
+          "desc": "Serves candidates and employees."
+        }
+      }
+    },
+    "s4": {
+      "title": "Where do your customers write to you?",
+      "subtitle": "Mark the channels you use or want to use. You connect them later.",
+      "email": "Email",
+      "web": "Your website",
+      "unknown": "I don't know yet",
+      "unknownHint": "If you choose \"I don't know yet\", the other channels are cleared."
+    },
+    "s5": {
+      "title": "How did you find us?",
+      "subtitle": "Last question. It helps us know where to show up.",
+      "sources": {
+        "google": "Searching on Google",
+        "social": "Social media",
+        "referral": "Someone recommended it",
+        "partner": "A partner or agency",
+        "event": "An event or webinar",
+        "ai_tool": "An AI tool",
+        "other": "Other"
+      },
+      "partnerLabel": "Partner name or code",
+      "partnerPh": "Optional",
+      "partnerFound": "We took this code from your link:"
+    },
+    "done": {
+      "title": "All set, {name}",
+      "fallbackName": "welcome",
+      "subtitle": "Your free trial is active. Here's a summary of what you told us.",
+      "summary": "Summary of your answers",
+      "industry": "Industry",
+      "team": "People serving customers",
+      "volume": "Conversations per month",
+      "goals": "First goal",
+      "channels": "Channels",
+      "source": "How you found us",
+      "notAnswered": "Not answered",
+      "recKicker": "We suggest starting with",
+      "recText": "It's a template that already includes the questions and data your industry usually needs. You adjust it as you like.",
+      "create": "Create my first agent",
+      "goDash": "Go to the dashboard"
+    },
+    "panel": {
+      "eyebrow": "Your agent, step by step",
+      "pick": "Pick your industry and see how your agent would reply.",
+      "industry": "This is how your agent would reply in your industry.",
+      "done": "This is your agent's starting point.",
+      "caption": "Illustrative example: {industry}",
+      "live": "Agent on WhatsApp",
+      "clIndustry": "Industry",
+      "clGoal": "First goal",
+      "clChannels": "Channels",
+      "pending": "Pending"
+    },
+    "industries": {
+      "industryClinics": {
+        "name": "Clinics and health",
+        "m1": "Hi, I'd like to book a dental cleaning.",
+        "m2": "Happy to help. I have Tuesday at 10:00 a.m. or Wednesday at 4:00 p.m. Which works?",
+        "m3": "Tuesday.",
+        "m4": "Done, your appointment is booked for Tuesday at 10:00 a.m. I am sending the confirmation by email with a link to save it to your calendar."
+      },
+      "industryEcommerce": {
+        "name": "E-commerce and dropshipping",
+        "m1": "Hi, I'm looking for a waterproof jacket, size M",
+        "m2": "I have the Trail Pro in size M, $189,000. Shall I share the link to buy it?",
+        "m3": "Yes, please",
+        "m4": "Here is the store payment link. If you have shipping questions, tell me your city."
+      },
+      "industryRealEstate": {
+        "name": "Real estate and developers",
+        "m1": "Hi, I saw the three bedroom apartment in your post. Is it still available?",
+        "m2": "Hi, happy to help. When do you need it and how many people would live there?",
+        "m3": "For next month, there are four of us.",
+        "m4": "I have Thursday at 5:00 p.m. or Saturday at 11:00 a.m. to visit it with an advisor. Which works?"
+      },
+      "industryFieldServices": {
+        "name": "Field services and contractors",
+        "m1": "Hi, I need maintenance on two air conditioners in my office.",
+        "m2": "Happy to help. What is the office address and for which day do you need it?",
+        "m3": "120 W 23rd Street, Tuesday if possible.",
+        "m4": "I have Tuesday at 9:00 a.m. or 2:00 p.m. Which do you prefer?"
+      },
+      "industryEducation": {
+        "name": "Education and training",
+        "m1": "Hi, I want to know about the business administration program.",
+        "m2": "Happy to help. Are you looking for in person or online, and for which term do you want to start?",
+        "m3": "Online, for the next semester.",
+        "m4": "Perfect. An admissions advisor will walk you through the process. Can they call you Thursday at 3:00 p.m. or Friday at 10:00 a.m.?"
+      },
+      "industryRestaurants": {
+        "name": "Restaurants and hospitality",
+        "m1": "Hi, we need a quote for a lunch for 40 people from our company.",
+        "m2": "Happy to help. What date do you need it for and at which of our locations would you like it?",
+        "m3": "December 12, at the north location.",
+        "m4": "Perfect. An events advisor will prepare the proposal. What email and phone should they contact you on?"
+      },
+      "industryAutomotive": {
+        "name": "Automotive",
+        "m1": "Hi, I want to quote a family SUV for 5 people.",
+        "m2": "Happy to help. What budget do you have and when do you want to have it?",
+        "m3": "Up to 120 million, for this month.",
+        "m4": "I have two versions that fit. An advisor will show you both on a test drive. Does Thursday at 4:00 p.m. or Friday at 9:00 a.m. work for you?"
+      },
+      "industryBeautyWellness": {
+        "name": "Beauty and wellness",
+        "m1": "Hi, how much is the facial treatment?",
+        "m2": "The hydrating facial is $120,000 and takes 60 minutes. Which location suits you best and on what day?",
+        "m3": "At the north location, Thursday afternoon.",
+        "m4": "I have Thursday at 4:00 p.m. or 5:30 p.m. Which do you prefer?"
+      },
+      "industryFinanceInsurance": {
+        "name": "Finance and insurance",
+        "m1": "I want to quote car insurance",
+        "m2": "Happy to help. Can you tell me the make, model and year of the vehicle?",
+        "m3": "Mazda 3, 2022.",
+        "m4": "Thanks. I have today at 4:00 p.m. or tomorrow at 10:00 a.m. with an advisor. Which do you prefer?"
+      },
+      "industryTravel": {
+        "name": "Travel and tourism",
+        "m1": "Hello, do you have any tour to Cartagena this weekend?",
+        "m2": "Happy to help. For which date and how many people are traveling?",
+        "m3": "Saturday, four adults.",
+        "m4": "Thanks. An advisor can call you tomorrow at 9:00 a.m. or 3:00 p.m. to quote you. Which do you prefer?"
+      },
+      "industryProfessionalServices": {
+        "name": "Professional services",
+        "m1": "Hello, I need advice to set up a company",
+        "m2": "Happy to help. How many partners would there be?",
+        "m3": "There are three of us.",
+        "m4": "Thanks. I have tomorrow at 10:00 a.m. or 3:00 p.m. with one of the firm's advisors. Which do you prefer?"
+      },
+      "industryB2b": {
+        "name": "B2B, industrial and SaaS",
+        "m1": "I need to quote 200 units of this instrument",
+        "m2": "Happy to help. Which company is it for and which city would it be delivered to?",
+        "m3": "We are a construction company in Medellín.",
+        "m4": "Thanks. I have tomorrow at 9:00 a.m. or 2:00 p.m. for a call with a technical advisor. Which do you prefer?"
       }
     }
   }

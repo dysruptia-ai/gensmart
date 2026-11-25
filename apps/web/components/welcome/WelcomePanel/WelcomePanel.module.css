@@ -1,0 +1,61 @@
+/* Siempre oscuro (como AuthPanel): valores fijos, no siguen el tema del formulario */
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-width: 520px;
+}
+
+.list li {
+  display: grid;
+  grid-template-columns: 20px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(240, 244, 242, 0.1);
+  border-radius: 12px;
+  background: rgba(21, 27, 33, 0.7);
+  font-size: 13px;
+  color: #a9b4b0;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.list li.set {
+  border-color: rgba(61, 220, 132, 0.35);
+  background: rgba(61, 220, 132, 0.08);
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(240, 244, 242, 0.3);
+  color: #04170c;
+}
+
+.set .mark {
+  background: #3ddc84;
+  border-color: #3ddc84;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.value {
+  color: #f0f4f2;
+  font-weight: 600;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.list li:not(.set) .value {
+  color: #a9b4b0;
+  font-weight: 500;
+}

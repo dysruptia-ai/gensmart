@@ -1,0 +1,14 @@
+.skip {
+  text-align: center;
+  margin: 14px 0 0;
+}
+
+.skipAll {
+  text-align: center;
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.otherField {
+  margin-top: -8px;
+}

@@ -4,6 +4,7 @@ import React, { Suspense, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Mail, Tag, X } from 'lucide-react';
+import { signupRefSchema } from '@gensmart/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { appSiteHref } from '@/lib/app-links';
@@ -35,7 +36,9 @@ type FieldErrors = Partial<Record<FieldKey, string>>;
 
 function RegisterScreen() {
   const searchParams = useSearchParams();
-  // `?ref=` (socios) no se toca aquí: queda en la URL para el cuestionario de bienvenida
+  // `?ref=` (socios): se manda sin mostrarlo, solo para atribución (si no cumple el formato, no se manda)
+  const refParsed = signupRefSchema.safeParse(searchParams.get('ref') ?? '');
+  const ref = refParsed.success ? refParsed.data : undefined;
   const codeFromUrl = (searchParams.get('code') ?? '').trim();
   const planParam = searchParams.get('plan');
   const plan = isPlan(planParam) ? planParam : undefined;
@@ -115,6 +118,8 @@ function RegisterScreen() {
         promoCode: promoCode || undefined,
         plan,
         acceptTerms: terms,
+        language,
+        ref,
       });
       setDone({ email: result.email, promoApplied: Boolean(promoCode) && result.promoApplied });
       setLoading(false);

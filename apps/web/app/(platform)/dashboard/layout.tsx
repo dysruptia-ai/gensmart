@@ -28,7 +28,6 @@ import { Logo } from '@/components/ui/Logo';
 import UpgradeBanner from '@/components/billing/UpgradeBanner';
 import SuspendedBanner from '@/components/billing/SuspendedBanner';
 import NotificationBell from '@/components/notifications/NotificationBell';
-import WelcomeTour from '@/components/onboarding/WelcomeTour';
 import { ConversationAlertsProvider, useConversationAlerts } from '@/contexts/ConversationAlertsContext';
 import { api, ApiError } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
@@ -141,7 +140,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ''}`}>
         <div className={styles.sidebarHeader}>
-          <div data-tour="logo">
+          <div>
             <Logo size="md" href="/dashboard" />
           </div>
           <button
@@ -290,7 +289,6 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         </main>
       </div>
 
-      {user && !user.onboardingCompleted && <WelcomeTour />}
     </div>
   );
 }
