@@ -2,51 +2,62 @@
 id: terms
 slug: terms-of-service
 title: Terms of Service
-description: The terms that govern your use of GenSmart: your account, plans and billing, usage limits, acceptable use, your content, termination and liability.
-lastUpdated: "2026-03-21"
+description: "The terms that govern your use of GenSmart: your account, free trial, plans and billing, usage limits, acceptable use, your content and liability."
+lastUpdated: "2026-11-25"
 ---
 
 # Terms of Service
 
-**Effective Date:** March 21, 2026
+**Effective Date:** November 25, 2026
 
-**Last Updated:** March 21, 2026
+**Last Updated:** November 25, 2026
 
 These Terms of Service ("Terms") govern your use of GenSmart (www.gensmart.co), a SaaS platform operated by Dysruptia LLC ("Dysruptia", "we", "us", "our"). By creating an account or using the platform, you agree to these Terms.
 
 ## 1. Description of Service
 
-GenSmart is a software-as-a-service platform that enables you to create, configure, and deploy AI conversational agents on WhatsApp and Web channels. The platform includes agent building tools, CRM, contact management, conversation tracking, appointment scheduling, lead scoring, and analytics.
+GenSmart is a software-as-a-service platform that enables you to create, configure, and deploy AI agents that talk with your customers on six channels: WhatsApp, Instagram, Facebook Messenger, Telegram, email, and a web chat widget for your website.
 
-## 2. Account Registration
+The platform includes agent building tools, a knowledge base, a unified inbox with human handover, a CRM with a sales pipeline, contact management, lead scoring, appointment scheduling, and integrations with your own tools through custom functions, MCP servers, APIs, and webhooks. Some features are only available on certain plans (see Section 3).
 
+## 2. Account Registration and Free Trial
+
+### Account
 - You must provide accurate and complete information when creating an account.
 - You are responsible for maintaining the confidentiality of your credentials.
 - You must be at least 18 years old to create an account.
 - One person or legal entity may maintain multiple organizations, but each organization must have a unique name.
 
+### Free Trial
+- New accounts on the Solo, Starter, and Pro plans start with a free trial. The trial currently lasts 15 days; the exact length is shown when you sign up.
+- No payment method is required to start the trial.
+- When the trial ends, your account is suspended unless you have subscribed to a paid plan. You can reactivate it at any time by subscribing.
+- The Enterprise plan has no self-service trial and is contracted through our sales team.
+- GenSmart has no free plan. Apart from the trial, every plan is paid.
+
 ## 3. Subscription Plans and Billing
 
 ### Plans
-GenSmart offers the following subscription plans:
-- **Free:** 1 agent, 50 messages/month, web widget only.
-- **Starter ($29/month):** Up to 3 agents, 1,000 messages/month, WhatsApp + web.
-- **Pro ($79/month):** Up to 10 agents, 5,000 messages/month, all AI models.
-- **Enterprise ($199/month):** Unlimited agents, 25,000 messages/month, BYO API key support.
+GenSmart offers the following subscription plans. All plans include the six channels, the CRM, and appointment scheduling.
+- **Solo ($20 USD/month):** 1 agent, 200 messages/month, and 150 contacts.
+- **Starter ($29 USD/month):** Up to 3 agents, 1,000 messages/month, 500 contacts, and human handover.
+- **Pro ($79 USD/month):** Up to 10 agents, 5,000 messages/month, 2,000 contacts, MCP servers, and sub-accounts.
+- **Enterprise:** Contracted through our sales team, with unlimited agents and contacts, 25,000 messages/month, and the option to use your own AI provider API key. Price and terms are agreed in writing.
 
-Quarterly and yearly billing options are available with discounts.
+Quarterly billing has a 10% discount and yearly billing has a 20% discount. The [Pricing page](/en/pricing) shows the current limits and features of each plan; if it differs from this summary, the Pricing page in effect when you purchase prevails.
 
 ### Billing
-- Payments are processed securely by Stripe, Inc.
+- Payments are processed securely by Stripe, Inc. We accept Visa, Mastercard, and American Express. Enterprise customers may also pay by invoice.
 - Subscriptions renew automatically at the end of each billing period.
-- You may upgrade, downgrade, or cancel your subscription at any time from Settings > Billing.
-- Downgrades take effect at the end of the current billing period.
-- Refunds are handled on a case-by-case basis. Contact billing@gensmart.co.
+- You may change your plan at any time from Settings > Billing. Upgrades and downgrades take effect immediately, and the price difference is prorated on your next invoice.
+- You may cancel your subscription at any time from Settings > Billing. The cancellation takes effect at the end of the current billing period, and you keep access until then.
+- Refunds are reviewed on a case-by-case basis. Contact billing@gensmart.co.
 
 ### Usage Limits
 - Each plan includes specific limits on agents, messages, contacts, and features.
-- If you exceed your plan's message limit, additional messages may be throttled or blocked until the next billing period.
-- We will notify you when you approach your usage limits.
+- We will notify you when you reach 80% of your monthly message limit.
+- When you reach your plan's message limit, your agents pause automatically until the next month, until you upgrade, or until you buy a one-time message pack (500 messages for $10 USD, 2,000 for $30 USD, or 5,000 for $60 USD).
+- Message counters reset on the first day of each month. Unused messages, including those from one-time packs, do not roll over and expire at the end of the month.
 
 ## 4. Acceptable Use
 
@@ -57,6 +68,7 @@ You agree NOT to use GenSmart to:
 - Reverse-engineer, decompile, or disassemble any part of the platform.
 - Use the platform to develop a competing product.
 - Violate any applicable laws or regulations, including data protection laws.
+- Violate the terms and policies of the messaging channels you connect (including those of Meta, WhatsApp, Instagram, Messenger, and Telegram).
 - Impersonate another person or entity.
 
 We reserve the right to suspend or terminate accounts that violate these terms.
@@ -68,10 +80,10 @@ You retain ownership of all content you create, upload, or configure on GenSmart
 - Agent configurations, prompts, and system instructions.
 - Knowledge base documents and files.
 - Contact data and conversation records.
-- Custom function configurations.
+- Custom function, MCP, and integration configurations.
 
 ### License
-By using GenSmart, you grant us a limited license to process your content solely for the purpose of providing the service (e.g., sending your content to AI providers for processing, storing your data, delivering messages).
+By using GenSmart, you grant us a limited license to process your content solely for the purpose of providing the service (e.g., sending your content to AI providers for processing, storing your data, delivering messages, and calling the tools you connect).
 
 ### Responsibility
 You are solely responsible for:
@@ -79,10 +91,11 @@ You are solely responsible for:
 - Ensuring your agents comply with applicable laws and regulations.
 - Obtaining necessary consents from your end-users for data collection and messaging.
 - The accuracy of information provided by your agents.
+- The third-party tools you connect to your agents and the data you allow your agents to send to them.
 
 ## 6. Intellectual Property
 
-- "GenSmart" is a registered trademark of Dysruptia LLC.
+- "GenSmart" is a trademark of Dysruptia LLC.
 - The GenSmart platform, its design, code, and documentation are the intellectual property of Dysruptia LLC.
 - You may not use our trademarks, logos, or branding without prior written permission, except as provided in the widget embed (which displays "Powered by GenSmart").
 
@@ -96,7 +109,7 @@ If you process personal data of EU/EEA residents through GenSmart, you act as th
 
 - We aim for 99.9% uptime but do not guarantee uninterrupted service.
 - We may perform scheduled maintenance with advance notice when possible.
-- We are not liable for downtime caused by third-party services (AWS, Stripe, Meta/WhatsApp, OpenAI, Anthropic).
+- We are not liable for downtime caused by third-party services, including hosting providers, Stripe, Meta (WhatsApp, Instagram, and Messenger), Telegram, AI providers (OpenAI, Anthropic, and OpenRouter), or the tools you connect.
 
 ## 9. Termination
 
@@ -108,6 +121,7 @@ You may delete your account at any time from Settings > Data & Privacy. Upon del
 ### By Us
 We may suspend or terminate your account if:
 - You violate these Terms of Service.
+- Your free trial ends and you have not subscribed to a paid plan (suspension only).
 - Your payment method fails and is not updated within 14 days.
 - Your account is used for fraudulent or illegal activity.
 
@@ -140,7 +154,11 @@ These Terms are governed by the laws of the State of Florida, United States, wit
 
 If any provision of these Terms is found to be unenforceable, the remaining provisions shall continue in full force and effect.
 
-## 15. Contact Us
+## 15. Language
+
+These Terms are written in English. We may provide translations for your convenience. If there is any conflict or inconsistency between the English version and a translation, the English version prevails.
+
+## 16. Contact Us
 
 If you have questions about these Terms:
 
