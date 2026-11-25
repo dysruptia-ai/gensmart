@@ -3,7 +3,7 @@
  * y `comunidad`). Los textos van en `site.resources.*` y `site.community.*`. Sin
  * `'use client'`: las páginas arman con esto los metadatos y el JSON-LD en el servidor.
  */
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { SITE_LINKS } from '@/lib/site-links';
 import { absoluteUrl, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import { breadcrumbJsonLd, type Crumb } from '../Breadcrumbs/crumbs';

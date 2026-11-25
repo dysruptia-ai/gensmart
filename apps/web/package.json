@@ -5,10 +5,11 @@
   "scripts": {
     "predev": "node scripts/blog-index.mjs",
     "dev": "next dev --port 3000",
-    "prebuild": "node scripts/blog-index.mjs",
+    "prebuild": "node scripts/check-i18n-keys.mjs && node scripts/blog-index.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "node scripts/check-i18n-keys.mjs && eslint",
+    "check:i18n": "node scripts/check-i18n-keys.mjs"
   },
   "dependencies": {
     "@gensmart/shared": "*",

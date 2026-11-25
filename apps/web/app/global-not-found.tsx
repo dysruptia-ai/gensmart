@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { Sora, Geist } from 'next/font/google';
 import './(site)/site-base.css';
 import { FixedLanguageProvider } from '@/contexts/LanguageContext';
+import SiteDict from '@/components/site/SiteDict';
 import SiteRoot from '@/components/site/SiteRoot';
 import SiteLogo from '@/components/site/SiteLogo';
 import SkipLink from '@/components/site/SkipLink';
@@ -38,15 +39,17 @@ export default async function GlobalNotFound() {
     <html lang={lang} className={`${sora.variable} ${geist.variable}`}>
       <body>
         <FixedLanguageProvider language={lang}>
-          <SiteRoot>
-            <SkipLink />
-            <header className={styles.header}>
-              <SiteLogo className={styles.logo} ariaLabel={t('site.notFound.logoHome')} />
-            </header>
-            <main id="main">
-              <NotFoundContent />
-            </main>
-          </SiteRoot>
+          <SiteDict lang={lang}>
+            <SiteRoot>
+              <SkipLink />
+              <header className={styles.header}>
+                <SiteLogo className={styles.logo} ariaLabel={t('site.notFound.logoHome')} />
+              </header>
+              <main id="main">
+                <NotFoundContent />
+              </main>
+            </SiteRoot>
+          </SiteDict>
         </FixedLanguageProvider>
       </body>
     </html>

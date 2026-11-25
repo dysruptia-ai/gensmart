@@ -4,7 +4,7 @@
  * Los números salen de `@gensmart/shared` y de `SITE_TRIAL_DAYS`.
  */
 import { PLAN_LIMITS, PRICING } from '@gensmart/shared';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import type { SiteLanguage } from '@/lib/site-routes';
 import type { Crumb } from '../Breadcrumbs/crumbs';
 import type { FaqItem } from '../FaqList/faq';

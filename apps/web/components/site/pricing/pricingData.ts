@@ -14,7 +14,7 @@ import {
 } from '@gensmart/shared';
 import type { RegisterPlan } from '@/lib/site-links';
 import type { SiteLanguage } from '@/lib/site-routes';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { SITE_TRIAL_DAYS } from '../siteTrial';
 
 /** Migas de Precios: las usan el hero y el JSON-LD `BreadcrumbList`. */

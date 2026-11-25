@@ -647,12 +647,6 @@
         "ogAlt": "GenSmart"
       }
     },
-    "langHint": {
-      "region": "Sugerencia de idioma",
-      "text": "Esta página también está en español.",
-      "link": "Ver en español",
-      "dismiss": "Cerrar la sugerencia de idioma"
-    },
     "pricing": {
       "titleBefore": "Cada mensaje sin respuesta es",
       "titleAccent": "una venta que se enfría",

@@ -647,12 +647,6 @@
         "ogAlt": "GenSmart"
       }
     },
-    "langHint": {
-      "region": "Language suggestion",
-      "text": "This page is also available in English.",
-      "link": "View in English",
-      "dismiss": "Dismiss language suggestion"
-    },
     "pricing": {
       "titleBefore": "Every unanswered message is",
       "titleAccent": "a sale going cold",

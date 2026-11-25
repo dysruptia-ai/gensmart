@@ -11,7 +11,7 @@ import { academyHref, blogPostHref, docHref } from '@/components/site/resources/
 import { academyRouteId } from '@/lib/academy-routes';
 import { DOC_ROUTES } from '@/lib/docs-routes';
 import type { SiteHref } from '@/lib/site-links';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { sitePageMetadata } from '@/lib/site-metadata';
 import { SITE_ORIGIN, absoluteUrl, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import type { AcademyArtKey } from './AcademyArt';

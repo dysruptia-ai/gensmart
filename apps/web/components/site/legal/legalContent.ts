@@ -3,7 +3,7 @@
  */
 import type { Metadata } from 'next';
 import type { LegalDoc } from '@/lib/legal';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { sitePageMetadata } from '@/lib/site-metadata';
 import { SITE_ORIGIN, absoluteUrl, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import { breadcrumbJsonLd, type Crumb } from '../Breadcrumbs/crumbs';

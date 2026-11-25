@@ -27,13 +27,17 @@ import {
   publicPath,
   type SiteLanguage,
 } from '@/lib/site-routes';
-import en from '@/i18n/site/en.json';
-import es from '@/i18n/site/es.json';
+import { siteT } from '@/lib/site-i18n';
 
-const META: Record<SiteLanguage, typeof en.site.meta.home> = {
-  en: en.site.meta.home,
-  es: es.site.meta.home,
-};
+/** Metadatos del home (`site.meta.home`), en el servidor. */
+function homeMeta(lang: SiteLanguage) {
+  const t = siteT(lang);
+  return {
+    title: t('site.meta.home.title'),
+    description: t('site.meta.home.description'),
+    ogAlt: t('site.meta.home.ogAlt'),
+  };
+}
 
 const OG_LOCALE: Record<SiteLanguage, string> = { es: 'es_LA', en: 'en_US' };
 
@@ -49,7 +53,7 @@ async function resolveLang(params: PageProps['params']): Promise<SiteLanguage> {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const lang = await resolveLang(params);
-  const { title, description, ogAlt } = META[lang];
+  const { title, description, ogAlt } = homeMeta(lang);
   const url = absoluteUrl(publicPath('home', lang));
   const languages = alternates('home');
   const ogImage = `/site/img/hero-motion-poster-${lang}.webp`;
@@ -92,7 +96,7 @@ const SOCIAL_KEYS = ['socialInstagram', 'socialTiktok', 'socialYoutube', 'social
 
 function buildJsonLd(lang: SiteLanguage) {
   const url = absoluteUrl(publicPath('home', lang));
-  const { description } = META[lang];
+  const { description } = homeMeta(lang);
   const orgId = `${SITE_ORIGIN}/#organization`;
   return {
     '@context': 'https://schema.org',

@@ -2,7 +2,7 @@
  * Migas de pan del sitio público. Sin `'use client'`: la página arma con esto
  * el JSON-LD `BreadcrumbList` en el servidor y `Breadcrumbs` pinta lo mismo.
  */
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { absoluteUrl, publicPath, type SiteLanguage, type SiteRouteId } from '@/lib/site-routes';
 
 export interface Crumb {

@@ -40,11 +40,12 @@ function localizeLegalLinks(html: string, lang: SiteLanguage): string {
   });
 }
 
-const cache = new Map<string, LegalDoc>();
+/** Solo en producción: en desarrollo cada carga relee el Markdown y los cambios se ven sin reiniciar. */
+const cache = process.env.NODE_ENV === 'production' ? new Map<string, LegalDoc>() : null;
 
 export function getLegalDoc(id: LegalId, lang: SiteLanguage): LegalDoc {
   const key = `${lang}:${id}`;
-  const cached = cache.get(key);
+  const cached = cache?.get(key);
   if (cached) return cached;
   const route = LEGAL_ROUTES.find((l) => l.id === id);
   if (!route) throw new Error(`legal: id desconocido ${id}`);
@@ -66,7 +67,7 @@ export function getLegalDoc(id: LegalId, lang: SiteLanguage): LegalDoc {
     lastUpdated: lastUpdated instanceof Date ? lastUpdated.toISOString().slice(0, 10) : requireString(meta, 'lastUpdated', file),
     html: localizeLegalLinks(marked.parse(body, { async: false }), lang),
   };
-  cache.set(key, doc);
+  cache?.set(key, doc);
   return doc;
 }
 

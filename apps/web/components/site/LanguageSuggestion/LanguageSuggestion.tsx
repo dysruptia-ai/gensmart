@@ -6,19 +6,12 @@ import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { counterpart, isSiteLanguage, type SiteLanguage } from '@/lib/site-routes';
-import en from '@/i18n/site/en.json';
-import es from '@/i18n/site/es.json';
 import Container from '../Container';
 import styles from './LanguageSuggestion.module.css';
+import { LANG_HINTS } from './langHint';
 import { storageGet, storageSet } from '@/lib/safe-storage';
 
 const DISMISS_KEY = 'gs_lang_hint_dismissed';
-
-/** Los textos van en el idioma sugerido, no en el de la página. */
-const HINTS: Record<SiteLanguage, typeof en.site.langHint> = {
-  en: en.site.langHint,
-  es: es.site.langHint,
-};
 
 interface Suggestion {
   lang: SiteLanguage;
@@ -51,7 +44,8 @@ export default function LanguageSuggestion() {
 
   if (!suggestion) return null;
 
-  const hint = HINTS[suggestion.lang];
+  // Los textos van en el idioma sugerido, no en el de la página
+  const hint = LANG_HINTS[suggestion.lang];
   const dismiss = () => {
     storageSet(DISMISS_KEY, '1');
     setSuggestion(null);

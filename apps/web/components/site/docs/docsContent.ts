@@ -7,7 +7,7 @@ import type { Metadata } from 'next';
 import { PLAN_LIMITS, isChannelAllowedOnPlan, type DocId } from '@gensmart/shared';
 import { breadcrumbJsonLd, type Crumb } from '@/components/site/Breadcrumbs/crumbs';
 import { DOC_GROUP_ORDER, DOC_READING_ORDER, docRouteId } from '@/lib/docs-routes';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { sitePageMetadata } from '@/lib/site-metadata';
 import { SITE_ORIGIN, absoluteUrl, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import { DOCS, DOC_GROUP_DATA, type DocData, type DocGroupData, type DocPlanFeature } from './docsData';

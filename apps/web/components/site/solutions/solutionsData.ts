@@ -4,7 +4,7 @@
  * misma forma en los dos grupos. Funciones puras: las usan los componentes (cliente)
  * y las páginas (metadatos y JSON-LD).
  */
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import type { SiteRouteId } from '@/lib/site-routes';
 import type { Crumb } from '../Breadcrumbs/crumbs';
 import type { ConsoleBubble, ConsoleExample } from '../AgentConsole';

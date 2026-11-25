@@ -4,7 +4,7 @@
  * herramientas con funciones personalizadas, el cliente MCP y webhooks.
  */
 import { PLAN_LIMITS } from '@gensmart/shared';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { PLAN_IDS, PLAN_NAMES, type PlanId } from '../pricing/pricingData';
 
 const D = 'site.integrations.dir';

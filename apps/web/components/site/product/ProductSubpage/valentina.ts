@@ -1,4 +1,4 @@
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import type { MockMessage } from './MockChat';
 
 const V = 'site.productShared.valentina';

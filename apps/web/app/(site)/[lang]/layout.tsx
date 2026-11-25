@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Sora, Geist } from 'next/font/google';
 import '../site-base.css';
 import { FixedLanguageProvider } from '@/contexts/LanguageContext';
+import SiteDict from '@/components/site/SiteDict';
 import { SITE_LANGUAGES, SITE_ORIGIN, isSiteLanguage } from '@/lib/site-routes';
 
 const sora = Sora({
@@ -42,7 +43,9 @@ export default async function SiteLayout({
   return (
     <html lang={lang} className={`${sora.variable} ${geist.variable}`}>
       <body>
-        <FixedLanguageProvider language={lang}>{children}</FixedLanguageProvider>
+        <FixedLanguageProvider language={lang}>
+          <SiteDict lang={lang}>{children}</SiteDict>
+        </FixedLanguageProvider>
       </body>
     </html>
   );

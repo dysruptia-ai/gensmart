@@ -2,7 +2,7 @@
  * Índice de Soluciones (`/soluciones` ↔ `/en/solutions`): migas, anclas y JSON-LD.
  * Sin `'use client'`: la página arma el JSON-LD en el servidor.
  */
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { absoluteUrl, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import { breadcrumbJsonLd, type Crumb } from '../Breadcrumbs/crumbs';
 import { INDUSTRIES } from '../industries/industriesData';

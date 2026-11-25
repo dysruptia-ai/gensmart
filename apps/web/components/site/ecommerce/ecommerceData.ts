@@ -4,7 +4,7 @@
  * Los textos viven en `site.ecommerce.*`; aquí solo la estructura y las cifras.
  */
 import { PRICING } from '@gensmart/shared';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { absoluteUrl, publicPath, type SiteLanguage } from '@/lib/site-routes';
 import { breadcrumbJsonLd } from '../Breadcrumbs/crumbs';
 import { faqPageJsonLd, type FaqItem } from '../FaqList/faq';

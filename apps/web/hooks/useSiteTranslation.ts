@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { useLanguage, type SupportedLanguage } from '@/contexts/LanguageContext';
-import { siteT, type SiteT } from '@/lib/site-i18n';
+import { SiteDictContext } from '@/components/site/SiteDict/SiteDictContext';
+import { makeSiteT, type SiteT } from '@/lib/site-t';
 
 interface UseSiteTranslationReturn {
   t: SiteT;
@@ -8,11 +9,12 @@ interface UseSiteTranslationReturn {
 }
 
 /**
- * Traducciones del sitio público (`i18n/site/*`). Misma firma y misma búsqueda que
- * `useTranslation` de la plataforma: idioma pedido, luego inglés, luego la clave.
+ * Traducciones del sitio público. Lee el diccionario del idioma de la página que puso
+ * `SiteDict` en el layout (un solo idioma por página). Si la clave no existe, devuelve la clave.
  */
 export function useSiteTranslation(): UseSiteTranslationReturn {
   const { language } = useLanguage();
-  const t = useMemo(() => siteT(language), [language]);
+  const dict = useContext(SiteDictContext);
+  const t = useMemo(() => makeSiteT(dict), [dict]);
   return { t, language };
 }

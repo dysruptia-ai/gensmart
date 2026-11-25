@@ -12,7 +12,7 @@ import {
   blogPostRouteId,
   type BlogCategoryId,
 } from '@/lib/blog-routes';
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import { OG_LOCALE, sitePageMetadata } from '@/lib/site-metadata';
 import { SITE_ORIGIN, absoluteUrl, otherLanguage, publicPath, type SiteLanguage } from '@/lib/site-routes';
 

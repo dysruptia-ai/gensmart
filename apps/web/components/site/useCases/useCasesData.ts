@@ -3,7 +3,7 @@
  * del agente (design/web: `casos`). Los textos van en `site.useCases.*`.
  * Sin `'use client'`: la página arma el JSON-LD en el servidor.
  */
-import type { SiteT } from '@/lib/site-i18n';
+import type { SiteT } from '@/lib/site-t';
 import type { SiteLanguage } from '@/lib/site-routes';
 import type { SiteLinkKey } from '@/lib/site-links';
 import { breadcrumbJsonLd } from '../Breadcrumbs/crumbs';
