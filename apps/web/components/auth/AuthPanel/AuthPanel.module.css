@@ -1,0 +1,139 @@
+/* Siempre oscuro: valores fijos, no siguen el tema del formulario */
+.panel {
+  position: relative;
+  overflow: hidden;
+  background: #0c1014;
+  color: #f0f4f2;
+  padding: clamp(28px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+  background-image:
+    radial-gradient(60% 50% at 80% 0%, rgba(61, 220, 132, 0.2), transparent 70%),
+    radial-gradient(50% 40% at 0% 100%, rgba(61, 220, 132, 0.1), transparent 70%);
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(240, 244, 242, 0.1) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(180deg, #000, transparent 80%);
+  pointer-events: none;
+}
+
+.panel > * {
+  position: relative;
+}
+
+.eyebrow {
+  font: 600 12px/1 var(--app-font-sans);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7af0ad;
+}
+
+.heading {
+  font: 700 clamp(28px, 3.4vw, 44px) / 1.08 var(--app-font-display);
+  letter-spacing: -0.025em;
+  margin: 12px 0;
+  max-width: 16ch;
+}
+
+.heading em {
+  font-style: normal;
+  color: #3ddc84;
+}
+
+.text {
+  color: #c3ccc8;
+  margin: 0;
+  max-width: 44ch;
+}
+
+.caption {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #a9b4b0;
+}
+
+.conv {
+  background: #151b21;
+  border: 1px solid rgba(240, 244, 242, 0.12);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.8);
+  max-width: 520px;
+}
+
+.convHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(240, 244, 242, 0.09);
+  font-size: 13px;
+  color: #c3ccc8;
+}
+
+.convHead b {
+  color: #f0f4f2;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3ddc84;
+  box-shadow: 0 0 0 4px rgba(61, 220, 132, 0.18);
+}
+
+.msgs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  min-height: 250px;
+}
+
+.msg {
+  max-width: 86%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+  animation: pop 0.35s ease both;
+}
+
+.in {
+  align-self: flex-start;
+  background: #1e262d;
+  border-bottom-left-radius: 5px;
+}
+
+.out {
+  align-self: flex-end;
+  background: #3ddc84;
+  color: #04170c;
+  border-bottom-right-radius: 5px;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 960px) {
+  .panel {
+    display: none;
+  }
+}

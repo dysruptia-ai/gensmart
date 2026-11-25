@@ -1,0 +1,89 @@
+.field {
+  margin: 0 0 16px;
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.aside {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.control {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--app-line);
+  background: var(--app-card);
+  border-radius: var(--app-r-md);
+  padding: 0 14px;
+  font-size: 16px;
+  transition:
+    border-color var(--app-t-fast) var(--app-ease),
+    box-shadow var(--app-t-fast) var(--app-ease);
+}
+
+.input::placeholder {
+  color: var(--app-soft);
+  opacity: 0.8;
+}
+
+.input:hover {
+  border-color: var(--app-soft);
+}
+
+.input:focus,
+.input:focus-visible {
+  outline: none;
+  border-color: var(--app-focus);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-focus) 22%, transparent);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--app-err);
+}
+
+.input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-err) 22%, transparent);
+}
+
+.input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.withTrailing .input {
+  padding-right: 96px;
+}
+
+.trailing {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+}
+
+.help {
+  font-size: 13px;
+  color: var(--app-soft);
+  margin: 6px 0 0;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--app-err);
+  margin: 6px 0 0;
+}

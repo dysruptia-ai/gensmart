@@ -1,85 +1,99 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Mail } from 'lucide-react';
 import { api, ApiError } from '@/lib/api';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
-import { Logo } from '@/components/ui/Logo';
 import { useTranslation } from '@/hooks/useTranslation';
-import styles from '../auth.module.css';
+import { AppButton, Notice, TextField } from '@/components/app';
+import { AuthHeading, AuthIcon, useAuthScreen } from '@/components/auth';
+import { EMAIL_RE, isNetworkError, isRateLimited } from '@/components/auth/authForm';
+import s from '@/components/auth/auth-screens.module.css';
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
   const [email, setEmail] = useState('');
+  const [fieldError, setFieldError] = useState('');
+  const [error, setError] = useState<'' | 'generic' | 'network' | 'locked'>('');
   const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState('');
+  const [sent, setSent] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  useAuthScreen({ title: sent ? t('access.forgot.sentTitle') : t('access.meta.forgot'), panel: null });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const trimmed = email.trim();
+    if (!EMAIL_RE.test(trimmed)) {
+      setFieldError(t('access.errors.email'));
+      emailRef.current?.focus();
+      return;
+    }
+    setFieldError('');
     setError('');
     setLoading(true);
     try {
-      await api.post('/api/auth/forgot-password', { email });
-      setSubmitted(true);
+      await api.post('/api/auth/forgot-password', { email: trimmed });
+      setSent(true);
     } catch (err) {
-      // Always show generic success to prevent email enumeration
-      if (err instanceof ApiError && err.status >= 500) {
-        setError(t('errors.somethingWentWrong'));
-      } else {
-        setSubmitted(true);
-      }
+      // Nunca se revela si el correo existe: solo un fallo del servidor o de red cambia la respuesta
+      // El límite es por IP (no por correo): avisarlo no revela nada
+      if (isNetworkError(err)) setError('network');
+      else if (isRateLimited(err)) setError('locked');
+      else if (err instanceof ApiError && err.status >= 500) setError('generic');
+      else setSent(true);
     } finally {
       setLoading(false);
     }
   }
 
+  if (sent) {
+    return (
+      <>
+        <AuthIcon icon={Mail} />
+        <AuthHeading key="sent" title={t('access.forgot.sentTitle')} subtitle={t('access.forgot.sentSubtitle')} />
+        <AppButton variant="secondary" onClick={() => setSent(false)}>
+          {t('access.forgot.other')}
+        </AppButton>
+        <p className={s.alt}>
+          <Link href="/login">{t('access.forgot.back')}</Link>
+        </p>
+      </>
+    );
+  }
+
   return (
-    <div className={styles.container}>
-      <div className={styles.logoCenter}>
-        <Logo size="lg" href="/" />
-      </div>
-
-      <h1 className={styles.heading}>{t('auth.forgotPassword.title')}</h1>
-      <p className={styles.subheading}>{t('auth.forgotPassword.subtitle')}</p>
-
-      {submitted ? (
-        <div className={styles.successBanner} role="status">
-          {t('auth.forgotPassword.successMessage')}
-        </div>
-      ) : (
-        <>
-          {error && (
-            <div className={styles.errorBanner} role="alert">
-              {error}
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <Input
-              label={t('auth.forgotPassword.email')}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              autoComplete="email"
-              autoFocus
-              required
-              icon={Mail}
-            />
-            <Button type="submit" fullWidth loading={loading}>
-              {t('auth.forgotPassword.submit')}
-            </Button>
-          </form>
-        </>
-      )}
-
-      <p className={styles.footer}>
-        <Link href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.375rem' }}>
-          <ArrowLeft size={14} /> {t('auth.forgotPassword.backToLogin')}
+    <>
+      <div className={s.back}>
+        <Link href="/login" className={s.backLink}>
+          <ArrowLeft size={16} aria-hidden="true" />
+          {t('access.forgot.back')}
         </Link>
-      </p>
-    </div>
+      </div>
+      <AuthHeading key="form" title={t('access.forgot.title')} subtitle={t('access.forgot.subtitle')} />
+      {error === 'locked' && <Notice kind="error">{t('access.login.locked')}</Notice>}
+      {error === 'network' && <Notice kind="error">{t('access.errors.network')}</Notice>}
+      {error === 'generic' && <Notice kind="error">{t('access.errors.generic')}</Notice>}
+      <form onSubmit={handleSubmit} noValidate>
+        <TextField
+          label={t('access.field.email')}
+          type="email"
+          name="email"
+          autoComplete="email"
+          inputMode="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder={t('access.field.emailPh')}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={fieldError}
+          inputRef={emailRef}
+          required
+        />
+        <AppButton type="submit" loading={loading}>
+          {t('access.forgot.submit')}
+        </AppButton>
+      </form>
+    </>
   );
 }

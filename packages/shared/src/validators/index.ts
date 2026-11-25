@@ -14,6 +14,10 @@ export const registerSchema = z.object({
   promoCode: z.string().max(100).optional(),
   plan: z.enum(['solo', 'starter', 'pro']).optional(),
   turnstileToken: z.string().min(1, 'Captcha verification is required'),
+  /** The Terms of Service and the Privacy Policy must be accepted to create an account. */
+  acceptTerms: z.literal(true, {
+    errorMap: () => ({ message: 'You must accept the Terms of Service and the Privacy Policy' }),
+  }),
 });
 
 export const loginSchema = z.object({

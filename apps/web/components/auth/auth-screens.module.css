@@ -1,0 +1,132 @@
+/* Piezas comunes de las pantallas de acceso */
+.back {
+  margin: 0 0 18px;
+}
+
+.alt {
+  text-align: center;
+  margin: 22px 0 0;
+  color: var(--app-soft);
+  font-size: 15px;
+}
+
+.alt a {
+  font-weight: 600;
+}
+
+.forgot {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--app-soft);
+  text-align: center;
+  margin: 14px 0 0;
+}
+
+.stack {
+  display: grid;
+  gap: 12px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--app-ok-bg);
+  color: var(--app-ok);
+  border-radius: var(--app-r-pill);
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 16px;
+}
+
+.chip button {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: -6px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.chip button:hover {
+  background: color-mix(in srgb, var(--app-ok) 18%, transparent);
+}
+
+.chip button:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 1px;
+}
+
+.promoRow {
+  margin: 0 0 16px;
+}
+
+.email {
+  color: var(--app-ink);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.loadingBox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--app-soft);
+}
+
+.spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid var(--app-line);
+  border-top-color: var(--app-link);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.codeLabel {
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+
+.fieldError {
+  font-size: 13px;
+  color: var(--app-err);
+  margin: 6px 0 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--app-soft);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 2px 0;
+  border-radius: 6px;
+}
+
+.backLink:hover {
+  color: var(--app-ink);
+}
+
+/* El chip "Código aplicado" va pegado al campo */
+.promoWithChip {
+  margin-bottom: 8px;
+}

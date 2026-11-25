@@ -1,0 +1,82 @@
+.shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.solo {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.formcol {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 28px clamp(20px, 5vw, 72px) 24px;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: clamp(24px, 6vh, 64px);
+}
+
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.view {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  flex: 1;
+  animation: enter 0.26s ease both;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.foot {
+  max-width: 440px;
+  width: 100%;
+  margin: 28px auto 0;
+  font-size: 13px;
+  color: var(--app-soft);
+}
+
+.foot a {
+  color: var(--app-soft);
+  border-radius: 4px;
+}
+
+.foot a:hover {
+  color: var(--app-ink);
+}
+
+.foot p {
+  margin: 4px 0 0;
+}
+
+@media (max-width: 960px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .top {
+    margin-bottom: 28px;
+  }
+}

@@ -1,0 +1,18 @@
+.icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  margin: 0 0 20px;
+}
+
+.ok {
+  background: var(--app-ok-bg);
+  color: var(--app-ok);
+}
+
+.err {
+  background: var(--app-err-bg);
+  color: var(--app-err);
+}

@@ -1,0 +1,96 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 0 20px;
+  border-radius: var(--app-r-md);
+  border: 1px solid var(--app-line);
+  background: var(--app-card);
+  color: var(--app-ink);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--app-t-fast) var(--app-ease),
+    border-color var(--app-t-fast) var(--app-ease),
+    transform 0.15s var(--app-ease);
+}
+
+.full {
+  width: 100%;
+}
+
+.btn:hover {
+  border-color: var(--app-soft);
+  background: var(--app-card-2);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.primary {
+  background: var(--app-go);
+  border-color: var(--app-go);
+  color: var(--app-go-ink);
+}
+
+.primary:hover {
+  background: var(--app-go-hover);
+  border-color: var(--app-go-hover);
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn:disabled:hover {
+  border-color: var(--app-line);
+  background: var(--app-card);
+}
+
+.primary:disabled:hover {
+  background: var(--app-go);
+  border-color: var(--app-go);
+}
+
+/* Cargando: se ve activo (no apagado) aunque esté deshabilitado */
+.loading:disabled {
+  opacity: 0.85;
+  cursor: progress;
+}
+
+.sm {
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex: none;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

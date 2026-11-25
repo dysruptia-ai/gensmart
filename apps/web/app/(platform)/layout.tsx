@@ -1,9 +1,11 @@
 import type { Metadata } from 'next';
 import { Inter, Handjet, Sora, Geist } from 'next/font/google';
 import './platform.css';
+import './gs-tokens.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ToastProvider } from '@/components/ui/Toast';
+import { APP_BOOT_SCRIPT } from '@/lib/app-theme';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -88,7 +90,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${handjet.variable} ${sora.variable} ${geist.variable}`}>
+    // `lang` y `data-gs-theme` los ajusta APP_BOOT_SCRIPT antes del primer pintado (y luego
+    // LanguageProvider): por eso <html> no se compara al hidratar.
+    <html
+      lang="en"
+      className={`${inter.variable} ${handjet.variable} ${sora.variable} ${geist.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: APP_BOOT_SCRIPT }} />
+      </head>
       <body>
         <AuthProvider>
           <LanguageProvider>

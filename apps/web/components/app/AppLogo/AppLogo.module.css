@@ -1,0 +1,33 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.logo img {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.onDark {
+  display: none !important;
+}
+
+:global(:root[data-gs-theme='dark']) .onLight {
+  display: none !important;
+}
+
+:global(:root[data-gs-theme='dark']) .onDark {
+  display: block !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-gs-theme])) .onLight {
+    display: none !important;
+  }
+
+  :global(:root:not([data-gs-theme])) .onDark {
+    display: block !important;
+  }
+}

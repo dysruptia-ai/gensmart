@@ -1,3 +1,9 @@
+/**
+ * Version of the Terms of Service the user accepts when registering (stored in users.terms_version).
+ * It is the `lastUpdated` date of the Terms (apps/web/content/legal/*): update it whenever the Terms change.
+ */
+export const TERMS_VERSION = '2026-11-25';
+
 export const PLAN_LIMITS = {
   solo: {
     agents: 1,

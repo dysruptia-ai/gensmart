@@ -1,0 +1,162 @@
+/* ============================================================
+   GenSmart · tokens de la plataforma (diseño 2026)
+   Mismos valores que design/05-acceso/assets/css/tokens.css y el
+   tema claro/noche del prototipo de Acceso.
+
+   Todo queda acotado a `.gsApp`: las pantallas viejas del dashboard
+   (platform.css, --color-*) no ven ninguno de estos valores.
+
+   Tema: `data-gs-theme="light|dark"` en <html> (lo pone el script de
+   lib/app-theme.ts antes del primer pintado). Sin atributo manda el
+   sistema (prefers-color-scheme).
+   ============================================================ */
+
+.gsApp {
+  /* ---------- marca ---------- */
+  --brand: #22c55e;
+  --brand-bright: #3ddc84;
+  --brand-soft: #7af0ad;
+  --brand-deep: #0f7a3d;
+  --brand-ink: #04170c;
+  --brand-tint: rgba(61, 220, 132, 0.12);
+  --brand-line: rgba(61, 220, 132, 0.3);
+
+  /* ---------- negro de producto (panel siempre oscuro) ---------- */
+  --ink-950: #070a0e;
+  --ink-900: #0c1014;
+  --ink-800: #151b21;
+  --ink-700: #1e262d;
+  --ink-300: #a9b4b0;
+  --ink-200: #c3ccc8;
+  --ink-100: #f0f4f2;
+
+  /* ---------- tema claro (por defecto) ---------- */
+  --app-bg: #f6f8f7;
+  --app-card: #ffffff;
+  --app-card-2: #eef2f0;
+  --app-line: rgba(12, 16, 20, 0.14);
+  --app-line-soft: rgba(12, 16, 20, 0.08);
+  --app-ink: #0c1014;
+  --app-soft: #4b5753;
+  --app-mute: #2f3a36;
+  --app-link: #0b6b36;
+  --app-go: #3ddc84;
+  --app-go-hover: #2fc974;
+  --app-go-ink: #04170c;
+  --app-err: #b42318;
+  --app-err-bg: #fdecea;
+  --app-ok: #0b6b36;
+  --app-ok-bg: #e4f6ec;
+  --app-warn: #8a5a00;
+  --app-warn-bg: #fbf1dc;
+  --app-info: #1d4ed8;
+  --app-info-bg: #e8effd;
+  --app-focus: #0b6b36;
+  --app-check: #0b6b36;
+
+  /* ---------- tipografía (next/font en el layout de la plataforma) ---------- */
+  --app-font-sans: var(--font-geist), 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --app-font-display: var(--font-sora), 'Sora', var(--font-geist), ui-sans-serif, sans-serif;
+
+  /* ---------- forma y movimiento ---------- */
+  --app-r-sm: 8px;
+  --app-r-md: 12px;
+  --app-r-lg: 16px;
+  --app-r-xl: 20px;
+  --app-r-pill: 999px;
+  --app-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --app-t-fast: 0.18s;
+
+  color-scheme: light;
+  background: var(--app-bg);
+  color: var(--app-ink);
+  font: 400 16px/1.55 var(--app-font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:root[data-gs-theme='dark'] .gsApp {
+  --app-bg: #0c1014;
+  --app-card: #151b21;
+  --app-card-2: #1e262d;
+  --app-line: rgba(240, 244, 242, 0.18);
+  --app-line-soft: rgba(240, 244, 242, 0.09);
+  --app-ink: #f0f4f2;
+  --app-soft: #a9b4b0;
+  --app-mute: #c3ccc8;
+  --app-link: #3ddc84;
+  --app-err: #ff8a7e;
+  --app-err-bg: rgba(255, 138, 126, 0.12);
+  --app-ok: #3ddc84;
+  --app-ok-bg: rgba(61, 220, 132, 0.12);
+  --app-warn: #e8c98e;
+  --app-warn-bg: rgba(232, 201, 142, 0.12);
+  --app-info: #9cbcff;
+  --app-info-bg: rgba(156, 188, 255, 0.12);
+  --app-focus: #3ddc84;
+  --app-check: #3ddc84;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-gs-theme]) .gsApp {
+    --app-bg: #0c1014;
+    --app-card: #151b21;
+    --app-card-2: #1e262d;
+    --app-line: rgba(240, 244, 242, 0.18);
+    --app-line-soft: rgba(240, 244, 242, 0.09);
+    --app-ink: #f0f4f2;
+    --app-soft: #a9b4b0;
+    --app-mute: #c3ccc8;
+    --app-link: #3ddc84;
+    --app-err: #ff8a7e;
+    --app-err-bg: rgba(255, 138, 126, 0.12);
+    --app-ok: #3ddc84;
+    --app-ok-bg: rgba(61, 220, 132, 0.12);
+    --app-warn: #e8c98e;
+    --app-warn-bg: rgba(232, 201, 142, 0.12);
+    --app-info: #9cbcff;
+    --app-info-bg: rgba(156, 188, 255, 0.12);
+    --app-focus: #3ddc84;
+    --app-check: #3ddc84;
+    color-scheme: dark;
+  }
+}
+
+/* Bases con especificidad cero (:where) para que los CSS Modules siempre ganen */
+:where(.gsApp) *,
+:where(.gsApp) *::before,
+:where(.gsApp) *::after {
+  box-sizing: border-box;
+}
+
+:where(.gsApp) a {
+  color: var(--app-link);
+}
+
+:where(.gsApp) :where(button, input, select, textarea) {
+  font: inherit;
+  color: inherit;
+}
+
+:where(.gsApp) :focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.gsApp .gsSr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gsApp *,
+  .gsApp *::before,
+  .gsApp *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

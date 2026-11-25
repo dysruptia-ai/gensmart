@@ -1,0 +1,15 @@
+.wrap {
+  margin: 0 0 16px;
+}
+
+.box {
+  min-height: 65px;
+  border-radius: var(--app-r-md);
+  overflow: hidden;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--app-err);
+  margin: 6px 0 0;
+}

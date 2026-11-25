@@ -1,5 +1,22 @@
 import type { NextConfig } from "next";
 
+/**
+ * Origen de la API para `connect-src`. En producción es api.gensmart.co (escrito abajo).
+ * En desarrollo se agrega el de NEXT_PUBLIC_API_URL (por ejemplo http://localhost:4000)
+ * y su WebSocket; si no, la CSP bloquea la API local y el dashboard no carga.
+ */
+const DEV_API_SOURCES: string = (() => {
+  if (process.env.NODE_ENV === 'production') return '';
+  const raw = process.env.NEXT_PUBLIC_API_URL;
+  if (!raw) return '';
+  try {
+    const { origin, protocol, host } = new URL(raw);
+    return ` ${origin} ${protocol === 'https:' ? 'wss' : 'ws'}://${host}`;
+  } catch {
+    return '';
+  }
+})();
+
 // Everything here except /widget/* — that page is embedded in customer sites via
 // iframe and must stay embeddable cross-origin, so it gets no frame-ancestors/X-Frame-Options.
 const BASE_CSP = [
@@ -8,7 +25,7 @@ const BASE_CSP = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://api.gensmart.co wss://api.gensmart.co https://challenges.cloudflare.com https://connect.facebook.net",
+  `connect-src 'self' https://api.gensmart.co wss://api.gensmart.co https://challenges.cloudflare.com https://connect.facebook.net${DEV_API_SOURCES}`,
   // 'self': el widget del sitio (public/widget.js) abre /widget/:agentId en un iframe del mismo origen
   // youtube-nocookie: el video de la base de conocimiento (solo se carga al hacer clic)
   "frame-src 'self' https://challenges.cloudflare.com https://www.facebook.com https://www.youtube-nocookie.com",
@@ -25,7 +42,7 @@ const WIDGET_CSP = [
   "font-src 'self' https://fonts.gstatic.com",
   "img-src 'self' data: blob: https:",
   "media-src 'self' data: blob: https:",
-  "connect-src 'self' https://api.gensmart.co wss://api.gensmart.co https://challenges.cloudflare.com",
+  `connect-src 'self' https://api.gensmart.co wss://api.gensmart.co https://challenges.cloudflare.com${DEV_API_SOURCES}`,
   "frame-src https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",

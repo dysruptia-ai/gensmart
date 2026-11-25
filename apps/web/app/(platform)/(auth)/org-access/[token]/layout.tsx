@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 
+// El título en el idioma activo lo pone la página (useAuthScreen); este es el del servidor
 export const metadata: Metadata = {
-  robots: { index: false, follow: false },
+  title: 'Organization access',
 };
 
-export default function NoIndexLayout({ children }: { children: React.ReactNode }) {
+export default function OrgAccessLayout({ children }: { children: React.ReactNode }) {
   return children;
 }

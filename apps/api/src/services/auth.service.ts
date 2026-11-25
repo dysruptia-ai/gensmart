@@ -19,6 +19,7 @@ import {
   sendOrgAccessEmail,
 } from '../config/email';
 import { AppError } from '../middleware/errorHandler';
+import { TERMS_VERSION } from '@gensmart/shared';
 import { pickSessionMembership } from './access-rules';
 import { getSettingValue } from './platform-settings.service';
 import {
@@ -259,6 +260,7 @@ export async function register(input: {
   organizationName: string;
   promoCode?: string;
   plan?: string;
+  acceptTerms: true;
 }): Promise<RegisterResult> {
   const existing = await query<{ id: string }>(
     'SELECT id FROM users WHERE email = $1',
@@ -297,10 +299,10 @@ export async function register(input: {
     const org = orgResult.rows[0];
 
     const userResult = await client.query<UserRow>(
-      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), NOW())
+      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, terms_accepted_at, terms_version, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), $5, NOW(), NOW())
        RETURNING id, email, name, role, organization_id, password_hash, totp_enabled, totp_secret_encrypted, last_login_at, language, is_super_admin`,
-      [org.id, input.email.toLowerCase(), input.name, passwordHash]
+      [org.id, input.email.toLowerCase(), input.name, passwordHash, TERMS_VERSION]
     );
     const user = userResult.rows[0];
 

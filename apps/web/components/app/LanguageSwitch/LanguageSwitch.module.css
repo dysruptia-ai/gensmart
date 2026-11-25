@@ -1,0 +1,34 @@
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  overflow: hidden;
+  background: var(--app-card);
+}
+
+.seg button {
+  min-width: 40px;
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  padding: 0 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--app-soft);
+}
+
+.seg button:hover {
+  background: var(--app-card-2);
+  color: var(--app-ink);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--app-ink);
+  color: var(--app-bg);
+}
+
+.seg button:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: -3px;
+}

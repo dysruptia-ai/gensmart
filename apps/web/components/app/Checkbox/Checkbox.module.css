@@ -1,0 +1,78 @@
+.wrap {
+  margin: 0 0 16px;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.box {
+  position: relative;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+}
+
+.input {
+  appearance: none;
+  margin: 0;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--app-soft);
+  border-radius: 5px;
+  background: var(--app-card);
+  cursor: pointer;
+  transition:
+    background var(--app-t-fast) var(--app-ease),
+    border-color var(--app-t-fast) var(--app-ease);
+}
+
+.input:hover {
+  border-color: var(--app-ink);
+}
+
+.input:checked {
+  background: var(--app-check);
+  border-color: var(--app-check);
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--app-err);
+}
+
+.input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.mark {
+  position: absolute;
+  inset: 3px;
+  color: var(--app-bg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.input:checked + .mark {
+  opacity: 1;
+}
+
+.label {
+  font-size: 14px;
+  color: var(--app-mute);
+  cursor: pointer;
+}
+
+.error {
+  font-size: 13px;
+  color: var(--app-err);
+  margin: 6px 0 0 30px;
+}

@@ -1,0 +1,51 @@
+.toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  color: var(--app-ink);
+  cursor: pointer;
+  transition:
+    background var(--app-t-fast) var(--app-ease),
+    border-color var(--app-t-fast) var(--app-ease);
+}
+
+.toggle:hover {
+  background: var(--app-card-2);
+  border-color: var(--app-soft);
+}
+
+.toggle:active {
+  transform: translateY(1px);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+/* Claro: se ofrece la luna. Noche: el sol. */
+.sun {
+  display: none;
+}
+
+:global(:root[data-gs-theme='dark']) .sun {
+  display: block;
+}
+
+:global(:root[data-gs-theme='dark']) .moon {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-gs-theme])) .sun {
+    display: block;
+  }
+
+  :global(:root:not([data-gs-theme])) .moon {
+    display: none;
+  }
+}

@@ -1,0 +1,67 @@
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: var(--app-r-md);
+  font-size: 14px;
+  line-height: 1.45;
+  margin: 0 0 18px;
+  border: 1px solid transparent;
+}
+
+.icon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.text {
+  flex: 1 1 200px;
+}
+
+.action {
+  margin-left: auto;
+}
+
+.action button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0;
+  border-radius: 4px;
+}
+
+.action button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.error {
+  background: var(--app-err-bg);
+  color: var(--app-err);
+  border-color: color-mix(in srgb, var(--app-err) 35%, transparent);
+}
+
+.success {
+  background: var(--app-ok-bg);
+  color: var(--app-ok);
+  border-color: color-mix(in srgb, var(--app-ok) 35%, transparent);
+}
+
+.warning {
+  background: var(--app-warn-bg);
+  color: var(--app-warn);
+  border-color: color-mix(in srgb, var(--app-warn) 35%, transparent);
+}
+
+.info {
+  background: var(--app-info-bg);
+  color: var(--app-info);
+  border-color: color-mix(in srgb, var(--app-info) 35%, transparent);
+}

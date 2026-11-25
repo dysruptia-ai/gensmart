@@ -46,6 +46,8 @@ interface RegisterOptions {
   turnstileToken: string;
   promoCode?: string;
   plan?: string;
+  /** Casilla de Términos y Privacidad: la API exige `true`. */
+  acceptTerms: boolean;
 }
 
 interface AuthContextValue {
@@ -172,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(
     async (options: RegisterOptions): Promise<RegisterResult> => {
-      const { email, password, name, organizationName, turnstileToken, promoCode, plan } = options;
+      const { email, password, name, organizationName, turnstileToken, promoCode, plan, acceptTerms } = options;
       // No session is created: the account becomes usable once the emailed link is confirmed
       const data = await api.post<{ message: string; email: string; promoApplied: boolean }>('/api/auth/register', {
         email,
@@ -180,6 +182,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name,
         organizationName,
         turnstileToken,
+        acceptTerms,
         ...(promoCode ? { promoCode } : {}),
         ...(plan ? { plan } : {}),
       });

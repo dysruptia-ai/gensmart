@@ -5,6 +5,7 @@ import React, {
   useContext,
   useState,
   useEffect,
+  useLayoutEffect,
   useCallback,
 } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
@@ -25,6 +26,9 @@ interface LanguageContextValue {
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
 const LS_KEY = 'gs_language';
+
+/** useLayoutEffect en el navegador; en el servidor no corre (y no avisa). */
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 function detectBrowserLanguage(): SupportedLanguage {
   if (typeof navigator === 'undefined') return 'en';
@@ -49,27 +53,28 @@ function getInitialLanguage(userLanguage?: string): SupportedLanguage {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
-  // Start with 'en' to match SSR — prevents hydration mismatch.
-  // Real language is applied in useEffect after hydration completes.
+  // El servidor no conoce el idioma: el primer render es 'en' (igual que el HTML del servidor).
+  // Se resuelve en un layout effect, que corre después de hidratar y ANTES de pintar: el
+  // usuario nunca ve los textos en un idioma distinto del que puso el script del <head>
+  // (lib/app-theme.ts), que decide con la misma regla (gs_language → navegador).
   const [language, setLanguageState] = useState<SupportedLanguage>('en');
-  const [hydrated, setHydrated] = useState(false);
   const [isLanguageResolved, setIsLanguageResolved] = useState(false);
+  const userLanguage = (user as { language?: string } | null)?.language;
 
-  // Mark as hydrated after first client render
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  // Sync language AFTER hydration to avoid mismatch
-  useEffect(() => {
-    if (!hydrated) return;
-    const lang = getInitialLanguage((user as { language?: string } | null)?.language);
+  useIsomorphicLayoutEffect(() => {
+    // Prioridad: idioma del usuario con sesión → gs_language → navegador
+    const lang = getInitialLanguage(userLanguage);
     setLanguageState(lang);
-    if (typeof window !== 'undefined') {
-      storageSet(LS_KEY, lang);
-    }
+    storageSet(LS_KEY, lang);
+    document.documentElement.lang = lang;
     setIsLanguageResolved(true);
-  }, [hydrated, user]);
+  }, [userLanguage]);
+
+  // <html lang> sigue al idioma activo (lectores de pantalla). Solo cuando ya está resuelto:
+  // antes, el script del <head> (lib/app-theme.ts) ya puso el idioma guardado.
+  useIsomorphicLayoutEffect(() => {
+    if (isLanguageResolved) document.documentElement.lang = language;
+  }, [language, isLanguageResolved]);
 
   const setLanguage = useCallback(
     (lang: SupportedLanguage) => {
