@@ -1,0 +1,111 @@
+/*
+ * Pautas de marca de Google para "Sign in with Google": tema claro (fondo #FFFFFF, borde #747775,
+ * texto #1F1F1F) y oscuro (fondo #131314, borde #8E918F, texto #E3E3E3), logo "G" sin cambios.
+ * Hover y foco: una capa del color del texto encima, como el botón oficial.
+ */
+.btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 20px;
+  border-radius: var(--app-r-md);
+  border: 1px solid;
+  font-family: var(--app-font-sans);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  isolation: isolate;
+  transition: transform 0.15s var(--app-ease);
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--app-t-fast) var(--app-ease);
+}
+
+.btn:hover {
+  text-decoration: none;
+}
+
+.btn:hover::after {
+  opacity: 0.08;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:active::after {
+  opacity: 0.12;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.google {
+  background: #ffffff;
+  border-color: #747775;
+  color: #1f1f1f;
+}
+
+:global(:root[data-gs-theme='dark']) .google {
+  background: #131314;
+  border-color: #8e918f;
+  color: #e3e3e3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-gs-theme])) .google {
+    background: #131314;
+    border-color: #8e918f;
+    color: #e3e3e3;
+  }
+}
+
+.logo {
+  flex: none;
+}
+
+.redirecting {
+  cursor: progress;
+}
+
+.redirecting::after {
+  opacity: 0.04;
+}
+
+.spinner {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+}

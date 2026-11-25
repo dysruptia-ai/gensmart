@@ -59,7 +59,7 @@ export interface TwoFactorRequired {
   tempToken: string;
 }
 
-interface UserRow {
+export interface UserRow {
   id: string;
   email: string;
   name: string;
@@ -74,14 +74,14 @@ interface UserRow {
   email_verified: boolean;
 }
 
-interface OrgRow extends Partial<WelcomeSurveyFlagsRow> {
+export interface OrgRow extends Partial<WelcomeSurveyFlagsRow> {
   id: string;
   name: string;
   is_suspended: boolean;
   trial_ends_at: string | null;
 }
 
-const SESSION_ORG_SQL = `SELECT id, name, is_suspended, trial_ends_at, ${WELCOME_SURVEY_COLUMNS} FROM organizations WHERE id = $1`;
+export const SESSION_ORG_SQL = `SELECT id, name, is_suspended, trial_ends_at, ${WELCOME_SURVEY_COLUMNS} FROM organizations WHERE id = $1`;
 
 interface RefreshTokenRow {
   id: string;
@@ -259,6 +259,114 @@ function resolveRegistrationPlan(requested: string | undefined): string {
   return requested && SELF_SERVICE_PLANS.has(requested) ? requested : 'solo';
 }
 
+/** Datos comunes para crear un usuario dueño con su organización (registro con contraseña o con un proveedor). */
+export interface CreateAccountInput {
+  email: string;
+  name: string;
+  organizationName: string;
+  passwordHash: string;
+  /** FALSE si el hash es de una contraseña aleatoria (registro con un proveedor). */
+  passwordSet: boolean;
+  emailVerified: boolean;
+  promoCode?: string;
+  plan?: string;
+  ref?: string;
+  language: 'es' | 'en';
+  /** Vínculo con el proveedor externo, si la cuenta nace de él. */
+  googleSub?: string;
+}
+
+export interface CreatedAccount {
+  user: UserRow;
+  org: OrgRow;
+  /** El código promocional era válido al crear la cuenta. */
+  promoValid: boolean;
+  /** La prueba de la promoción ya quedó aplicada (solo si la cuenta nace verificada). */
+  promoTrialApplied: boolean;
+}
+
+/**
+ * Crea la organización, el usuario dueño y su membresía en una transacción. La misma lógica para el
+ * registro con contraseña y con un proveedor: plan autoservicio, `ref`, Términos, idioma y la prueba.
+ * Si la cuenta nace sin verificar, la prueba de la promoción se aplica al verificar el correo
+ * (consumeEmailVerificationToken); si nace verificada, se aplica aquí mismo.
+ */
+export async function createAccount(input: CreateAccountInput): Promise<CreatedAccount> {
+  const email = input.email.toLowerCase();
+  const existing = await query<{ id: string }>('SELECT id FROM users WHERE email = $1', [email]);
+  if (existing.rows.length > 0) {
+    throw new AppError(409, 'Email already registered', 'EMAIL_TAKEN');
+  }
+
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Checked before the org INSERT so a default trial can be set in the same statement when no
+    // (valid) promo code was given.
+    const promoValid = input.promoCode ? (await findValidPromo(client, input.promoCode)) !== null : false;
+    // If code is invalid, silently ignore — user still registers with the default trial below
+    const trialEndsAt = promoValid
+      ? null
+      : new Date(Date.now() + (await getTrialDurationDays()) * 24 * 60 * 60 * 1000);
+    const plan = resolveRegistrationPlan(input.plan);
+
+    const orgSlug = slugify(input.organizationName);
+    const orgResult = await client.query<OrgRow>(
+      `INSERT INTO organizations (id, name, slug, plan, subscription_status, trial_ends_at, onboarding_survey_eligible, signup_ref_code, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, 'active', $4, TRUE, $5, NOW(), NOW())
+       RETURNING id, name, is_suspended, trial_ends_at`,
+      [input.organizationName, orgSlug, plan, trialEndsAt?.toISOString() ?? null, input.ref ?? null]
+    );
+    const org = orgResult.rows[0];
+
+    const userResult = await client.query<UserRow>(
+      `INSERT INTO users (id, organization_id, email, name, password_hash, password_set, role, email_verified, google_sub, google_linked_at, terms_accepted_at, terms_version, language, created_at, updated_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, 'owner', $6, $7, CASE WHEN $7::text IS NULL THEN NULL ELSE NOW() END, NOW(), $8, $9, NOW(), NOW())
+       RETURNING id, email, name, role, organization_id, password_hash, totp_enabled, totp_secret_encrypted, last_login_at, language, is_super_admin, email_verified`,
+      [org.id, email, input.name, input.passwordHash, input.passwordSet, input.emailVerified, input.googleSub ?? null, TERMS_VERSION, input.language]
+    );
+    const user = userResult.rows[0];
+
+    await client.query(
+      `INSERT INTO user_organizations (user_id, organization_id, role, created_at)
+       VALUES ($1, $2, 'owner', NOW())
+       ON CONFLICT (user_id, organization_id) DO NOTHING`,
+      [user.id, org.id]
+    );
+
+    // Lo que el registro con contraseña hace al verificar el correo, para la cuenta que ya nace verificada
+    const promoTrialApplied =
+      input.emailVerified && promoValid && input.promoCode
+        ? await applyVerifiedPromoTrial(client, org.id, input.promoCode)
+        : false;
+
+    await client.query('COMMIT');
+
+    // Create Stripe customer async (don't block registration)
+    import('../services/stripe.service').then(({ createCustomer }) =>
+      createCustomer(org.id, email, input.name).catch(err =>
+        console.error('[Stripe] Failed to create customer on register:', err)
+      )
+    ).catch(() => {/* ignore import error */});
+
+    return { user, org, promoValid, promoTrialApplied };
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    // Handle unique constraint violation on org slug (or a concurrent signup with the same email/sub)
+    if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
+      const constraint = String((err as Record<string, unknown>).constraint ?? '');
+      if (constraint.includes('email') || constraint.includes('google_sub')) {
+        throw new AppError(409, 'Email already registered', 'EMAIL_TAKEN');
+      }
+      throw new AppError(409, 'Organization name already taken. Please choose a different name.', 'ORG_SLUG_TAKEN');
+    }
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function register(input: {
   email: string;
   password: string;
@@ -272,83 +380,53 @@ export async function register(input: {
   /** Idioma de la pantalla de registro (o de Accept-Language), en users.language. */
   language: 'es' | 'en';
 }): Promise<RegisterResult> {
-  const existing = await query<{ id: string }>(
-    'SELECT id FROM users WHERE email = $1',
-    [input.email.toLowerCase()]
+  const { user, promoValid } = await createAccount({
+    email: input.email,
+    name: input.name,
+    organizationName: input.organizationName,
+    passwordHash: await bcrypt.hash(input.password, 12),
+    passwordSet: true,
+    emailVerified: false,
+    promoCode: input.promoCode,
+    plan: input.plan,
+    ref: input.ref,
+    language: input.language,
+  });
+
+  // Ask the address owner to confirm before sending anything else (the welcome email goes out on
+  // confirmation). Async, don't block registration.
+  generateEmailVerificationToken(user.id, promoValid ? input.promoCode : undefined)
+    .then(token => sendVerificationEmail({ name: user.name, email: user.email }, token))
+    .catch(err => console.error('[Email] Failed to send verification email:', err));
+
+  return { email: user.email, name: user.name, promoApplied: promoValid };
+}
+
+/**
+ * Lo que sigue a una credencial válida (contraseña o proveedor): correo verificado, 2FA y sesión en la
+ * organización que toca. Exportada para el ingreso con proveedores (social-auth.service).
+ */
+export async function completeSignIn(user: UserRow): Promise<AuthTokens | TwoFactorRequired> {
+  if (!user.email_verified) {
+    throw new AppError(403, 'Please verify your email before logging in', 'EMAIL_NOT_VERIFIED');
+  }
+
+  if (user.totp_enabled) {
+    const tempToken = generateTempToken({ userId: user.id, purpose: '2fa' });
+    return { requires2FA: true, tempToken };
+  }
+
+  const membership = await resolveSessionMembership(user);
+  const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
+  const orgResult = await query<OrgRow>(
+    SESSION_ORG_SQL,
+    [sessionUser.organization_id]
   );
-  if (existing.rows.length > 0) {
-    throw new AppError(409, 'Email already registered', 'EMAIL_TAKEN');
-  }
+  const org = orgResult.rows[0];
 
-  const passwordHash = await bcrypt.hash(input.password, 12);
-  const client = await getClient();
+  await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 
-  try {
-    await client.query('BEGIN');
-
-    // Checked before the org INSERT so a default trial can be set in the same statement when no
-    // (valid) promo code was given — the promo's own trial, if any, is still applied later on email
-    // verification (consumeEmailVerificationToken), re-validated at that point.
-    let promoApplied = false;
-    if (input.promoCode) {
-      promoApplied = (await findValidPromo(client, input.promoCode)) !== null;
-      // If code is invalid, silently ignore — user still registers with the default trial below
-    }
-    const trialEndsAt = promoApplied
-      ? null
-      : new Date(Date.now() + (await getTrialDurationDays()) * 24 * 60 * 60 * 1000);
-    const plan = resolveRegistrationPlan(input.plan);
-
-    const orgSlug = slugify(input.organizationName);
-    const orgResult = await client.query<OrgRow>(
-      `INSERT INTO organizations (id, name, slug, plan, subscription_status, trial_ends_at, onboarding_survey_eligible, signup_ref_code, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, 'active', $4, TRUE, $5, NOW(), NOW())
-       RETURNING id, name`,
-      [input.organizationName, orgSlug, plan, trialEndsAt?.toISOString() ?? null, input.ref ?? null]
-    );
-    const org = orgResult.rows[0];
-
-    const userResult = await client.query<UserRow>(
-      `INSERT INTO users (id, organization_id, email, name, password_hash, role, email_verified, terms_accepted_at, terms_version, language, created_at, updated_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'owner', false, NOW(), $5, $6, NOW(), NOW())
-       RETURNING id, email, name, role, organization_id, password_hash, totp_enabled, totp_secret_encrypted, last_login_at, language, is_super_admin`,
-      [org.id, input.email.toLowerCase(), input.name, passwordHash, TERMS_VERSION, input.language]
-    );
-    const user = userResult.rows[0];
-
-    await client.query(
-      `INSERT INTO user_organizations (user_id, organization_id, role, created_at)
-       VALUES ($1, $2, 'owner', NOW())
-       ON CONFLICT (user_id, organization_id) DO NOTHING`,
-      [user.id, org.id]
-    );
-
-    await client.query('COMMIT');
-
-    // Ask the address owner to confirm before sending anything else (the welcome email goes out on
-    // confirmation). Async, don't block registration.
-    generateEmailVerificationToken(user.id, promoApplied ? input.promoCode : undefined)
-      .then(token => sendVerificationEmail({ name: user.name, email: user.email }, token))
-      .catch(err => console.error('[Email] Failed to send verification email:', err));
-
-    // Create Stripe customer async (don't block registration)
-    import('../services/stripe.service').then(({ createCustomer }) =>
-      createCustomer(org.id, input.email.toLowerCase(), input.name).catch(err =>
-        console.error('[Stripe] Failed to create customer on register:', err)
-      )
-    ).catch(() => {/* ignore import error */});
-
-    return { email: user.email, name: user.name, promoApplied };
-  } catch (err) {
-    await client.query('ROLLBACK');
-    // Handle unique constraint violation on org slug
-    if (err && typeof err === 'object' && 'code' in err && (err as Record<string, unknown>).code === '23505') {
-      throw new AppError(409, 'Organization name already taken. Please choose a different name.', 'ORG_SLUG_TAKEN');
-    }
-    throw err;
-  } finally {
-    client.release();
-  }
+  return buildAuthTokens(sessionUser, org);
 }
 
 export async function login(input: {
@@ -408,26 +486,7 @@ export async function login(input: {
   }
   await clearFailures(pairKey).catch(() => undefined);
 
-  if (!user.email_verified) {
-    throw new AppError(403, 'Please verify your email before logging in', 'EMAIL_NOT_VERIFIED');
-  }
-
-  if (user.totp_enabled) {
-    const tempToken = generateTempToken({ userId: user.id, purpose: '2fa' });
-    return { requires2FA: true, tempToken };
-  }
-
-  const membership = await resolveSessionMembership(user);
-  const sessionUser: UserRow = { ...user, organization_id: membership.organization_id, role: membership.role };
-  const orgResult = await query<OrgRow>(
-    SESSION_ORG_SQL,
-    [sessionUser.organization_id]
-  );
-  const org = orgResult.rows[0];
-
-  await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
-
-  return buildAuthTokens(sessionUser, org);
+  return completeSignIn(user);
 }
 
 export async function verify2FA(input: {
@@ -683,6 +742,59 @@ export async function generateEmailVerificationToken(userId: string, promoCode?:
   return token;
 }
 
+type DbClient = Awaited<ReturnType<typeof getClient>>;
+
+/**
+ * Prueba de la promoción para una cuenta ya verificada, re-validada en este momento (puede haber
+ * vencido o agotado). Devuelve si quedó aplicada.
+ */
+async function applyVerifiedPromoTrial(client: DbClient, organizationId: string, promoCode: string): Promise<boolean> {
+  const promo = await findValidPromo(client, promoCode);
+  if (!promo) return false;
+  // Guarded increment: never goes past max_uses even with concurrent verifications
+  const bumped = await client.query(
+    `UPDATE promo_codes SET used_count = used_count + 1
+     WHERE id = $1 AND (max_uses IS NULL OR used_count < max_uses)`,
+    [promo.id]
+  );
+  if ((bumped.rowCount ?? 0) === 0) return false;
+  const trialEndsAt = new Date();
+  trialEndsAt.setDate(trialEndsAt.getDate() + promo.duration_days);
+  await client.query(
+    `UPDATE organizations
+     SET plan = $1, trial_ends_at = $2, promo_code_id = $3, updated_at = NOW()
+     WHERE id = $4`,
+    [promo.plan, trialEndsAt.toISOString(), promo.id, organizationId]
+  );
+  return true;
+}
+
+/**
+ * Lo que pasa con la organización al verificar el correo: la promoción elegida al registrarse (si
+ * sigue válida) o, si no, la prueba por defecto. Exportada para el vínculo con un proveedor, que
+ * también verifica el correo.
+ */
+export async function applyPromoOnVerification(
+  client: DbClient,
+  organizationId: string,
+  promoCode: string | null
+): Promise<void> {
+  const promoTrialApplied = promoCode ? await applyVerifiedPromoTrial(client, organizationId, promoCode) : false;
+
+  // Safety net for the race window between registration and verification: a promo code that was
+  // valid at registration (so register() skipped the default trial) can expire or be exhausted by
+  // the time the email is confirmed. If so, trial_ends_at is still NULL here — fall back to the
+  // same default trial register() would have set had no promo code been given at all.
+  if (!promoTrialApplied) {
+    const trialEndsAt = new Date(Date.now() + (await getTrialDurationDays()) * 24 * 60 * 60 * 1000);
+    await client.query(
+      `UPDATE organizations SET trial_ends_at = $1, updated_at = NOW()
+       WHERE id = $2 AND trial_ends_at IS NULL`,
+      [trialEndsAt.toISOString(), organizationId]
+    );
+  }
+}
+
 export async function consumeEmailVerificationToken(token: string): Promise<void> {
   const tokenHash = hashToken(token);
 
@@ -709,44 +821,8 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
     );
     user = updated.rows[0];
 
-    // Apply the promo code chosen at registration, re-validated now: it may have expired or been
-    // exhausted by others since. If so the account is still verified and simply stays on the
-    // default trial already set at registration.
-    let promoTrialApplied = false;
-    if (row.promo_code && user) {
-      const promo = await findValidPromo(client, row.promo_code);
-      if (promo) {
-        // Guarded increment: never goes past max_uses even with concurrent verifications
-        const bumped = await client.query(
-          `UPDATE promo_codes SET used_count = used_count + 1
-           WHERE id = $1 AND (max_uses IS NULL OR used_count < max_uses)`,
-          [promo.id]
-        );
-        if ((bumped.rowCount ?? 0) > 0) {
-          const trialEndsAt = new Date();
-          trialEndsAt.setDate(trialEndsAt.getDate() + promo.duration_days);
-          await client.query(
-            `UPDATE organizations
-             SET plan = $1, trial_ends_at = $2, promo_code_id = $3, updated_at = NOW()
-             WHERE id = $4`,
-            [promo.plan, trialEndsAt.toISOString(), promo.id, user.organization_id]
-          );
-          promoTrialApplied = true;
-        }
-      }
-    }
-
-    // Safety net for the race window between registration and verification: a promo code that was
-    // valid at registration (so register() skipped the default trial) can expire or be exhausted by
-    // the time the email is confirmed. If so, trial_ends_at is still NULL here — fall back to the
-    // same default trial register() would have set had no promo code been given at all.
-    if (!promoTrialApplied && user) {
-      const trialEndsAt = new Date(Date.now() + (await getTrialDurationDays()) * 24 * 60 * 60 * 1000);
-      await client.query(
-        `UPDATE organizations SET trial_ends_at = $1, updated_at = NOW()
-         WHERE id = $2 AND trial_ends_at IS NULL`,
-        [trialEndsAt.toISOString(), user.organization_id]
-      );
+    if (user) {
+      await applyPromoOnVerification(client, user.organization_id, row.promo_code);
     }
 
     await client.query('COMMIT');

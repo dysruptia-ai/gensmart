@@ -1,24 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { Sora, Geist } from 'next/font/google';
+import { sora, geist } from '@/app/fonts/site';
+import '@/app/fonts/fallbacks.css';
 import '../site-base.css';
 import { FixedLanguageProvider } from '@/contexts/LanguageContext';
 import SiteDict from '@/components/site/SiteDict';
 import { SITE_LANGUAGES, SITE_ORIGIN, isSiteLanguage } from '@/lib/site-routes';
-
-const sora = Sora({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-  display: 'swap',
-  variable: '--font-sora',
-});
-
-const geist = Geist({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-geist',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),

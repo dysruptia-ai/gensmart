@@ -11,6 +11,10 @@ import { query } from '../config/database';
 import { env } from '../config/env';
 import { requireTrustedOrigin } from '../middleware/trustedOrigin';
 import { computeAllowedOrigins } from '../utils/cors-origins';
+import { signupRefSchema } from '@gensmart/shared';
+import { getOAuthProvider } from '../services/oauth/registry';
+import { OAuthVerificationError } from '../services/oauth/types';
+import * as socialAuth from '../services/social-auth.service';
 
 const router = Router();
 
@@ -403,6 +407,183 @@ router.put(
       );
 
       res.json({ message: 'Profile updated' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ---------- Ingreso y registro con proveedores (web-38) ----------
+
+const OAUTH_STATE_COOKIE = 'gs_oauth_state';
+const oauthLimiter = rateLimiter({ windowSeconds: 60, maxRequests: 20, keyPrefix: 'auth-oauth' });
+
+const oauthStartQuerySchema = z.object({
+  intent: z.enum(['login', 'register']).catch('login'),
+  from: z.string().optional(),
+  lang: z.enum(['es', 'en']).catch('es'),
+  plan: z.enum(['solo', 'starter', 'pro']).optional().catch(undefined),
+  code: z.string().trim().max(100).optional().catch(undefined),
+  ref: z.string().optional(),
+});
+
+const oauthHandoffSchema = z.object({ handle: z.string().min(1).max(200) });
+
+function frontendUrl(path: string, params: Record<string, string | undefined>): string {
+  const url = new URL(path, env.FRONTEND_URL);
+  for (const [k, v] of Object.entries(params)) if (v) url.searchParams.set(k, v);
+  return url.toString();
+}
+
+/** Vuelve a /login o /register con un aviso, sin detalles técnicos. */
+function oauthErrorRedirect(
+  res: Response,
+  intent: 'login' | 'register',
+  code: socialAuth.OAuthErrorCode,
+  lang: string,
+  from?: string
+): void {
+  res.redirect(303, frontendUrl(intent === 'register' ? '/register' : '/login', {
+    oauth_error: code,
+    lang,
+    from: from && from !== '/dashboard' ? from : undefined,
+  }));
+}
+
+function oauthCookieOptions() {
+  const isProduction = process.env['NODE_ENV'] === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax' as const,
+    path: '/api/auth',
+    ...(isProduction && { domain: '.gensmart.co' }),
+  };
+}
+
+router.get('/:provider/start', oauthLimiter, async (req: Request, res: Response): Promise<void> => {
+  const parsed = oauthStartQuerySchema.safeParse(req.query);
+  const q = parsed.success ? parsed.data : oauthStartQuerySchema.parse({});
+  const provider = getOAuthProvider(String(req.params['provider']));
+  if (!provider) {
+    res.status(404).json({ error: { message: 'Not found', code: 'NOT_FOUND' } });
+    return;
+  }
+  const ref = signupRefSchema.safeParse(q.ref ?? '');
+  try {
+    const { url, state } = await socialAuth.startOAuth(provider, {
+      intent: q.intent,
+      from: socialAuth.safeFrom(q.from),
+      lang: q.lang,
+      plan: q.plan,
+      code: q.code || undefined,
+      ref: ref.success && ref.data ? ref.data : undefined,
+    });
+    // Ata el `state` a este navegador: el retorno exige la misma cookie (contra el login CSRF)
+    res.cookie(OAUTH_STATE_COOKIE, state, { ...oauthCookieOptions(), maxAge: 10 * 60 * 1000 });
+    res.redirect(303, url);
+  } catch (err) {
+    const code = err instanceof socialAuth.OAuthFlowError ? err.code : 'failed';
+    if (code !== 'unavailable') console.error(`[oauth:${provider.id}] start failed:`, err instanceof Error ? err.message : 'unknown');
+    oauthErrorRedirect(res, q.intent, code, q.lang);
+  }
+});
+
+router.get('/:provider/callback', oauthLimiter, async (req: Request, res: Response): Promise<void> => {
+  const provider = getOAuthProvider(String(req.params['provider']));
+  if (!provider) {
+    res.status(404).json({ error: { message: 'Not found', code: 'NOT_FOUND' } });
+    return;
+  }
+  const stateParam = typeof req.query['state'] === 'string' ? req.query['state'] : '';
+  const cookieState = req.cookies?.[OAUTH_STATE_COOKIE] as string | undefined;
+  res.clearCookie(OAUTH_STATE_COOKIE, oauthCookieOptions());
+
+  // El estado se consume siempre (aunque la persona haya cancelado): un `state` no sirve dos veces
+  const state = await socialAuth.consumeOAuthState(stateParam, provider.id).catch(() => null);
+  const lang = state?.lang ?? (req.query['lang'] === 'en' ? 'en' : 'es');
+  const intent = state?.intent ?? 'login';
+
+  if (typeof req.query['error'] === 'string') {
+    oauthErrorRedirect(res, intent, req.query['error'] === 'access_denied' ? 'cancelled' : 'failed', lang, state?.from);
+    return;
+  }
+  if (!state || !cookieState || cookieState !== stateParam) {
+    oauthErrorRedirect(res, intent, 'expired', lang);
+    return;
+  }
+  const code = typeof req.query['code'] === 'string' ? req.query['code'] : '';
+  if (!code) {
+    oauthErrorRedirect(res, intent, 'failed', lang, state.from);
+    return;
+  }
+
+  try {
+    const identity = await provider.exchangeAndVerify({ code, codeVerifier: state.codeVerifier, nonce: state.nonce });
+    const outcome = await socialAuth.resolveOAuthIdentity(provider, identity, state);
+    const from = outcome.kind === 'signup' ? undefined : outcome.from !== '/dashboard' ? outcome.from : undefined;
+    if (outcome.kind === 'session') {
+      setRefreshCookie(res, outcome.tokens.refreshToken);
+      res.redirect(303, frontendUrl('/auth/google/done', { from }));
+    } else if (outcome.kind === 'twoFactor') {
+      res.redirect(303, frontendUrl('/login', { g2fa: outcome.handle, from, lang: outcome.lang }));
+    } else {
+      res.redirect(303, frontendUrl('/register/google', { t: outcome.token, nouser: outcome.noAccount ? '1' : undefined, lang: outcome.lang }));
+    }
+  } catch (err) {
+    // Los rechazos del login de hoy (p. ej. NOT_A_MEMBER) también terminan en el aviso genérico
+    const errCode: socialAuth.OAuthErrorCode = err instanceof socialAuth.OAuthFlowError ? err.code : 'failed';
+    // Solo el mensaje: nunca el error completo, que podría traer la respuesta del proveedor
+    if (!(err instanceof socialAuth.OAuthFlowError)) {
+      const kind = err instanceof OAuthVerificationError ? 'verification' : 'flow';
+      console.warn(`[oauth:${provider.id}] callback ${kind} error:`, err instanceof Error ? err.message : 'unknown');
+    }
+    oauthErrorRedirect(res, state.intent, errCode, lang, state.from);
+  }
+});
+
+// El retorno con 2FA deja en la URL solo un identificador de un solo uso; la web lo cambia aquí por el tempToken
+router.post(
+  '/oauth/2fa-handoff',
+  authLimiter,
+  validate(oauthHandoffSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const tempToken = await socialAuth.consumeTwoFactorHandoff(req.body.handle);
+      res.json({ requires2FA: true, tempToken });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.get(
+  '/oauth/signup/:token',
+  authLimiter,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      res.json(await socialAuth.getPendingSignup(String(req.params['token'])));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// Completar el registro con un proveedor: el mismo limitador que el registro, sin Turnstile
+router.post(
+  '/oauth/complete',
+  registerLimiter,
+  validate(socialAuth.oauthCompleteSchema),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await socialAuth.completeOAuthSignup(req.body);
+      setRefreshCookie(res, result.tokens.refreshToken);
+      res.status(201).json({
+        accessToken: result.tokens.accessToken,
+        user: result.tokens.user,
+        from: result.from,
+        promoApplied: result.promoApplied,
+      });
     } catch (err) {
       next(err);
     }

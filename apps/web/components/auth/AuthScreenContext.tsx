@@ -18,7 +18,7 @@ const AuthScreenContext = createContext<AuthScreenContextValue | null>(null);
 
 function panelForPath(pathname: string): AuthPanelVariant {
   if (pathname === '/login') return 'login';
-  if (pathname === '/register') return 'register';
+  if (pathname === '/register' || pathname === '/register/google') return 'register';
   if (/^\/welcome\/[1-5]$/.test(pathname)) return 'welcome';
   return null;
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import { Sora, Geist } from 'next/font/google';
+import { soraNotFound as sora, geistNotFound as geist } from '@/app/fonts/not-found';
+import '@/app/fonts/fallbacks.css';
 import './(site)/site-base.css';
 import { FixedLanguageProvider } from '@/contexts/LanguageContext';
 import SiteDict from '@/components/site/SiteDict';
@@ -11,9 +12,6 @@ import NotFoundContent from '@/components/site/NotFound';
 import { siteT } from '@/lib/site-i18n';
 import { SITE_LANG_HEADER, type SiteLanguage } from '@/lib/site-routes';
 import styles from './global-not-found.module.css';
-
-const sora = Sora({ subsets: ['latin'], weight: ['600'], display: 'swap', variable: '--font-sora' });
-const geist = Geist({ subsets: ['latin'], weight: ['400', '500', '600'], display: 'swap', variable: '--font-geist' });
 
 /** Idioma que fijó `proxy.ts` según el prefijo de la URL (`/en/…` → inglés). */
 async function requestLang(): Promise<SiteLanguage> {

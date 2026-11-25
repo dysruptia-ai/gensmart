@@ -205,6 +205,31 @@
       "m2": "Happy to help. I have Tuesday at 10:00 a.m. or Wednesday at 4:00 p.m. Which works?",
       "m3": "Tuesday.",
       "m4": "Done, your appointment is booked for Tuesday at 10:00 a.m. I am sending the confirmation by email with a link to save it to your calendar."
+    },
+    "oauth": {
+      "google": "Continue with Google",
+      "redirecting": "Redirecting…",
+      "orEmail": "or with your email",
+      "errors": {
+        "cancelled": "You cancelled signing in with Google. You can try again or use your email.",
+        "expired": "The Google sign-in expired or was already used. Please try again.",
+        "unverified": "Google hasn't verified that email. Verify it in your Google account or use your email and password.",
+        "conflict": "That email is already linked to a different Google account. Sign in with that account or with your password.",
+        "unavailable": "Signing in with Google is not available right now. Use your email and password.",
+        "failed": "We couldn't finish signing you in with Google. Please try again in a few minutes."
+      },
+      "done": "Signing you in…",
+      "complete": {
+        "title": "Finish creating your account",
+        "subtitle": "Google already verified your email. We just need a few details about your business.",
+        "noAccount": "We couldn't find an account with this Google email. Let's create a new one.",
+        "email": "Google email",
+        "emailHelp": "This is your Google account's email and can't be changed here.",
+        "submit": "Create my account",
+        "expired": "This link to finish signing up expired or was already used. Continue with Google again.",
+        "retry": "Back to sign up",
+        "loading": "Loading your Google details…"
+      }
     }
   },
   "dashboard": {

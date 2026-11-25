@@ -107,6 +107,21 @@ export async function sendVerificationEmail(user: UserInfo, token: string): Prom
   });
 }
 
+/** Aviso de que se vinculó un proveedor externo (Google) a la cuenta. Plantilla actual; se rediseña con los correos. */
+export async function sendAccountLinkedEmail(user: UserInfo, providerLabel: string): Promise<void> {
+  const label = escapeHtml(providerLabel);
+  await sendEmail({
+    to: user.email,
+    subject: `We linked your ${stripLineBreaks(providerLabel)} account — GenSmart`,
+    html: emailTemplate(`
+      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">We linked your ${label} account</h1>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)},</p>
+      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">You just signed in to GenSmart with ${label} using this email address, so we linked it to your account. From now on you can sign in with ${label} or with your password.</p>
+      <p style="color: #6B7280; font-size: 14px; margin-top: 24px;">If this wasn't you, reset your password right away and contact our support team.</p>
+    `),
+  });
+}
+
 export async function sendPasswordResetEmail(user: UserInfo, token: string): Promise<void> {
   const resetUrl = `${FRONTEND_URL}/reset-password/${token}`;
   await sendEmail({

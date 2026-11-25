@@ -1,0 +1,41 @@
+/*
+ * Caras de respaldo (Arial ajustada) mientras carga cada fuente, con los mismos valores que
+ * generaba `next/font/google`. `next/font/local` las calcularía del archivo y saldrían algo
+ * distintas (en Handjet, mucho): por eso los módulos de ./ usan `adjustFontFallback: false`
+ * y nombran estas caras en `fallback`.
+ */
+@font-face {
+  font-family: 'Inter Fallback';
+  src: local('Arial');
+  ascent-override: 90.44%;
+  descent-override: 22.52%;
+  line-gap-override: 0%;
+  size-adjust: 107.12%;
+}
+
+@font-face {
+  font-family: 'Handjet Fallback';
+  src: local('Arial');
+  ascent-override: 118.7%;
+  descent-override: 31.65%;
+  line-gap-override: 0%;
+  size-adjust: 74.33%;
+}
+
+@font-face {
+  font-family: 'Sora Fallback';
+  src: local('Arial');
+  ascent-override: 85.29%;
+  descent-override: 25.5%;
+  line-gap-override: 0%;
+  size-adjust: 113.73%;
+}
+
+@font-face {
+  font-family: 'Geist Fallback';
+  src: local('Arial');
+  ascent-override: 95.94%;
+  descent-override: 28.16%;
+  line-gap-override: 0%;
+  size-adjust: 104.76%;
+}

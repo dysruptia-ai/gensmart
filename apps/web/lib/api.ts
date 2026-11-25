@@ -1,4 +1,5 @@
-const API_BASE = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000';
+export const API_BASE_URL = process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:4000';
+const API_BASE = API_BASE_URL;
 
 // Access token stored in module scope — never in localStorage
 let accessToken: string | null = null;

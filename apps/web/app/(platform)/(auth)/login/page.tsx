@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
@@ -8,7 +8,9 @@ import { useAuth, type AuthUser } from '@/contexts/AuthContext';
 import { api, ApiError } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import { AppButton, CodeInput, Notice, PasswordField, TextButton, TextField } from '@/components/app';
-import { AuthHeading, useAuthScreen } from '@/components/auth';
+import { AuthDivider, AuthHeading, OAuthButton, useAuthScreen } from '@/components/auth';
+import { useOAuthReturn } from '@/components/auth/useOAuthReturn';
+import { oauthStartHref, type OAuthErrorCode } from '@/lib/oauth-links';
 import { EMAIL_RE, afterLoginHref, isNetworkError, isRateLimited, safeFrom } from '@/components/auth/authForm';
 import s from '@/components/auth/auth-screens.module.css';
 
@@ -18,9 +20,11 @@ function LoginScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, verify2FA } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const from = safeFrom(searchParams.get('from'));
   const justReset = searchParams.get('reset') === '1';
+  const oauthReturnError = useOAuthReturn(searchParams);
+  const g2fa = searchParams.get('g2fa');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +34,8 @@ function LoginScreen() {
   const [unverifiedEmail, setUnverifiedEmail] = useState('');
   const [resend, setResend] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [tempToken, setTempToken] = useState<string | null>(null);
+  const [oauthError, setOauthError] = useState<OAuthErrorCode | null>(oauthReturnError);
+  const handoffStarted = useRef(false);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -37,6 +43,21 @@ function LoginScreen() {
     title: tempToken ? t('access.meta.twoFactor') : t('access.meta.login'),
     panel: tempToken ? null : 'login',
   });
+
+  // Volvió de Google con 2FA activo: la URL trae un identificador de un solo uso que la API cambia
+  // por el tempToken. Se quita de la URL para que recargar no lo reintente.
+  useEffect(() => {
+    if (!g2fa || handoffStarted.current) return;
+    handoffStarted.current = true;
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('g2fa');
+    params.delete('lang');
+    router.replace(params.size ? `/login?${params.toString()}` : '/login');
+    api
+      .post<{ tempToken: string }>('/api/auth/oauth/2fa-handoff', { handle: g2fa })
+      .then((r) => setTempToken(r.tempToken))
+      .catch(() => setOauthError('expired'));
+  }, [g2fa, router, searchParams]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -49,6 +70,7 @@ function LoginScreen() {
     if (errs.password) return passwordRef.current?.focus();
 
     setError('');
+    setOauthError(null);
     setResend('idle');
     setLoading(true);
     try {
@@ -127,7 +149,15 @@ function LoginScreen() {
           </Notice>
         ))}
 
-      {/* web-38: "Continuar con Google" y el divisor "o con tu correo" van aquí */}
+      {oauthError && <Notice kind="error">{t(`access.oauth.errors.${oauthError}`)}</Notice>}
+
+      <OAuthButton
+        provider="google"
+        href={oauthStartHref('google', { intent: 'login', lang: language, from })}
+        label={t('access.oauth.google')}
+        redirectingLabel={t('access.oauth.redirecting')}
+      />
+      <AuthDivider>{t('access.oauth.orEmail')}</AuthDivider>
 
       <form onSubmit={handleLogin} noValidate>
         <TextField

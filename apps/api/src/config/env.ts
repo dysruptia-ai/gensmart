@@ -75,6 +75,11 @@ export const env = {
   // Facebook Embedded Signup
   FACEBOOK_APP_ID: process.env['FACEBOOK_APP_ID'] ?? '',
   FACEBOOK_APP_SECRET: process.env['FACEBOOK_APP_SECRET'] ?? '',
+  // Ingreso con Google (web-38). Sin GOOGLE_CLIENT_ID el inicio responde "no disponible".
+  GOOGLE_CLIENT_ID: process.env['GOOGLE_CLIENT_ID'] ?? '',
+  GOOGLE_CLIENT_SECRET: process.env['GOOGLE_CLIENT_SECRET'] ?? '',
+  // Opcional: por defecto `${API_URL}/api/auth/google/callback`
+  GOOGLE_REDIRECT_URI: process.env['GOOGLE_REDIRECT_URI'] ?? '',
   // Cloudflare Turnstile (captcha on /register). Empty = registration is refused (verification fails closed)
   TURNSTILE_SECRET_KEY: process.env['TURNSTILE_SECRET_KEY'] ?? '',
   SMTP_HOST: process.env['SMTP_HOST'] ?? '',

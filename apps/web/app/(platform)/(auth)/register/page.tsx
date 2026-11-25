@@ -20,7 +20,9 @@ import {
   TextField,
   passwordIsValid,
 } from '@/components/app';
-import { AuthHeading, AuthIcon, useAuthScreen } from '@/components/auth';
+import { AuthDivider, AuthHeading, AuthIcon, OAuthButton, useAuthScreen } from '@/components/auth';
+import { useOAuthReturn } from '@/components/auth/useOAuthReturn';
+import { oauthStartHref } from '@/lib/oauth-links';
 import { EMAIL_RE, isNetworkError, isRateLimited } from '@/components/auth/authForm';
 import s from '@/components/auth/auth-screens.module.css';
 
@@ -44,6 +46,7 @@ function RegisterScreen() {
   const plan = isPlan(planParam) ? planParam : undefined;
   const { register } = useAuth();
   const { t, language } = useTranslation();
+  const oauthError = useOAuthReturn(searchParams);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -201,7 +204,21 @@ function RegisterScreen() {
       {formError === 'generic' && <Notice kind="error">{t('access.errors.generic')}</Notice>}
       {formError === 'network' && <Notice kind="error">{t('access.errors.network')}</Notice>}
 
-      {/* web-38: "Continuar con Google" y el divisor "o con tu correo" van aquí */}
+      {oauthError && !formError && <Notice kind="error">{t(`access.oauth.errors.${oauthError}`)}</Notice>}
+
+      <OAuthButton
+        provider="google"
+        href={oauthStartHref('google', {
+          intent: 'register',
+          lang: language,
+          plan,
+          code: promoOpen ? promo.trim() || undefined : undefined,
+          ref,
+        })}
+        label={t('access.oauth.google')}
+        redirectingLabel={t('access.oauth.redirecting')}
+      />
+      <AuthDivider>{t('access.oauth.orEmail')}</AuthDivider>
 
       <form onSubmit={handleSubmit} noValidate>
         <TextField

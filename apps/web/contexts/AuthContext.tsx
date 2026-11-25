@@ -28,6 +28,15 @@ export interface AuthUser {
   welcomeSurvey: WelcomeSurveyStatus;
 }
 
+export interface OAuthSignupOptions {
+  token: string;
+  name: string;
+  organizationName: string;
+  acceptTerms: boolean;
+  promoCode?: string;
+  language?: 'es' | 'en';
+}
+
 interface LoginResult {
   requires2FA?: boolean;
   tempToken?: string;
@@ -63,6 +72,8 @@ interface AuthContextValue {
   isSuspended: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
   verify2FA: (tempToken: string, code: string) => Promise<AuthUser>;
+  /** Completa el registro con un proveedor (web-38): crea la cuenta y deja la sesión abierta. */
+  completeOAuthSignup: (options: OAuthSignupOptions) => Promise<{ user: AuthUser; from: string }>;
   register: (options: RegisterOptions) => Promise<RegisterResult>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -177,6 +188,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [scheduleRefresh]
   );
 
+  const completeOAuthSignup = useCallback(
+    async (options: OAuthSignupOptions): Promise<{ user: AuthUser; from: string }> => {
+      const data = await api.post<AuthResponse & { from: string }>('/api/auth/oauth/complete', {
+        token: options.token,
+        name: options.name,
+        organizationName: options.organizationName,
+        acceptTerms: options.acceptTerms,
+        ...(options.promoCode ? { promoCode: options.promoCode } : {}),
+        ...(options.language ? { language: options.language } : {}),
+      });
+      setAccessToken(data.accessToken);
+      setUser(data.user);
+      scheduleRefresh();
+      return { user: data.user, from: data.from };
+    },
+    [scheduleRefresh]
+  );
+
   const register = useCallback(
     async (options: RegisterOptions): Promise<RegisterResult> => {
       const { email, password, name, organizationName, turnstileToken, promoCode, plan, acceptTerms, ref, language } = options;
@@ -228,6 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isSuspended: user?.orgIsSuspended ?? false,
         login,
         verify2FA,
+        completeOAuthSignup,
         register,
         logout,
         refreshUser,

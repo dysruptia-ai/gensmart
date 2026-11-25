@@ -1,37 +1,13 @@
 import type { Metadata } from 'next';
-import { Inter, Handjet, Sora, Geist } from 'next/font/google';
+import { inter, handjet } from '@/app/fonts/platform';
+import { sora, geist } from '@/app/fonts/site';
+import '@/app/fonts/fallbacks.css';
 import './platform.css';
 import './gs-tokens.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ToastProvider } from '@/components/ui/Toast';
 import { APP_BOOT_SCRIPT } from '@/lib/app-theme';
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-family',
-});
-
-const handjet = Handjet({
-  subsets: ['latin'],
-  weight: ['700'],
-  variable: '--font-logo',
-});
-
-const sora = Sora({
-  subsets: ['latin'],
-  weight: ['600', '700'],
-  display: 'swap',
-  variable: '--font-sora',
-});
-
-const geist = Geist({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-geist',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.gensmart.co'),

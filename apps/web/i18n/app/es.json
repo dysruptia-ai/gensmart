@@ -205,6 +205,31 @@
       "m2": "Con gusto. Tengo el martes a las 10:00 a. m. o el miércoles a las 4:00 p. m. ¿Cuál te sirve?",
       "m3": "El martes.",
       "m4": "Listo, tu cita quedó agendada para el martes a las 10:00 a. m. Te envío la confirmación por correo con el enlace para guardarla en tu calendario."
+    },
+    "oauth": {
+      "google": "Continuar con Google",
+      "redirecting": "Redirigiendo…",
+      "orEmail": "o con tu correo",
+      "errors": {
+        "cancelled": "Cancelaste el ingreso con Google. Puedes intentarlo de nuevo o usar tu correo.",
+        "expired": "El ingreso con Google venció o ya se usó. Vuelve a intentarlo.",
+        "unverified": "Google no ha verificado ese correo. Verifícalo en tu cuenta de Google o usa tu correo y contraseña.",
+        "conflict": "Ese correo ya está vinculado a otra cuenta de Google. Ingresa con esa cuenta o con tu contraseña.",
+        "unavailable": "El ingreso con Google no está disponible en este momento. Usa tu correo y contraseña.",
+        "failed": "No pudimos completar el ingreso con Google. Inténtalo de nuevo en unos minutos."
+      },
+      "done": "Entrando a tu cuenta…",
+      "complete": {
+        "title": "Termina de crear tu cuenta",
+        "subtitle": "Google ya verificó tu correo. Solo faltan unos datos de tu negocio.",
+        "noAccount": "No encontramos una cuenta con este correo de Google. Vamos a crear una nueva.",
+        "email": "Correo de Google",
+        "emailHelp": "Es el correo de tu cuenta de Google y no se puede cambiar aquí.",
+        "submit": "Crear mi cuenta",
+        "expired": "Este enlace para completar el registro venció o ya se usó. Vuelve a continuar con Google.",
+        "retry": "Volver al registro",
+        "loading": "Cargando tus datos de Google…"
+      }
     }
   },
   "dashboard": {
