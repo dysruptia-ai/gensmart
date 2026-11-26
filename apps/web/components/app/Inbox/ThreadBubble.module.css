@@ -1,0 +1,210 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  max-width: min(72%, 560px);
+  margin-top: 3px;
+}
+
+.wrapIn {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.wrapOut {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.by {
+  margin: 10px 4px 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-info);
+}
+
+.byAgent {
+  color: var(--app-ok);
+}
+
+.bubble {
+  max-width: 100%;
+  padding: 9px 13px 7px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.in {
+  background: var(--app-bub-in);
+  border: 1px solid var(--app-line);
+  border-bottom-left-radius: 4px;
+}
+
+.out {
+  background: var(--app-bub-out);
+  border: 1px solid var(--app-bub-out-line);
+  border-bottom-right-radius: 4px;
+}
+
+.human {
+  background: var(--app-bub-hum);
+  border: 1px solid var(--app-bub-hum-line);
+  border-bottom-right-radius: 4px;
+}
+
+.failed {
+  border: 1px dashed var(--app-err);
+}
+
+.text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.meta {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--app-soft);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.in .meta {
+  text-align: left;
+}
+
+.failText {
+  color: var(--app-err);
+  font-weight: 600;
+}
+
+.failActions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.failActions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  color: var(--app-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.failActions button:hover {
+  background: var(--app-card-2);
+}
+
+.attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-mute);
+}
+
+.media,
+.gallery {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.mediaImage {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.caption {
+  margin: 0;
+  font-size: 13px;
+  color: var(--app-mute);
+}
+
+.document {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.handoff {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.handoffButton {
+  display: inline-flex;
+  justify-content: center;
+  padding: 7px 12px;
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  border: 1px solid var(--app-line);
+  color: var(--app-link);
+  font-weight: 600;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.handoffTo {
+  font-size: 12px;
+  color: var(--app-soft);
+}
+
+.system {
+  align-self: center;
+  max-width: min(86%, 560px);
+  margin: 12px 0;
+  text-align: center;
+}
+
+.systemLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-soft);
+}
+
+.systemLabel::before,
+.systemLabel::after {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--app-line);
+}
+
+.summary {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--app-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 767.98px) {
+  .wrap {
+    max-width: 86%;
+  }
+}

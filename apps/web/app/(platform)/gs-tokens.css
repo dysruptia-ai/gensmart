@@ -68,6 +68,19 @@
   --app-logo-smart: #25d366;
   --app-dot: #e0a030;
 
+  /* ---------- Bandeja (web-41): burbujas del hilo y colores de canal ---------- */
+  --app-bub-in: #ffffff;
+  --app-bub-out: #dff4e6;
+  --app-bub-out-line: rgba(11, 107, 54, 0.22);
+  --app-bub-hum: #e1eafb;
+  --app-bub-hum-line: rgba(29, 78, 216, 0.22);
+  --app-ch-whatsapp: #25d366;
+  --app-ch-instagram: #e1306c;
+  --app-ch-web: #0ea5e9;
+  --app-ch-email: #7a5af8;
+  --app-ch-telegram: #229ed9;
+  --app-ch-messenger: #0084ff;
+
   /* ---------- tipografía (next/font en el layout de la plataforma) ---------- */
   --app-font-sans: var(--font-geist), 'Geist', ui-sans-serif, system-ui, sans-serif;
   --app-font-display: var(--font-sora), 'Sora', var(--font-geist), ui-sans-serif, sans-serif;
@@ -117,6 +130,11 @@
   --app-scrim: rgba(0, 0, 0, 0.55);
   --app-shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
   --app-shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --app-bub-in: #1e262d;
+  --app-bub-out: #14402a;
+  --app-bub-out-line: rgba(61, 220, 132, 0.22);
+  --app-bub-hum: #1b3356;
+  --app-bub-hum-line: rgba(156, 188, 255, 0.25);
   color-scheme: dark;
 }
 
@@ -149,6 +167,11 @@
     --app-scrim: rgba(0, 0, 0, 0.55);
     --app-shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
     --app-shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.55);
+    --app-bub-in: #1e262d;
+    --app-bub-out: #14402a;
+    --app-bub-out-line: rgba(61, 220, 132, 0.22);
+    --app-bub-hum: #1b3356;
+    --app-bub-hum-line: rgba(156, 188, 255, 0.25);
     color-scheme: dark;
   }
 }

@@ -1,0 +1,228 @@
+/* La Bandeja ocupa todo el alto del área de contenido del shell; cada columna tiene su propio scroll. */
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--app-bg);
+  overflow: hidden;
+}
+
+.offline {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 4px 12px;
+  background: var(--app-warn-bg);
+  color: var(--app-warn);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- desde 1180 px: riel, lista, hilo y ficha ---------- */
+.columns {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 236px clamp(300px, 26vw, 384px) minmax(0, 1fr);
+}
+
+.threadCol {
+  position: relative;
+}
+
+/* Desde 1600 px la ficha es una columna fija */
+@media (min-width: 1600px) {
+  .screen[data-open='yes'] .columns {
+    grid-template-columns: 236px 384px minmax(0, 1fr) 300px;
+  }
+}
+
+/* Por debajo de 1600 px, "Detalles" abre la ficha sobre el hilo (no lo empuja) */
+.details {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: min(340px, 100%);
+  box-shadow: var(--app-shadow-dialog);
+  animation: slideInRight 0.22s var(--app-ease);
+}
+
+.details > aside {
+  height: 100%;
+}
+
+.railCol,
+.listCol,
+.threadCol,
+.contactCol {
+  min-width: 0;
+  min-height: 0;
+}
+
+.listCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.listCol > :first-child {
+  flex: 1;
+  min-height: 0;
+}
+
+.pick {
+  height: 100%;
+}
+
+/* ---------- menos de 1180 px: riel en cajón y ficha en panel ---------- */
+@media (max-width: 1179.98px) {
+  .columns,
+  .screen[data-open='yes'] .columns {
+    grid-template-columns: clamp(300px, 36vw, 384px) minmax(0, 1fr);
+  }
+}
+
+/* ---------- menos de 768 px: una sola columna ---------- */
+@media (max-width: 767.98px) {
+  .columns,
+  .screen[data-open='yes'] .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* La barra del shell y la navegación de abajo están en el flujo: nada queda tapado */
+  .screen[data-pane='thread'] .threadCol {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .screen[data-pane='list'] .threadCol,
+  .screen[data-pane='thread'] .listCol {
+    display: none;
+  }
+
+  .listCol > :first-child {
+    border-right: 0;
+  }
+}
+
+/* ---------- cajón y panel ---------- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 250;
+  background: var(--app-scrim);
+  animation: fade var(--app-t-fast) var(--app-ease);
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: min(300px, calc(100vw - 48px));
+  display: flex;
+  flex-direction: column;
+  background: var(--app-rail);
+  box-shadow: var(--app-shadow-dialog);
+  animation: slideIn 0.22s var(--app-ease);
+}
+
+.drawer > nav {
+  flex: 1;
+  min-height: 0;
+  border-right: 0;
+}
+
+.drawerHead {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56px;
+  padding: 8px 10px 0 18px;
+  font-family: var(--app-font-display);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.sheet {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(360px, 100vw);
+  box-shadow: var(--app-shadow-dialog);
+  animation: slideInRight 0.22s var(--app-ease);
+}
+
+.sheet > aside {
+  border-left: 0;
+}
+
+/* ---------- atajos ---------- */
+.shortcuts {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.shortcuts div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.shortcuts dt {
+  color: var(--app-ink);
+}
+
+.shortcuts dd {
+  margin: 0;
+}
+
+.shortcuts kbd {
+  display: inline-block;
+  min-width: 26px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--app-kbd);
+  box-shadow: inset 0 -1px 0 var(--app-line);
+  color: var(--app-ink);
+  font: 600 12.5px/1.5 var(--app-font-sans);
+  text-align: center;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-24px);
+    opacity: 0;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim,
+  .drawer,
+  .sheet,
+  .details {
+    animation: none;
+  }
+}

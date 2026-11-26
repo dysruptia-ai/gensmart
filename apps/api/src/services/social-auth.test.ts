@@ -59,7 +59,7 @@ const KID = 'test-kid';
 
 /** OAuth2Client real, con las claves públicas de Google reemplazadas por la de prueba. */
 class TestKeyClient extends OAuth2Client {
-  constructor(private readonly idToken: string) {
+  constructor() {
     super({ clientId: CLIENT_ID });
   }
   override async getFederatedSignonCertsAsync() {
@@ -80,7 +80,7 @@ function signIdToken(claims: Record<string, unknown>, key: crypto.KeyObject = pr
 }
 
 function providerWithToken(idToken: string): OAuthProvider {
-  const real = new TestKeyClient(idToken);
+  const real = new TestKeyClient();
   const client: GoogleOAuthClient = {
     getToken: async () => ({ tokens: { id_token: idToken } }),
     verifyIdToken: (o) => real.verifyIdToken(o),

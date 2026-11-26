@@ -38,7 +38,9 @@
     "stripe:seed": "tsx src/db/seeds/stripe-products.ts",
     "lint": "eslint src",
     "check:wa-tokens": "dotenv -e ../../.env -- tsx src/scripts/check-whatsapp-token-expiry.ts",
-    "encrypt:cf-secrets": "dotenv -e ../../.env -- tsx src/scripts/encrypt-custom-function-secrets.ts"
+    "encrypt:cf-secrets": "dotenv -e ../../.env -- tsx src/scripts/encrypt-custom-function-secrets.ts",
+    "test:inbox": "tsx --test src/services/inbox-query.test.ts",
+    "test:inbox:db": "INBOX_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-query.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

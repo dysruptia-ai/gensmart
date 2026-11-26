@@ -54,7 +54,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   const active = activeNavItem(pathname);
   const compact = isInboxRoute(pathname);
-  const legacy = active?.status !== 'pending';
+  // Pantallas ya migradas al diseño nuevo: las de "viene en camino" y la Bandeja (web-41)
+  const legacy = active?.status !== 'pending' && !compact;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');

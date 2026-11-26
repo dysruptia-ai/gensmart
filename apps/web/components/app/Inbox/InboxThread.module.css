@@ -1,0 +1,490 @@
+.thread {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  background: var(--app-card);
+}
+
+/* ---------- cabecera ---------- */
+.head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--app-line);
+  background: var(--app-bg);
+}
+
+.avatar {
+  position: relative;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--app-card-2);
+  color: var(--app-mute);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.channelBadge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--app-avatar-ink);
+  border: 2px solid var(--app-bg);
+}
+
+.identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-family: var(--app-font-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 1px 0 0;
+  font-size: 13px;
+  color: var(--app-soft);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sub > span {
+  flex: none;
+}
+
+/* El canal queda siempre; el agente y el estado se cortan al final si no caben */
+.sub > .agent,
+.sub > .status {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* El estado ya se ve en las acciones: ocupa solo lo que sobra, así se corta antes que el agente */
+.sub > .status {
+  flex: 1 1 0;
+}
+
+.agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agent svg {
+  flex: none;
+}
+
+.agent > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- menú "Más" ---------- */
+.more {
+  position: relative;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  min-width: 210px;
+  padding: 6px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  box-shadow: var(--app-shadow-dialog);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--app-card-2);
+}
+
+.menuItemDanger {
+  color: var(--app-err);
+}
+
+.dot {
+  margin-right: 6px;
+  color: var(--app-soft);
+  font-weight: 400;
+}
+
+.statusHelp {
+  color: var(--app-warn);
+  font-weight: 600;
+}
+
+.actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- franjas bajo la cabecera ---------- */
+.soloBar,
+.waitBar,
+.actionError {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 20px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.soloBar {
+  background: var(--app-info-bg);
+  color: var(--app-info);
+}
+
+.waitBar {
+  background: var(--app-warn-bg);
+  color: var(--app-warn);
+}
+
+.actionError {
+  background: var(--app-err-bg);
+  color: var(--app-err);
+}
+
+.actionError span {
+  flex: 1;
+}
+
+.actionError button {
+  border: 0;
+  background: none;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.upsell {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--app-info);
+}
+
+.upsell svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.upsellLink {
+  color: inherit;
+  font-weight: 700;
+}
+
+/* ---------- mensajes ---------- */
+.body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px 24px;
+  background: var(--app-bg);
+}
+
+.messages:focus-visible {
+  outline-offset: -2px;
+}
+
+.messages > :first-child {
+  margin-top: auto;
+}
+
+.older {
+  display: flex;
+  justify-content: center;
+  padding-bottom: 10px;
+}
+
+.day {
+  align-self: center;
+  margin: 12px 0 10px;
+  padding: 3px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-pill);
+  background: var(--app-card);
+  color: var(--app-soft);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.day::first-letter {
+  text-transform: uppercase;
+}
+
+.event {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  font-size: 12.5px;
+  color: var(--app-soft);
+  text-align: center;
+}
+
+.event::before,
+.event::after {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--app-line);
+}
+
+.event time {
+  color: var(--app-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.eventHelp {
+  color: var(--app-warn);
+  font-weight: 600;
+}
+
+.noMessages {
+  align-self: center;
+  margin: auto 0;
+  font-size: 13.5px;
+  color: var(--app-soft);
+}
+
+.newMessages {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--app-r-pill);
+  background: var(--app-ink);
+  color: var(--app-card);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--app-shadow-pop);
+  cursor: pointer;
+}
+
+/* ---------- franja inferior (sin cuadro para responder) ---------- */
+.bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 60px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--app-line-soft);
+  background: var(--app-card);
+  font-size: 13.5px;
+  color: var(--app-mute);
+}
+
+.barText {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* ---------- vacío, error y esqueleto ---------- */
+.empty {
+  flex: 1;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--app-soft);
+  background: var(--app-bg);
+}
+
+.empty b {
+  color: var(--app-ink);
+  font-size: 15px;
+}
+
+.empty p {
+  max-width: 300px;
+  margin: 0 0 8px;
+  font-size: 13.5px;
+}
+
+.emptyIcon {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 8px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: var(--app-card-2);
+  color: var(--app-faint);
+}
+
+.emptyIconBad {
+  background: var(--app-err-bg);
+  color: var(--app-err);
+}
+
+.sk {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--app-card-2), var(--app-line-soft), var(--app-card-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+.skAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+}
+
+.skHead {
+  flex: 1;
+  display: grid;
+  gap: 7px;
+}
+
+.skLine {
+  width: 40%;
+  height: 12px;
+}
+
+.skLineShort {
+  width: 24%;
+  height: 10px;
+}
+
+.skBubble {
+  width: 46%;
+  height: 52px;
+  margin-top: 12px;
+  border-radius: 14px;
+}
+
+.skBubbleOut {
+  align-self: flex-end;
+  width: 38%;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- angosto ---------- */
+@media (max-width: 860px) {
+  .messages {
+    padding: 16px 14px 20px;
+  }
+
+  .head {
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  .soloBar,
+  .waitBar,
+  .actionError {
+    padding: 9px 14px;
+  }
+
+  .bar {
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .actions {
+    gap: 4px;
+  }
+
+  .agentPart {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    animation: none;
+  }
+}

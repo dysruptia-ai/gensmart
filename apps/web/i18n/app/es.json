@@ -958,8 +958,6 @@
     }
   },
   "conversations": {
-    "title": "Conversaciones",
-    "search": "Buscar conversaciones...",
     "alerts": {
       "enable": "Activar notificaciones de conversaciones",
       "newMessageTitle": "Nuevo mensaje de un cliente",
@@ -975,65 +973,7 @@
         "mcp": "Un servidor MCP",
         "email_notification": "Una herramienta de notificación por email"
       }
-    },
-    "searchHelp": "Busca por nombre, teléfono o correo del contacto",
-    "showAll": "Ver todas (sin límite de 8 días)",
-    "showRecent": "Ver solo los últimos 8 días",
-    "backToList": "Volver a conversaciones",
-    "closeConversation": "Cerrar conversación",
-    "empty": {
-      "title": "Sin conversaciones aún",
-      "description": "Las conversaciones aparecerán aquí cuando los visitantes hablen con tus agentes"
-    },
-    "filters": {
-      "active": "Activas",
-      "closed": "Cerradas",
-      "takeover": "Control humano"
-    },
-    "chat": {
-      "takeover": "Tomar control",
-      "release": "Liberar a la IA",
-      "humanAgent": "Agente humano",
-      "viewDocument": "Ver documento",
-      "mediaSentByAgent": "Multimedia enviado"
-    },
-    "variables": {
-      "title": "Variables capturadas",
-      "noVariables": "Sin variables capturadas aún",
-      "contact": "Contacto",
-      "pending": "Pendiente (requerido)",
-      "notCaptured": "No capturado"
-    },
-    "contactInfo": {
-      "noContact": "Sin contacto vinculado aún"
-    },
-    "refresh": "Actualizar",
-    "noMessages": "Sin mensajes aún",
-    "score": "Puntuación:",
-    "allStatuses": "Todos los estados",
-    "allChannels": "Todos los canales",
-    "takeover": {
-      "closed": "Esta conversación está cerrada.",
-      "inControl": "Estás controlando esta conversación.",
-      "takenBy": "Tomada por {name}",
-      "aiHandling": "El agente de IA está manejando esta conversación.",
-      "upgradeTakeover": "Mejora para habilitar el control humano"
-    },
-    "messageBubble": {
-      "aiResumed": "Agente de IA retomado",
-      "handedOffTo": "Derivado a {name}"
-    },
-    "deleteConfirm": "¿Eliminar esta conversación? También se eliminará el contacto asociado si no tiene otras conversaciones.",
-    "deleteSelected": "Eliminar seleccionadas",
-    "bulkDeleteConfirm": "¿Eliminar {count} conversaciones? Los contactos asociados sin otras conversaciones también serán eliminados.",
-    "allAgents": "Todos los agentes",
-    "filterByAgent": "Filtrar por agente",
-    "needsHelp": "Necesita ayuda",
-    "handoff": {
-      "badge": "Derivada",
-      "since": "Derivada {time}"
-    },
-    "live": "En vivo"
+    }
   },
   "contacts": {
     "title": "Contactos",
@@ -1637,6 +1577,228 @@
         "m3": "Somos una constructora en Medellín.",
         "m4": "Gracias. Tengo mañana a las 9:00 a. m. o a las 2:00 p. m. para una llamada con un asesor técnico. ¿Cuál prefieres?"
       }
+    }
+  },
+  "inbox": {
+    "retry": "Reintentar",
+    "offline": "Sin conexión. Reintentando…",
+    "views": {
+      "all": "Todas",
+      "needs": "Necesitan a alguien",
+      "mine": "Mías",
+      "closed": "Cerradas"
+    },
+    "rail": {
+      "label": "Bandejas",
+      "inbox": "Bandeja",
+      "agents": "Agentes",
+      "channels": "Canales",
+      "close": "Cerrar bandejas",
+      "unnamedAgent": "Agente sin nombre"
+    },
+    "list": {
+      "label": "Conversaciones",
+      "openRail": "Abrir bandejas",
+      "results": "Resultados",
+      "searchLabel": "Buscar conversaciones",
+      "searchPlaceholder": "Nombre, teléfono o correo",
+      "period": "Período",
+      "last8days": "Últimos 8 días",
+      "allTime": "Todo",
+      "groupHelp": "El agente pidió ayuda",
+      "groupFine": "Al día",
+      "loadMore": "Cargar más",
+      "clearSearch": "Quitar la búsqueda",
+      "errorTitle": "No pudimos cargar la Bandeja",
+      "errorText": "Es un problema nuestro, no tuyo. Tus conversaciones están a salvo."
+    },
+    "empty": {
+      "all": {
+        "title": "Todo en calma",
+        "text": "No hay conversaciones abiertas en este período. Cuando un cliente escriba, aparece aquí."
+      },
+      "needs": {
+        "title": "Nadie necesita ayuda ahora",
+        "text": "Los agentes están resolviendo solos. Aquí llega lo que necesite a una persona."
+      },
+      "mine": {
+        "title": "No tienes conversaciones tomadas",
+        "text": "Cuando tomes una conversación, la ves aquí."
+      },
+      "closed": {
+        "title": "No hay conversaciones cerradas en este período",
+        "text": "Prueba con \"Todo\" para ver las más antiguas."
+      },
+      "scoped": {
+        "title": "No hay conversaciones abiertas aquí",
+        "text": "Ninguna conversación abierta de este agente o canal en el período."
+      },
+      "search": {
+        "title": "Sin resultados para \"{query}\"",
+        "text": "Buscamos por nombre, teléfono o correo del contacto. Revisa lo que escribiste o prueba con menos letras."
+      }
+    },
+    "row": {
+      "unknownContact": "Contacto sin nombre",
+      "you": "Tú",
+      "team": "Alguien del equipo",
+      "agent": "Agente",
+      "system": "Sistema",
+      "noMessages": "Sin mensajes todavía",
+      "waiting": "Espera {time}",
+      "yours": "La tienes tú",
+      "takenBy": "Tomada por {name}",
+      "scoreTitle": "Puntaje del lead",
+      "scoreSr": "Puntaje"
+    },
+    "thread": {
+      "loading": "Cargando la conversación",
+      "back": "Volver",
+      "openContact": "Ver ficha del contacto",
+      "pickTitle": "Elige una conversación",
+      "pickText": "Selecciona una conversación de la lista para ver el hilo.",
+      "notFoundTitle": "No encontramos esta conversación",
+      "notFoundText": "Puede que la hayan borrado o que sea de otra organización.",
+      "errorTitle": "No pudimos abrir la conversación",
+      "errorText": "Revisa tu conexión y vuelve a intentarlo.",
+      "take": "Tomar conversación",
+      "release": "Devolver al agente",
+      "close": "Cerrar",
+      "status": {
+        "agent": "El agente responde",
+        "help": "Pidió ayuda",
+        "mine": "La tienes tú",
+        "taken": "Tomada por {name}",
+        "closed": "Cerrada"
+      },
+      "soloNotice": "Responder en persona es desde el plan Starter.",
+      "soloLink": "Ver planes",
+      "waitHelp": "El agente pidió ayuda hace {time} y nadie la ha tomado.",
+      "waitReply": "El cliente espera respuesta hace {time}.",
+      "messagesLabel": "Mensajes",
+      "loadOlder": "Ver mensajes anteriores",
+      "newMessages": "Mensajes nuevos",
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "events": {
+        "handoff": "El agente pidió ayuda",
+        "taken": "{name} tomó la conversación",
+        "released": "Devuelta al agente",
+        "closed": "Conversación cerrada"
+      },
+      "closedBar": "Esta conversación está cerrada.",
+      "takenBar": "{name} está atendiendo esta conversación.",
+      "agentBar": "El agente está respondiendo. Toma la conversación para escribir tú.",
+      "mediaAlt": "Archivo enviado",
+      "imageAlt": "Imagen {n}",
+      "viewDocument": "Ver documento",
+      "handedOffTo": "Derivado a {name}",
+      "details": "Detalles",
+      "more": "Más acciones",
+      "delete": "Borrar conversación"
+    },
+    "composer": {
+      "label": "Tu respuesta",
+      "placeholder": "Escribe tu respuesta",
+      "send": "Enviar",
+      "hint": "La tienes tú: el agente no responde hasta que la devuelvas. Enter envía; Shift+Enter, salto de línea.",
+      "sending": "Enviando…",
+      "failed": "No se envió",
+      "discard": "Descartar",
+      "whatsappWindow": "Pasaron más de 24 horas desde el último mensaje del cliente. WhatsApp no va a entregar mensajes de texto libre hasta que el cliente vuelva a escribir.",
+      "attachImage": "Adjuntar imagen",
+      "imagePreview": "Imagen para enviar",
+      "removeImage": "Quitar la imagen",
+      "imageType": "Elige un archivo de imagen.",
+      "imageSize": "La imagen debe pesar menos de 5 MB.",
+      "recordVoice": "Grabar mensaje de voz",
+      "stopRecording": "Detener y enviar",
+      "recording": "Grabando {time}",
+      "micError": "No pudimos usar el micrófono."
+    },
+    "contact": {
+      "title": "Ficha",
+      "close": "Cerrar la ficha",
+      "tabs": {
+        "contact": "Contacto",
+        "activity": "Actividad"
+      },
+      "phone": "Teléfono",
+      "email": "Correo",
+      "channel": "Canal",
+      "agent": "Agente",
+      "viewContact": "Ver contacto",
+      "noContact": "Esta conversación todavía no tiene un contacto.",
+      "lead": "Estado del lead",
+      "scoreSr": "Puntaje {score} de 10",
+      "noScore": "Todavía sin puntaje. Se calcula a los 6 mensajes y al cerrar.",
+      "service": "Servicio",
+      "stage": "Etapa",
+      "stages": {
+        "lead": "Lead",
+        "opportunity": "Oportunidad",
+        "customer": "Cliente"
+      },
+      "variables": "Lo que capturó el agente",
+      "noVariables": "El agente todavía no capturó datos.",
+      "timeline": "Línea de tiempo",
+      "noActivity": "Sin actividad todavía.",
+      "timelineError": "No pudimos cargar la actividad.",
+      "thisConversation": "Esta",
+      "events": {
+        "conversation_started": "Conversación por {channel}",
+        "conversation_closed": "Conversación cerrada"
+      },
+      "adTitle": "Llegó desde un anuncio",
+      "adImage": "Imagen del anuncio",
+      "adLink": "Ver anuncio",
+      "adVideo": "Ver el video del anuncio"
+    },
+    "closeDialog": {
+      "title": "Cerrar conversación",
+      "text": "La conversación con {name} pasa a Cerradas.",
+      "cancel": "Cancelar",
+      "confirm": "Cerrar conversación"
+    },
+    "deleteDialog": {
+      "title": "Borrar conversación",
+      "text": "Se borrarán la conversación con {name} y todos sus mensajes. No se puede deshacer.",
+      "contactNote": "Si {name} no tiene otras conversaciones, también se borra el contacto.",
+      "cancel": "Cancelar",
+      "confirm": "Borrar conversación"
+    },
+    "errors": {
+      "take": "No pudimos tomar la conversación. Puede que otra persona se te haya adelantado.",
+      "release": "No pudimos devolverla al agente. Vuelve a intentarlo.",
+      "close": "No pudimos cerrar la conversación. Vuelve a intentarlo.",
+      "delete": "No pudimos borrar la conversación. Inténtalo de nuevo."
+    },
+    "dialog": {
+      "close": "Cerrar"
+    },
+    "shortcuts": {
+      "title": "Atajos de teclado",
+      "done": "Listo",
+      "next": "Siguiente / anterior conversación",
+      "take": "Tomar la conversación",
+      "close": "Cerrar la conversación",
+      "search": "Buscar",
+      "escape": "Cerrar lo que esté abierto",
+      "help": "Ver estos atajos",
+      "palette": "Buscar o ir a"
+    },
+    "mobileNav": {
+      "label": "Vistas de la Bandeja",
+      "all": "Todas",
+      "needs": "Ayuda",
+      "mine": "Mías",
+      "more": "Más",
+      "count": "{count} conversaciones"
+    },
+    "live": {
+      "newMessage": "Mensaje nuevo de {name}",
+      "handoff": "{name} necesita a alguien del equipo",
+      "deleted": "Conversación borrada"
     }
   }
 }

@@ -958,8 +958,6 @@
     }
   },
   "conversations": {
-    "title": "Conversations",
-    "search": "Search conversations...",
     "alerts": {
       "enable": "Enable conversation notifications",
       "newMessageTitle": "New customer message",
@@ -975,65 +973,7 @@
         "mcp": "An MCP server",
         "email_notification": "An email notification tool"
       }
-    },
-    "searchHelp": "Search by contact name, phone or email",
-    "showAll": "Show all (no 8-day limit)",
-    "showRecent": "Show last 8 days only",
-    "backToList": "Back to conversations",
-    "closeConversation": "Close conversation",
-    "empty": {
-      "title": "No conversations yet",
-      "description": "Conversations will appear here when visitors chat with your agents"
-    },
-    "filters": {
-      "active": "Active",
-      "closed": "Closed",
-      "takeover": "Human Takeover"
-    },
-    "chat": {
-      "takeover": "Take Over",
-      "release": "Release to AI",
-      "humanAgent": "Human Agent",
-      "viewDocument": "View document",
-      "mediaSentByAgent": "Media sent"
-    },
-    "variables": {
-      "title": "Captured Variables",
-      "noVariables": "No variables captured yet",
-      "contact": "Contact",
-      "pending": "Pending (required)",
-      "notCaptured": "Not captured"
-    },
-    "contactInfo": {
-      "noContact": "No contact linked yet"
-    },
-    "refresh": "Refresh",
-    "noMessages": "No messages yet",
-    "score": "Score:",
-    "allStatuses": "All statuses",
-    "allChannels": "All channels",
-    "takeover": {
-      "closed": "This conversation is closed.",
-      "inControl": "You are in control of this conversation.",
-      "takenBy": "Taken over by {name}",
-      "aiHandling": "AI Agent is handling this conversation.",
-      "upgradeTakeover": "Upgrade to enable takeover"
-    },
-    "messageBubble": {
-      "aiResumed": "AI Agent resumed",
-      "handedOffTo": "Handed off to {name}"
-    },
-    "deleteConfirm": "Delete this conversation? This will also delete the associated contact if they have no other conversations.",
-    "deleteSelected": "Delete Selected",
-    "bulkDeleteConfirm": "Delete {count} conversations? Associated contacts with no other conversations will also be deleted.",
-    "allAgents": "All agents",
-    "filterByAgent": "Filter by agent",
-    "needsHelp": "Needs Help",
-    "handoff": {
-      "badge": "Handed off",
-      "since": "Handed off {time}"
-    },
-    "live": "Live"
+    }
   },
   "contacts": {
     "title": "Contacts",
@@ -1637,6 +1577,228 @@
         "m3": "We are a construction company in Medellín.",
         "m4": "Thanks. I have tomorrow at 9:00 a.m. or 2:00 p.m. for a call with a technical advisor. Which do you prefer?"
       }
+    }
+  },
+  "inbox": {
+    "retry": "Try again",
+    "offline": "No connection. Retrying…",
+    "views": {
+      "all": "All",
+      "needs": "Need someone",
+      "mine": "Mine",
+      "closed": "Closed"
+    },
+    "rail": {
+      "label": "Inboxes",
+      "inbox": "Inbox",
+      "agents": "Agents",
+      "channels": "Channels",
+      "close": "Close inboxes",
+      "unnamedAgent": "Unnamed agent"
+    },
+    "list": {
+      "label": "Conversations",
+      "openRail": "Open inboxes",
+      "results": "Results",
+      "searchLabel": "Search conversations",
+      "searchPlaceholder": "Name, phone or email",
+      "period": "Period",
+      "last8days": "Last 8 days",
+      "allTime": "All time",
+      "groupHelp": "The agent asked for help",
+      "groupFine": "Up to date",
+      "loadMore": "Load more",
+      "clearSearch": "Clear search",
+      "errorTitle": "We couldn't load the Inbox",
+      "errorText": "It's on our side, not yours. Your conversations are safe."
+    },
+    "empty": {
+      "all": {
+        "title": "All quiet",
+        "text": "No open conversations in this period. When a customer writes, it shows up here."
+      },
+      "needs": {
+        "title": "Nobody needs help right now",
+        "text": "Your agents are handling things on their own. Anything that needs a person lands here."
+      },
+      "mine": {
+        "title": "You haven't taken any conversations",
+        "text": "When you take a conversation, you'll see it here."
+      },
+      "closed": {
+        "title": "No closed conversations in this period",
+        "text": "Try \"All time\" to see older ones."
+      },
+      "scoped": {
+        "title": "No open conversations here",
+        "text": "No open conversations for this agent or channel in the period."
+      },
+      "search": {
+        "title": "No results for \"{query}\"",
+        "text": "We search the contact's name, phone and email. Check the spelling or try fewer letters."
+      }
+    },
+    "row": {
+      "unknownContact": "Unnamed contact",
+      "you": "You",
+      "team": "Someone on the team",
+      "agent": "Agent",
+      "system": "System",
+      "noMessages": "No messages yet",
+      "waiting": "Waiting {time}",
+      "yours": "Yours",
+      "takenBy": "Taken by {name}",
+      "scoreTitle": "Lead score",
+      "scoreSr": "Score"
+    },
+    "thread": {
+      "loading": "Loading the conversation",
+      "back": "Back",
+      "openContact": "View contact details",
+      "pickTitle": "Pick a conversation",
+      "pickText": "Select a conversation from the list to see the thread.",
+      "notFoundTitle": "We couldn't find this conversation",
+      "notFoundText": "It may have been deleted or belong to another organization.",
+      "errorTitle": "We couldn't open the conversation",
+      "errorText": "Check your connection and try again.",
+      "take": "Take conversation",
+      "release": "Hand back to agent",
+      "close": "Close",
+      "status": {
+        "agent": "The agent is replying",
+        "help": "Asked for help",
+        "mine": "Yours",
+        "taken": "Taken by {name}",
+        "closed": "Closed"
+      },
+      "soloNotice": "Replying in person starts on the Starter plan.",
+      "soloLink": "See plans",
+      "waitHelp": "The agent asked for help {time} ago and nobody has taken it.",
+      "waitReply": "The customer has been waiting {time} for a reply.",
+      "messagesLabel": "Messages",
+      "loadOlder": "Show earlier messages",
+      "newMessages": "New messages",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "events": {
+        "handoff": "The agent asked for help",
+        "taken": "{name} took the conversation",
+        "released": "Handed back to the agent",
+        "closed": "Conversation closed"
+      },
+      "closedBar": "This conversation is closed.",
+      "takenBar": "{name} is handling this conversation.",
+      "agentBar": "The agent is replying. Take the conversation to write yourself.",
+      "mediaAlt": "File sent",
+      "imageAlt": "Image {n}",
+      "viewDocument": "View document",
+      "handedOffTo": "Handed off to {name}",
+      "details": "Details",
+      "more": "More actions",
+      "delete": "Delete conversation"
+    },
+    "composer": {
+      "label": "Your reply",
+      "placeholder": "Write your reply",
+      "send": "Send",
+      "hint": "It's yours: the agent won't reply until you hand it back. Enter sends; Shift+Enter adds a line.",
+      "sending": "Sending…",
+      "failed": "Not sent",
+      "discard": "Discard",
+      "whatsappWindow": "More than 24 hours have passed since the customer's last message. WhatsApp won't deliver free-form text messages until the customer writes again.",
+      "attachImage": "Attach image",
+      "imagePreview": "Image to send",
+      "removeImage": "Remove image",
+      "imageType": "Choose an image file.",
+      "imageSize": "The image must be under 5 MB.",
+      "recordVoice": "Record a voice message",
+      "stopRecording": "Stop and send",
+      "recording": "Recording {time}",
+      "micError": "We couldn't use the microphone."
+    },
+    "contact": {
+      "title": "Details",
+      "close": "Close details",
+      "tabs": {
+        "contact": "Contact",
+        "activity": "Activity"
+      },
+      "phone": "Phone",
+      "email": "Email",
+      "channel": "Channel",
+      "agent": "Agent",
+      "viewContact": "View contact",
+      "noContact": "This conversation doesn't have a contact yet.",
+      "lead": "Lead status",
+      "scoreSr": "Score {score} out of 10",
+      "noScore": "No score yet. It's calculated after 6 messages and on close.",
+      "service": "Service",
+      "stage": "Stage",
+      "stages": {
+        "lead": "Lead",
+        "opportunity": "Opportunity",
+        "customer": "Customer"
+      },
+      "variables": "What the agent captured",
+      "noVariables": "The agent hasn't captured any data yet.",
+      "timeline": "Timeline",
+      "noActivity": "No activity yet.",
+      "timelineError": "We couldn't load the activity.",
+      "thisConversation": "This one",
+      "events": {
+        "conversation_started": "Conversation via {channel}",
+        "conversation_closed": "Conversation closed"
+      },
+      "adTitle": "Came from an ad",
+      "adImage": "Ad image",
+      "adLink": "View ad",
+      "adVideo": "View ad video"
+    },
+    "closeDialog": {
+      "title": "Close conversation",
+      "text": "The conversation with {name} moves to Closed.",
+      "cancel": "Cancel",
+      "confirm": "Close conversation"
+    },
+    "deleteDialog": {
+      "title": "Delete conversation",
+      "text": "The conversation with {name} and all its messages will be deleted. This can't be undone.",
+      "contactNote": "If {name} has no other conversations, the contact is deleted too.",
+      "cancel": "Cancel",
+      "confirm": "Delete conversation"
+    },
+    "errors": {
+      "take": "We couldn't take the conversation. Someone else may have taken it first.",
+      "release": "We couldn't hand it back to the agent. Try again.",
+      "close": "We couldn't close the conversation. Try again.",
+      "delete": "We couldn't delete the conversation. Try again."
+    },
+    "dialog": {
+      "close": "Close"
+    },
+    "shortcuts": {
+      "title": "Keyboard shortcuts",
+      "done": "Done",
+      "next": "Next / previous conversation",
+      "take": "Take the conversation",
+      "close": "Close the conversation",
+      "search": "Search",
+      "escape": "Close whatever is open",
+      "help": "Show these shortcuts",
+      "palette": "Search or go to"
+    },
+    "mobileNav": {
+      "label": "Inbox views",
+      "all": "All",
+      "needs": "Help",
+      "mine": "Mine",
+      "more": "More",
+      "count": "{count} conversations"
+    },
+    "live": {
+      "newMessage": "New message from {name}",
+      "handoff": "{name} needs someone on the team",
+      "deleted": "Conversation deleted"
     }
   }
 }

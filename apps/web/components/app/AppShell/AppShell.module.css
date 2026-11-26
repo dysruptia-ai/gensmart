@@ -30,6 +30,8 @@
 .main {
   flex: 1;
   min-width: 0;
+  /* Sin esto, en móvil (columna) el contenido crece más allá de 100dvh y lo de abajo queda oculto */
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }

@@ -5,7 +5,7 @@ import { Bot, Languages, LogOut, Moon, Plus, Search, Sun, type LucideIcon } from
 import { APP_NAV_ITEMS } from '@/lib/app-nav';
 import { trapTab } from '@/lib/focus-trap';
 import { useTranslation } from '@/hooks/useTranslation';
-import { getChannelMeta } from '@/components/conversations/channelMeta';
+import { getChannelMeta } from '@/components/app/Inbox/channelMeta';
 import type { ShellAgent } from './useShellData';
 import styles from './CommandPalette.module.css';
 

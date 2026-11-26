@@ -149,6 +149,9 @@ function waitForSocket(): void {
 }
 
 export interface WebSocketEvents {
+  /** Eventos propios de Socket.IO: la Bandeja los usa para la franja "Sin conexión". */
+  connect: () => void;
+  disconnect: (reason: string) => void;
   'conversation:update': (data: {
     conversationId: string;
     lastMessage?: string;
@@ -185,6 +188,9 @@ export interface WebSocketEvents {
     status: string;
     userId: string | null;
     userName?: string;
+    /** Nombre de quien la tomó (web-41); `userName` sigue siendo el correo. */
+    userDisplayName?: string | null;
+    takenOverAt?: string;
   }) => void;
   'usage:limit_reached': (data: {
     conversationId: string;

@@ -9,6 +9,17 @@ import { scoringQueue } from '../config/queues';
 import { chat } from '../services/llm.service';
 import { getIO } from '../config/websocket';
 import { withoutReservedChannelKeys } from '../services/channel-metadata-keys';
+import {
+  HANDOFF_ACTIVE_SQL,
+  INBOX_FROM,
+  NEEDS_SQL,
+  WAITING_SINCE_SQL,
+  buildCountsGroupQuery,
+  buildCountsQuery,
+  buildInboxConditions,
+  inboxOrderBy,
+  parseInboxView,
+} from '../services/inbox-query.service';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -21,6 +32,8 @@ router.use(requireAuth, orgContext);
 // ── GET /api/conversations ───────────────────────────────────────────────────
 // List conversations with filters: agentId, status, channel, search, range, page, limit.
 // Only the last 8 days by default (range=all lifts it); agentCounts ignores the agentId filter.
+// Bandeja (web-41, additive): view=all|needs|mine|closed and order=needs (needs first);
+// every row also carries needsAttention and waitingSince.
 router.get(
   '/',
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -31,65 +44,50 @@ router.get(
         channel,
         search,
         range,
+        order,
         page = '1',
         limit = '20',
       } = req.query as Record<string, string>;
 
-      const pageNum = Math.max(1, parseInt(page, 10));
-      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10)));
+      const rawView = req.query['view'];
+      const view = parseInboxView(rawView);
+      if (rawView !== undefined && !view) {
+        throw new AppError(400, 'view must be one of: all, needs, mine, closed', 'VALIDATION_ERROR');
+      }
+
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
       const offset = (pageNum - 1) * limitNum;
 
-      const conditions: string[] = ['c.organization_id = $1'];
-      const params: unknown[] = [req.org!.id];
-      let paramIndex = 2;
-
-      if (status) {
-        conditions.push(`c.status = $${paramIndex++}`);
-        params.push(status);
-      }
-      if (channel) {
-        conditions.push(`c.channel = $${paramIndex++}`);
-        params.push(channel);
-      }
-      if (search) {
-        conditions.push(
-          `(co.name ILIKE $${paramIndex} OR co.phone ILIKE $${paramIndex} OR co.email ILIKE $${paramIndex})`
-        );
-        params.push(`%${search}%`);
-        paramIndex++;
-      }
-      if (range !== 'all') {
-        conditions.push(`COALESCE(c.last_message_at, c.created_at) >= NOW() - interval '8 days'`);
-      }
-
+      const filter = buildInboxConditions({
+        orgId: req.org!.id,
+        userId: req.user!.userId,
+        view,
+        status,
+        channel,
+        search,
+        range,
+        agentId,
+      });
+      const where = filter.conditions.join(' AND ');
       // Everything but the agent filter, so the per-agent tabs keep their counts when one is selected
-      const countsWhere = conditions.join(' AND ');
-      const countsParams = [...params];
+      const countsWhere = filter.baseConditions.join(' AND ');
+      const params = filter.params;
+      const paramIndex = params.length + 1;
 
-      if (agentId) {
-        conditions.push(`c.agent_id = $${paramIndex++}`);
-        params.push(agentId);
-      }
-
-      const where = conditions.join(' AND ');
-
-      // Count total
       const [countResult, agentCountsResult] = await Promise.all([
         query<{ count: string }>(
           `SELECT COUNT(*) as count
-           FROM conversations c
-           LEFT JOIN contacts co ON c.contact_id = co.id
+           ${INBOX_FROM}
            WHERE ${where}`,
           params
         ),
         query<{ agent_id: string; agent_name: string | null; count: string }>(
           `SELECT c.agent_id, a.name as agent_name, COUNT(*) as count
-           FROM conversations c
-           LEFT JOIN agents a ON c.agent_id = a.id
-           LEFT JOIN contacts co ON c.contact_id = co.id
+           ${INBOX_FROM}
            WHERE ${countsWhere}
            GROUP BY c.agent_id, a.name`,
-          countsParams
+          filter.baseParams
         ),
       ]);
       const total = parseInt(countResult.rows[0]?.count ?? '0', 10);
@@ -115,8 +113,12 @@ router.get(
         created_at: string;
         last_message_content: string | null;
         last_message_role: string | null;
+        last_message_sent_by_name: string | null;
+        last_message_sent_by_id: string | null;
         handed_off_at: string | null;
         handoff_active: boolean;
+        needs_attention: boolean;
+        waiting_since: string | null;
       }>(
         `SELECT
            c.id, c.agent_id, a.name as agent_name,
@@ -126,21 +128,21 @@ router.get(
            u.name as takeover_user_name,
            c.ai_score, c.captured_variables, c.last_message_at, c.message_count, c.created_at,
            lm.content as last_message_content, lm.role as last_message_role,
+           lm.metadata->'sentBy'->>'name' as last_message_sent_by_name,
+           lm.metadata->'sentBy'->>'id' as last_message_sent_by_id,
            c.handed_off_at,
-           (c.handed_off_at IS NOT NULL
-             AND c.handed_off_at > NOW() - make_interval(hours => COALESCE(NULLIF(a.handoff_config->>'labelTtlHours', '')::int, 24))
-           ) AS handoff_active
-         FROM conversations c
-         LEFT JOIN agents a ON c.agent_id = a.id
-         LEFT JOIN contacts co ON c.contact_id = co.id
+           ${HANDOFF_ACTIVE_SQL} AS handoff_active,
+           ${NEEDS_SQL} AS needs_attention,
+           ${WAITING_SINCE_SQL} AS waiting_since
+         ${INBOX_FROM}
          LEFT JOIN users u ON c.taken_over_by = u.id
          LEFT JOIN LATERAL (
-           SELECT content, role FROM messages
+           SELECT content, role, metadata FROM messages
            WHERE conversation_id = c.id
            ORDER BY created_at DESC LIMIT 1
          ) lm ON true
          WHERE ${where}
-         ORDER BY c.last_message_at DESC NULLS LAST
+         ORDER BY ${inboxOrderBy(view, order)}
          LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
         [...params, limitNum, offset]
       );
@@ -170,10 +172,14 @@ router.get(
           createdAt: row.created_at,
           handedOffAt: row.handed_off_at,
           handoffActive: row.handoff_active,
+          needsAttention: row.needs_attention,
+          waitingSince: row.waiting_since,
           lastMessage: row.last_message_content
             ? {
                 content: row.last_message_content.slice(0, 100),
                 role: row.last_message_role,
+                sentByName: row.last_message_sent_by_name,
+                sentById: row.last_message_sent_by_id,
               }
             : null,
         })),
@@ -188,6 +194,37 @@ router.get(
           limit: limitNum,
           totalPages: Math.ceil(total / limitNum),
         },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── GET /api/conversations/counts ───────────────────────────────────────────
+// Counters for the Bandeja rail (web-41). Registered before /:id.
+router.get(
+  '/counts',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const range = typeof req.query['range'] === 'string' ? req.query['range'] : undefined;
+      const totals = buildCountsQuery(req.org!.id, req.user!.userId, range);
+      const byAgent = buildCountsGroupQuery(req.org!.id, range, 'agent');
+      const byChannel = buildCountsGroupQuery(req.org!.id, range, 'channel');
+      type GroupRow = { key: string; name: string | null; count: string };
+      const [t, a, ch] = await Promise.all([
+        query<{ all_count: string; needs_count: string; mine_count: string; closed_count: string }>(totals.sql, totals.params),
+        query<GroupRow>(byAgent.sql, byAgent.params),
+        query<GroupRow>(byChannel.sql, byChannel.params),
+      ]);
+      const row = t.rows[0];
+      res.json({
+        all: parseInt(row?.all_count ?? '0', 10),
+        needs: parseInt(row?.needs_count ?? '0', 10),
+        mine: parseInt(row?.mine_count ?? '0', 10),
+        closed: parseInt(row?.closed_count ?? '0', 10),
+        byAgent: a.rows.map((r) => ({ agentId: r.key, agentName: r.name ?? '', count: parseInt(r.count, 10) })),
+        byChannel: ch.rows.map((r) => ({ channel: r.key, count: parseInt(r.count, 10) })),
       });
     } catch (err) {
       next(err);
@@ -216,6 +253,7 @@ router.get(
         contact_ai_score: number | null;
         contact_funnel_stage: string | null;
         contact_custom_variables: Record<string, unknown>;
+        contact_ai_service: string | null;
         channel: string;
         status: string;
         taken_over_by: string | null;
@@ -231,6 +269,9 @@ router.get(
         updated_at: string;
         handed_off_at: string | null;
         handoff_active: boolean;
+        needs_attention: boolean;
+        waiting_since: string | null;
+        last_customer_message_at: string | null;
       }>(
         `SELECT
            c.id, c.agent_id, a.name as agent_name, c.organization_id,
@@ -238,17 +279,17 @@ router.get(
            co.name as contact_name, co.phone as contact_phone, co.email as contact_email,
            co.avatar_url as contact_avatar, co.ai_score as contact_ai_score,
            co.funnel_stage as contact_funnel_stage, co.custom_variables as contact_custom_variables,
+           co.ai_service as contact_ai_service,
            c.channel, c.status, c.taken_over_by,
            u.name as takeover_user_name,
            c.taken_over_at, c.ai_score, c.ai_summary, c.captured_variables,
            c.channel_metadata, c.last_message_at, c.message_count, c.created_at, c.updated_at,
            c.handed_off_at,
-           (c.handed_off_at IS NOT NULL
-             AND c.handed_off_at > NOW() - make_interval(hours => COALESCE(NULLIF(a.handoff_config->>'labelTtlHours', '')::int, 24))
-           ) AS handoff_active
-         FROM conversations c
-         LEFT JOIN agents a ON c.agent_id = a.id
-         LEFT JOIN contacts co ON c.contact_id = co.id
+           ${HANDOFF_ACTIVE_SQL} AS handoff_active,
+           ${NEEDS_SQL} AS needs_attention,
+           ${WAITING_SINCE_SQL} AS waiting_since,
+           (SELECT MAX(created_at) FROM messages WHERE conversation_id = c.id AND role = 'user') AS last_customer_message_at
+         ${INBOX_FROM}
          LEFT JOIN users u ON c.taken_over_by = u.id
          WHERE c.id = $1 AND c.organization_id = $2`,
         [conversationId, req.org!.id]
@@ -313,6 +354,7 @@ router.get(
                 aiScore: conv.contact_ai_score,
                 funnelStage: conv.contact_funnel_stage,
                 customVariables: conv.contact_custom_variables ?? {},
+                aiService: conv.contact_ai_service,
               }
             : null,
           channel: conv.channel,
@@ -330,6 +372,9 @@ router.get(
           updatedAt: conv.updated_at,
           handedOffAt: conv.handed_off_at,
           handoffActive: conv.handoff_active,
+          needsAttention: conv.needs_attention,
+          waitingSince: conv.waiting_since,
+          lastCustomerMessageAt: conv.last_customer_message_at,
         },
         messages: messageRows.map((m) => ({
           id: m.id,
@@ -400,7 +445,11 @@ router.post(
       }
 
       let messageContent = content?.trim() || '';
-      const msgMetadata: Record<string, unknown> = {};
+      // Who on the team wrote it (web-41): the Bandeja shows the name next to the bubble
+      const senderResult = await query<{ name: string | null }>('SELECT name FROM users WHERE id = $1', [req.user!.userId]);
+      const msgMetadata: Record<string, unknown> = {
+        sentBy: { id: req.user!.userId, name: senderResult.rows[0]?.name ?? null },
+      };
 
       // Handle audio: transcribe with Whisper
       if (audio?.data) {
@@ -652,12 +701,16 @@ router.post(
         [req.user!.userId, conversationId]
       );
 
+      const takerResult = await query<{ name: string | null }>('SELECT name FROM users WHERE id = $1', [req.user!.userId]);
+
       try {
         getIO().to(`org:${conv.organization_id}`).emit('takeover:status', {
           conversationId,
           status: 'human_takeover',
           userId: req.user!.userId,
           userName: req.user!.email,
+          userDisplayName: takerResult.rows[0]?.name ?? null,
+          takenOverAt: new Date().toISOString(),
         });
       } catch {
         // WebSocket not initialized

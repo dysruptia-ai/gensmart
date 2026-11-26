@@ -1,0 +1,60 @@
+.nav {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--app-rail-line);
+  background: var(--app-card);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.item {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 7px 4px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--app-soft);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.item[aria-current='page'] {
+  color: var(--app-ink);
+  font-weight: 700;
+}
+
+.item[aria-current='page'] .iconWrap {
+  background: var(--app-active);
+}
+
+.iconWrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 26px;
+  border-radius: var(--app-r-pill);
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: 2px;
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--app-r-pill);
+  background: var(--app-card-2);
+  color: var(--app-ink);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.badgeUrgent {
+  background: var(--app-warn-bg);
+  color: var(--app-warn);
+}

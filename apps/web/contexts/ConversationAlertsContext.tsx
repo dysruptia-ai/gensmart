@@ -5,12 +5,17 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useWebSocket, type WebSocketEvents } from '@/hooks/useWebSocket';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/components/ui/Toast';
-import { getChannelMeta } from '@/components/conversations/channelMeta';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/lib/api';
+import { getChannelMeta } from '@/components/app/Inbox/channelMeta';
 
 interface ConversationAlertsValue {
-  /** Conversations with an unseen customer message plus those asking for a human. */
+  /**
+   * Conversations that need someone: the same number as the Bandeja's "Necesitan a alguien"
+   * (`needs` from GET /api/conversations/counts, web-41).
+   */
   count: number;
-  /** True when at least one conversation is waiting for human help. */
+  /** True when at least one conversation needs someone. */
   hasUrgent: boolean;
   /** Notification permission is still undecided, so the opt-in prompt should be shown. */
   canAskPermission: boolean;
@@ -27,17 +32,9 @@ function conversationIdFromPath(pathname: string): string | null {
   return CONVERSATION_PATH.exec(pathname)?.[1] ?? null;
 }
 
-function withoutId(set: Set<string>, id: string): Set<string> {
-  if (!set.has(id)) return set;
-  const next = new Set(set);
-  next.delete(id);
-  return next;
-}
-
-function withId(set: Set<string>, id: string): Set<string> {
-  if (set.has(id)) return set;
-  return new Set(set).add(id);
-}
+/** The counter is refreshed on every conversation event (grouped) and, as a fallback, once a minute. */
+const COUNT_DEBOUNCE_MS = 800;
+const COUNT_POLL_MS = 60_000;
 
 type MessageNewPayload = Parameters<WebSocketEvents['message:new']>[0];
 type NotificationPayload = Parameters<WebSocketEvents['notification:new']>[0];
@@ -59,9 +56,9 @@ export function ConversationAlertsProvider({ children }: { children: React.React
   const { warning } = useToast();
   const pathname = usePathname();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
-  const [unseen, setUnseen] = useState<Set<string>>(new Set());
-  const [needsHelp, setNeedsHelp] = useState<Set<string>>(new Set());
+  const [needs, setNeeds] = useState(0);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
 
   // Handlers are registered once; they read the latest values through refs
@@ -78,14 +75,40 @@ export function ConversationAlertsProvider({ children }: { children: React.React
     if (typeof Notification !== 'undefined') setPermission(Notification.permission);
   }, []);
 
-  // Opening a conversation marks it as seen
+  // The open conversation does not raise a desktop notification
   useEffect(() => {
-    const id = conversationIdFromPath(pathname);
-    viewingRef.current = id;
-    if (!id) return;
-    setUnseen((prev) => withoutId(prev, id));
-    setNeedsHelp((prev) => withoutId(prev, id));
+    viewingRef.current = conversationIdFromPath(pathname);
   }, [pathname]);
+
+  // "Necesitan a alguien" from the API: on load, on events (grouped) and once a minute
+  const countTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadCount = useCallback(() => {
+    api
+      .get<{ needs: number }>('/api/conversations/counts')
+      .then((data) => setNeeds(data.needs))
+      .catch(() => {
+        /* keeps the last value */
+      });
+  }, []);
+  const refreshCount = useCallback(() => {
+    if (countTimer.current) clearTimeout(countTimer.current);
+    countTimer.current = setTimeout(loadCount, COUNT_DEBOUNCE_MS);
+  }, [loadCount]);
+  const refreshRef = useRef(refreshCount);
+  refreshRef.current = refreshCount;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setNeeds(0);
+      return;
+    }
+    loadCount();
+    const id = setInterval(loadCount, COUNT_POLL_MS);
+    return () => {
+      clearInterval(id);
+      if (countTimer.current) clearTimeout(countTimer.current);
+    };
+  }, [isAuthenticated, loadCount]);
 
   const playSound = useCallback((urgent: boolean) => {
     try {
@@ -125,9 +148,9 @@ export function ConversationAlertsProvider({ children }: { children: React.React
 
   useEffect(() => {
     const handleMessage: WebSocketEvents['message:new'] = (data) => {
+      refreshRef.current();
       const content = customerMessage(data);
       if (content === null || data.conversationId === viewingRef.current) return;
-      setUnseen((prev) => withId(prev, data.conversationId));
       showNotification(data.conversationId, tRef.current('conversations.alerts.newMessageTitle'), content.slice(0, 120));
       playSound(false);
     };
@@ -137,8 +160,7 @@ export function ConversationAlertsProvider({ children }: { children: React.React
       const conversationId = data.data?.['conversationId'];
       if (typeof conversationId !== 'string') return;
       const contactName = data.data?.['contactName'];
-      setUnseen((prev) => withoutId(prev, conversationId));
-      setNeedsHelp((prev) => withId(prev, conversationId));
+      refreshRef.current();
       showNotification(
         conversationId,
         tRef.current('conversations.alerts.handoffTitle'),
@@ -147,11 +169,7 @@ export function ConversationAlertsProvider({ children }: { children: React.React
       playSound(true);
     };
 
-    const handleTakeover: WebSocketEvents['takeover:status'] = (data) => {
-      if (data.status === 'human_takeover') {
-        setNeedsHelp((prev) => withoutId(prev, data.conversationId));
-      }
-    };
+    const handleConversationChange = () => refreshRef.current();
 
     const handleChannelRestricted: WebSocketEvents['channel:restricted'] = (data) => {
       const channelLabel = getChannelMeta(data.channel).label;
@@ -177,13 +195,17 @@ export function ConversationAlertsProvider({ children }: { children: React.React
 
     on('message:new', handleMessage);
     on('notification:new', handleNotification);
-    on('takeover:status', handleTakeover);
+    on('takeover:status', handleConversationChange);
+    on('conversation:update', handleConversationChange);
+    on('connect', handleConversationChange);
     on('channel:restricted', handleChannelRestricted);
     on('tool:restricted', handleToolRestricted);
     return () => {
       off('message:new', handleMessage);
       off('notification:new', handleNotification);
-      off('takeover:status', handleTakeover);
+      off('takeover:status', handleConversationChange);
+      off('conversation:update', handleConversationChange);
+      off('connect', handleConversationChange);
       off('channel:restricted', handleChannelRestricted);
       off('tool:restricted', handleToolRestricted);
     };
@@ -223,8 +245,8 @@ export function ConversationAlertsProvider({ children }: { children: React.React
     return () => window.removeEventListener('pointerdown', unlock);
   }, [permission]);
 
-  const count = unseen.size + needsHelp.size;
-  const hasUrgent = needsHelp.size > 0;
+  const count = needs;
+  const hasUrgent = needs > 0;
 
   // Favicon with a counter (best effort). Next.js renders several <link rel="icon"> (ico + PNG sizes) and the
   // browser may show any of them, so every one is redrawn. Each keeps its own original in data-original-href.
