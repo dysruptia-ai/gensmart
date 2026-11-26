@@ -2,16 +2,76 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
-import type { ConversationDetail, DetailResponse, MessageRole, ThreadMessage } from './types';
+import type {
+  ApiConversationEvent,
+  CloseOutcome,
+  ConversationDetail,
+  DetailResponse,
+  MessageRole,
+  ThreadMessage,
+} from './types';
 
 const MSG_PAGE = 40;
 
-/** Evento del sistema que se pinta centrado en el hilo. No se guarda como mensaje (ver reporte web-41). */
+export type ThreadEventKind =
+  | 'handoff'
+  | 'taken'
+  | 'released'
+  | 'transferred'
+  | 'snoozed'
+  | 'unsnoozed'
+  | 'closed'
+  | 'reopened';
+
+/**
+ * Evento que se pinta centrado en el hilo. Sale de `conversation_events` (web-42); en las
+ * conversaciones anteriores, de los campos de la conversación. Nunca es un mensaje: el agente no lo ve.
+ */
 export interface ThreadEvent {
   id: string;
-  kind: 'handoff' | 'taken' | 'released' | 'closed';
+  kind: ThreadEventKind;
   at: string;
+  actorId?: string | null;
+  /** Quien lo hizo (nulo si fue el agente o el sistema). */
   name?: string | null;
+  targetId?: string | null;
+  targetName?: string | null;
+  note?: string | null;
+  until?: string | null;
+  outcome?: CloseOutcome | null;
+}
+
+/** Cambios que llegan en `conversation:update` (web-42). */
+export interface ConversationChange {
+  status?: string;
+  takenOverBy?: string | null;
+  takeoverUserName?: string | null;
+  snoozedUntil?: string | null;
+  snoozedBy?: string | null;
+  snoozedByName?: string | null;
+  followUpAt?: string | null;
+  closedOutcome?: CloseOutcome | null;
+  closedAt?: string | null;
+  closedBy?: string | null;
+  closedByName?: string | null;
+  event?: ApiConversationEvent;
+  updatedAt: string;
+}
+
+export function fromApiEvent(e: ApiConversationEvent): ThreadEvent {
+  const str = (v: unknown) => (typeof v === 'string' && v ? v : null);
+  return {
+    id: e.id,
+    kind: e.type === 'handoff_requested' ? 'handoff' : e.type,
+    at: e.createdAt,
+    actorId: e.actorUserId,
+    name: e.actorName,
+    targetId: e.targetUserId,
+    targetName: e.targetName,
+    note: str(e.data['note']),
+    until: str(e.data['until']),
+    outcome: (str(e.data['outcome']) as CloseOutcome | null) ?? null,
+  };
 }
 
 export interface OutgoingImage {
@@ -30,15 +90,42 @@ interface Me {
   name: string;
 }
 
-/** Eventos que se pueden saber con los campos de la conversación al abrirla. */
-function initialEvents(c: ConversationDetail): ThreadEvent[] {
+/** Eventos que se pueden saber con los campos de la conversación (las anteriores a web-42). */
+function fieldEvents(c: ConversationDetail): ThreadEvent[] {
   const events: ThreadEvent[] = [];
   if (c.handedOffAt) events.push({ id: `handoff-${c.handedOffAt}`, kind: 'handoff', at: c.handedOffAt });
   if (c.status === 'human_takeover' && c.takenOverAt) {
-    events.push({ id: `taken-${c.takenOverAt}`, kind: 'taken', at: c.takenOverAt, name: c.takeoverUserName });
+    events.push({ id: `taken-${c.takenOverAt}`, kind: 'taken', at: c.takenOverAt, name: c.takeoverUserName, actorId: c.takenOverBy });
   }
-  if (c.status === 'closed') events.push({ id: `closed-${c.updatedAt}`, kind: 'closed', at: c.updatedAt });
+  if (c.status === 'closed') {
+    const at = c.closedAt ?? c.updatedAt;
+    events.push({ id: `closed-${at}`, kind: 'closed', at, name: c.closedByName ?? null, actorId: c.closedBy ?? null, outcome: c.closedOutcome ?? null });
+  }
   return events;
+}
+
+/**
+ * El historial: los eventos guardados y, de los que se arman con los campos, solo los anteriores
+ * al primero guardado (así una conversación vieja que se reabre conserva "El agente pidió ayuda").
+ */
+export function buildEvents(c: ConversationDetail, stored: ApiConversationEvent[] | undefined): ThreadEvent[] {
+  const saved = (stored ?? []).map(fromApiEvent);
+  if (!saved.length) return fieldEvents(c);
+  // El campo y el evento se escriben casi a la vez (handed_off_at y handoff_requested, por ejemplo):
+  // margen de unos segundos para no repetirlo. Un "taken" armado con los campos lleva el nombre de quien
+  // la tiene hoy, así que no se muestra si ya hay tomas o transferencias guardadas.
+  const first = new Date(saved[0]!.at).getTime() - 5000;
+  const hasHandover = saved.some((e) => e.kind === 'taken' || e.kind === 'transferred');
+  const older = fieldEvents(c).filter(
+    (e) => new Date(e.at).getTime() < first && !(e.kind === 'taken' && hasHandover),
+  );
+  return [...older, ...saved];
+}
+
+export type ThreadAction = 'take' | 'release' | 'close' | 'reopen' | 'transfer' | 'snooze' | 'unsnooze' | 'delete';
+
+interface ActionResult {
+  change: Omit<ConversationChange, 'updatedAt'>;
 }
 
 let tmpSeq = 0;
@@ -52,7 +139,7 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [oldest, setOldest] = useState<string | null>(null);
-  const [busy, setBusy] = useState<'take' | 'release' | 'close' | 'delete' | null>(null);
+  const [busy, setBusy] = useState<ThreadAction | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const requestId = useRef(0);
@@ -92,7 +179,7 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
         commit(data.conversation);
         // Al recargar en silencio se conservan los propios que siguen enviándose o fallaron
         setMessages((prev) => [...data.messages, ...(options?.quiet ? prev.filter((m) => m.delivery) : [])]);
-        setEvents(initialEvents(data.conversation));
+        setEvents(buildEvents(data.conversation, data.events));
         setHasMore(data.pagination.hasMore);
         setOldest(data.pagination.oldestTimestamp);
       })
@@ -170,23 +257,51 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
       if (!prev) return;
       if (status === 'human_takeover') {
         if (prev.status === 'human_takeover' && prev.takenOverBy === userId) return;
-        commit({ ...prev, status: 'human_takeover', takenOverBy: userId, takeoverUserName: name, takenOverAt: at });
-        pushEvent({ id: `taken-${at}`, kind: 'taken', at, name });
+        // Tomarla atiende el pedido de ayuda: al devolverla al agente no vuelve a "pidió ayuda" (web-42b)
+        commit({ ...prev, status: 'human_takeover', takenOverBy: userId, takeoverUserName: name, takenOverAt: at, snoozedUntil: null, handoffActive: false });
       } else {
         if (prev.status !== 'human_takeover') return;
         commit({ ...prev, status: 'active', takenOverBy: null, takeoverUserName: null, takenOverAt: null });
-        pushEvent({ id: `released-${at}`, kind: 'released', at });
       }
+      // El evento del historial llega aparte (respuesta de la acción o `conversation:update`)
     },
-    [commit, pushEvent],
+    [commit],
   );
 
   const applyClosed = useCallback(
     (at: string) => {
       const prev = convRef.current;
       if (!prev || prev.status === 'closed') return;
-      commit({ ...prev, status: 'closed', updatedAt: at, needsAttention: false, waitingSince: null });
-      pushEvent({ id: `closed-${at}`, kind: 'closed', at });
+      commit({ ...prev, status: 'closed', updatedAt: at, closedAt: prev.closedAt ?? at, needsAttention: false, waitingSince: null });
+    },
+    [commit],
+  );
+
+  /** Aplica un `conversation:update` (propio o de otra persona): campos y, si viene, el evento nuevo. */
+  const applyChange = useCallback(
+    (change: ConversationChange) => {
+      const prev = convRef.current;
+      if (!prev) return;
+      const next: ConversationDetail = { ...prev, updatedAt: change.updatedAt };
+      if (change.status === 'active' || change.status === 'human_takeover' || change.status === 'closed') next.status = change.status;
+      if (change.takenOverBy !== undefined) next.takenOverBy = change.takenOverBy;
+      // Tomada o recibida por transferencia: el pedido de ayuda queda atendido (web-42b)
+      if (change.takenOverBy) next.handoffActive = false;
+      if (change.takeoverUserName !== undefined) next.takeoverUserName = change.takeoverUserName;
+      if (change.snoozedUntil !== undefined) next.snoozedUntil = change.snoozedUntil;
+      if (change.snoozedBy !== undefined) next.snoozedBy = change.snoozedBy;
+      if (change.snoozedByName !== undefined) next.snoozedByName = change.snoozedByName;
+      if (change.followUpAt !== undefined) next.followUpAt = change.followUpAt;
+      if (change.closedOutcome !== undefined) next.closedOutcome = change.closedOutcome;
+      if (change.closedAt !== undefined) next.closedAt = change.closedAt;
+      if (change.closedBy !== undefined) next.closedBy = change.closedBy;
+      if (change.closedByName !== undefined) next.closedByName = change.closedByName;
+      if (next.status === 'closed' || next.snoozedUntil) {
+        next.needsAttention = false;
+        next.waitingSince = null;
+      }
+      commit(next);
+      if (change.event) pushEvent(fromApiEvent(change.event));
     },
     [commit, pushEvent],
   );
@@ -263,28 +378,29 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
   }, []);
 
   const runAction = useCallback(
-    async (kind: 'take' | 'release' | 'close' | 'delete', errorKey: string): Promise<boolean> => {
+    async (kind: ThreadAction, errorKey: string, request: (id: string) => Promise<ActionResult>): Promise<boolean> => {
       const id = idRef.current;
       if (!id || !me) return false;
       setBusy(kind);
       setActionError(null);
       try {
-        if (kind === 'take') await api.post(`/api/conversations/${id}/takeover`);
-        if (kind === 'release') await api.post(`/api/conversations/${id}/release`);
-        if (kind === 'close') await api.put(`/api/conversations/${id}/close`);
-        if (kind === 'delete') {
-          await api.delete(`/api/conversations/${id}`);
-          return true;
-        }
-        const at = new Date().toISOString();
-        if (kind === 'take') applyTakeover('human_takeover', me.id, me.name, at);
-        if (kind === 'release') applyTakeover('active', null, null, at);
-        if (kind === 'close') applyClosed(at);
+        const result = await request(id);
+        if (kind === 'delete') return true;
+        // El cambio se ve al instante; el eco por WebSocket trae lo mismo (el evento no se repite: mismo id)
+        if (idRef.current === id) applyChange({ ...result.change, updatedAt: new Date().toISOString() });
         return true;
       } catch (err) {
         const code = err instanceof ApiError ? err.code : undefined;
         // Otra persona se adelantó (o ya estaba cerrada): se muestra el estado real
-        if (code === 'ALREADY_TAKEN_OVER' || code === 'ALREADY_CLOSED' || code === 'NOT_IN_TAKEOVER' || code === 'FORBIDDEN') {
+        if (
+          code === 'ALREADY_TAKEN_OVER' ||
+          code === 'ALREADY_CLOSED' ||
+          code === 'NOT_IN_TAKEOVER' ||
+          code === 'FORBIDDEN' ||
+          code === 'NOT_CLOSED' ||
+          code === 'NOT_SNOOZED' ||
+          code === 'SAME_USER'
+        ) {
           load({ quiet: true });
         }
         setActionError(errorKey);
@@ -293,7 +409,109 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
         setBusy(null);
       }
     },
-    [me, applyTakeover, applyClosed, load],
+    [me, applyChange, load],
+  );
+
+  const take = useCallback(
+    () =>
+      runAction('take', 'inbox.errors.take', async (id) => {
+        const r = await api.post<{ event?: ApiConversationEvent }>(`/api/conversations/${id}/takeover`);
+        return { change: { status: 'human_takeover', takenOverBy: me?.id ?? null, takeoverUserName: me?.name ?? null, snoozedUntil: null, event: r.event } };
+      }),
+    [runAction, me],
+  );
+  const release = useCallback(
+    () =>
+      runAction('release', 'inbox.errors.release', async (id) => {
+        const r = await api.post<{ event?: ApiConversationEvent }>(`/api/conversations/${id}/release`);
+        return { change: { status: 'active', takenOverBy: null, takeoverUserName: null, event: r.event } };
+      }),
+    [runAction],
+  );
+  const close = useCallback(
+    (outcome: CloseOutcome | null) =>
+      runAction('close', 'inbox.errors.close', async (id) => {
+        const r = await api.put<{ closedAt?: string; event?: ApiConversationEvent }>(
+          `/api/conversations/${id}/close`,
+          outcome ? { outcome } : {},
+        );
+        return {
+          change: {
+            status: 'closed',
+            closedOutcome: outcome,
+            closedAt: r.closedAt ?? new Date().toISOString(),
+            closedBy: me?.id ?? null,
+            closedByName: me?.name ?? null,
+            snoozedUntil: null,
+            followUpAt: null,
+            event: r.event,
+          },
+        };
+      }),
+    [runAction, me],
+  );
+  const reopen = useCallback(
+    () =>
+      runAction('reopen', 'inbox.errors.reopen', async (id) => {
+        const r = await api.post<{ event?: ApiConversationEvent }>(`/api/conversations/${id}/reopen`);
+        return {
+          change: {
+            status: 'active',
+            takenOverBy: null,
+            takeoverUserName: null,
+            closedOutcome: null,
+            closedAt: null,
+            closedBy: null,
+            closedByName: null,
+            event: r.event,
+          },
+        };
+      }),
+    [runAction],
+  );
+  /** `toUserId = null`: devolver al agente. `toUserId = me.id` (owner/admin): "Tomarla tú". */
+  const transfer = useCallback(
+    (toUserId: string | null, toName: string | null, note: string) =>
+      runAction('transfer', 'inbox.errors.transfer', async (id) => {
+        const r = await api.post<{ event?: ApiConversationEvent }>(`/api/conversations/${id}/transfer`, {
+          toUserId,
+          ...(note.trim() ? { note: note.trim() } : {}),
+        });
+        return {
+          change: toUserId
+            ? { status: 'human_takeover', takenOverBy: toUserId, takeoverUserName: toName, snoozedUntil: null, event: r.event }
+            : { status: 'active', takenOverBy: null, takeoverUserName: null, event: r.event },
+        };
+      }),
+    [runAction],
+  );
+  const snooze = useCallback(
+    (until: Date) =>
+      runAction('snooze', 'inbox.errors.snooze', async (id) => {
+        const r = await api.post<{ snoozedUntil: string; event?: ApiConversationEvent }>(`/api/conversations/${id}/snooze`, {
+          until: until.toISOString(),
+        });
+        return {
+          change: { snoozedUntil: r.snoozedUntil, snoozedBy: me?.id ?? null, snoozedByName: me?.name ?? null, followUpAt: null, event: r.event },
+        };
+      }),
+    [runAction, me],
+  );
+  const unsnooze = useCallback(
+    () =>
+      runAction('unsnooze', 'inbox.errors.unsnooze', async (id) => {
+        const r = await api.delete<{ event?: ApiConversationEvent }>(`/api/conversations/${id}/snooze`);
+        return { change: { snoozedUntil: null, event: r.event } };
+      }),
+    [runAction],
+  );
+  const remove = useCallback(
+    () =>
+      runAction('delete', 'inbox.errors.delete', async (id) => {
+        await api.delete(`/api/conversations/${id}`);
+        return { change: {} };
+      }),
+    [runAction],
   );
 
   return {
@@ -313,14 +531,19 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
     applyTakeover,
     applyClosed,
     applyHandoff,
+    applyChange,
     patchConversation,
     send,
     retry,
     discard,
-    take: () => runAction('take', 'inbox.errors.take'),
-    release: () => runAction('release', 'inbox.errors.release'),
-    close: () => runAction('close', 'inbox.errors.close'),
-    remove: () => runAction('delete', 'inbox.errors.delete'),
+    take,
+    release,
+    close,
+    reopen,
+    transfer,
+    snooze,
+    unsnooze,
+    remove,
   };
 }
 

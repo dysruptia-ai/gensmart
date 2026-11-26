@@ -116,6 +116,46 @@
   font-weight: 600;
 }
 
+/* Filtro por resultado de "Cerradas" (web-42) */
+.outcomes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.outcomes button {
+  min-height: 30px;
+  padding: 3px 11px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-pill);
+  background: var(--app-card);
+  color: var(--app-mute);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.outcomes button:hover {
+  background: var(--app-active);
+}
+
+.outcomes button[aria-pressed='true'] {
+  border-color: var(--app-ink);
+  background: var(--app-ink);
+  color: var(--app-card);
+  font-weight: 600;
+}
+
+.outcomes button:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.groupCount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
 .scroll {
   flex: 1;
   min-height: 0;

@@ -1610,7 +1610,14 @@
       "loadMore": "Cargar más",
       "clearSearch": "Quitar la búsqueda",
       "errorTitle": "No pudimos cargar la Bandeja",
-      "errorText": "Es un problema nuestro, no tuyo. Tus conversaciones están a salvo."
+      "errorText": "Es un problema nuestro, no tuyo. Tus conversaciones están a salvo.",
+      "outcomeFilter": "Filtrar por resultado",
+      "outcomeAll": "Todos",
+      "mineGroups": {
+        "followUp": "Seguimiento para hoy",
+        "active": "En curso",
+        "snoozed": "Pospuestas"
+      }
     },
     "empty": {
       "all": {
@@ -1649,7 +1656,9 @@
       "yours": "La tienes tú",
       "takenBy": "Tomada por {name}",
       "scoreTitle": "Puntaje del lead",
-      "scoreSr": "Puntaje"
+      "scoreSr": "Puntaje",
+      "snoozedUntil": "Vuelve {when}",
+      "backFromSnooze": "Volvió de posponer"
     },
     "thread": {
       "loading": "Cargando la conversación",
@@ -1683,10 +1692,26 @@
       "events": {
         "handoff": "El agente pidió ayuda",
         "taken": "{name} tomó la conversación",
-        "released": "Devuelta al agente",
-        "closed": "Conversación cerrada"
+        "released": "{name} la devolvió al agente",
+        "closed": "{name} la cerró",
+        "takenYou": "Tú tomaste la conversación",
+        "releasedYou": "Tú la devolviste al agente",
+        "releasedPlain": "Devuelta al agente",
+        "transferred": "{name} se la transfirió a {target}",
+        "transferredYou": "Tú se la transferiste a {target}",
+        "transferredToYou": "{name} te transfirió la conversación",
+        "snoozed": "{name} la pospuso hasta {time}",
+        "snoozedYou": "Tú la pospusiste hasta {time}",
+        "unsnoozed": "Volvió de posponer",
+        "unsnoozedManual": "{name} quitó la posposición",
+        "unsnoozedManualYou": "Tú quitaste la posposición",
+        "closedYou": "Tú la cerraste",
+        "closedAs": "{name} la cerró como {outcome}",
+        "closedAsYou": "Tú la cerraste como {outcome}",
+        "closedPlain": "Conversación cerrada",
+        "reopened": "{name} la reabrió",
+        "reopenedYou": "Tú la reabriste"
       },
-      "closedBar": "Esta conversación está cerrada.",
       "takenBar": "{name} está atendiendo esta conversación.",
       "agentBar": "El agente está respondiendo. Toma la conversación para escribir tú.",
       "mediaAlt": "Archivo enviado",
@@ -1695,7 +1720,19 @@
       "handedOffTo": "Derivado a {name}",
       "details": "Detalles",
       "more": "Más acciones",
-      "delete": "Borrar conversación"
+      "delete": "Borrar conversación",
+      "takeOver": "Tomarla tú",
+      "transfer": "Transferir",
+      "snooze": "Posponer",
+      "unsnooze": "Quitar posposición",
+      "reopen": "Reabrir",
+      "snoozedBar": "Pospuesta hasta {when}",
+      "closedBarAs": "Cerrada como",
+      "closedBarPlain": "Cerrada",
+      "closedBarBy": "por {name}, {when}.",
+      "closedBarByYou": "por ti, {when}.",
+      "closedBarWhen": "{when}.",
+      "closedBarNoReply": "No se puede responder hasta reabrirla."
     },
     "composer": {
       "label": "Tu respuesta",
@@ -1755,10 +1792,18 @@
       "adVideo": "Ver el video del anuncio"
     },
     "closeDialog": {
+      "pickOutcome": "Elige cómo terminó la conversación",
       "title": "Cerrar conversación",
-      "text": "La conversación con {name} pasa a Cerradas.",
       "cancel": "Cancelar",
-      "confirm": "Cerrar conversación"
+      "confirm": "Cerrar conversación",
+      "question": "¿Cómo terminó con {name}?",
+      "outcomeLegend": "Resultado",
+      "hints": {
+        "sold": "Hubo una venta o un pago",
+        "resolved": "Se resolvió la duda o el caso",
+        "no_response": "El cliente dejó de responder",
+        "spam": "No es un cliente real"
+      }
     },
     "deleteDialog": {
       "title": "Borrar conversación",
@@ -1771,7 +1816,11 @@
       "take": "No pudimos tomar la conversación. Puede que otra persona se te haya adelantado.",
       "release": "No pudimos devolverla al agente. Vuelve a intentarlo.",
       "close": "No pudimos cerrar la conversación. Vuelve a intentarlo.",
-      "delete": "No pudimos borrar la conversación. Inténtalo de nuevo."
+      "delete": "No pudimos borrar la conversación. Inténtalo de nuevo.",
+      "transfer": "No pudimos transferir la conversación. Vuelve a intentarlo.",
+      "snooze": "No pudimos posponer la conversación. Vuelve a intentarlo.",
+      "unsnooze": "No pudimos quitar la posposición. Vuelve a intentarlo.",
+      "reopen": "No pudimos reabrir la conversación. Vuelve a intentarlo."
     },
     "dialog": {
       "close": "Cerrar"
@@ -1798,7 +1847,53 @@
     "live": {
       "newMessage": "Mensaje nuevo de {name}",
       "handoff": "{name} necesita a alguien del equipo",
-      "deleted": "Conversación borrada"
+      "deleted": "Conversación borrada",
+      "transferred": "Conversación transferida a {name}",
+      "released": "Conversación devuelta al agente",
+      "snoozed": "Conversación pospuesta",
+      "reopened": "Conversación reabierta"
+    },
+    "outcomes": {
+      "sold": "Vendido",
+      "resolved": "Resuelto",
+      "no_response": "Sin respuesta",
+      "spam": "Spam"
+    },
+    "transferDialog": {
+      "title": "Transferir conversación",
+      "text": "Elige quién sigue con {name}.",
+      "legend": "Quién la recibe",
+      "roles": {
+        "owner": "Propietario",
+        "admin": "Administrador",
+        "member": "Miembro"
+      },
+      "toAgent": "Devolver al agente",
+      "toAgentHint": "{agent} sigue la conversación",
+      "noteLabel": "Nota para quien la reciba",
+      "notePlaceholder": "Qué falta y qué ya se habló",
+      "noteCount": "{n} de {max}",
+      "loading": "Cargando el equipo…",
+      "loadError": "No pudimos cargar el equipo.",
+      "noTeam": "No hay otras personas en el equipo. Invítalas desde Ajustes.",
+      "cancel": "Cancelar",
+      "confirm": "Transferir"
+    },
+    "snoozeDialog": {
+      "title": "Posponer",
+      "text": "Vuelve a tu lista cuando llegue el momento, o antes si el cliente escribe.",
+      "in1h": "En 1 hora",
+      "today": "Hoy {time}",
+      "tomorrow": "Mañana {time}",
+      "nextWeek": "La próxima semana",
+      "nextWeekHint": "El lunes, {time}",
+      "cancel": "Cancelar",
+      "confirm": "Posponer"
+    },
+    "snooze": {
+      "todayAt": "hoy {time}",
+      "tomorrowAt": "mañana {time}",
+      "dateAt": "el {day}, {time}"
     }
   }
 }

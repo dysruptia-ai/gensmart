@@ -9,7 +9,7 @@
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import type { AddressInfo } from 'node:net';
-import { NEEDS_SQL, RECENT_SQL, buildInboxConditions, parseInboxView } from './inbox-query.service';
+import { NEEDS_SQL, NOT_SNOOZED_SQL, RECENT_SQL, buildInboxConditions, mineSql, parseInboxView } from './inbox-query.service';
 
 const ORG = '00000000-0000-0000-0000-000000000001';
 const USER = '00000000-0000-0000-0000-000000000002';
@@ -35,10 +35,11 @@ test('view=needs y view=mine son colas: no las recorta el período', () => {
   const needs = buildInboxConditions({ orgId: ORG, userId: USER, view: 'needs' });
   assert.deepEqual(needs.conditions, ['c.organization_id = $1', NEEDS_SQL]);
   const mine = buildInboxConditions({ orgId: ORG, userId: USER, view: 'mine' });
-  assert.deepEqual(mine.conditions, ['c.organization_id = $1', 'c.taken_over_by = $2', "c.status <> 'closed'"]);
-  assert.deepEqual(mine.params, [ORG, USER]);
+  // web-42: "Mías" también trae las que pospuse sin dueño; la zona de la organización define "hoy"
+  assert.deepEqual(mine.conditions, ['c.organization_id = $1', mineSql('$2', '$3')]);
+  assert.deepEqual(mine.params, [ORG, USER, 'UTC']);
   const all = buildInboxConditions({ orgId: ORG, userId: USER, view: 'all' });
-  assert.deepEqual(all.conditions, ['c.organization_id = $1', "c.status <> 'closed'", RECENT_SQL]);
+  assert.deepEqual(all.conditions, ['c.organization_id = $1', "c.status <> 'closed'", NOT_SNOOZED_SQL, RECENT_SQL]);
   const closed = buildInboxConditions({ orgId: ORG, userId: USER, view: 'closed', range: 'all' });
   assert.deepEqual(closed.conditions, ['c.organization_id = $1', "c.status = 'closed'"]);
 });
@@ -149,6 +150,14 @@ test('endpoint: vistas, contadores, waitingSince y la lista de siempre', { skip:
     const closed = await conv('cerrada', { status: 'closed', handoffMinutesAgo: 30, msgs: [['user', 60], ['assistant', 59]] });
     const expiredHandoff = await conv('traspaso-vencido', { handoffMinutesAgo: 60 * 48, msgs: [['user', 60 * 48]] });
     const agentOk = await conv('agente-va-bien', { channel: 'whatsapp', msgs: [['user', 3], ['assistant', 3]] });
+    // web-42b: pidió ayuda hace 70 min, Ana la tomó hace 60 min y la devolvió al agente → atendida, no cuenta
+    const attended = await conv('ayuda-atendida', { handoffMinutesAgo: 70, msgs: [['user', 75], ['human', 50], ['assistant', 25]] });
+    // …y si el agente vuelve a pedir ayuda después (handed_off_at nuevo, hace 10 min), cuenta otra vez
+    const askedAgain = await conv('ayuda-otra-vez', { handoffMinutesAgo: 10, msgs: [['user', 75], ['human', 50], ['assistant', 11]] });
+    await query(
+      `UPDATE conversations SET handoff_attended_at = NOW() - interval '60 minutes' WHERE id = ANY($1::uuid[])`,
+      [[attended, askedAgain]]
+    );
 
     type ListResponse = {
       conversations: Array<{ id: string; needsAttention: boolean; waitingSince: string | null; lastMessage: { role: string } | null }>;
@@ -159,9 +168,12 @@ test('endpoint: vistas, contadores, waitingSince y la lista de siempre', { skip:
 
     // ── needs: el agente pidió ayuda sin dueño + tomada con el último mensaje del cliente (el system no cuenta)
     const needs = await get<ListResponse>(ana.token, '/?view=needs');
-    assert.deepEqual(ids(needs), [askedForHelp, takenUnanswered, takenByBeto].sort());
+    assert.deepEqual(ids(needs), [askedForHelp, askedAgain, takenUnanswered, takenByBeto].sort());
     // Orden: la que más espera primero (Beto, 8 min sin responder, va después de la de 12 min de traspaso)
-    assert.deepEqual(needs.conversations.map((c) => c.id), [askedForHelp, takenByBeto, takenUnanswered]);
+    assert.deepEqual(needs.conversations.map((c) => c.id), [askedForHelp, askedAgain, takenByBeto, takenUnanswered]);
+    // El segundo pedido espera desde el handed_off_at nuevo (hace 10 min), no desde el primero
+    const againMin = (Date.now() - new Date(needs.conversations.find((c) => c.id === askedAgain)!.waitingSince!).getTime()) / 60000;
+    assert.ok(againMin > 9 && againMin < 11, `waitingSince ${againMin} min`);
     const help = needs.conversations.find((c) => c.id === askedForHelp)!;
     assert.ok(help.needsAttention && help.waitingSince);
     const unanswered = needs.conversations.find((c) => c.id === takenUnanswered)!;
@@ -178,12 +190,19 @@ test('endpoint: vistas, contadores, waitingSince y la lista de siempre', { skip:
     // ── closed y all
     assert.deepEqual(ids(await get<ListResponse>(ana.token, '/?view=closed')), [closed]);
     const all = await get<ListResponse>(ana.token, '/?view=all&range=all&order=needs');
-    assert.equal(all.pagination.total, 6);
+    assert.equal(all.pagination.total, 8);
     const flags = all.conversations.map((c) => c.needsAttention);
-    assert.deepEqual(flags, [true, true, true, false, false, false], 'order=needs pone primero las que necesitan a alguien');
+    assert.deepEqual(flags, [true, true, true, true, false, false, false, false], 'order=needs pone primero las que necesitan a alguien');
     const answered = all.conversations.find((c) => c.id === takenAnswered)!;
     assert.equal(answered.waitingSince, null);
     assert.equal(all.conversations.find((c) => c.id === agentOk)!.waitingSince, null);
+    const attendedRow = all.conversations.find((c) => c.id === attended)!;
+    assert.deepEqual([attendedRow.needsAttention, attendedRow.waitingSince], [false, null]);
+    // El hilo tampoco muestra el aviso de "pidió ayuda" (handoffActive)
+    const detail = await get<{ conversation: { handoffActive: boolean } }>(ana.token, `/${attended}`);
+    assert.equal(detail.conversation.handoffActive, false);
+    const detailAgain = await get<{ conversation: { handoffActive: boolean } }>(ana.token, `/${askedAgain}`);
+    assert.equal(detailAgain.conversation.handoffActive, true);
 
     // ── counts
     const counts = await get<{
@@ -191,11 +210,11 @@ test('endpoint: vistas, contadores, waitingSince y la lista de siempre', { skip:
       byAgent: Array<{ agentId: string; count: number }>; byChannel: Array<{ channel: string; count: number }>;
     }>(ana.token, '/counts');
     // El traspaso vencido (48 h) ya no necesita a nadie, pero sigue abierta y dentro de los 8 días
-    assert.deepEqual({ all: counts.all, needs: counts.needs, mine: counts.mine, closed: counts.closed }, { all: 6, needs: 3, mine: 2, closed: 1 });
-    assert.deepEqual(counts.byAgent, [{ agentId, agentName: 'Agente de prueba', count: 6 }]);
+    assert.deepEqual({ all: counts.all, needs: counts.needs, mine: counts.mine, closed: counts.closed }, { all: 8, needs: 4, mine: 2, closed: 1 });
+    assert.deepEqual(counts.byAgent, [{ agentId, agentName: 'Agente de prueba', count: 8 }]);
     assert.deepEqual(
       [...counts.byChannel].sort((a, b) => a.channel.localeCompare(b.channel)),
-      [{ channel: 'web', count: 5 }, { channel: 'whatsapp', count: 1 }]
+      [{ channel: 'web', count: 7 }, { channel: 'whatsapp', count: 1 }]
     );
     assert.equal((await get<{ mine: number }>(beto.token, '/counts')).mine, 1);
 
@@ -206,8 +225,8 @@ test('endpoint: vistas, contadores, waitingSince y la lista de siempre', { skip:
     const legacy = await query<{ id: string }>(legacySql, [orgId]);
     const plain = await get<ListResponse>(ana.token, '/?limit=100');
     assert.deepEqual(plain.conversations.map((c) => c.id), legacy.rows.map((r) => r.id));
-    assert.equal(plain.pagination.total, 7);
-    assert.deepEqual(plain.agentCounts, [{ agentId, agentName: 'Agente de prueba', count: 7 }]);
+    assert.equal(plain.pagination.total, 9);
+    assert.deepEqual(plain.agentCounts, [{ agentId, agentName: 'Agente de prueba', count: 9 }]);
     const filtered = await get<ListResponse>(ana.token, '/?status=closed');
     assert.deepEqual(ids(filtered), [closed]);
     assert.ok(expiredHandoff);

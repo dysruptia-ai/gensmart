@@ -22,6 +22,8 @@ function NotifIcon({ type }: { type: string }) {
   if (type === 'plan_canceled') return <XCircle size={16} className={styles.iconDanger} />;
   if (type === 'human_handoff') return <UserRound size={16} className={styles.iconNeutral} />;
   if (type === 'human_handoff_offhours') return <Clock size={16} className={styles.iconWarning} />;
+  if (type === 'conversation_transferred') return <UserRound size={16} className={styles.iconNeutral} />;
+  if (type === 'conversation_snooze_ended') return <Clock size={16} className={styles.iconNeutral} />;
   return <Bell size={16} className={styles.iconNeutral} />;
 }
 
@@ -32,7 +34,12 @@ function getNavTarget(notif: Notification): string | null {
     if (contactId) return `/dashboard/contacts/${contactId}`;
     if (conversationId) return `/dashboard/conversations/${conversationId}`;
   }
-  if (notif.type === 'human_handoff' || notif.type === 'human_handoff_offhours') {
+  if (
+    notif.type === 'human_handoff' ||
+    notif.type === 'human_handoff_offhours' ||
+    notif.type === 'conversation_transferred' ||
+    notif.type === 'conversation_snooze_ended'
+  ) {
     const conversationId = notif.data?.['conversationId'] as string | undefined;
     if (conversationId) return `/dashboard/conversations/${conversationId}`;
   }

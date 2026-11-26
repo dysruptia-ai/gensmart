@@ -1,10 +1,10 @@
 'use client';
 
 import React, { memo } from 'react';
-import { Clock, User } from 'lucide-react';
+import { AlarmClock, Clock, User } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getChannelMeta } from './channelMeta';
-import { contactName, formatScore, initialsOf, relativeTime, waitDuration } from './inboxFormat';
+import { contactName, formatScore, initialsOf, relativeTime, snoozeLabel, waitDuration } from './inboxFormat';
 import type { ConversationRow } from './types';
 import styles from './InboxRow.module.css';
 
@@ -14,9 +14,12 @@ export interface InboxRowProps {
   userId: string | undefined;
   now: number;
   onOpen: (id: string) => void;
+  timeZone?: string;
+  /** En "Cerradas": el resultado del cierre (web-42). */
+  showOutcome?: boolean;
 }
 
-function InboxRow({ row, current, userId, now, onOpen }: InboxRowProps) {
+function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: InboxRowProps) {
   const { t, language } = useTranslation();
   const name = contactName(row.contact, t('inbox.row.unknownContact'));
   const initials = initialsOf(row.contact?.name ?? '');
@@ -83,6 +86,20 @@ function InboxRow({ row, current, userId, now, onOpen }: InboxRowProps) {
             <span className={`${styles.tag} ${styles.tagWarn}`}>
               <Clock size={11} aria-hidden="true" />
               {t('inbox.row.waiting', { time: waitDuration(row.waitingSince, now) })}
+            </span>
+          )}
+          {row.snoozedUntil && row.status !== 'closed' && (
+            <span className={`${styles.tag} ${styles.tagInfo}`}>
+              <AlarmClock size={11} aria-hidden="true" />
+              {t('inbox.row.snoozedUntil', { when: snoozeLabel(row.snoozedUntil, language, t, timeZone, new Date(now)) })}
+            </span>
+          )}
+          {!row.snoozedUntil && row.followUpPending && row.status !== 'closed' && (
+            <span className={`${styles.tag} ${styles.tagInfo}`}>{t('inbox.row.backFromSnooze')}</span>
+          )}
+          {showOutcome && row.status === 'closed' && (
+            <span className={`${styles.tag} ${styles.tagMute}`}>
+              {row.closedOutcome ? t(`inbox.outcomes.${row.closedOutcome}`) : t('inbox.thread.status.closed')}
             </span>
           )}
           {takenByMe && <span className={`${styles.tag} ${styles.tagOk}`}>{t('inbox.row.yours')}</span>}

@@ -8,6 +8,9 @@
  *   - el agente pidió ayuda (traspaso vigente) y nadie tomó la conversación, o
  *   - una persona la tomó y el último mensaje es del cliente (sin responder).
  * Los mensajes `system` (resumen de la intervención) no cuentan como respuesta ni como mensaje del cliente.
+ *
+ * Posponer (web-42): mientras `snoozed_until` tiene valor la conversación no está en "Todas" ni en
+ * "Necesitan a alguien"; está en "Mías" (grupo "Pospuestas"). Al volver queda `follow_up_at`.
  */
 
 export type InboxView = 'all' | 'needs' | 'mine' | 'closed';
@@ -18,14 +21,44 @@ export function parseInboxView(value: unknown): InboxView | null {
   return typeof value === 'string' && (INBOX_VIEWS as readonly string[]).includes(value) ? (value as InboxView) : null;
 }
 
-/** Traspaso vigente: la misma regla que ya devolvía la API como `handoffActive`. */
+/**
+ * Pedido de ayuda vigente (la API lo devuelve como `handoffActive`): dentro del TTL del traspaso y sin
+ * atender. Queda atendido cuando alguien toma la conversación o la recibe por transferencia después del
+ * pedido (`handoff_attended_at`); solo vuelve a contar con un `handed_off_at` nuevo (web-42b).
+ */
 export const HANDOFF_ACTIVE_SQL = `(c.handed_off_at IS NOT NULL
-  AND c.handed_off_at > NOW() - make_interval(hours => COALESCE(NULLIF(a.handoff_config->>'labelTtlHours', '')::int, 24)))`;
+  AND c.handed_off_at > NOW() - make_interval(hours => COALESCE(NULLIF(a.handoff_config->>'labelTtlHours', '')::int, 24))
+  AND (c.handoff_attended_at IS NULL OR c.handoff_attended_at < c.handed_off_at))`;
 
 const ASKED_FOR_HELP_SQL = `(${HANDOFF_ACTIVE_SQL} AND c.taken_over_by IS NULL AND c.status <> 'closed')`;
 const TAKEN_UNANSWERED_SQL = `(c.status = 'human_takeover' AND lr.role = 'user')`;
 
-export const NEEDS_SQL = `(${ASKED_FOR_HELP_SQL} OR ${TAKEN_UNANSWERED_SQL})`;
+/** Pospuesta ahora mismo. */
+export const NOT_SNOOZED_SQL = `c.snoozed_until IS NULL`;
+
+export const NEEDS_SQL = `((${ASKED_FOR_HELP_SQL} OR ${TAKEN_UNANSWERED_SQL}) AND ${NOT_SNOOZED_SQL})`;
+
+/**
+ * "Seguimiento para hoy": volvió de posponer hoy (en la zona `tz` de la organización) y nadie
+ * (persona o agente) respondió después de que volvió. `tz` es un placeholder ($n) con una zona IANA.
+ */
+export function followUpPendingSql(tz: string): string {
+  return `(c.follow_up_at IS NOT NULL
+    AND (c.follow_up_at AT TIME ZONE ${tz})::date = (NOW() AT TIME ZONE ${tz})::date
+    AND NOT EXISTS (
+      SELECT 1 FROM messages fm
+      WHERE fm.conversation_id = c.id AND fm.role IN ('human', 'assistant') AND fm.created_at > c.follow_up_at
+    ))`;
+}
+
+/**
+ * "Mías": las que tengo tomadas, más las que pospuse sin que nadie las tuviera tomadas
+ * (mientras siguen pospuestas o en seguimiento para hoy).
+ */
+export function mineSql(user: string, tz: string): string {
+  return `(c.status <> 'closed' AND (c.taken_over_by = ${user}
+    OR (c.taken_over_by IS NULL AND c.snoozed_by = ${user} AND (c.snoozed_until IS NOT NULL OR ${followUpPendingSql(tz)}))))`;
+}
 
 /** Desde cuándo espera: la hora del traspaso o la del último mensaje del cliente; NULL si no espera. */
 export const WAITING_SINCE_SQL = `(CASE
@@ -53,6 +86,10 @@ export interface InboxFilterInput {
   search?: string;
   range?: string;
   agentId?: string;
+  /** Resultado del cierre (web-42): sold | resolved | no_response | spam. */
+  outcome?: string | null;
+  /** Zona IANA de la organización para "hoy" en "Mías" (por defecto UTC). */
+  timezone?: string | null;
 }
 
 export interface SqlFilter {
@@ -78,9 +115,13 @@ export function buildInboxConditions(input: InboxFilterInput): SqlFilter {
 
   const view = input.view ?? null;
   if (view === 'needs') conditions.push(NEEDS_SQL);
-  if (view === 'mine') conditions.push(`c.taken_over_by = ${next(input.userId)}`, `c.status <> 'closed'`);
-  if (view === 'all') conditions.push(`c.status <> 'closed'`);
+  if (view === 'mine') {
+    const user = next(input.userId);
+    conditions.push(mineSql(user, next(input.timezone || 'UTC')));
+  }
+  if (view === 'all') conditions.push(`c.status <> 'closed'`, NOT_SNOOZED_SQL);
   if (view === 'closed') conditions.push(`c.status = 'closed'`);
+  if (input.outcome) conditions.push(`c.closed_outcome = ${next(input.outcome)}`);
 
   if (input.status) conditions.push(`c.status = ${next(input.status)}`);
   if (input.channel) conditions.push(`c.channel = ${next(input.channel)}`);
@@ -98,8 +139,16 @@ export function buildInboxConditions(input: InboxFilterInput): SqlFilter {
   return { baseConditions, baseParams, conditions, params };
 }
 
-/** Orden de la lista: por defecto el de siempre; en "Necesitan a alguien", la que más espera primero. */
-export function inboxOrderBy(view: InboxView | null, order: string | undefined): string {
+/**
+ * Orden de la lista: por defecto el de siempre; en "Necesitan a alguien", la que más espera primero.
+ * En "Mías" (con `followUp`, la expresión de seguimiento ya parametrizada): Seguimiento para hoy,
+ * En curso y Pospuestas (la que vuelve antes primero), como los grupos de la pantalla.
+ */
+export function inboxOrderBy(view: InboxView | null, order: string | undefined, followUp?: string): string {
+  if (view === 'mine' && followUp) {
+    return `CASE WHEN c.snoozed_until IS NOT NULL THEN 2 WHEN ${followUp} THEN 0 ELSE 1 END,
+      c.snoozed_until ASC NULLS LAST, c.last_message_at DESC NULLS LAST`;
+  }
   if (view === 'needs') return `${WAITING_SINCE_SQL} ASC NULLS LAST, c.last_message_at DESC NULLS LAST`;
   if (order === 'needs') return `${NEEDS_SQL} DESC, c.last_message_at DESC NULLS LAST`;
   return 'c.last_message_at DESC NULLS LAST';
@@ -109,16 +158,21 @@ export function inboxOrderBy(view: InboxView | null, order: string | undefined):
  * Contadores del riel de la Bandeja. `all`, `closed`, `byAgent` y `byChannel` respetan el período;
  * `needs` y `mine` no (son colas de trabajo, como en la lista). byAgent y byChannel cuentan las abiertas.
  */
-export function buildCountsQuery(orgId: string, userId: string, range: string | undefined): { sql: string; params: unknown[] } {
+export function buildCountsQuery(
+  orgId: string,
+  userId: string,
+  range: string | undefined,
+  timezone?: string | null,
+): { sql: string; params: unknown[] } {
   const recent = range === 'all' ? 'TRUE' : RECENT_SQL;
   const sql = `SELECT
-      COUNT(*) FILTER (WHERE c.status <> 'closed' AND ${recent}) AS all_count,
+      COUNT(*) FILTER (WHERE c.status <> 'closed' AND ${NOT_SNOOZED_SQL} AND ${recent}) AS all_count,
       COUNT(*) FILTER (WHERE ${NEEDS_SQL}) AS needs_count,
-      COUNT(*) FILTER (WHERE c.taken_over_by = $2 AND c.status <> 'closed') AS mine_count,
+      COUNT(*) FILTER (WHERE ${mineSql('$2', '$3')}) AS mine_count,
       COUNT(*) FILTER (WHERE c.status = 'closed' AND ${recent}) AS closed_count
     ${INBOX_FROM}
     WHERE c.organization_id = $1`;
-  return { sql, params: [orgId, userId] };
+  return { sql, params: [orgId, userId, timezone || 'UTC'] };
 }
 
 export function buildCountsGroupQuery(
@@ -131,11 +185,11 @@ export function buildCountsGroupQuery(
     by === 'agent'
       ? `SELECT c.agent_id AS key, a.name AS name, COUNT(*) AS count
          FROM conversations c LEFT JOIN agents a ON c.agent_id = a.id
-         WHERE c.organization_id = $1 AND c.status <> 'closed'${recent}
+         WHERE c.organization_id = $1 AND c.status <> 'closed' AND c.snoozed_until IS NULL${recent}
          GROUP BY c.agent_id, a.name ORDER BY a.name NULLS LAST`
       : `SELECT c.channel AS key, NULL AS name, COUNT(*) AS count
          FROM conversations c
-         WHERE c.organization_id = $1 AND c.status <> 'closed'${recent}
+         WHERE c.organization_id = $1 AND c.status <> 'closed' AND c.snoozed_until IS NULL${recent}
          GROUP BY c.channel ORDER BY COUNT(*) DESC`;
   return { sql, params: [orgId] };
 }

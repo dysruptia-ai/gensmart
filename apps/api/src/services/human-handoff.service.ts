@@ -5,6 +5,7 @@ import { sendButtonMessage as sendMessengerButtonMessage } from './messenger.ser
 import { createNotification } from './notification.service';
 import { query } from '../config/database';
 import { redis } from '../config/redis';
+import { recordEventSafe } from './conversation-events.service';
 
 export const HANDOFF_CUSTOMER_MESSAGE_MAX = 300;
 export const HANDOFF_PREFILL_MAX = 300;
@@ -530,6 +531,11 @@ export async function handleHumanHandoff(
     // 8. Mark the conversation as handed off and remember the chosen contact
     try {
       await query('UPDATE conversations SET handed_off_at = NOW() WHERE id = $1', [context.conversationId]);
+      await recordEventSafe({
+        organizationId: context.organizationId,
+        conversationId: context.conversationId,
+        type: 'handoff_requested',
+      });
       await redis.set(
         stickyKey(context.conversationId),
         contact.id,

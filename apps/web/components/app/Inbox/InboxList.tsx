@@ -5,7 +5,8 @@ import { CircleCheckBig, Inbox, Menu, RefreshCw, Search, SearchX, TriangleAlert,
 import { useTranslation } from '@/hooks/useTranslation';
 import InboxButton from './InboxButton';
 import InboxRow from './InboxRow';
-import type { ConversationRow, InboxView } from './types';
+import { mineGroup } from './inboxFormat';
+import { CLOSE_OUTCOMES, type CloseOutcome, type ConversationRow, type InboxView } from './types';
 import styles from './InboxList.module.css';
 
 export interface InboxListProps {
@@ -16,6 +17,11 @@ export interface InboxListProps {
   allTime: boolean;
   showPeriod: boolean;
   onPeriod: (allTime: boolean) => void;
+  /** "Cerradas" (web-42): filtro por resultado; null = todos. */
+  outcome?: CloseOutcome | null;
+  onOutcome?: (outcome: CloseOutcome | null) => void;
+  /** Zona de la organización (la hora en que vuelve una pospuesta). */
+  timeZone?: string;
   search: string;
   onSearch: (value: string) => void;
   searchRef: React.RefObject<HTMLInputElement | null>;
@@ -63,7 +69,15 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
   const renderRows = (list: ConversationRow[]) =>
     list.map((row) => (
       <li key={row.id}>
-        <InboxRow row={row} current={row.id === props.currentId} userId={props.userId} now={props.now} onOpen={props.onOpen} />
+        <InboxRow
+          row={row}
+          current={row.id === props.currentId}
+          userId={props.userId}
+          now={props.now}
+          onOpen={props.onOpen}
+          timeZone={props.timeZone}
+          showOutcome={view === 'closed'}
+        />
       </li>
     ));
 
@@ -136,6 +150,24 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
         )}
       </>
     );
+  } else if (view === 'mine' && !props.search.trim()) {
+    // Como en el prototipo: Seguimiento para hoy, En curso y Pospuestas (solo los grupos con algo)
+    const groups = (['followUp', 'active', 'snoozed'] as const)
+      .map((key) => ({ key, rows: rows.filter((r) => mineGroup(r) === key) }))
+      .filter((g) => g.rows.length > 0);
+    body = (
+      <>
+        {groups.map((g) => (
+          <section key={g.key} aria-labelledby={`inbox-group-${g.key}`}>
+            <h2 id={`inbox-group-${g.key}`} className={`${styles.group} ${g.key === 'followUp' ? styles.groupUrgent : ''}`}>
+              {t(`inbox.list.mineGroups.${g.key}`)}
+              <span className={styles.groupCount}>{g.rows.length}</span>
+            </h2>
+            <ul className={styles.rows}>{renderRows(g.rows)}</ul>
+          </section>
+        ))}
+      </>
+    );
   } else {
     body = <ul className={styles.rows}>{renderRows(rows)}</ul>;
   }
@@ -177,6 +209,20 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
             /
           </kbd>
         </label>
+        {view === 'closed' && props.onOutcome && (
+          <div className={styles.outcomes} role="group" aria-label={t('inbox.list.outcomeFilter')}>
+            {([null, ...CLOSE_OUTCOMES] as const).map((o) => (
+              <button
+                key={o ?? 'all'}
+                type="button"
+                aria-pressed={(props.outcome ?? null) === o}
+                onClick={() => props.onOutcome?.(o)}
+              >
+                {o ? t(`inbox.outcomes.${o}`) : t('inbox.list.outcomeAll')}
+              </button>
+            ))}
+          </div>
+        )}
         {props.showPeriod && (
           <div className={styles.period} role="group" aria-label={t('inbox.list.period')}>
             <span>{t('inbox.list.period')}</span>

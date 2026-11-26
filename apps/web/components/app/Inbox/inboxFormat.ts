@@ -1,5 +1,5 @@
-import type { ConversationRow, InboxFilters, InboxView } from './types';
-import { INBOX_VIEWS } from './types';
+import type { CloseOutcome, ConversationRow, InboxFilters, InboxView } from './types';
+import { CLOSE_OUTCOMES, INBOX_VIEWS } from './types';
 
 type T = (key: string, values?: Record<string, string | number>) => string;
 
@@ -28,8 +28,103 @@ export function waitDuration(since: string, now = Date.now()): string {
   return `${Math.floor(hours / 24)} d`;
 }
 
-export function clockTime(iso: string, language: string): string {
-  return new Intl.DateTimeFormat(locale(language), { hour: 'numeric', minute: '2-digit' }).format(new Date(iso));
+export function clockTime(iso: string, language: string, timeZone?: string | null): string {
+  return new Intl.DateTimeFormat(locale(language), {
+    hour: 'numeric',
+    minute: '2-digit',
+    ...(timeZone ? { timeZone } : {}),
+  }).format(new Date(iso));
+}
+
+// ── zona horaria de la organización (web-42) ────────────────────────────────
+
+/** La zona de Ajustes si es válida; si no, `undefined` (= la del navegador). */
+export function validTimeZone(value: unknown): string | undefined {
+  if (typeof value !== 'string' || !value.trim()) return undefined;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return value;
+  } catch {
+    return undefined;
+  }
+}
+
+interface WallTime {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  /** 0 = domingo … 6 = sábado */
+  weekday: number;
+}
+
+function wallTime(date: Date, timeZone?: string): WallTime {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
+    weekday: 'short',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '0';
+  const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return {
+    year: Number(get('year')),
+    month: Number(get('month')),
+    day: Number(get('day')),
+    hour: Number(get('hour')) % 24,
+    minute: Number(get('minute')),
+    weekday: weekdays.indexOf(get('weekday')),
+  };
+}
+
+/** El instante en que en `timeZone` son las `hour:minute` del día (y, m, d). Tolera días que se desbordan. */
+export function zonedInstant(y: number, m: number, d: number, hour: number, minute: number, timeZone?: string): Date {
+  const target = Date.UTC(y, m - 1, d, hour, minute);
+  let guess = target;
+  // Dos pasadas bastan para corregir el desfase de la zona (y el cambio de horario)
+  for (let i = 0; i < 2; i++) {
+    const w = wallTime(new Date(guess), timeZone);
+    const seen = Date.UTC(w.year, w.month - 1, w.day, w.hour, w.minute);
+    guess += target - seen;
+  }
+  return new Date(guess);
+}
+
+export type SnoozeOption = 'in1h' | 'today16' | 'tomorrow9' | 'nextWeek';
+
+/** Las opciones de "Posponer" con su instante. "Hoy 4:00 p. m." solo si todavía no pasó. */
+export function snoozeOptions(now: Date, timeZone?: string): Array<{ key: SnoozeOption; until: Date }> {
+  const w = wallTime(now, timeZone);
+  const out: Array<{ key: SnoozeOption; until: Date }> = [{ key: 'in1h', until: new Date(now.getTime() + 3600_000) }];
+  const today16 = zonedInstant(w.year, w.month, w.day, 16, 0, timeZone);
+  if (today16.getTime() - now.getTime() > 60_000) out.push({ key: 'today16', until: today16 });
+  out.push({ key: 'tomorrow9', until: zonedInstant(w.year, w.month, w.day + 1, 9, 0, timeZone) });
+  // El lunes que viene (si hoy es lunes, el de la otra semana)
+  const toMonday = ((8 - w.weekday) % 7) || 7;
+  out.push({ key: 'nextWeek', until: zonedInstant(w.year, w.month, w.day + toMonday, 9, 0, timeZone) });
+  return out;
+}
+
+/** "hoy 4:00 p. m." / "mañana 9:00 a. m." / "lunes 1 de diciembre, 9:00 a. m." en la zona de la organización. */
+export function snoozeLabel(iso: string, language: string, t: T, timeZone?: string, now = new Date()): string {
+  const date = new Date(iso);
+  const time = clockTime(iso, language, timeZone);
+  const a = wallTime(date, timeZone);
+  const b = wallTime(now, timeZone);
+  const days = Math.round((Date.UTC(a.year, a.month - 1, a.day) - Date.UTC(b.year, b.month - 1, b.day)) / 86400000);
+  if (days === 0) return t('inbox.snooze.todayAt', { time });
+  if (days === 1) return t('inbox.snooze.tomorrowAt', { time });
+  const day = new Intl.DateTimeFormat(locale(language), { weekday: 'long', day: 'numeric', month: 'long', timeZone }).format(date);
+  return t('inbox.snooze.dateAt', { day, time });
+}
+
+export function parseOutcome(value: string | null | undefined): CloseOutcome | null {
+  return (CLOSE_OUTCOMES as readonly string[]).includes(value ?? '') ? (value as CloseOutcome) : null;
 }
 
 /** Separador de día del hilo: "Hoy", "Ayer" o la fecha. */
@@ -83,6 +178,7 @@ export function readFilters(params: URLSearchParams): InboxFilters {
     agentId: params.get('agent') || null,
     channel: params.get('channel') || null,
     allTime: params.get('range') === 'all',
+    outcome: view === 'closed' ? parseOutcome(params.get('outcome')) : null,
   };
 }
 
@@ -92,6 +188,7 @@ export function filtersQuery(filters: InboxFilters): string {
   if (filters.agentId) q.set('agent', filters.agentId);
   if (filters.channel) q.set('channel', filters.channel);
   if (filters.allTime) q.set('range', 'all');
+  if (filters.view === 'closed' && filters.outcome) q.set('outcome', filters.outcome);
   const s = q.toString();
   return s ? `?${s}` : '';
 }
@@ -107,6 +204,7 @@ export function listApiQuery(filters: InboxFilters, search: string, page: number
   if (filters.agentId) q.set('agentId', filters.agentId);
   if (filters.channel) q.set('channel', filters.channel);
   if (filters.allTime) q.set('range', 'all');
+  if (filters.view === 'closed' && filters.outcome) q.set('outcome', filters.outcome);
   if (search) q.set('search', search);
   return q.toString();
 }
@@ -115,23 +213,38 @@ export function listApiQuery(filters: InboxFilters, search: string, page: number
 export function rowMatches(row: ConversationRow, filters: InboxFilters, userId: string | undefined): boolean {
   if (filters.agentId && row.agentId !== filters.agentId) return false;
   if (filters.channel && row.channel !== filters.channel) return false;
+  const snoozed = !!row.snoozedUntil;
   switch (filters.view) {
     case 'needs':
-      return row.needsAttention;
+      return row.needsAttention && !snoozed;
     case 'mine':
-      return row.status !== 'closed' && !!userId && row.takenOverBy === userId;
+      return isMine(row, userId);
     case 'closed':
-      return row.status === 'closed';
+      return row.status === 'closed' && (!filters.outcome || row.closedOutcome === filters.outcome);
     default:
-      return row.status !== 'closed';
+      return row.status !== 'closed' && !snoozed;
   }
+}
+
+/** "Mías" (misma regla que la API): las que tengo tomadas y las que pospuse sin dueño. */
+export function isMine(row: ConversationRow, userId: string | undefined): boolean {
+  if (!userId || row.status === 'closed') return false;
+  if (row.takenOverBy === userId && row.status === 'human_takeover') return true;
+  return !row.takenOverBy && row.snoozedBy === userId && (!!row.snoozedUntil || !!row.followUpPending);
+}
+
+/** Grupo de "Mías": Seguimiento para hoy, En curso o Pospuestas. */
+export function mineGroup(row: ConversationRow): 'followUp' | 'active' | 'snoozed' {
+  if (row.snoozedUntil) return 'snoozed';
+  if (row.followUpPending) return 'followUp';
+  return 'active';
 }
 
 /** Recalcula "necesita a alguien" y la espera después de un cambio local (misma regla que la API). */
 export function withNeeds(row: ConversationRow, lastCustomerAt: string | null): ConversationRow {
   const askedForHelp = row.handoffActive && !row.takenOverBy && row.status !== 'closed';
   const takenUnanswered = row.status === 'human_takeover' && row.lastMessage?.role === 'user';
-  const needsAttention = askedForHelp || takenUnanswered;
+  const needsAttention = (askedForHelp || takenUnanswered) && !row.snoozedUntil;
   const waitingSince = askedForHelp ? row.handedOffAt : takenUnanswered ? lastCustomerAt ?? row.lastMessageAt : null;
   return { ...row, needsAttention, waitingSince };
 }
@@ -142,6 +255,14 @@ export function sortRows(rows: ConversationRow[], view: InboxView): Conversation
   const copy = [...rows];
   if (view === 'needs') {
     copy.sort((a, b) => time(a.waitingSince) - time(b.waitingSince));
+  } else if (view === 'mine') {
+    const order = { followUp: 0, active: 1, snoozed: 2 } as const;
+    copy.sort(
+      (a, b) =>
+        order[mineGroup(a)] - order[mineGroup(b)] ||
+        time(a.snoozedUntil ?? null) - time(b.snoozedUntil ?? null) ||
+        time(b.lastMessageAt) - time(a.lastMessageAt),
+    );
   } else {
     copy.sort((a, b) => {
       if (view === 'all' && a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1;

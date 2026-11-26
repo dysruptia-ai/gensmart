@@ -308,6 +308,7 @@ startMcpWebhookWorker();
 // downgrading its plan: there is no free tier to fall back to, and `plan`/`subscription_status` are
 // left untouched so reactivation restores exactly what the org was paying for.
 import { query as dbQuery } from './config/database';
+import { releaseDueSnoozes } from './services/conversation-events.service';
 async function expireTrials(): Promise<void> {
   try {
     const result = await dbQuery<{ id: string; name: string }>(
@@ -349,6 +350,22 @@ async function expireTrials(): Promise<void> {
 setInterval(() => {
   void expireTrials();
 }, 60 * 60 * 1000);
+
+// Bandeja (web-42): every minute, snoozed conversations whose time has come go back to the inbox
+// (follow_up_at, `unsnoozed` event, conversation:update and an in-app notification to whoever snoozed it).
+let snoozeRunning = false;
+setInterval(() => {
+  if (snoozeRunning) return;
+  snoozeRunning = true;
+  releaseDueSnoozes()
+    .then((n) => {
+      if (n > 0) console.log(`[snooze-cron] ${n} conversation(s) back from snooze`);
+    })
+    .catch((err: unknown) => console.error('[snooze-cron] Error:', (err as Error).message))
+    .finally(() => {
+      snoozeRunning = false;
+    });
+}, 60 * 1000);
 
 // Start server
 httpServer.listen(env.PORT, () => {

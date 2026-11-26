@@ -3,26 +3,32 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  AlarmClockOff,
   ArrowDown,
   ArrowLeft,
   Bot,
   CircleCheckBig,
+  Clock,
+  Forward,
   Inbox,
   Lock,
   MoreHorizontal,
   PanelRight,
   RefreshCw,
+  RotateCcw,
   Trash2,
   TriangleAlert,
   User,
   UserCheck,
+  type LucideIcon,
 } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import InboxButton from './InboxButton';
+import { useHeaderFit } from './useHeaderFit';
 import ThreadBubble from './ThreadBubble';
 import ThreadComposer from './ThreadComposer';
 import { getChannelMeta } from './channelMeta';
-import { contactName, dayKey, dayLabel, initialsOf, waitDuration, clockTime } from './inboxFormat';
+import { contactName, dayKey, dayLabel, initialsOf, relativeTime, snoozeLabel, waitDuration, clockTime } from './inboxFormat';
 import type { ConversationThreadState, ThreadEvent } from './useConversationThread';
 import type { ThreadMessage } from './types';
 import styles from './InboxThread.module.css';
@@ -38,10 +44,18 @@ export interface InboxThreadProps {
   onAskClose: () => void;
   onTake: () => void;
   onRelease: () => void;
-  /** Abre la confirmación para borrar la conversación (menú "Más"). */
+  /** owner o admin de la organización: transfiere o toma conversaciones de otras personas (web-42). */
+  isManager?: boolean;
+  /** Zona de la organización para las horas de posponer; sin ella, la del navegador. */
+  timeZone?: string;
+  /** "Tomarla tú": owner/admin, cuando la tiene otra persona. */
+  onTakeOver?: () => void;
+  onAskTransfer?: () => void;
+  onAskSnooze?: () => void;
+  onUnsnooze?: () => void;
+  onReopen?: () => void;
+  /** Abre la confirmación para borrar la conversación (menú "Más"). Solo owner y admin. */
   onAskDelete?: () => void;
-  /** Por debajo de 1600 px las acciones de la cabecera son solo el ícono (con aria-label y tooltip). */
-  iconActions?: boolean;
   /** Menos de 768 px: vuelve a la lista. */
   onBack?: () => void;
   /** Por debajo de 1600 px: abre o cierra la ficha del contacto ("Detalles"). */
@@ -57,17 +71,25 @@ type Item =
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
-/** Menú "Más" (⋯) de la cabecera: por ahora, solo "Borrar conversación". */
-function MoreMenu({ onDelete }: { onDelete: () => void }) {
+interface MenuItem {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  onSelect: () => void;
+  danger?: boolean;
+}
+
+/** Menú "Más" (⋯) de la cabecera (web-42): devolver, transferir, posponer, cerrar y borrar, según estado y rol. */
+function MoreMenu({ items }: { items: MenuItem[] }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const itemRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    itemRef.current?.focus();
+    menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
     const onDown = (e: MouseEvent) => {
       if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -79,6 +101,18 @@ function MoreMenu({ onDelete }: { onDelete: () => void }) {
     setOpen(false);
     if (focusButton) buttonRef.current?.focus();
   };
+
+  // Flechas arriba y abajo entre las opciones
+  const onMenuKey = (e: React.KeyboardEvent) => {
+    if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+    e.preventDefault();
+    const buttons = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []);
+    const index = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    const next = e.key === 'ArrowDown' ? (index + 1) % buttons.length : (index - 1 + buttons.length) % buttons.length;
+    buttons[next]?.focus();
+  };
+
+  if (!items.length) return null;
 
   return (
     <div
@@ -105,30 +139,72 @@ function MoreMenu({ onDelete }: { onDelete: () => void }) {
         aria-expanded={open}
       />
       {open && (
-        <div className={styles.menu} role="menu" aria-label={t('inbox.thread.more')}>
-          <button
-            ref={itemRef}
-            type="button"
-            role="menuitem"
-            className={`${styles.menuItem} ${styles.menuItemDanger}`}
-            onClick={() => {
-              close(false);
-              onDelete();
-            }}
-          >
-            <Trash2 size={15} aria-hidden="true" />
-            {t('inbox.thread.delete')}
-          </button>
+        <div ref={menuRef} className={styles.menu} role="menu" aria-label={t('inbox.thread.more')} onKeyDown={onMenuKey}>
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                role="menuitem"
+                className={`${styles.menuItem} ${item.danger ? styles.menuItemDanger : ''}`}
+                onClick={() => {
+                  close(false);
+                  item.onSelect();
+                }}
+              >
+                <Icon size={15} aria-hidden="true" />
+                {item.label}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
+type Translate = (key: string, values?: Record<string, string | number>) => string;
+
+/** Texto de un evento del historial; "Tú" cuando lo hizo (o lo recibe) quien está mirando. */
+export function eventText(e: ThreadEvent, userId: string | undefined, t: Translate, language: string, timeZone?: string): string {
+  const mine = !!userId && e.actorId === userId;
+  const name = e.name || t('inbox.row.team');
+  const k = (key: string, values: Record<string, string | number> = {}) =>
+    t(`inbox.thread.events.${key}${mine ? 'You' : ''}`, { name, ...values });
+  switch (e.kind) {
+    case 'handoff':
+      return t('inbox.thread.events.handoff');
+    case 'taken':
+      return k('taken');
+    case 'released':
+      return e.actorId ? k('released') : t('inbox.thread.events.releasedPlain');
+    case 'transferred': {
+      if (userId && e.targetId === userId) return t('inbox.thread.events.transferredToYou', { name });
+      return k('transferred', { target: e.targetName || t('inbox.row.team') });
+    }
+    case 'snoozed':
+      return k('snoozed', { time: e.until ? snoozeLabel(e.until, language, t, timeZone) : '' });
+    case 'unsnoozed':
+      return e.actorId ? k('unsnoozedManual') : t('inbox.thread.events.unsnoozed');
+    case 'closed':
+      if (!e.actorId && !e.name) return t('inbox.thread.events.closedPlain');
+      return e.outcome ? k('closedAs', { outcome: t(`inbox.outcomes.${e.outcome}`) }) : k('closed');
+    case 'reopened':
+      return k('reopened');
+    default:
+      return '';
+  }
+}
+
 export default function InboxThread(props: InboxThreadProps) {
   const { t, language } = useTranslation();
   const { thread, userId, now } = props;
   const { conversation: c, messages, events, loading, error, hasMore, loadingOlder } = thread;
+  // Las acciones llevan texto solo si el nombre cabe completo (web-42b)
+  const { headRef, nameRef, actionsRef, level: fitLevel } = useHeaderFit([c?.id, c?.status, c?.takenOverBy, c?.contact?.name, language, props.onBack]);
+  const iconPrimary = fitLevel >= 2;
+  const iconSecondary = fitLevel >= 1;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottom = useRef(true);
@@ -283,7 +359,13 @@ export default function InboxThread(props: InboxThreadProps) {
   const closed = c.status === 'closed';
   const taken = c.status === 'human_takeover';
   const mine = taken && !!userId && c.takenOverBy === userId;
+  const takenByOther = taken && !mine;
   const takerName = c.takeoverUserName || t('inbox.row.team');
+  const manager = !!props.isManager;
+  const snoozedUntil = !closed ? c.snoozedUntil ?? null : null;
+  // Transferir: quien la tiene, o el owner/admin (web-42); siempre que el plan deje tomar conversaciones
+  const canTransfer = !closed && props.canTakeover === true && (mine || manager);
+  const canReturn = taken && (mine || manager);
   const statusLabel = closed
     ? t('inbox.thread.status.closed')
     : mine
@@ -316,6 +398,49 @@ export default function InboxThread(props: InboxThreadProps) {
     </span>
   );
 
+  const menuItems: MenuItem[] = [];
+  if (canReturn) menuItems.push({ key: 'release', label: t('inbox.thread.release'), icon: Bot, onSelect: props.onRelease });
+  if (canTransfer && props.onAskTransfer) {
+    menuItems.push({ key: 'transfer', label: t('inbox.thread.transfer'), icon: Forward, onSelect: props.onAskTransfer });
+  }
+  if (!closed && snoozedUntil && props.onUnsnooze) {
+    menuItems.push({ key: 'unsnooze', label: t('inbox.thread.unsnooze'), icon: AlarmClockOff, onSelect: props.onUnsnooze });
+  } else if (!closed && props.onAskSnooze) {
+    menuItems.push({ key: 'snooze', label: t('inbox.thread.snooze'), icon: Clock, onSelect: props.onAskSnooze });
+  }
+  if (!closed) menuItems.push({ key: 'close', label: t('inbox.thread.close'), icon: CircleCheckBig, onSelect: props.onAskClose });
+  if (props.onAskDelete) {
+    menuItems.push({ key: 'delete', label: t('inbox.thread.delete'), icon: Trash2, onSelect: props.onAskDelete, danger: true });
+  }
+
+  const closedWhen = relativeTime(c.closedAt ?? c.updatedAt, language, now);
+  const closedByMe = !!userId && c.closedBy === userId;
+  const closedBar = (
+    <div className={`${styles.bar} ${styles.closedBar}`}>
+      <Lock size={15} aria-hidden="true" />
+      <span className={styles.barText}>
+        {c.closedOutcome ? (
+          <>
+            {t('inbox.thread.closedBarAs')} <b>{t(`inbox.outcomes.${c.closedOutcome}`)}</b>
+          </>
+        ) : (
+          t('inbox.thread.closedBarPlain')
+        )}{' '}
+        {c.closedBy || c.closedByName
+          ? closedByMe
+            ? t('inbox.thread.closedBarByYou', { when: closedWhen })
+            : t('inbox.thread.closedBarBy', { name: c.closedByName || t('inbox.row.team'), when: closedWhen })
+          : t('inbox.thread.closedBarWhen', { when: closedWhen })}{' '}
+        {t('inbox.thread.closedBarNoReply')}
+      </span>
+      {props.onReopen && (
+        <InboxButton icon={RotateCcw} onClick={props.onReopen} loading={thread.busy === 'reopen'}>
+          {t('inbox.thread.reopen')}
+        </InboxButton>
+      )}
+    </div>
+  );
+
   const takeButton = (
     <InboxButton
       variant="primary"
@@ -323,7 +448,8 @@ export default function InboxThread(props: InboxThreadProps) {
       onClick={props.onTake}
       loading={thread.busy === 'take'}
       compactLabel
-      iconOnly={props.iconActions}
+      iconOnly={iconPrimary}
+      data-fit="primary"
       aria-keyshortcuts="T"
     >
       {t('inbox.thread.take')}
@@ -332,7 +458,7 @@ export default function InboxThread(props: InboxThreadProps) {
 
   return (
     <section className={styles.thread} aria-labelledby="inbox-thread-name">
-      <header className={styles.head}>
+      <header ref={headRef} className={styles.head}>
         {props.onBack && (
           <InboxButton variant="icon" icon={ArrowLeft} onClick={props.onBack} aria-label={t('inbox.thread.back')} />
         )}
@@ -350,7 +476,7 @@ export default function InboxThread(props: InboxThreadProps) {
           </span>
         </span>
         <div className={styles.identity}>
-          <h2 id="inbox-thread-name" className={styles.name}>
+          <h2 ref={nameRef} id="inbox-thread-name" className={styles.name}>
             {name}
           </h2>
           <p className={styles.sub}>
@@ -375,17 +501,56 @@ export default function InboxThread(props: InboxThreadProps) {
             </span>
           </p>
         </div>
-        <div className={styles.actions}>
+        <div ref={actionsRef} className={styles.actions}>
+          {closed && props.onReopen && (
+            <InboxButton
+              variant="primary"
+              icon={RotateCcw}
+              onClick={props.onReopen}
+              loading={thread.busy === 'reopen'}
+              compactLabel
+              iconOnly={iconPrimary}
+              data-fit="primary"
+            >
+              {t('inbox.thread.reopen')}
+            </InboxButton>
+          )}
           {!closed && !taken && props.canTakeover === true && takeButton}
+          {takenByOther && manager && props.canTakeover === true && props.onTakeOver && (
+            <InboxButton
+              variant="primary"
+              icon={UserCheck}
+              onClick={props.onTakeOver}
+              loading={thread.busy === 'transfer'}
+              compactLabel
+              iconOnly={iconPrimary}
+              data-fit="primary"
+            >
+              {t('inbox.thread.takeOver')}
+            </InboxButton>
+          )}
           {mine && (
             <InboxButton
               icon={Bot}
               onClick={props.onRelease}
               loading={thread.busy === 'release'}
               compactLabel
-              iconOnly={props.iconActions}
+              iconOnly={iconPrimary}
+              data-fit="primary"
             >
               {t('inbox.thread.release')}
+            </InboxButton>
+          )}
+          {canTransfer && taken && props.onAskTransfer && (
+            <InboxButton
+              icon={Forward}
+              onClick={props.onAskTransfer}
+              loading={thread.busy === 'transfer'}
+              compactLabel
+              iconOnly={iconSecondary}
+              data-fit="secondary"
+            >
+              {t('inbox.thread.transfer')}
             </InboxButton>
           )}
           {!closed && (
@@ -394,7 +559,8 @@ export default function InboxThread(props: InboxThreadProps) {
               onClick={props.onAskClose}
               loading={thread.busy === 'close'}
               compactLabel
-              iconOnly={props.iconActions}
+              iconOnly={iconSecondary}
+              data-fit="secondary"
               aria-keyshortcuts="E"
             >
               {t('inbox.thread.close')}
@@ -411,7 +577,7 @@ export default function InboxThread(props: InboxThreadProps) {
               aria-controls="inbox-details"
             />
           )}
-          {props.onAskDelete && <MoreMenu onDelete={props.onAskDelete} />}
+          <MoreMenu items={menuItems} />
         </div>
       </header>
 
@@ -424,6 +590,18 @@ export default function InboxThread(props: InboxThreadProps) {
           <button type="button" onClick={thread.clearActionError}>
             {t('inbox.dialog.close')}
           </button>
+        </div>
+      )}
+
+      {snoozedUntil && (
+        <div className={styles.snoozeBar}>
+          <Clock size={15} aria-hidden="true" />
+          <span>{t('inbox.thread.snoozedBar', { when: snoozeLabel(snoozedUntil, language, t, props.timeZone) })}</span>
+          {props.onUnsnooze && (
+            <InboxButton icon={AlarmClockOff} onClick={props.onUnsnooze} loading={thread.busy === 'unsnooze'}>
+              {t('inbox.thread.unsnooze')}
+            </InboxButton>
+          )}
         </div>
       )}
 
@@ -468,10 +646,13 @@ export default function InboxThread(props: InboxThreadProps) {
             if (item.type === 'event') {
               const e = item.event;
               return (
-                <p key={item.key} className={`${styles.event} ${e.kind === 'handoff' ? styles.eventHelp : ''}`}>
-                  {t(`inbox.thread.events.${e.kind}`, { name: e.name || t('inbox.row.team') })}
-                  <time dateTime={e.at}>{clockTime(e.at, language)}</time>
-                </p>
+                <div key={item.key} className={styles.eventBlock}>
+                  <p className={`${styles.event} ${e.kind === 'handoff' ? styles.eventHelp : ''}`}>
+                    {eventText(e, userId, t, language, props.timeZone)}
+                    <time dateTime={e.at}>{clockTime(e.at, language)}</time>
+                  </p>
+                  {e.note && <p className={styles.eventNote}>{e.note}</p>}
+                </div>
               );
             }
             const m = item.message;
@@ -504,10 +685,7 @@ export default function InboxThread(props: InboxThreadProps) {
       </div>
 
       {closed ? (
-        <div className={styles.bar}>
-          <Lock size={15} aria-hidden="true" />
-          <span>{t('inbox.thread.closedBar')}</span>
-        </div>
+        closedBar
       ) : mine ? (
         <ThreadComposer
           key={c.id}

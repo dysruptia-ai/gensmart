@@ -180,6 +180,7 @@
 /* ---------- franjas bajo la cabecera ---------- */
 .soloBar,
 .waitBar,
+.snoozeBar,
 .actionError {
   flex: none;
   display: flex;
@@ -198,6 +199,17 @@
 .waitBar {
   background: var(--app-warn-bg);
   color: var(--app-warn);
+}
+
+/* Pospuesta (web-42) */
+.snoozeBar {
+  padding-block: 6px;
+  background: var(--app-info-bg);
+  color: var(--app-info);
+}
+
+.snoozeBar span {
+  flex: 1;
 }
 
 .actionError {
@@ -309,6 +321,28 @@
 .event time {
   color: var(--app-faint);
   font-variant-numeric: tabular-nums;
+}
+
+/* Evento con nota debajo (transferencia, web-42) */
+.eventBlock {
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: min(440px, 100%);
+}
+
+.eventNote {
+  margin: -6px 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--app-line-soft);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card-2);
+  color: var(--app-mute);
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .eventHelp {
@@ -487,4 +521,10 @@
   .sk {
     animation: none;
   }
+}
+
+/* Barra de cerrada (web-42): reemplaza el cuadro para responder */
+.closedBar b {
+  color: var(--app-ink);
+  font-weight: 600;
 }

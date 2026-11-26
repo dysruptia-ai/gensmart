@@ -1,5 +1,6 @@
 import { redis } from '../config/redis';
 import { messageQueue } from '../config/queues';
+import { unsnoozeOnCustomerMessage } from './conversation-events.service';
 
 const BUFFER_PREFIX = 'buffer:';
 const JOB_KEY_PREFIX = 'job_id:';
@@ -27,6 +28,9 @@ export async function pushToBuffer(
 ): Promise<void> {
   const bufferKey = `${BUFFER_PREFIX}${conversationId}`;
   const jobKey = `${JOB_KEY_PREFIX}${conversationId}`;
+
+  // Bandeja (web-42): todo mensaje del cliente pasa por aquí; si la conversación estaba pospuesta, vuelve ya
+  await unsnoozeOnCustomerMessage(conversationId);
 
   // Serialize: if string, wrap as text BufferItem for uniform handling
   const item: BufferItem = {

@@ -1,0 +1,46 @@
+.state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--app-soft);
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-ink);
+}
+
+.field textarea {
+  width: 100%;
+  min-height: 72px;
+  padding: 9px 11px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.field textarea:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 1px;
+}
+
+.count {
+  justify-self: end;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--app-faint);
+  font-variant-numeric: tabular-nums;
+}

@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useWebSocket, type WebSocketEvents } from '@/hooks/useWebSocket';
 import { useOrgAgents } from '@/components/app/AppShell/useShellData';
+import CloseDialog from './CloseDialog';
 import ContactPanel from './ContactPanel';
 import InboxButton from './InboxButton';
 import InboxDialog from './InboxDialog';
@@ -17,8 +18,10 @@ import InboxList from './InboxList';
 import InboxMobileNav from './InboxMobileNav';
 import InboxRail from './InboxRail';
 import InboxThread from './InboxThread';
+import SnoozeDialog from './SnoozeDialog';
+import TransferDialog from './TransferDialog';
 import { getChannelMeta } from './channelMeta';
-import { contactName, inboxHref, readFilters } from './inboxFormat';
+import { contactName, inboxHref, readFilters, validTimeZone } from './inboxFormat';
 import {
   DETAILS_FIXED_QUERY,
   MOBILE_QUERY,
@@ -28,9 +31,9 @@ import {
   useMediaQuery,
   useNow,
 } from './useInboxEnv';
-import { useInboxCounts, useInboxList } from './useInboxList';
+import { useInboxCounts, useInboxList, type RowPatch } from './useInboxList';
 import { normalizeIncoming, useConversationThread } from './useConversationThread';
-import type { InboxFilters, InboxView } from './types';
+import type { CloseOutcome, InboxFilters, InboxView } from './types';
 import styles from './InboxScreen.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -83,12 +86,18 @@ export default function InboxScreen() {
   const thread = useConversationThread(conversationId, me);
   const orgAgents = useOrgAgents(user?.orgId);
   const [plan, setPlan] = useState<string | null>(null);
+  // Zona horaria de Ajustes (web-42): las horas de posponer y "hoy"; sin ella, la del navegador
+  const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
   const [activityKey, setActivityKey] = useState(0);
+  const isManager = user?.role === 'owner' || user?.role === 'admin';
 
   useEffect(() => {
     api
-      .get<{ plan?: string }>('/api/organization')
-      .then((org) => setPlan(org.plan ?? 'solo'))
+      .get<{ plan?: string; settings?: { timezone?: unknown } }>('/api/organization')
+      .then((org) => {
+        setPlan(org.plan ?? 'solo');
+        setTimeZone(validTimeZone(org.settings?.timezone));
+      })
       .catch(() => setPlan(null));
   }, []);
   const limits = plan ? PLAN_LIMITS[plan as PlanKey] : undefined;
@@ -106,11 +115,12 @@ export default function InboxScreen() {
   const detailsOpen = detailsPref && !detailsFixed && !mobile && !!conversationId;
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const confirmRef = useRef<HTMLButtonElement>(null);
   const deleteRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<HTMLDivElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -203,11 +213,27 @@ export default function InboxScreen() {
 
     const handleUpdate: WebSocketEvents['conversation:update'] = (data) => {
       const { list: l, thread: th, conversationId: openId, refreshCounts: rc } = live.current;
-      if (data.status === 'closed' || data.status === 'active' || data.status === 'human_takeover') {
-        l.patch({ conversationId: data.conversationId, status: data.status });
-        if (data.status === 'closed' && data.conversationId === openId) th.applyClosed(data.updatedAt);
-        rc();
-      }
+      const status = data.status === 'closed' || data.status === 'active' || data.status === 'human_takeover' ? data.status : undefined;
+      // Solo los campos que vinieron (web-42): posponer, cierre con resultado y quién la tiene
+      const fields: NonNullable<RowPatch['fields']> = {};
+      if (data.snoozedUntil !== undefined) fields.snoozedUntil = data.snoozedUntil;
+      if (data.snoozedBy !== undefined) fields.snoozedBy = data.snoozedBy;
+      if (data.followUpAt !== undefined) fields.followUpAt = data.followUpAt;
+      if (data.closedOutcome !== undefined) fields.closedOutcome = data.closedOutcome;
+      if (data.closedAt !== undefined) fields.closedAt = data.closedAt;
+      if (data.closedBy !== undefined) fields.closedBy = data.closedBy;
+      if (data.closedByName !== undefined) fields.closedByName = data.closedByName;
+      const changed = !!status || Object.keys(fields).length > 0 || data.takenOverBy !== undefined;
+      if (!changed) return;
+      l.patch({
+        conversationId: data.conversationId,
+        status,
+        ...(data.takenOverBy !== undefined ? { takenOverBy: data.takenOverBy } : {}),
+        ...(data.takeoverUserName !== undefined ? { takeoverUserName: data.takeoverUserName } : {}),
+        fields,
+      });
+      if (data.conversationId === openId) th.applyChange(data);
+      rc();
     };
 
     const handleTakeover: WebSocketEvents['takeover:status'] = (data) => {
@@ -300,29 +326,94 @@ export default function InboxScreen() {
   const take = useCallback(async () => {
     const id = thread.conversation?.id;
     if (id && me && (await thread.take())) {
-      list.patch({ conversationId: id, status: 'human_takeover', takenOverBy: me.id, takeoverUserName: me.name });
+      list.patch({ conversationId: id, status: 'human_takeover', takenOverBy: me.id, takeoverUserName: me.name, fields: { snoozedUntil: null } });
       refreshCounts();
     }
   }, [thread, me, list, refreshCounts]);
 
+  // Devolver al agente: quien la tiene usa "release"; el owner/admin, la de otra persona, "transfer" a nadie
   const release = useCallback(async () => {
+    const conv = thread.conversation;
+    if (!conv) return;
+    const ok = conv.takenOverBy === me?.id ? await thread.release() : await thread.transfer(null, null, '');
+    if (ok) {
+      list.patch({ conversationId: conv.id, status: 'active', takenOverBy: null, takeoverUserName: null });
+      refreshCounts();
+    }
+  }, [thread, me, list, refreshCounts]);
+
+  const doTransfer = async (toUserId: string | null, toName: string | null, note: string) => {
     const id = thread.conversation?.id;
-    if (id && (await thread.release())) {
-      list.patch({ conversationId: id, status: 'active', takenOverBy: null, takeoverUserName: null });
+    const ok = await thread.transfer(toUserId, toName, note);
+    setTransferOpen(false);
+    if (ok && id) {
+      list.patch(
+        toUserId
+          ? { conversationId: id, status: 'human_takeover', takenOverBy: toUserId, takeoverUserName: toName, fields: { snoozedUntil: null } }
+          : { conversationId: id, status: 'active', takenOverBy: null, takeoverUserName: null },
+      );
+      refreshCounts();
+      setAnnouncement(toUserId ? t('inbox.live.transferred', { name: toName ?? '' }) : t('inbox.live.released'));
+    }
+  };
+
+  // "Tomarla tú" (owner/admin): la de otra persona pasa a ser tuya
+  const takeOver = useCallback(async () => {
+    const id = thread.conversation?.id;
+    if (id && me && (await thread.transfer(me.id, me.name, ''))) {
+      list.patch({ conversationId: id, status: 'human_takeover', takenOverBy: me.id, takeoverUserName: me.name, fields: { snoozedUntil: null } });
+      refreshCounts();
+    }
+  }, [thread, me, list, refreshCounts]);
+
+  const doSnooze = async (until: Date) => {
+    const id = thread.conversation?.id;
+    const ok = await thread.snooze(until);
+    setSnoozeOpen(false);
+    if (ok && id) {
+      list.patch({ conversationId: id, fields: { snoozedUntil: until.toISOString(), snoozedBy: me?.id ?? null, followUpAt: null } });
+      refreshCounts();
+      setAnnouncement(t('inbox.live.snoozed'));
+    }
+  };
+
+  const unsnooze = useCallback(async () => {
+    const id = thread.conversation?.id;
+    if (id && (await thread.unsnooze())) {
+      list.patch({ conversationId: id, fields: { snoozedUntil: null } });
       refreshCounts();
     }
   }, [thread, list, refreshCounts]);
+
+  const reopen = useCallback(async () => {
+    const id = thread.conversation?.id;
+    if (id && (await thread.reopen())) {
+      list.patch({
+        conversationId: id,
+        status: 'active',
+        takenOverBy: null,
+        takeoverUserName: null,
+        fields: { closedOutcome: null, closedAt: null, closedBy: null, closedByName: null },
+      });
+      refreshCounts();
+      setAnnouncement(t('inbox.live.reopened'));
+    }
+  }, [thread, list, refreshCounts, t]);
 
   const askClose = useCallback(() => {
     if (c && c.status !== 'closed') setConfirmClose(true);
   }, [c]);
 
-  const doClose = async () => {
+  const doClose = async (outcome: CloseOutcome) => {
     const id = thread.conversation?.id;
-    const ok = await thread.close();
+    const ok = await thread.close(outcome);
     setConfirmClose(false);
     if (ok && id) {
-      list.patch({ conversationId: id, status: 'closed' });
+      list.patch({
+        conversationId: id,
+        status: 'closed',
+        fields: { closedOutcome: outcome, closedAt: new Date().toISOString(), closedBy: me?.id ?? null, closedByName: me?.name ?? null, snoozedUntil: null },
+      });
       refreshCounts();
     }
   };
@@ -350,7 +441,7 @@ export default function InboxScreen() {
   useLayoutEffect(() => {
     keys.current = { visibleIds, conversationId, c, canTakeover, askClose, openConversation, take };
   });
-  const layersOpen = railOpen || contactOpen || confirmClose || confirmDelete || helpOpen;
+  const layersOpen = railOpen || contactOpen || confirmClose || confirmDelete || helpOpen || transferOpen || snoozeOpen;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -456,6 +547,9 @@ export default function InboxScreen() {
             allTime={filters.allTime}
             showPeriod={showPeriod}
             onPeriod={(allTime) => selectFilters({ allTime })}
+            outcome={filters.outcome}
+            onOutcome={(outcome) => selectFilters({ outcome })}
+            timeZone={timeZone}
             search={searchInput}
             onSearch={setSearchInput}
             searchRef={searchRef}
@@ -496,8 +590,14 @@ export default function InboxScreen() {
               onAskClose={askClose}
               onTake={() => void take()}
               onRelease={() => void release()}
-              onAskDelete={() => setConfirmDelete(true)}
-              iconActions={!detailsFixed}
+              isManager={isManager}
+              timeZone={timeZone}
+              onTakeOver={() => void takeOver()}
+              onAskTransfer={() => setTransferOpen(true)}
+              onAskSnooze={() => setSnoozeOpen(true)}
+              onUnsnooze={() => void unsnooze()}
+              onReopen={() => void reopen()}
+              onAskDelete={isManager ? () => setConfirmDelete(true) : undefined}
               onBack={mobile ? backToList : undefined}
               onOpenContact={
                 detailsFixed && !mobile
@@ -580,26 +680,34 @@ export default function InboxScreen() {
       )}
 
       {confirmClose && c && (
-        <InboxDialog
-          title={t('inbox.closeDialog.title')}
-          onClose={() => setConfirmClose(false)}
-          initialFocusRef={confirmRef}
-          footer={
-            <>
-              <InboxButton onClick={() => setConfirmClose(false)}>{t('inbox.closeDialog.cancel')}</InboxButton>
-              <InboxButton
-                ref={confirmRef}
-                variant="primary"
-                onClick={() => void doClose()}
-                loading={thread.busy === 'close'}
-              >
-                {t('inbox.closeDialog.confirm')}
-              </InboxButton>
-            </>
-          }
-        >
-          <p>{t('inbox.closeDialog.text', { name: contactName(c.contact, t('inbox.row.unknownContact')) })}</p>
-        </InboxDialog>
+        <CloseDialog
+          contactName={contactName(c.contact, t('inbox.row.unknownContact'))}
+          busy={thread.busy === 'close'}
+          onCancel={() => setConfirmClose(false)}
+          onConfirm={(outcome) => void doClose(outcome)}
+        />
+      )}
+
+      {transferOpen && c && (
+        <TransferDialog
+          contactName={contactName(c.contact, t('inbox.row.unknownContact'))}
+          agentName={c.agentName}
+          userId={user?.id}
+          holderId={c.status === 'human_takeover' ? c.takenOverBy : null}
+          canReturnToAgent={c.status === 'human_takeover'}
+          busy={thread.busy === 'transfer'}
+          onCancel={() => setTransferOpen(false)}
+          onConfirm={(to, name, note) => void doTransfer(to, name, note)}
+        />
+      )}
+
+      {snoozeOpen && c && (
+        <SnoozeDialog
+          timeZone={timeZone}
+          busy={thread.busy === 'snooze'}
+          onCancel={() => setSnoozeOpen(false)}
+          onConfirm={(until) => void doSnooze(until)}
+        />
       )}
 
       {confirmDelete && c && (

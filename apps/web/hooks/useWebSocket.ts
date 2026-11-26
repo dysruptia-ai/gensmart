@@ -157,6 +157,27 @@ export interface WebSocketEvents {
     lastMessage?: string;
     status?: string;
     updatedAt: string;
+    /** Bandeja (web-42): quién la tiene, posponer, cierre con resultado y el evento nuevo del historial. */
+    takenOverBy?: string | null;
+    takeoverUserName?: string | null;
+    snoozedUntil?: string | null;
+    snoozedBy?: string | null;
+    snoozedByName?: string | null;
+    followUpAt?: string | null;
+    closedOutcome?: 'sold' | 'resolved' | 'no_response' | 'spam' | null;
+    closedAt?: string | null;
+    closedBy?: string | null;
+    closedByName?: string | null;
+    event?: {
+      id: string;
+      type: 'handoff_requested' | 'taken' | 'released' | 'transferred' | 'snoozed' | 'unsnoozed' | 'closed' | 'reopened';
+      actorUserId: string | null;
+      actorName: string | null;
+      targetUserId: string | null;
+      targetName: string | null;
+      data: Record<string, unknown>;
+      createdAt: string;
+    };
   }) => void;
   'message:new': (data: {
     conversationId: string;

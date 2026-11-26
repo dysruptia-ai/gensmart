@@ -1,0 +1,6 @@
+/* Ayuda junto a "Cerrar" mientras no se elige un resultado (web-42b) */
+.help {
+  margin-right: auto;
+  font-size: 13px;
+  color: var(--app-soft);
+}

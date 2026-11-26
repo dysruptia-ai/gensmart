@@ -1610,7 +1610,14 @@
       "loadMore": "Load more",
       "clearSearch": "Clear search",
       "errorTitle": "We couldn't load the Inbox",
-      "errorText": "It's on our side, not yours. Your conversations are safe."
+      "errorText": "It's on our side, not yours. Your conversations are safe.",
+      "outcomeFilter": "Filter by outcome",
+      "outcomeAll": "All",
+      "mineGroups": {
+        "followUp": "Follow up today",
+        "active": "In progress",
+        "snoozed": "Snoozed"
+      }
     },
     "empty": {
       "all": {
@@ -1649,7 +1656,9 @@
       "yours": "Yours",
       "takenBy": "Taken by {name}",
       "scoreTitle": "Lead score",
-      "scoreSr": "Score"
+      "scoreSr": "Score",
+      "snoozedUntil": "Back {when}",
+      "backFromSnooze": "Back from snooze"
     },
     "thread": {
       "loading": "Loading the conversation",
@@ -1683,10 +1692,26 @@
       "events": {
         "handoff": "The agent asked for help",
         "taken": "{name} took the conversation",
-        "released": "Handed back to the agent",
-        "closed": "Conversation closed"
+        "released": "{name} handed it back to the agent",
+        "closed": "{name} closed it",
+        "takenYou": "You took the conversation",
+        "releasedYou": "You handed it back to the agent",
+        "releasedPlain": "Handed back to the agent",
+        "transferred": "{name} transferred it to {target}",
+        "transferredYou": "You transferred it to {target}",
+        "transferredToYou": "{name} transferred the conversation to you",
+        "snoozed": "{name} snoozed it until {time}",
+        "snoozedYou": "You snoozed it until {time}",
+        "unsnoozed": "Back from snooze",
+        "unsnoozedManual": "{name} unsnoozed it",
+        "unsnoozedManualYou": "You unsnoozed it",
+        "closedYou": "You closed it",
+        "closedAs": "{name} closed it as {outcome}",
+        "closedAsYou": "You closed it as {outcome}",
+        "closedPlain": "Conversation closed",
+        "reopened": "{name} reopened it",
+        "reopenedYou": "You reopened it"
       },
-      "closedBar": "This conversation is closed.",
       "takenBar": "{name} is handling this conversation.",
       "agentBar": "The agent is replying. Take the conversation to write yourself.",
       "mediaAlt": "File sent",
@@ -1695,7 +1720,19 @@
       "handedOffTo": "Handed off to {name}",
       "details": "Details",
       "more": "More actions",
-      "delete": "Delete conversation"
+      "delete": "Delete conversation",
+      "takeOver": "Take it yourself",
+      "transfer": "Transfer",
+      "snooze": "Snooze",
+      "unsnooze": "Unsnooze",
+      "reopen": "Reopen",
+      "snoozedBar": "Snoozed until {when}",
+      "closedBarAs": "Closed as",
+      "closedBarPlain": "Closed",
+      "closedBarBy": "by {name}, {when}.",
+      "closedBarByYou": "by you, {when}.",
+      "closedBarWhen": "{when}.",
+      "closedBarNoReply": "You can't reply until it's reopened."
     },
     "composer": {
       "label": "Your reply",
@@ -1755,10 +1792,18 @@
       "adVideo": "View ad video"
     },
     "closeDialog": {
+      "pickOutcome": "Choose how the conversation ended",
       "title": "Close conversation",
-      "text": "The conversation with {name} moves to Closed.",
       "cancel": "Cancel",
-      "confirm": "Close conversation"
+      "confirm": "Close conversation",
+      "question": "How did it end with {name}?",
+      "outcomeLegend": "Outcome",
+      "hints": {
+        "sold": "There was a sale or a payment",
+        "resolved": "The question or case was resolved",
+        "no_response": "The customer stopped replying",
+        "spam": "Not a real customer"
+      }
     },
     "deleteDialog": {
       "title": "Delete conversation",
@@ -1771,7 +1816,11 @@
       "take": "We couldn't take the conversation. Someone else may have taken it first.",
       "release": "We couldn't hand it back to the agent. Try again.",
       "close": "We couldn't close the conversation. Try again.",
-      "delete": "We couldn't delete the conversation. Try again."
+      "delete": "We couldn't delete the conversation. Try again.",
+      "transfer": "We couldn't transfer the conversation. Try again.",
+      "snooze": "We couldn't snooze the conversation. Try again.",
+      "unsnooze": "We couldn't unsnooze it. Try again.",
+      "reopen": "We couldn't reopen the conversation. Try again."
     },
     "dialog": {
       "close": "Close"
@@ -1798,7 +1847,53 @@
     "live": {
       "newMessage": "New message from {name}",
       "handoff": "{name} needs someone on the team",
-      "deleted": "Conversation deleted"
+      "deleted": "Conversation deleted",
+      "transferred": "Conversation transferred to {name}",
+      "released": "Conversation handed back to the agent",
+      "snoozed": "Conversation snoozed",
+      "reopened": "Conversation reopened"
+    },
+    "outcomes": {
+      "sold": "Sold",
+      "resolved": "Resolved",
+      "no_response": "No response",
+      "spam": "Spam"
+    },
+    "transferDialog": {
+      "title": "Transfer conversation",
+      "text": "Choose who continues with {name}.",
+      "legend": "Who receives it",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member"
+      },
+      "toAgent": "Hand back to the agent",
+      "toAgentHint": "{agent} continues the conversation",
+      "noteLabel": "Note for the person who receives it",
+      "notePlaceholder": "What's pending and what's been discussed",
+      "noteCount": "{n} of {max}",
+      "loading": "Loading your team…",
+      "loadError": "We couldn't load your team.",
+      "noTeam": "There is no one else on the team. Invite people from Settings.",
+      "cancel": "Cancel",
+      "confirm": "Transfer"
+    },
+    "snoozeDialog": {
+      "title": "Snooze",
+      "text": "It comes back to your list when it's time, or earlier if the customer writes.",
+      "in1h": "In 1 hour",
+      "today": "Today {time}",
+      "tomorrow": "Tomorrow {time}",
+      "nextWeek": "Next week",
+      "nextWeekHint": "Monday, {time}",
+      "cancel": "Cancel",
+      "confirm": "Snooze"
+    },
+    "snooze": {
+      "todayAt": "today {time}",
+      "tomorrowAt": "tomorrow {time}",
+      "dateAt": "{day}, {time}"
     }
   }
 }

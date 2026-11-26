@@ -186,3 +186,9 @@
     transition: none;
   }
 }
+
+/* Pospuesta / volvió de posponer (web-42) */
+.tagInfo {
+  background: var(--app-info-bg);
+  color: var(--app-info);
+}

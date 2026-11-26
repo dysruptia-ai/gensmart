@@ -6,6 +6,11 @@ export const INBOX_VIEWS: readonly InboxView[] = ['all', 'needs', 'mine', 'close
 
 export type ConversationStatus = 'active' | 'human_takeover' | 'closed';
 
+/** Resultado del cierre (web-42). Las cerradas antes de esta versión no tienen. */
+export type CloseOutcome = 'sold' | 'resolved' | 'no_response' | 'spam';
+
+export const CLOSE_OUTCOMES: readonly CloseOutcome[] = ['sold', 'resolved', 'no_response', 'spam'];
+
 /** Quién escribió un mensaje: cliente, agente (IA), persona del equipo o sistema. */
 export type MessageRole = 'user' | 'assistant' | 'human' | 'system';
 
@@ -15,6 +20,8 @@ export interface InboxFilters {
   channel: string | null;
   /** `true` = todo el historial; `false` = últimos 8 días (por defecto). */
   allTime: boolean;
+  /** Filtro de "Cerradas" por resultado (`?outcome=`). */
+  outcome: CloseOutcome | null;
 }
 
 export interface RowContact {
@@ -41,6 +48,17 @@ export interface ConversationRow {
   handoffActive: boolean;
   needsAttention: boolean;
   waitingSince: string | null;
+  /** Pospuesta hasta (web-42). */
+  snoozedUntil?: string | null;
+  snoozedBy?: string | null;
+  /** Hora en que volvió de posponer. */
+  followUpAt?: string | null;
+  /** "Seguimiento para hoy": volvió hoy y nadie respondió después. */
+  followUpPending?: boolean;
+  closedOutcome?: CloseOutcome | null;
+  closedAt?: string | null;
+  closedBy?: string | null;
+  closedByName?: string | null;
   lastMessage: {
     content: string;
     role: MessageRole | null;
@@ -115,11 +133,51 @@ export interface ConversationDetail {
   needsAttention: boolean;
   waitingSince: string | null;
   lastCustomerMessageAt: string | null;
+  snoozedUntil?: string | null;
+  snoozedBy?: string | null;
+  snoozedByName?: string | null;
+  followUpAt?: string | null;
+  closedOutcome?: CloseOutcome | null;
+  closedAt?: string | null;
+  closedBy?: string | null;
+  closedByName?: string | null;
+}
+
+export type ConversationEventType =
+  | 'handoff_requested'
+  | 'taken'
+  | 'released'
+  | 'transferred'
+  | 'snoozed'
+  | 'unsnoozed'
+  | 'closed'
+  | 'reopened';
+
+/** Evento guardado en `conversation_events` (web-42). */
+export interface ApiConversationEvent {
+  id: string;
+  type: ConversationEventType;
+  actorUserId: string | null;
+  actorName: string | null;
+  targetUserId: string | null;
+  targetName: string | null;
+  data: Record<string, unknown>;
+  createdAt: string;
+}
+
+/** Persona del equipo (`GET /api/organization/members`). */
+export interface TeamMember {
+  id: string;
+  name: string | null;
+  email: string;
+  role: string;
 }
 
 export interface DetailResponse {
   conversation: ConversationDetail;
   messages: ThreadMessage[];
+  /** Historial de eventos (web-42); vacío en las conversaciones anteriores. */
+  events?: ApiConversationEvent[];
   pagination: { total: number; hasMore: boolean; oldestTimestamp: string | null };
 }
 

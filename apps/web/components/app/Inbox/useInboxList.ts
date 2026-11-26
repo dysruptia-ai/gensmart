@@ -16,6 +16,13 @@ export interface RowPatch {
   takeoverUserName?: string | null;
   handoffAt?: string;
   aiScore?: number;
+  /** Campos de web-42 (posponer, cerrar con resultado) tal como llegan en `conversation:update`. */
+  fields?: Partial<
+    Pick<
+      ConversationRow,
+      'snoozedUntil' | 'snoozedBy' | 'followUpAt' | 'followUpPending' | 'closedOutcome' | 'closedAt' | 'closedBy' | 'closedByName'
+    >
+  >;
 }
 
 export interface InboxList {
@@ -157,9 +164,19 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
           };
           if (p.message.role !== 'system') row.lastMessageAt = p.message.createdAt;
           if (p.message.role === 'user') lastCustomerAt = p.message.createdAt;
+          // Respondida después de volver de posponer: sale de "Seguimiento para hoy"
+          if (p.message.role === 'human' || p.message.role === 'assistant') row.followUpPending = false;
+        }
+        if (p.fields) {
+          row = { ...row, ...p.fields };
+          // Acaba de volver de posponer: queda en "Seguimiento para hoy" hasta que alguien responda
+          if (p.fields.followUpAt) row.followUpPending = true;
+          if (p.fields.followUpAt === null) row.followUpPending = false;
         }
         if (p.status) row.status = p.status;
         if (p.takenOverBy !== undefined) row.takenOverBy = p.takenOverBy;
+        // Tomada o transferida: el pedido de ayuda queda atendido (web-42b)
+        if (p.takenOverBy) row.handoffActive = false;
         if (p.takeoverUserName !== undefined) row.takeoverUserName = p.takeoverUserName;
         if (p.handoffAt) {
           row.handoffActive = true;

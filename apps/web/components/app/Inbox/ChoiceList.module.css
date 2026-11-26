@@ -1,0 +1,64 @@
+.list {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  color: var(--app-ink);
+  cursor: pointer;
+  transition: border-color var(--app-t-fast) var(--app-ease), background var(--app-t-fast) var(--app-ease);
+}
+
+.option:hover {
+  background: var(--app-card-2);
+}
+
+.option:has(input:checked) {
+  border-color: var(--app-go);
+  background: var(--app-active);
+}
+
+.option:has(input:focus-visible) {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.option input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--app-go);
+}
+
+.text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.text b {
+  font-weight: 600;
+}
+
+.text small {
+  font-size: 12.5px;
+  color: var(--app-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option {
+    transition: none;
+  }
+}
