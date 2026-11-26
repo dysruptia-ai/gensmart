@@ -9,6 +9,18 @@ export function getWebUrl(): string {
   return env.FRONTEND_URL.replace(/\/+$/, '');
 }
 
+/**
+ * Origen de las imágenes de los correos (`EMAIL_ASSETS_URL`, por defecto `https://www.gensmart.co`,
+ * no `FRONTEND_URL`): así los correos de prueba mandados desde local también muestran el logo.
+ */
+export const EMAIL_ASSETS_URL = env.EMAIL_ASSETS_URL.replace(/\/+$/, '');
+
+/** Los dos logos (en `apps/web/public/email/`, a 3x). */
+export const EMAIL_LOGO = {
+  light: `${EMAIL_ASSETS_URL}/email/gensmart-logo.png`,
+  dark: `${EMAIL_ASSETS_URL}/email/gensmart-logo-dark.png`,
+} as const;
+
 /** Ruta de la web a URL absoluta. */
 export function webUrl(path: string): string {
   return `${getWebUrl()}${path.startsWith('/') ? path : `/${path}`}`;

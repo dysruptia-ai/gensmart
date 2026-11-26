@@ -6,7 +6,7 @@ import { env } from '../config/env';
 import { EMAIL_REGISTRY } from './registry';
 import { es } from './strings/es';
 import { en } from './strings/en';
-import { SITE_PATHS, UTM_VALUE, getWebUrl, WELCOME_VIDEO, withUtm } from './links';
+import { EMAIL_ASSETS_URL, SITE_PATHS, UTM_VALUE, getWebUrl, WELCOME_VIDEO, withUtm } from './links';
 import { buildFromAddress, parseFromAddress } from './from-address';
 import { highScoreLeadEmail, htmlToText, invitationEmail, planLimitEmail, welcomeEmail, wrapInternalHtml } from './index';
 import { WELCOME_UTM_CONTENT } from './templates/welcome';
@@ -69,19 +69,41 @@ void test('ningún asunto ni texto tiene rayas largas', () => {
   }
 });
 
-void test('el HTML no usa flex, grid, imágenes ni JavaScript; el botón no lleva texto blanco', () => {
+void test('el HTML no usa flex, grid, más imágenes que el logo ni JavaScript; el botón no lleva texto blanco', () => {
   for (const entry of EMAIL_REGISTRY) {
     for (const lang of entry.languages) {
       const { html } = entry.build(lang);
       assert.ok(!/display\s*:\s*(flex|grid)/i.test(html), `${entry.id}: flex o grid`);
-      assert.ok(!/<img\b/i.test(html), `${entry.id}: imagen`);
+      const imgs = html.match(/<img\b[^>]*>/gi) ?? [];
+      assert.ok(imgs.every((i) => /\/email\/gensmart-logo(-dark)?\.png"/.test(i)), `${entry.id}: imagen que no es el logo`);
+      assert.ok(!/Handjet/i.test(html), `${entry.id}: fuente Handjet`);
       assert.ok(!/<script\b/i.test(html), `${entry.id}: script`);
       assert.ok(!/background-image/i.test(html), `${entry.id}: imagen de fondo`);
       assert.ok(!/rgba\(/i.test(html), `${entry.id}: rgba`);
       assert.ok(!/fonts\.googleapis/i.test(html), `${entry.id}: Google Fonts`);
-      assert.ok(!html.includes('gensmart-logo.png'), `${entry.id}: logo como imagen`);
       // Botón verde: siempre con texto oscuro
       assert.ok(!/background:#3ddc84[^>]*>\s*<a[^>]*color:#fff/i.test(html), `${entry.id}: texto blanco en el botón`);
+    }
+  }
+});
+
+void test('logo: una imagen clara y una oscura (dos en la bienvenida, por el video), con alt, width y height', () => {
+  const builds = [
+    ...EMAIL_REGISTRY.flatMap((entry) => entry.languages.map((lang) => ({ id: `${entry.id}/${lang}`, html: entry.build(lang).html }))),
+    { id: 'internal', html: wrapInternalHtml('<p>x</p>') },
+  ];
+  for (const { id, html } of builds) {
+    const imgs = html.match(/<img\b[^>]*>/gi) ?? [];
+    const light = imgs.filter((i) => i.includes('/email/gensmart-logo.png"'));
+    const dark = imgs.filter((i) => i.includes('/email/gensmart-logo-dark.png"'));
+    const isWelcome = id.startsWith('welcome/');
+    assert.equal(light.length, 1, `${id}: logo claro`);
+    assert.equal(dark.length, isWelcome ? 2 : 1, `${id}: logo oscuro`);
+    for (const i of imgs) {
+      assert.match(i, /alt="GenSmart"/, `${id}: alt`);
+      assert.match(i, /width="\d+"/, `${id}: width`);
+      assert.match(i, /height="32"/, `${id}: height`);
+      assert.match(i, new RegExp(`src="${EMAIL_ASSETS_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/`), `${id}: URL de las imágenes`);
     }
   }
 });
@@ -128,7 +150,7 @@ void test('un nombre con <script> o saltos de línea queda escapado en el HTML y
   assert.ok(!inv.html.includes('<script>'));
 
   const lead = highScoreLeadEmail({ name: 'Ana', score: 9, contactName: '<img src=x onerror=alert(1)>' }, 'es');
-  assert.ok(!lead.html.includes('<img'));
+  assert.ok(!lead.html.includes('<img src=x'));
 });
 
 void test('el lead muestra el nombre del contacto (o "Contacto sin nombre"), no el id', () => {

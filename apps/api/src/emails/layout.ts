@@ -3,15 +3,15 @@
  *
  * Cada correo se describe con bloques (`Block`), y de los mismos bloques salen el HTML y el texto
  * plano. El HTML va con tablas y estilos en línea (Gmail, Outlook de escritorio y web, Apple Mail,
- * móviles): sin flex, sin grid, sin imágenes y sin JavaScript. El modo oscuro va en un `<style>` con
+ * móviles): sin flex, sin grid y sin JavaScript; la única imagen es el logo (claro y oscuro). El modo oscuro va en un `<style>` con
  * `prefers-color-scheme` para los clientes que lo respetan; los que invierten solos siguen legibles
  * porque no hay grises medios ni texto sobre colores parecidos.
  *
  * Todo texto de los bloques se escapa aquí: los correos pasan los datos tal cual.
  */
 import { escapeHtml, escapeHtmlWithBreaks, stripLineBreaks } from '../utils/html';
-import { BRAND, DARK, FONT_BODY, FONT_HEADING, FONT_LOGO, LIGHT } from './theme';
-import { siteUrl } from './links';
+import { BRAND, DARK, FONT_BODY, FONT_HEADING, FONT_SANS, LIGHT } from './theme';
+import { EMAIL_LOGO, siteUrl } from './links';
 import type { EmailLang, RenderedEmail } from './types';
 import { getStrings } from './strings';
 
@@ -76,6 +76,22 @@ function inlineText(parts: Inline[]): string {
 /** Fila de la tarjeta con el relleno lateral de siempre. */
 function row(inner: string, padding = '0 40px 20px'): string {
   return `<tr><td class="gs-pad" style="padding:${padding};">${inner}</td></tr>`;
+}
+
+// ── Logo ──────────────────────────────────────────────────────────────────────
+
+/** Estilo del `alt` si el cliente bloquea las imágenes: se sigue leyendo "GenSmart". */
+const LOGO_ALT_STYLE = `font-family:${FONT_SANS};font-weight:700;font-size:24px;line-height:32px;color:${BRAND.smart};`;
+
+function logoImg(variant: 'light' | 'dark', cls: string): string {
+  const w = variant === 'light' ? 128 : 130;
+  return `<img class="${cls}" src="${e(EMAIL_LOGO[variant])}" width="${w}" height="32" alt="GenSmart" border="0" style="display:block;width:${w}px;height:32px;border:0;outline:none;text-decoration:none;${LOGO_ALT_STYLE}">`;
+}
+
+/** Cabecera: la versión clara, y la oscura oculta hasta que el cliente pide el tema oscuro. */
+function headerLogoHtml(): string {
+  return `${logoImg('light', 'gs-logo-light')}
+<!--[if !mso]><!--><div class="gs-logo-dark-wrap" style="display:none;mso-hide:all;max-height:0;overflow:hidden;">${logoImg('dark', 'gs-logo-dark')}</div><!--<![endif]-->`;
 }
 
 // ── Bloques a HTML ────────────────────────────────────────────────────────────
@@ -196,7 +212,7 @@ ${b.lines.map((l) => `<p class="gs-muted" style="margin:0 0 2px;font-size:14px;l
 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:separate;">
 <tr><td bgcolor="${BRAND.video}" style="background:${BRAND.video};border-radius:14px;padding:22px 24px;">
 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0">
-<tr><td style="padding-bottom:64px;font-family:${FONT_LOGO};font-weight:700;font-size:24px;line-height:28px;letter-spacing:-0.02em;"><span style="color:#ffffff;">Gen</span><span style="color:${BRAND.smart};">Smart</span></td></tr>
+<tr><td style="padding-bottom:64px;">${logoImg('dark', 'gs-logo-video')}</td></tr>
 <tr><td>
 <table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr>
 <td width="64" height="64" align="center" valign="middle" bgcolor="${BRAND.button}" style="width:64px;height:64px;background:${BRAND.button};border-radius:999px;font-family:Arial,sans-serif;font-size:22px;line-height:64px;color:${BRAND.buttonText};">&#9654;&#65038;</td>
@@ -291,9 +307,11 @@ const DARK_CSS = `
   .gs-warn-text { color:${DARK.warn} !important; }
   .gs-err-box { background:${DARK.errBg} !important; border-color:${DARK.err} !important; }
   .gs-err-text { color:${DARK.err} !important; }
-  .gs-gen { color:${DARK.logoGen} !important; }
+  .gs-logo-light { display:none !important; }
+  .gs-logo-dark-wrap { display:block !important; max-height:none !important; overflow:visible !important; }
 }
-[data-ogsc] .gs-gen { color:${DARK.logoGen} !important; }`;
+[data-ogsc] .gs-logo-light { display:none !important; }
+[data-ogsc] .gs-logo-dark-wrap { display:block !important; max-height:none !important; overflow:visible !important; }`;
 
 const BASE_CSS = `
 body { margin:0 !important; padding:0 !important; width:100% !important; }
@@ -359,7 +377,9 @@ export function renderEmail(content: EmailContent): RenderedEmail {
 <tr><td>
 <table role="presentation" class="gs-card" width="100%" border="0" cellpadding="0" cellspacing="0" bgcolor="${LIGHT.card}" style="background:${LIGHT.card};border:1px solid ${LIGHT.line};border-radius:16px;border-collapse:separate;">
 <tr><td class="gs-pad" style="padding:28px 40px 0;">
-<a href="${e(siteUrl('home', lang))}" target="_blank" aria-label="${e(s.logoLabel)}" style="text-decoration:none;font-family:${FONT_LOGO};font-weight:700;font-size:32px;line-height:36px;letter-spacing:-0.02em;"><span class="gs-gen" style="color:${LIGHT.logoGen};">Gen</span><span style="color:${BRAND.smart};">Smart</span></a>
+<a href="${e(siteUrl('home', lang))}" target="_blank" aria-label="${e(s.logoLabel)}" style="display:block;text-decoration:none;">
+${headerLogoHtml()}
+</a>
 </td></tr>
 ${blocks.map(blockHtml).join('\n')}
 <tr><td style="height:12px;line-height:12px;font-size:0;">&nbsp;</td></tr>
@@ -398,6 +418,8 @@ export function wrapInternalHtml(contentHtml: string): string {
 export function htmlToText(html: string): string {
   return html
     .replace(/<(head|style|title)[\s\S]*?<\/\1>/gi, '')
+    // El logo: el texto alternativo de la versión clara, una vez (la oscura y la del video no)
+    .replace(/<img [^>]*class="gs-logo-light"[^>]*alt="([^"]*)"[^>]*>/gi, '$1')
     .replace(/<!--[\s\S]*?-->/g, '')
     // El espacio entre etiquetas (sangría del HTML) no es texto
     .replace(/>\s*\n\s*</g, '><')

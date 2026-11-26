@@ -19,7 +19,6 @@ export const LIGHT = {
   err: '#b42318',
   errText: '#7a1a12',
   errBg: '#fdecea',
-  logoGen: '#0c1014',
 } as const;
 
 /** Modo oscuro (`prefers-color-scheme: dark`); los fondos con transparencia, ya mezclados sobre la tarjeta. */
@@ -37,7 +36,6 @@ export const DARK = {
   warnBg: '#2e302e',
   err: '#ff8a7e',
   errBg: '#31282c',
-  logoGen: '#ffffff',
 } as const;
 
 /** Siempre igual en los dos temas. */
@@ -53,4 +51,5 @@ export const BRAND = {
 const FALLBACK = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 export const FONT_BODY = `'Geist', ${FALLBACK}`;
 export const FONT_HEADING = `'Sora', ${FALLBACK}`;
-export const FONT_LOGO = `'Handjet', ${FALLBACK}`;
+/** Pila sans para el texto alternativo del logo. */
+export const FONT_SANS = FALLBACK;

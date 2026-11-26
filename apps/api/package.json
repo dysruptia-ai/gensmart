@@ -33,7 +33,7 @@
     "sync-agent-prompt": "tsx src/db/seeds/sync-agent-prompt.ts",
     "test:email": "dotenv -e ../../.env -- tsx --test --test-force-exit src/services/email.test.ts src/services/email-contact.test.ts",
     "seed:test-users": "tsx src/db/seeds/test-users.seed.ts",
-    "emails:preview": "tsx src/scripts/emails-preview.ts",
+    "emails:preview": "EMAIL_ASSETS_URL=http://localhost:3000 tsx src/scripts/emails-preview.ts",
     "emails:send-test": "tsx src/scripts/emails-send-test.ts",
     "stripe:seed": "tsx src/db/seeds/stripe-products.ts",
     "lint": "eslint src",

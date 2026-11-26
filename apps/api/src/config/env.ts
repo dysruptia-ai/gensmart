@@ -44,6 +44,8 @@ export const env = {
   ENCRYPTION_KEY: optionalEnv('ENCRYPTION_KEY', ZERO_ENCRYPTION_KEY),
   FRONTEND_URL: optionalEnv('FRONTEND_URL', 'http://localhost:3000'),
   API_URL: optionalEnv('API_URL', 'http://localhost:4000'),
+  /** De dónde cargan los correos sus imágenes (el logo). Producción por defecto: Gmail no carga `localhost`. */
+  EMAIL_ASSETS_URL: optionalEnv('EMAIL_ASSETS_URL', 'https://www.gensmart.co'),
   OPENAI_API_KEY: process.env['OPENAI_API_KEY'] ?? '',
   ANTHROPIC_API_KEY: process.env['ANTHROPIC_API_KEY'] ?? '',
   STRIPE_SECRET_KEY: process.env['STRIPE_SECRET_KEY'] ?? '',
