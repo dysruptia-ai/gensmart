@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { sendEmail, emailTemplate } from '../config/email';
+import { sendEmail } from '../config/email';
+import { wrapInternalHtml } from '../emails';
 import { env } from '../config/env';
 import { rateLimiter } from '../middleware/rateLimiter';
 import { verifyTurnstileToken } from '../services/turnstile.service';
@@ -26,7 +27,7 @@ router.post(
         turnstileConfigured: Boolean(env.TURNSTILE_SECRET_KEY),
         verifyTurnstile: verifyTurnstileToken,
         sendEmail,
-        wrapHtml: emailTemplate,
+        wrapHtml: wrapInternalHtml,
       });
       res.status(result.status).json(result.body);
     } catch (err) {

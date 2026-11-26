@@ -396,7 +396,7 @@ export async function register(input: {
   // Ask the address owner to confirm before sending anything else (the welcome email goes out on
   // confirmation). Async, don't block registration.
   generateEmailVerificationToken(user.id, promoValid ? input.promoCode : undefined)
-    .then(token => sendVerificationEmail({ name: user.name, email: user.email }, token))
+    .then(token => sendVerificationEmail({ name: user.name, email: user.email, language: user.language }, token))
     .catch(err => console.error('[Email] Failed to send verification email:', err));
 
   return { email: user.email, name: user.name, promoApplied: promoValid };
@@ -799,7 +799,7 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
   const tokenHash = hashToken(token);
 
   const client = await getClient();
-  let user: { email: string; name: string; organization_id: string } | undefined;
+  let user: { email: string; name: string; organization_id: string; language: string | null } | undefined;
   try {
     await client.query('BEGIN');
 
@@ -815,8 +815,8 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
       throw new AppError(400, 'Invalid or expired verification token', 'INVALID_VERIFICATION_TOKEN');
     }
 
-    const updated = await client.query<{ email: string; name: string; organization_id: string }>(
-      'UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1 RETURNING email, name, organization_id',
+    const updated = await client.query<{ email: string; name: string; organization_id: string; language: string | null }>(
+      'UPDATE users SET email_verified = true, updated_at = NOW() WHERE id = $1 RETURNING email, name, organization_id, language',
       [row.user_id]
     );
     user = updated.rows[0];
@@ -834,9 +834,17 @@ export async function consumeEmailVerificationToken(token: string): Promise<void
   }
 
   if (user) {
-    sendWelcomeEmail({ name: user.name, email: user.email }).catch(err =>
-      console.error('[Email] Failed to send welcome email:', err)
-    );
+    const welcomed = user;
+    query<{ name: string }>('SELECT name FROM organizations WHERE id = $1', [welcomed.organization_id])
+      .then((org) =>
+        sendWelcomeEmail({
+          name: welcomed.name,
+          email: welcomed.email,
+          language: welcomed.language,
+          organizationName: org.rows[0]?.name,
+        })
+      )
+      .catch(err => console.error('[Email] Failed to send welcome email:', err));
   }
 }
 
@@ -853,8 +861,8 @@ export async function resendVerificationEmail(email: string): Promise<void> {
     console.warn('[auth] Resend-verification limiter unavailable (Redis error): request allowed');
   }
 
-  const result = await query<{ id: string; email: string; name: string; email_verified: boolean }>(
-    'SELECT id, email, name, email_verified FROM users WHERE email = $1',
+  const result = await query<{ id: string; email: string; name: string; email_verified: boolean; language: string | null }>(
+    'SELECT id, email, name, email_verified, language FROM users WHERE email = $1',
     [email.toLowerCase()]
   );
   const user = result.rows[0];
@@ -870,7 +878,7 @@ export async function resendVerificationEmail(email: string): Promise<void> {
     [user.id]
   );
   const token = await generateEmailVerificationToken(user.id, previous.rows[0]?.promo_code);
-  sendVerificationEmail({ name: user.name, email: user.email }, token).catch(err =>
+  sendVerificationEmail({ name: user.name, email: user.email, language: user.language }, token).catch(err =>
     console.error('[Email] Failed to resend verification email:', err)
   );
 }
@@ -888,8 +896,8 @@ export async function forgotPassword(email: string): Promise<void> {
     console.warn('[auth] Forgot-password limiter unavailable (Redis error): request allowed');
   }
 
-  const result = await query<UserRow>(
-    'SELECT id, email, name FROM users WHERE email = $1',
+  const result = await query<Pick<UserRow, 'id' | 'email' | 'name' | 'language'>>(
+    'SELECT id, email, name, language FROM users WHERE email = $1',
     [email.toLowerCase()]
   );
   const user = result.rows[0];
@@ -907,7 +915,7 @@ export async function forgotPassword(email: string): Promise<void> {
     [user.id, tokenHash, expiresAt.toISOString()]
   );
 
-  sendPasswordResetEmail({ name: user.name, email: user.email }, token).catch(err =>
+  sendPasswordResetEmail({ name: user.name, email: user.email, language: user.language }, token).catch(err =>
     console.error('[Email] Failed to send password reset email:', err)
   );
 }
@@ -1126,8 +1134,8 @@ export async function sendOrgAccessLinkEmail(
   organizationId: string,
   storeName: string
 ): Promise<void> {
-  const userResult = await query<{ email: string; name: string }>(
-    'SELECT email, name FROM users WHERE id = $1',
+  const userResult = await query<{ email: string; name: string; language: string | null }>(
+    'SELECT email, name, language FROM users WHERE id = $1',
     [userId]
   );
   const user = userResult.rows[0];
@@ -1138,7 +1146,7 @@ export async function sendOrgAccessLinkEmail(
   // Fire-and-forget, matching sendWelcomeEmail/forgotPassword: a transient
   // SMTP failure must not roll back provisioning (org/agent/MCP already
   // exist by the time this runs) or block the caller's response.
-  sendOrgAccessEmail({ name: user.name, email: user.email }, storeName, token).catch((err) =>
+  sendOrgAccessEmail({ name: user.name, email: user.email, language: user.language }, storeName, token).catch((err) =>
     console.error('[Email] Failed to send org access email:', err)
   );
 }

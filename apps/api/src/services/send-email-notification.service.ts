@@ -1,8 +1,13 @@
 import { type ToolDefinition } from './llm.service';
 import { query } from '../config/database';
-import { sendEmail, emailTemplate, getFrontendUrl } from '../config/email';
+import { sendRendered } from '../config/email';
+import { env } from '../config/env';
+import { agentNotificationEmail, APP_PATHS, buildFromAddress, webUrl } from '../emails';
+import { emailLocale } from '../emails/parts';
+import { getStrings } from '../emails/strings';
+import { getOrgOwnerLanguage } from './email-language.service';
 import { redis } from '../config/redis';
-import { escapeHtml, escapeHtmlWithBreaks, sanitizeDisplayName, stripLineBreaks } from '../utils/html';
+import { escapeHtmlWithBreaks, stripLineBreaks } from '../utils/html';
 
 // ── Rate limits ───────────────────────────────────────────────────────────────
 
@@ -175,7 +180,10 @@ export async function handleSendEmailNotification(
     };
   }
 
-  // 5. Fetch conversation context for additional placeholders
+  // 5. Fetch conversation context for additional placeholders. The footer and the date go in the
+  // owner's language; the time zone stays fixed (pending: the calendar's or the organization's).
+  const lang = await getOrgOwnerLanguage(context.organizationId);
+  const strings = getStrings(lang).agentNotification;
   let conversationUrl = '';
   let contactName = '';
   let agentName = '';
@@ -191,9 +199,9 @@ export async function handleSendEmailNotification(
        WHERE c.id = $1`,
       [conversationId]
     );
-    contactName = convData.rows[0]?.contact_name ?? 'Unknown contact';
+    contactName = convData.rows[0]?.contact_name ?? strings.unknownContact;
     agentName = convData.rows[0]?.agent_name ?? 'Agent';
-    conversationUrl = `${getFrontendUrl()}/dashboard/conversations/${conversationId}`;
+    conversationUrl = webUrl(APP_PATHS.conversation(conversationId));
   } catch (err) {
     console.warn('[email-notif] Failed to fetch conversation context:', err);
   }
@@ -204,48 +212,29 @@ export async function handleSendEmailNotification(
     contact_name: contactName,
     agent_name: agentName,
     conversation_url: conversationUrl,
-    timestamp: new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' }),
+    timestamp: new Date().toLocaleString(emailLocale(lang), { timeZone: 'America/Bogota' }),
   };
 
   // 7. Render subject and body
   const renderedSubject = stripLineBreaks(renderTemplate(config.subject, placeholders, 'subject'));
   const renderedBody = renderTemplate(config.bodyTemplate, placeholders, 'body');
 
-  // 8. Build the full HTML email using the standard GenSmart template
-  const fullHtml = emailTemplate(`
-    <h2 style="margin:0 0 16px;color:#1A1A1A;font-family:'Inter',sans-serif;">${escapeHtml(renderedSubject)}</h2>
-    <div style="color:#374151;font-size:14px;line-height:1.6;font-family:'Inter',sans-serif;">
-      ${renderedBody}
-    </div>
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #E5E0DB;">
-      <p style="color:#6B7280;font-size:12px;margin:0 0 8px;">
-        This notification was sent automatically by your GenSmart agent <strong>${escapeHtml(agentName)}</strong>.
-      </p>
-      ${
-        conversationUrl
-          ? `<a href="${conversationUrl}" style="display:inline-block;background:#25D366;color:#ffffff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;font-size:13px;">
-               View conversation in GenSmart
-             </a>`
-          : ''
-      }
-    </div>
-  `);
+  // 8. Wrap it in the GenSmart template (the body HTML is the organization's, values already escaped)
+  const email = agentNotificationEmail(
+    { subject: renderedSubject, bodyHtml: renderedBody, agentName, conversationUrl: conversationUrl || null },
+    lang
+  );
 
   // 9. Send via Nodemailer/SMTP
   try {
-    const safeFromName = config.fromName ? sanitizeDisplayName(config.fromName) : '';
-    const fromAddress = safeFromName
-      ? `"${safeFromName}" <${process.env['SMTP_FROM'] ?? 'noreply@gensmart.co'}>`
-      : undefined;
+    // SMTP_FROM may already carry a name ("GenSmart <noreply@...>"): only its address is reused
+    const fromAddress = config.fromName ? buildFromAddress(config.fromName, env.SMTP_FROM) : undefined;
     // Only well-formed addresses are used; anything else is dropped
     const ccList = (config.ccEmails ?? []).filter((e) => typeof e === 'string' && EMAIL_REGEX.test(e.trim())).map((e) => e.trim());
     const replyTo = config.replyTo && EMAIL_REGEX.test(config.replyTo.trim()) ? config.replyTo.trim() : undefined;
 
-    const result = await sendEmail({
-      to: config.recipientEmail,
+    const result = await sendRendered(config.recipientEmail, email, {
       cc: ccList.length > 0 ? ccList : undefined,
-      subject: renderedSubject,
-      html: fullHtml,
       from: fromAddress,
       replyTo,
     });

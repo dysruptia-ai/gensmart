@@ -36,13 +36,13 @@ export type DocsFeedbackResult =
   | { status: 400; body: { error: { message: string; code: 'VALIDATION_ERROR' } } };
 
 function row(label: string, value: string): string {
-  return `<tr><td style="padding: 8px 0; color: #6B7280; width: 100px;">${label}</td><td style="padding: 8px 0; color: #1A1A1A;">${value}</td></tr>`;
+  return `<tr><td style="padding: 8px 0; color: #4b5753; width: 100px;">${label}</td><td style="padding: 8px 0; color: #0c1014;">${value}</td></tr>`;
 }
 
 export function buildDocsFeedbackEmail(data: DocsFeedbackInput): { subject: string; content: string } {
   const verdict = data.helpful ? 'Helpful' : 'Not helpful';
   const content = `
-    <h2 style="color: #1A1A1A; font-size: 18px; margin: 0 0 16px;">Docs feedback: ${verdict}</h2>
+    <h2 style="color: #0c1014; font-size: 18px; margin: 0 0 16px;">Docs feedback: ${verdict}</h2>
     <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
       ${row('Guide', escapeHtml(data.page))}
       ${row('Language', escapeHtml(data.language))}
@@ -51,9 +51,9 @@ export function buildDocsFeedbackEmail(data: DocsFeedbackInput): { subject: stri
     </table>
     ${
       data.comment
-        ? `<div style="margin-top: 16px; padding: 16px; background: #F5F0EB; border-radius: 8px;">
-      <p style="color: #6B7280; font-size: 12px; margin: 0 0 4px;">Comment</p>
-      <p style="color: #1A1A1A; font-size: 14px; margin: 0; white-space: pre-wrap;">${escapeHtml(data.comment)}</p>
+        ? `<div style="margin-top: 16px; padding: 16px; background: #eef2f0; border-radius: 8px;">
+      <div style="color: #4b5753; font-size: 12px; margin: 0 0 4px;">Comment</div>
+      <p style="color: #0c1014; font-size: 14px; margin: 0; white-space: pre-wrap;">${escapeHtml(data.comment)}</p>
     </div>`
         : ''
     }

@@ -1,41 +1,22 @@
+/**
+ * Transporte SMTP, `sendEmail` y funciones finas que arman cada correo con `emails/` y lo mandan.
+ * El HTML y los textos viven en `src/emails/`.
+ */
 import nodemailer from 'nodemailer';
 import { env } from './env';
-import { escapeHtml, stripLineBreaks } from '../utils/html';
-
-interface UserInfo {
-  name: string;
-  email: string;
-}
-
-export function getFrontendUrl(): string {
-  if (env.API_URL.includes('api.gensmart.co')) {
-    return 'https://www.gensmart.co';
-  }
-  return env.API_URL.replace(':4000', ':3000');
-}
-
-const FRONTEND_URL = getFrontendUrl();
-
-export function emailTemplate(content: string): string {
-  return `
-    <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; border-radius: 12px; overflow: hidden;">
-      <div style="background: #FFFFFF; padding: 24px 32px; border-bottom: 3px solid #25D366; text-align: center;">
-        <a href="${FRONTEND_URL}" style="text-decoration: none;">
-          <img src="${FRONTEND_URL}/email/gensmart-logo.png" alt="GenSmart" style="height: 32px; width: auto; display: block; margin: 0 auto;" />
-        </a>
-      </div>
-      <div style="padding: 32px;">
-        ${content}
-      </div>
-      <div style="padding: 16px 32px; text-align: center; border-top: 1px solid #E5E0DB;">
-        <p style="color: #9CA3AF; font-size: 12px; margin: 0;">
-          &copy; 2026 Dysruptia LLC. All rights reserved.<br/>
-          <a href="${FRONTEND_URL}" style="color: #9CA3AF;">www.gensmart.co</a>
-        </p>
-      </div>
-    </div>
-  `;
-}
+import {
+  accountLinkedEmail,
+  htmlToText,
+  invitationEmail,
+  orgAccessEmail,
+  passwordResetEmail,
+  toEmailLang,
+  verifyEmail,
+  welcomeEmail,
+  type EmailRecipient,
+  type RenderedEmail,
+} from '../emails';
+import { displayName } from '../emails/parts';
 
 const transporter = nodemailer.createTransport({
   host: env.SMTP_HOST || 'localhost',
@@ -50,6 +31,7 @@ export async function sendEmail({
   to,
   subject,
   html,
+  text,
   cc,
   from,
   replyTo,
@@ -57,12 +39,14 @@ export async function sendEmail({
   to: string;
   subject: string;
   html: string;
+  /** Versión en texto plano. Si falta, se saca del HTML: siempre se manda. */
+  text?: string;
   cc?: string | string[];
   from?: string;
   replyTo?: string;
 }): Promise<{ messageId: string | null }> {
   if (!env.SMTP_HOST) {
-    console.log(`[Email] To: ${to} | Subject: ${subject} (SMTP not configured — skipping send)`);
+    console.log(`[Email] To: ${to} | Subject: ${subject} (SMTP not configured, skipping send)`);
     return { messageId: null };
   }
   const info = await transporter.sendMail({
@@ -72,172 +56,62 @@ export async function sendEmail({
     replyTo,
     subject,
     html,
+    text: text ?? htmlToText(html),
   });
   return { messageId: (info.messageId as string | undefined) ?? null };
 }
 
-export async function sendWelcomeEmail(user: UserInfo): Promise<void> {
-  await sendEmail({
-    to: user.email,
-    subject: 'Welcome to GenSmart!',
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Welcome, ${escapeHtml(user.name)}!</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Your GenSmart account is ready. Start building AI agents in minutes.</p>
-      <p style="margin-top: 24px;">
-        <a href="${FRONTEND_URL}/dashboard" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Go to Dashboard</a>
-      </p>
-    `),
-  });
+/** Manda un correo ya armado por `emails/`. */
+export function sendRendered(
+  to: string,
+  email: RenderedEmail,
+  extra: { cc?: string | string[]; from?: string; replyTo?: string } = {}
+): Promise<{ messageId: string | null }> {
+  return sendEmail({ to, subject: email.subject, html: email.html, text: email.text, ...extra });
 }
 
-export async function sendVerificationEmail(user: UserInfo, token: string): Promise<void> {
-  const verifyUrl = `${FRONTEND_URL}/verify-email?token=${token}`;
-  await sendEmail({
-    to: user.email,
-    subject: 'Confirm your email — GenSmart',
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Confirm your email</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)},</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Click the button below to confirm your email address and finish setting up your GenSmart account. This link expires in 24 hours.</p>
-      <p style="margin-top: 24px;">
-        <a href="${verifyUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Confirm Email</a>
-      </p>
-      <p style="color: #6B7280; font-size: 14px; margin-top: 24px;">If you didn't create a GenSmart account, please ignore this email.</p>
-    `),
-  });
+function recipientParts(user: EmailRecipient): { name: string; lang: ReturnType<typeof toEmailLang> } {
+  return { name: displayName(user.name, user.email), lang: toEmailLang(user.language) };
 }
 
-/** Aviso de que se vinculó un proveedor externo (Google) a la cuenta. Plantilla actual; se rediseña con los correos. */
-export async function sendAccountLinkedEmail(user: UserInfo, providerLabel: string): Promise<void> {
-  const label = escapeHtml(providerLabel);
-  await sendEmail({
-    to: user.email,
-    subject: `We linked your ${stripLineBreaks(providerLabel)} account — GenSmart`,
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">We linked your ${label} account</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)},</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">You just signed in to GenSmart with ${label} using this email address, so we linked it to your account. From now on you can sign in with ${label} or with your password.</p>
-      <p style="color: #6B7280; font-size: 14px; margin-top: 24px;">If this wasn't you, reset your password right away and contact our support team.</p>
-    `),
-  });
+export async function sendWelcomeEmail(user: EmailRecipient & { organizationName?: string | null }): Promise<void> {
+  const { name, lang } = recipientParts(user);
+  await sendRendered(user.email, welcomeEmail({ name, organizationName: user.organizationName }, lang));
 }
 
-export async function sendPasswordResetEmail(user: UserInfo, token: string): Promise<void> {
-  const resetUrl = `${FRONTEND_URL}/reset-password/${token}`;
-  await sendEmail({
-    to: user.email,
-    subject: 'Reset your GenSmart password',
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Password Reset</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)},</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Click the button below to reset your password. This link expires in 1 hour.</p>
-      <p style="margin-top: 24px;">
-        <a href="${resetUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Reset Password</a>
-      </p>
-      <p style="color: #6B7280; font-size: 14px; margin-top: 24px;">If you didn't request this, please ignore this email.</p>
-    `),
-  });
+export async function sendVerificationEmail(user: EmailRecipient, token: string): Promise<void> {
+  const { name, lang } = recipientParts(user);
+  await sendRendered(user.email, verifyEmail({ name, token }, lang));
 }
 
-export async function sendInvitationEmail(
-  inviterName: string,
-  inviteeEmail: string,
-  orgName: string,
-  setupToken: string
-): Promise<void> {
-  const setupUrl = `${FRONTEND_URL}/reset-password/${setupToken}`;
-  await sendEmail({
-    to: inviteeEmail,
-    subject: `You've been invited to join ${stripLineBreaks(orgName)} on GenSmart`,
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">You're Invited!</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">${escapeHtml(inviterName)} has invited you to join <strong>${escapeHtml(orgName)}</strong> on GenSmart.</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Click the button below to set up your account:</p>
-      <p style="margin-top: 24px;">
-        <a href="${setupUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Accept Invitation</a>
-      </p>
-      <p style="color: #6B7280; font-size: 14px; margin-top: 24px;">This link expires in 24 hours.</p>
-    `),
-  });
+/** Aviso de que se vinculó un proveedor externo (Google) a la cuenta. */
+export async function sendAccountLinkedEmail(user: EmailRecipient, providerLabel: string): Promise<void> {
+  const { name, lang } = recipientParts(user);
+  await sendRendered(user.email, accountLinkedEmail({ name, provider: providerLabel }, lang));
 }
 
-export async function sendOrgAccessEmail(
-  user: UserInfo,
-  storeName: string,
-  token: string
-): Promise<void> {
-  const accessUrl = `${FRONTEND_URL}/org-access/${token}`;
-  await sendEmail({
-    to: user.email,
-    subject: `Tu agente de ventas para ${stripLineBreaks(storeName)} ya está listo`,
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Tu agente de ventas para ${escapeHtml(storeName)} ya está listo</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hola,</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Tu agente de ventas con IA para <strong>${escapeHtml(storeName)}</strong> ya está activo y conectado a tu catálogo.</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">A partir de ahora, cuando un cliente le escriba, el agente va a poder buscar tus productos, resolver dudas y ayudarlo a completar la compra con el link de pago de tu propia tienda.</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6; margin-top: 24px;">Para entrar a tu panel y ver conversaciones, ajustar el agente o revisar estadísticas:</p>
-      <p style="margin-top: 16px;">
-        <a href="${accessUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Entrar a mi panel de GenSmart</a>
-      </p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6; margin-top: 24px;">Cualquier duda, respondé este correo.</p>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">— El equipo de GenSmart</p>
-      <p style="color: #9CA3AF; font-size: 13px; margin-top: 24px;">Este link es personal, expira en 24 horas y solo se puede usar una vez.</p>
-    `),
-  });
+export async function sendPasswordResetEmail(user: EmailRecipient, token: string): Promise<void> {
+  const { name, lang } = recipientParts(user);
+  await sendRendered(user.email, passwordResetEmail({ name, token }, lang));
 }
 
-export async function sendHighScoreLeadEmail(
-  user: UserInfo,
-  leadInfo: { contactName: string; score: number; agentName: string; conversationUrl: string }
-): Promise<void> {
-  const { contactName, score, agentName, conversationUrl } = leadInfo;
-  await sendEmail({
-    to: user.email,
-    subject: `High-Score Lead: ${stripLineBreaks(contactName)} scored ${score}/10`,
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">High-Score Lead Alert</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)}, a high-value lead has been identified by your agent.</p>
-      <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin: 24px 0;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Lead</td><td style="color: #1A1A1A; font-weight: 600; padding: 4px 0;">${escapeHtml(contactName)}</td></tr>
-          <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Score</td><td style="padding: 4px 0;"><span style="background: #25D366; color: white; font-weight: 700; padding: 2px 10px; border-radius: 12px;">${score}/10</span></td></tr>
-          <tr><td style="color: #6B7280; font-size: 14px; padding: 4px 0;">Agent</td><td style="color: #1A1A1A; padding: 4px 0;">${escapeHtml(agentName)}</td></tr>
-        </table>
-      </div>
-      <p style="margin-top: 24px;">
-        <a href="${conversationUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Lead</a>
-      </p>
-    `),
-  });
+export async function sendInvitationEmail(invite: {
+  inviterName: string | null | undefined;
+  inviteeEmail: string;
+  organizationName: string;
+  token: string;
+  /** Idioma guardado del invitado (`users.language`). */
+  language?: string | null;
+}): Promise<void> {
+  await sendRendered(
+    invite.inviteeEmail,
+    invitationEmail(
+      { inviterName: invite.inviterName, organizationName: invite.organizationName, token: invite.token },
+      toEmailLang(invite.language)
+    )
+  );
 }
 
-export async function sendPlanLimitEmail(
-  user: UserInfo,
-  limitInfo: { percent: number; used: number; limit: number; planName: string }
-): Promise<void> {
-  const { percent, used, limit, planName } = limitInfo;
-  const upgradeUrl = `${FRONTEND_URL}/dashboard/billing`;
-  const barColor = percent >= 100 ? '#EF4444' : '#F59E0B';
-
-  await sendEmail({
-    to: user.email,
-    subject: `Plan Usage Alert: ${percent}% of messages used`,
-    html: emailTemplate(`
-      <h1 style="color: #1A1A1A; font-size: 24px; margin-bottom: 8px;">Usage Alert</h1>
-      <p style="color: #6B7280; font-size: 16px; line-height: 1.6;">Hi ${escapeHtml(user.name)}, you've used ${percent}% of your ${escapeHtml(planName)} plan messages this month.</p>
-      <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin: 24px 0;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-          <span style="color: #1A1A1A; font-weight: 600;">${used.toLocaleString()} messages used</span>
-          <span style="color: #6B7280;">of ${limit.toLocaleString()}</span>
-        </div>
-        <div style="background: #E5E0DB; border-radius: 4px; height: 10px; overflow: hidden;">
-          <div style="background: ${barColor}; height: 10px; width: ${Math.min(percent, 100)}%;"></div>
-        </div>
-        <p style="color: #6B7280; font-size: 14px; margin: 8px 0 0;">${percent}% used</p>
-      </div>
-      <p style="margin-top: 24px;">
-        <a href="${upgradeUrl}" style="display: inline-block; background: #25D366; color: #FFFFFF; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">Upgrade Plan</a>
-      </p>
-    `),
-  });
+export async function sendOrgAccessEmail(user: EmailRecipient, storeName: string, token: string): Promise<void> {
+  await sendRendered(user.email, orgAccessEmail({ storeName, token }, toEmailLang(user.language)));
 }

@@ -14,3 +14,6 @@ uploads/
 env.prod.txt
 /docs/
 .claude/
+
+# Vista previa local de los correos (npm run emails:preview --workspace=apps/api)
+apps/web/public/dev-emails/

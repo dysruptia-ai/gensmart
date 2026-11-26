@@ -93,7 +93,6 @@ import {
   type CTWAReferral,
 } from '../services/agent-config.service';
 import { createAppointment } from '../services/appointment.service';
-import { escapeHtml, escapeHtmlWithBreaks, stripLineBreaks } from '../utils/html';
 import {
   BOOKING_LIMITS,
   bookingCalendarKey,
@@ -581,6 +580,11 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
               service: { type: 'string', description: 'Service or appointment type' },
               name: { type: 'string', description: 'Customer name' },
               phone: { type: 'string', description: 'Customer phone number' },
+              customer_language: {
+                type: 'string',
+                enum: ['es', 'en'],
+                description: 'Language the customer is writing in: "es" (Spanish) or "en" (English). Used for the confirmation email sent to the customer.',
+              },
               ...(hasMultipleCalendars ? {
                 calendar_id: { type: 'string', description: 'ID of the specific calendar to book on. Determine the correct calendar based on the conversation context and your instructions.' },
               } : {}),
@@ -1552,6 +1556,13 @@ async function executeTool(
         endTime,
       });
 
+      // Emails: the new-appointment notice goes in the owner's language; the confirmation in the
+      // customer's (customer_language from the model), or the owner's when it is missing
+      const { getOrgOwnerLanguage } = await import('../services/email-language.service');
+      const ownerLanguage = await getOrgOwnerLanguage(organizationId);
+      const customerLanguage =
+        args['customer_language'] === 'es' || args['customer_language'] === 'en' ? args['customer_language'] : ownerLanguage;
+
       // Send email notification to calendar owner
       try {
         const calNotifResult = await query<{ notification_email: string | null; name: string }>(
@@ -1561,21 +1572,22 @@ async function executeTool(
         const notifEmail = calNotifResult.rows[0]?.notification_email;
         const calName = calNotifResult.rows[0]?.name || 'Calendar';
         if (notifEmail) {
-          const { sendEmail, emailTemplate, getFrontendUrl } = await import('../config/email');
-          await sendEmail({
-            to: notifEmail,
-            subject: stripLineBreaks(`New Appointment: ${personName} — ${date} at ${time}`),
-            html: emailTemplate(
-              `<h2 style="margin:0 0 16px">New Appointment Booked</h2>
-               <p><strong>Calendar:</strong> ${escapeHtml(calName)}</p>
-               <p><strong>Client:</strong> ${escapeHtml(personName)}</p>
-               <p><strong>Date:</strong> ${escapeHtml(date)}</p>
-               <p><strong>Time:</strong> ${escapeHtml(time)}</p>
-               <p><strong>Phone:</strong> ${escapeHtml(String(args['phone'] ?? 'Not provided'))}</p>
-               ${meetingSummary ? `<p style="margin-top:12px;padding:12px;background:#f0fdf4;border-radius:8px;border-left:3px solid #25D366;font-size:14px;color:#1A1A1A;line-height:1.5;"><strong>Meeting topic:</strong><br/>${escapeHtmlWithBreaks(meetingSummary)}</p>` : ''}
-               <p style="margin-top:16px"><a href="${getFrontendUrl()}/dashboard/calendar" style="background:#25D366;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;display:inline-block">View Calendar</a></p>`
-            ),
-          });
+          const { sendRendered } = await import('../config/email');
+          const { appointmentNewEmail } = await import('../emails');
+          await sendRendered(
+            notifEmail,
+            appointmentNewEmail(
+              {
+                personName,
+                date,
+                time,
+                calendarName: calName,
+                phone: args['phone'] ? String(args['phone']) : null,
+                summary: meetingSummary || null,
+              },
+              ownerLanguage
+            )
+          );
         }
       } catch (emailErr) {
         console.error('[worker] Failed to send appointment notification email:', emailErr);
@@ -1603,55 +1615,34 @@ async function executeTool(
         }
 
         if (contactEmail && sendConfirmation) {
-          const { sendEmail, emailTemplate } = await import('../config/email');
+          const { sendRendered } = await import('../config/email');
+          const { appointmentConfirmedEmail } = await import('../emails');
 
-          const calNameResult = await query<{ name: string }>(
-            'SELECT name FROM calendars WHERE id = $1 AND organization_id = $2',
+          const namesResult = await query<{ calendar_name: string | null; org_name: string | null }>(
+            `SELECT c.name AS calendar_name, o.name AS org_name
+             FROM calendars c JOIN organizations o ON o.id = c.organization_id
+             WHERE c.id = $1 AND c.organization_id = $2`,
             [calendarId, organizationId]
           );
-          const calName = calNameResult.rows[0]?.name || 'Calendar';
-          const summaryText = meetingSummary || 'Your appointment has been scheduled successfully.';
+          const calName = namesResult.rows[0]?.calendar_name || 'Calendar';
+          const businessName = namesResult.rows[0]?.org_name || calName;
 
-          // Generate Google Calendar link
-          const gcalStart = new Date(startTime).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-          const gcalEnd = new Date(endTime).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-          const gcalTitle = encodeURIComponent(`Appointment — ${contactName}`);
-          const gcalDetails = encodeURIComponent(summaryText);
-          const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalTitle}&dates=${gcalStart}/${gcalEnd}&details=${gcalDetails}`;
-
-          await sendEmail({
-            to: contactEmail,
-            subject: stripLineBreaks(`Your Appointment is Confirmed — ${date} at ${time}`),
-            html: emailTemplate(
-              `<h2 style="margin:0 0 16px;color:#1A1A1A;">Your Appointment is Confirmed! ✓</h2>
-               <p style="color:#6B7280;font-size:15px;line-height:1.6;">Hi ${escapeHtml(contactName)}, your appointment has been booked. Here are the details:</p>
-               <div style="background:#FFFFFF;border:1px solid #E5E0DB;border-radius:8px;padding:20px;margin:20px 0;">
-                 <table style="width:100%;border-collapse:collapse;">
-                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;width:80px;">Date</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${escapeHtml(date)}</td></tr>
-                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Time</td><td style="color:#1A1A1A;font-weight:600;padding:6px 0;">${escapeHtml(time)}</td></tr>
-                   <tr><td style="color:#6B7280;font-size:14px;padding:6px 0;">Calendar</td><td style="color:#1A1A1A;padding:6px 0;">${escapeHtml(calName)}</td></tr>
-                 </table>
-               </div>
-               <div style="text-align:center;margin:20px 0;">
-                 <a href="${gcalUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;background:#25D366;color:#ffffff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
-                   &#128197; Add to Google Calendar
-                 </a>
-               </div>
-               <div style="background:#f0fdf4;border-radius:8px;padding:16px;margin:16px 0;border-left:3px solid #25D366;">
-                 <p style="margin:0 0 8px;font-weight:600;color:#1A1A1A;font-size:14px;">What we'll discuss:</p>
-                 <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">${escapeHtmlWithBreaks(summaryText)}</p>
-               </div>
-               <div style="background:#FAF8F5;border-radius:8px;padding:16px;margin:16px 0;">
-                 <p style="margin:0 0 10px;font-weight:600;color:#1A1A1A;font-size:14px;">Before your appointment:</p>
-                 <table style="border-collapse:collapse;">
-                   <tr><td style="padding:4px 8px 4px 0;color:#25D366;font-size:16px;">✓</td><td style="padding:4px 0;color:#374151;font-size:14px;">Note down any questions you want to ask</td></tr>
-                   <tr><td style="padding:4px 8px 4px 0;color:#25D366;font-size:16px;">✓</td><td style="padding:4px 0;color:#374151;font-size:14px;">Have relevant documents or information ready</td></tr>
-                   <tr><td style="padding:4px 8px 4px 0;color:#25D366;font-size:16px;">✓</td><td style="padding:4px 0;color:#374151;font-size:14px;">Be available a few minutes before the scheduled time</td></tr>
-                 </table>
-               </div>
-               <p style="color:#9CA3AF;font-size:12px;margin-top:20px;">If you need to reschedule, please contact us directly.</p>`
-            ),
-          });
+          await sendRendered(
+            contactEmail,
+            appointmentConfirmedEmail(
+              {
+                contactName,
+                businessName,
+                calendarName: calName,
+                date,
+                time,
+                startTime: new Date(startTime).toISOString(),
+                endTime: new Date(endTime).toISOString(),
+                summary: meetingSummary || null,
+              },
+              customerLanguage
+            )
+          );
           console.log('[worker] Confirmation email sent to end user');
         }
       } catch (userEmailErr) {

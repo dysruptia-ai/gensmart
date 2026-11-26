@@ -188,12 +188,13 @@ export async function inviteMember(
   }
 
   // After the COMMIT, and without blocking the request
-  sendInvitationEmail(
-    inviter?.name ?? 'A teammate',
-    data.email,
-    org?.name ?? 'GenSmart',
-    token
-  ).catch((err) => console.error('[Email] Failed to send invitation:', err));
+  sendInvitationEmail({
+    inviterName: inviter?.name,
+    inviteeEmail: data.email,
+    organizationName: org?.name ?? 'GenSmart',
+    token,
+    language: data.language,
+  }).catch((err) => console.error('[Email] Failed to send invitation:', err));
 }
 
 export async function updateMemberRole(

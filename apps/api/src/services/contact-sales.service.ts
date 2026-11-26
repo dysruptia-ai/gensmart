@@ -59,24 +59,24 @@ export type ContactSalesResult =
   | { status: 400; body: { error: { message: string; code: 'VALIDATION_ERROR' | 'CAPTCHA_FAILED' } } };
 
 function row(label: string, value: string): string {
-  return `<tr><td style="padding: 8px 0; color: #6B7280; width: 100px;">${label}</td><td style="padding: 8px 0; color: #1A1A1A;">${value}</td></tr>`;
+  return `<tr><td style="padding: 8px 0; color: #4b5753; width: 100px;">${label}</td><td style="padding: 8px 0; color: #0c1014;">${value}</td></tr>`;
 }
 
 export function buildContactEmail(data: ContactSalesInput): { subject: string; content: string } {
   const title = CONTACT_SUBJECTS[data.type];
   const content = `
-    <h2 style="color: #1A1A1A; font-size: 18px; margin: 0 0 16px;">${escapeHtml(title)}</h2>
+    <h2 style="color: #0c1014; font-size: 18px; margin: 0 0 16px;">${escapeHtml(title)}</h2>
     <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
       ${row('Name', `<strong>${escapeHtml(data.name)}</strong>`)}
-      ${row('Email', `<a href="mailto:${escapeHtml(data.email)}" style="color: #25D366;">${escapeHtml(data.email)}</a>`)}
+      ${row('Email', `<a href="mailto:${escapeHtml(data.email)}" style="color: #0b6b36;">${escapeHtml(data.email)}</a>`)}
       ${data.company ? row('Company', escapeHtml(data.company)) : ''}
       ${data.whatsapp ? row('WhatsApp', escapeHtml(data.whatsapp)) : ''}
       ${row('Type', escapeHtml(data.type))}
       ${data.language ? row('Language', escapeHtml(data.language)) : ''}
     </table>
-    <div style="margin-top: 16px; padding: 16px; background: #F5F0EB; border-radius: 8px;">
-      <p style="color: #6B7280; font-size: 12px; margin: 0 0 4px;">Message</p>
-      <p style="color: #1A1A1A; font-size: 14px; margin: 0; white-space: pre-wrap;">${escapeHtml(data.message)}</p>
+    <div style="margin-top: 16px; padding: 16px; background: #eef2f0; border-radius: 8px;">
+      <div style="color: #4b5753; font-size: 12px; margin: 0 0 4px;">Message</div>
+      <p style="color: #0c1014; font-size: 14px; margin: 0; white-space: pre-wrap;">${escapeHtml(data.message)}</p>
     </div>
   `;
   return { subject: `GenSmart ${title} from ${stripLineBreaks(data.name)}`, content };

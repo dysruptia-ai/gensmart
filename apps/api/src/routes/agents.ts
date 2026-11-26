@@ -1167,31 +1167,20 @@ router.post(
         }
       }
 
-      const { emailTemplate: emailTmpl, sendEmail: sendEmailFn } = await import('../config/email');
+      const { sendRendered } = await import('../config/email');
+      const { agentNotificationTestEmail, buildFromAddress } = await import('../emails');
+      const { getOrgOwnerLanguage } = await import('../services/email-language.service');
+      const { env } = await import('../config/env');
 
-      const fullHtml = emailTmpl(`
-        <h2 style="margin:0 0 16px;color:#1A1A1A;">${cfg.subject} (TEST)</h2>
-        <div style="background:#fff3cd;border-radius:8px;padding:16px;margin:16px 0;border-left:4px solid #f59e0b;">
-          <p style="margin:0;color:#92400e;font-size:13px;">
-            <strong>This is a test email</strong> sent from the GenSmart dashboard to validate your email notification tool configuration.
-            Real notifications will be triggered by your AI agent during conversations.
-          </p>
-        </div>
-        <p style="color:#6B7280;font-size:14px;">Tool name: <strong>${tool.name}</strong></p>
-        <p style="color:#6B7280;font-size:14px;">Recipient: <strong>${cfg.recipientEmail}</strong></p>
-        <p style="color:#6B7280;font-size:14px;">Dummy parameters: <code>${JSON.stringify(dummyArgs)}</code></p>
-      `);
-
-      const fromAddress = cfg.fromName
-        ? `${cfg.fromName} <${process.env['SMTP_FROM'] ?? 'noreply@gensmart.co'}>`
-        : undefined;
+      const testEmail = agentNotificationTestEmail(
+        { subject: cfg.subject, toolName: tool.name, recipient: cfg.recipientEmail, sampleParams: dummyArgs },
+        await getOrgOwnerLanguage(req.org!.id)
+      );
+      const fromAddress = cfg.fromName ? buildFromAddress(cfg.fromName, env.SMTP_FROM) : undefined;
 
       try {
-        await sendEmailFn({
-          to: cfg.recipientEmail,
+        await sendRendered(cfg.recipientEmail, testEmail, {
           cc: cfg.ccEmails,
-          subject: `[TEST] ${cfg.subject}`,
-          html: fullHtml,
           from: fromAddress,
           replyTo: cfg.replyTo,
         });

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Router, Request, Response, NextFunction } from 'express';
-import { sendEmail, emailTemplate } from '../config/email';
+import { sendEmail } from '../config/email';
+import { wrapInternalHtml } from '../emails';
 import { rateLimiter } from '../middleware/rateLimiter';
 import { handleDocsFeedback } from '../services/docs-feedback.service';
 
@@ -22,7 +23,7 @@ const docsFeedbackLimiter = rateLimiter({
 // POST /api/docs-feedback — public, no auth required
 router.post('/', docsFeedbackLimiter, async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const result = await handleDocsFeedback(req.body, { sendEmail, wrapHtml: emailTemplate });
+    const result = await handleDocsFeedback(req.body, { sendEmail, wrapHtml: wrapInternalHtml });
     res.status(result.status).json(result.body);
   } catch (err) {
     next(err);

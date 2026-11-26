@@ -220,14 +220,18 @@ async function linkUser(
     await client.query('COMMIT');
 
     if (decision.notify) {
-      sendAccountLinkedEmail({ name: row.name, email: row.email }, provider.label).catch((err) =>
+      sendAccountLinkedEmail({ name: row.name, email: row.email, language: row.language }, provider.label).catch((err) =>
         console.error('[Email] Failed to send account-linked email:', err instanceof Error ? err.message : 'unknown')
       );
     }
     if (decision.markVerified) {
-      sendWelcomeEmail({ name: row.name, email: row.email }).catch((err) =>
-        console.error('[Email] Failed to send welcome email:', err instanceof Error ? err.message : 'unknown')
-      );
+      query<{ name: string }>('SELECT name FROM organizations WHERE id = $1', [row.organization_id])
+        .then((org) =>
+          sendWelcomeEmail({ name: row.name, email: row.email, language: row.language, organizationName: org.rows[0]?.name })
+        )
+        .catch((err) =>
+          console.error('[Email] Failed to send welcome email:', err instanceof Error ? err.message : 'unknown')
+        );
     }
     return row;
   } catch (err) {
@@ -369,7 +373,12 @@ export async function completeOAuthSignup(
   });
   await store.del(signupKey(input.token)).catch(() => undefined);
 
-  sendWelcomeEmail({ name: created.user.name, email: created.user.email }).catch((err) =>
+  sendWelcomeEmail({
+    name: created.user.name,
+    email: created.user.email,
+    language: created.user.language,
+    organizationName: created.org.name,
+  }).catch((err) =>
     console.error('[Email] Failed to send welcome email:', err instanceof Error ? err.message : 'unknown')
   );
 

@@ -1,8 +1,8 @@
 import { query } from '../config/database';
 import { getIO } from '../config/websocket';
-import { sendEmail } from '../config/email';
-import { env } from '../config/env';
-import { escapeHtml } from '../utils/html';
+import { sendRendered } from '../config/email';
+import { highScoreLeadEmail, orgSuspendedEmail, planLimitEmail, toEmailLang } from '../emails';
+import { displayName } from '../emails/parts';
 
 export interface Notification {
   id: string;
@@ -112,7 +112,7 @@ export async function createNotification(
     emitNotification(`user:${user.id}`, notif);
 
     if (doSendEmail) {
-      await sendNotificationEmail(user, type, title, message, data, user.language).catch((err) =>
+      await sendNotificationEmail(user, organizationId, type, data, user.language).catch((err) =>
         console.error('[notification] Failed to send email:', err)
       );
       await query(
@@ -140,153 +140,87 @@ function emitNotification(room: string, notif: Notification): void {
   }
 }
 
-const EMAIL_STRINGS = {
-  en: {
-    highScoreLead: {
-      subject: (score: string) => `High-Score Lead: Score ${score}/10`,
-      heading: 'High-Score Lead Alert',
-      greeting: (name: string) => `Hi ${name}, a new high-score lead has been detected.`,
-      contactId: (id: string) => `Contact ID: ${id}`,
-      cta: 'View Conversation',
-    },
-    planUsage100: {
-      subject: 'Message limit reached — Upgrade your plan',
-      heading: 'Message Limit Reached',
-      greeting: (name: string) => `Hi ${name}, your organization has used all available messages for this month.`,
-      used: (used: string, limit: string) => `${used} / ${limit} messages used`,
-      percent: '100% of your plan limit used',
-      body: 'Upgrade your plan or purchase add-on messages to continue processing conversations.',
-      cta: 'Upgrade Plan',
-    },
-    orgSuspended: {
-      subject: 'Your GenSmart subscription is paused',
-      heading: 'Subscription Paused',
-      greeting: (name: string) => `Hi ${name}, your organization's access to GenSmart has been paused.`,
-      reasonTrialExpired: 'Your trial period has ended.',
-      reasonCancelled: 'Your subscription was cancelled.',
-      body: 'Your agents have stopped responding to new messages. Reactivate your subscription to resume service — your plan and configuration are preserved.',
-      cta: 'Reactivate Subscription',
-    },
-  },
-  es: {
-    highScoreLead: {
-      subject: (score: string) => `Lead con alta puntuación: ${score}/10`,
-      heading: 'Alerta de lead con alta puntuación',
-      greeting: (name: string) => `Hola ${name}, se ha detectado un nuevo lead con alta puntuación.`,
-      contactId: (id: string) => `ID de contacto: ${id}`,
-      cta: 'Ver conversación',
-    },
-    planUsage100: {
-      subject: 'Límite de mensajes alcanzado — Actualiza tu plan',
-      heading: 'Límite de mensajes alcanzado',
-      greeting: (name: string) => `Hola ${name}, tu organización ha usado todos los mensajes disponibles este mes.`,
-      used: (used: string, limit: string) => `${used} / ${limit} mensajes usados`,
-      percent: '100% del límite de tu plan usado',
-      body: 'Actualiza tu plan o compra mensajes adicionales para seguir procesando conversaciones.',
-      cta: 'Actualizar plan',
-    },
-    orgSuspended: {
-      subject: 'Tu suscripción de GenSmart está en pausa',
-      heading: 'Suscripción en pausa',
-      greeting: (name: string) => `Hola ${name}, el acceso de tu organización a GenSmart ha sido pausado.`,
-      reasonTrialExpired: 'Tu período de prueba ha terminado.',
-      reasonCancelled: 'Tu suscripción fue cancelada.',
-      body: 'Tus agentes dejaron de responder nuevos mensajes. Reactiva tu suscripción para reanudar el servicio — tu plan y configuración se conservan.',
-      cta: 'Reactivar suscripción',
-    },
-  },
+/** Nombre legible del canal de una conversación, para el correo del lead. */
+const CHANNEL_LABELS: Record<string, { es: string; en: string }> = {
+  whatsapp: { es: 'WhatsApp', en: 'WhatsApp' },
+  web: { es: 'Sitio web', en: 'Website' },
+  email: { es: 'Correo', en: 'Email' },
+  instagram: { es: 'Instagram', en: 'Instagram' },
+  messenger: { es: 'Messenger', en: 'Messenger' },
+  telegram: { es: 'Telegram', en: 'Telegram' },
 };
+
+async function loadLeadContext(
+  organizationId: string,
+  contactId: string | undefined,
+  conversationId: string | undefined
+): Promise<{ contactName: string | null; agentName: string | null; channel: string | null }> {
+  const contact = contactId
+    ? await query<{ name: string | null }>('SELECT name FROM contacts WHERE id = $1 AND organization_id = $2', [
+        contactId,
+        organizationId,
+      ])
+    : null;
+  const conv = conversationId
+    ? await query<{ agent_name: string | null; channel: string | null }>(
+        `SELECT a.name AS agent_name, c.channel
+         FROM conversations c LEFT JOIN agents a ON a.id = c.agent_id
+         WHERE c.id = $1 AND c.organization_id = $2`,
+        [conversationId, organizationId]
+      )
+    : null;
+  return {
+    contactName: contact?.rows[0]?.name ?? null,
+    agentName: conv?.rows[0]?.agent_name ?? null,
+    channel: conv?.rows[0]?.channel ?? null,
+  };
+}
+
+async function loadOrgName(organizationId: string): Promise<string> {
+  const org = await query<{ name: string }>('SELECT name FROM organizations WHERE id = $1', [organizationId]);
+  return org.rows[0]?.name ?? 'GenSmart';
+}
 
 async function sendNotificationEmail(
   user: { name: string; email: string },
+  organizationId: string,
   type: string,
-  title: string,
-  _message: string,
   data: Record<string, unknown>,
-  language = 'en'
+  language: string
 ): Promise<void> {
-  const frontendUrl = env.API_URL.replace(':4000', ':3000');
-  const lang = language === 'es' ? 'es' : 'en';
-  const strings = EMAIL_STRINGS[lang];
+  const lang = toEmailLang(language);
+  const name = displayName(user.name, user.email);
 
   if (type === 'high_score_lead') {
-    const contactId = data['contactId'] as string | undefined;
-    const score = data['score'] as number | undefined;
-    const conversationId = data['conversationId'] as string | undefined;
-    const conversationUrl = conversationId
-      ? `${frontendUrl}/dashboard/conversations/${conversationId}`
-      : `${frontendUrl}/dashboard/contacts`;
-    const s = strings.highScoreLead;
-
-    await sendEmail({
-      to: user.email,
-      subject: s.subject(String(score ?? '?')),
-      html: `
-        <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; padding: 24px; border-radius: 12px;">
-          <h1 style="color: #1A1A1A; font-size: 22px; margin-bottom: 8px;">${s.heading}</h1>
-          <p style="color: #6B7280; margin-bottom: 24px;">${s.greeting(escapeHtml(user.name))}</p>
-          <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-              <span style="background: #25D366; color: white; font-size: 28px; font-weight: 700; padding: 8px 16px; border-radius: 8px;">${score ?? '?'}/10</span>
-              <div>
-                <p style="color: #1A1A1A; font-weight: 600; margin: 0;">${escapeHtml(title)}</p>
-              </div>
-            </div>
-            ${contactId ? `<p style="color: #6B7280; font-size: 14px; margin: 0;">${s.contactId(escapeHtml(contactId))}</p>` : ''}
-          </div>
-          <a href="${conversationUrl}" style="display: inline-block; background: #25D366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">${s.cta}</a>
-          <p style="color: #6B7280; font-size: 12px; margin-top: 24px;">GenSmart — AI Conversational Agents Platform</p>
-        </div>
-      `,
-    });
+    const contactId = typeof data['contactId'] === 'string' ? data['contactId'] : undefined;
+    const conversationId = typeof data['conversationId'] === 'string' ? data['conversationId'] : undefined;
+    const ctx = await loadLeadContext(organizationId, contactId, conversationId);
+    const channel = ctx.channel ? CHANNEL_LABELS[ctx.channel]?.[lang] ?? null : null;
+    await sendRendered(
+      user.email,
+      highScoreLeadEmail(
+        {
+          name,
+          score: typeof data['score'] === 'number' ? data['score'] : null,
+          contactName: ctx.contactName,
+          service: typeof data['service'] === 'string' ? data['service'] : null,
+          agentName: ctx.agentName,
+          channelLabel: channel,
+          conversationId,
+        },
+        lang
+      )
+    );
   } else if (type === 'plan_usage_100') {
-    const used = data['used'] as number | undefined;
-    const limit = data['limit'] as number | undefined;
-    const upgradeUrl = `${frontendUrl}/dashboard/billing`;
-    const s = strings.planUsage100;
-
-    await sendEmail({
-      to: user.email,
-      subject: s.subject,
-      html: `
-        <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; padding: 24px; border-radius: 12px;">
-          <h1 style="color: #EF4444; font-size: 22px; margin-bottom: 8px;">${s.heading}</h1>
-          <p style="color: #6B7280; margin-bottom: 24px;">${s.greeting(escapeHtml(user.name))}</p>
-          <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-            <p style="color: #1A1A1A; font-weight: 600; margin: 0 0 8px;">${s.used(String(used ?? '?'), String(limit ?? '?'))}</p>
-            <div style="background: #E5E0DB; border-radius: 4px; height: 8px; overflow: hidden;">
-              <div style="background: #EF4444; height: 8px; width: 100%;"></div>
-            </div>
-            <p style="color: #6B7280; font-size: 14px; margin: 8px 0 0;">${s.percent}</p>
-          </div>
-          <p style="color: #6B7280; margin-bottom: 16px;">${s.body}</p>
-          <a href="${upgradeUrl}" style="display: inline-block; background: #25D366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">${s.cta}</a>
-          <p style="color: #6B7280; font-size: 12px; margin-top: 24px;">GenSmart — AI Conversational Agents Platform</p>
-        </div>
-      `,
-    });
+    const used = typeof data['used'] === 'number' ? data['used'] : null;
+    const limit = typeof data['limit'] === 'number' ? data['limit'] : null;
+    await sendRendered(user.email, planLimitEmail({ name, organizationName: await loadOrgName(organizationId), used, limit }, lang));
   } else if (type === 'org_suspended') {
-    const reason = data['reason'] as string | undefined;
-    const billingUrl = `${frontendUrl}/dashboard/billing`;
-    const s = strings.orgSuspended;
-    const reasonText = reason === 'trial_expired' ? s.reasonTrialExpired : s.reasonCancelled;
-
-    await sendEmail({
-      to: user.email,
-      subject: s.subject,
-      html: `
-        <div style="font-family: Inter, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #FAF8F5; padding: 24px; border-radius: 12px;">
-          <h1 style="color: #EF4444; font-size: 22px; margin-bottom: 8px;">${s.heading}</h1>
-          <p style="color: #6B7280; margin-bottom: 8px;">${s.greeting(escapeHtml(user.name))}</p>
-          <p style="color: #6B7280; margin-bottom: 24px;">${reasonText}</p>
-          <div style="background: #FFFFFF; border: 1px solid #E5E0DB; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-            <p style="color: #1A1A1A; margin: 0;">${s.body}</p>
-          </div>
-          <a href="${billingUrl}" style="display: inline-block; background: #25D366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">${s.cta}</a>
-          <p style="color: #6B7280; font-size: 12px; margin-top: 24px;">GenSmart — AI Conversational Agents Platform</p>
-        </div>
-      `,
-    });
+    const reason = data['reason'] === 'trial_expired' ? 'trial_expired' : 'subscription_cancelled';
+    await sendRendered(
+      user.email,
+      orgSuspendedEmail({ name, organizationName: await loadOrgName(organizationId), reason }, lang)
+    );
   }
 }
 
