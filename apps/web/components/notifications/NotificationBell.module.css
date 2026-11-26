@@ -1,5 +1,7 @@
+/* Campana del pie del riel del shell (tokens de .gsApp). La lista sigue con su estilo de hoy. */
 .container {
   position: relative;
+  flex: none;
 }
 
 .bell {
@@ -7,38 +9,45 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  background: none;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  width: 30px;
+  height: 30px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--app-r-sm);
   cursor: pointer;
-  color: var(--color-text-secondary);
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
-  flex-shrink: 0;
+  color: var(--app-soft);
 }
 
 .bell:hover {
-  background: var(--color-bg-main);
-  color: var(--color-text-primary);
-  border-color: var(--color-primary);
+  background: var(--app-active);
+  color: var(--app-ink);
 }
 
-.badge {
+.dot {
   position: absolute;
-  top: -5px;
-  right: -5px;
-  min-width: 18px;
-  height: 18px;
-  background: var(--color-danger);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-  border: 2px solid var(--color-bg-card);
-  line-height: 1;
+  top: 5px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--app-dot);
+}
+
+/* La lista (NotificationList) se abre hacia arriba desde el pie del riel */
+.up > :not(button) {
+  top: auto;
+  bottom: calc(100% + 16px);
+  left: -150px;
+  right: auto;
+}
+
+@media (max-width: 1079px) {
+  .up > :not(button) {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 76px;
+    width: auto;
+    max-width: 360px;
+  }
 }

@@ -106,7 +106,10 @@ a {
   text-decoration: none;
 }
 
-a:hover {
+/* Subrayado en hover: en todo, salvo el shell nuevo del dashboard (.gsShell), donde solo lo
+   conservan las pantallas viejas (.gsLegacy). Misma especificidad que el `a:hover` de antes. */
+a:hover:not(:where(.gsShell *)),
+:where(.gsShell .gsLegacy) a:hover {
   text-decoration: underline;
 }
 

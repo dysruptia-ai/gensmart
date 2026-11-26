@@ -15,16 +15,107 @@
     "active": "Active",
     "optional": "Optional"
   },
-  "nav": {
-    "dashboard": "Dashboard",
-    "agents": "Agents",
-    "conversations": "Conversations",
-    "contacts": "Contacts",
-    "funnel": "Funnel",
-    "calendar": "Calendar",
-    "billing": "Billing",
-    "settings": "Settings",
-    "logout": "Log out"
+  "shell": {
+    "groups": {
+      "operations": "Operations",
+      "agents": "Agents",
+      "business": "Business"
+    },
+    "items": {
+      "today": {
+        "name": "Today",
+        "subtitle": "What happened today in your conversations"
+      },
+      "inbox": {
+        "name": "Inbox",
+        "subtitle": "Conversations from all your channels"
+      },
+      "contacts": {
+        "name": "Contacts",
+        "subtitle": "The people who talked to your agents"
+      },
+      "pipeline": {
+        "name": "Pipeline",
+        "subtitle": "Which stage each contact is in"
+      },
+      "calendar": {
+        "name": "Calendar",
+        "subtitle": "The appointments your agents booked"
+      },
+      "agents": {
+        "name": "My agents",
+        "subtitle": "Your agents and the channels they answer on"
+      },
+      "training": {
+        "name": "Training",
+        "subtitle": "Teach your agents to answer better"
+      },
+      "knowledge": {
+        "name": "Knowledge",
+        "subtitle": "What your agents know about your business"
+      },
+      "reports": {
+        "name": "Reports",
+        "subtitle": "How your agents and conversations are doing"
+      },
+      "billing": {
+        "name": "Plan & billing",
+        "subtitle": "Your plan, usage and invoices"
+      },
+      "settings": {
+        "name": "Settings",
+        "subtitle": "Your organization, team and security"
+      }
+    },
+    "navLabel": "Main menu",
+    "search": "Search or run",
+    "createAgent": "Create agent",
+    "home": "GenSmart, go to Today",
+    "openMenu": "Open the menu",
+    "closeMenu": "Close the menu",
+    "enableAlerts": "Turn on alerts",
+    "toDark": "Switch to dark theme",
+    "toLight": "Switch to light theme",
+    "account": {
+      "open": "Account menu",
+      "myAccount": "My account",
+      "team": "Team",
+      "language": "Language: {language}",
+      "admin": "Admin panel",
+      "logout": "Log out",
+      "orgPlan": "{org} · {plan} plan"
+    },
+    "languages": {
+      "es": "Español",
+      "en": "English"
+    },
+    "trial": {
+      "many": "Your free trial ends in {n} days. Choose a plan so your agents keep answering.",
+      "one": "Your free trial ends in 1 day. Choose a plan so your agents keep answering.",
+      "today": "Your free trial ends today. Choose a plan so your agents keep answering.",
+      "cta": "Choose a plan"
+    },
+    "palette": {
+      "label": "Search or run",
+      "input": "Search",
+      "goTo": "Go to",
+      "actions": "Actions",
+      "agents": "Agents",
+      "createAgent": "Create an agent",
+      "toDark": "Switch to dark theme",
+      "toLight": "Switch to light theme",
+      "toLanguage": "Switch language to {language}",
+      "logout": "Log out",
+      "empty": "Nothing matches what you typed.",
+      "hintMove": "↑ ↓ to move",
+      "hintOpen": "Enter to open",
+      "hintClose": "Esc to close"
+    },
+    "pending": {
+      "title": "This screen is on its way"
+    },
+    "notifications": "Notifications",
+    "notificationsUnread": "Notifications ({count} unread)"
   },
   "access": {
     "meta": {

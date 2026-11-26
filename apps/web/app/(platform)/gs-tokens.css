@@ -54,9 +54,24 @@
   --app-focus: #0b6b36;
   --app-check: #0b6b36;
 
+  /* ---------- shell del dashboard (riel, menús, paleta) ---------- */
+  --app-rail: #f2f5f3;
+  --app-rail-line: #dfe4e1;
+  --app-faint: #5d6964;
+  --app-active: #e6ebe8;
+  --app-kbd: #eaeeec;
+  --app-scrim: rgba(12, 16, 20, 0.38);
+  --app-shadow-pop: 0 16px 40px rgba(12, 16, 20, 0.16);
+  --app-shadow-dialog: 0 24px 60px rgba(12, 16, 20, 0.28);
+  --app-avatar: #0f7a3d;
+  --app-avatar-ink: #ffffff;
+  --app-logo-smart: #25d366;
+  --app-dot: #e0a030;
+
   /* ---------- tipografía (next/font en el layout de la plataforma) ---------- */
   --app-font-sans: var(--font-geist), 'Geist', ui-sans-serif, system-ui, sans-serif;
   --app-font-display: var(--font-sora), 'Sora', var(--font-geist), ui-sans-serif, sans-serif;
+  --app-font-logo: var(--font-logo), 'Handjet', ui-sans-serif, sans-serif;
 
   /* ---------- forma y movimiento ---------- */
   --app-r-sm: 8px;
@@ -94,6 +109,14 @@
   --app-info-bg: rgba(156, 188, 255, 0.12);
   --app-focus: #3ddc84;
   --app-check: #3ddc84;
+  --app-rail: #080b0e;
+  --app-rail-line: #222b33;
+  --app-faint: #93a19c;
+  --app-active: #1e262d;
+  --app-kbd: #0f1418;
+  --app-scrim: rgba(0, 0, 0, 0.55);
+  --app-shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
+  --app-shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
 
@@ -118,6 +141,14 @@
     --app-info-bg: rgba(156, 188, 255, 0.12);
     --app-focus: #3ddc84;
     --app-check: #3ddc84;
+    --app-rail: #080b0e;
+    --app-rail-line: #222b33;
+    --app-faint: #93a19c;
+    --app-active: #1e262d;
+    --app-kbd: #0f1418;
+    --app-scrim: rgba(0, 0, 0, 0.55);
+    --app-shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
+    --app-shadow-dialog: 0 24px 60px rgba(0, 0, 0, 0.55);
     color-scheme: dark;
   }
 }
@@ -150,6 +181,28 @@
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* Pantallas viejas dentro del shell nuevo (hasta que se migren): vuelven a la base de
+   platform.css (Inter, colores --color-*, enlaces y foco de antes). Mismo peso que las bases
+   de .gsApp pero después en el archivo, así ganan ellas y los CSS Modules siguen ganando. */
+.gsApp .gsLegacy {
+  color-scheme: light;
+  background: var(--color-bg-main);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--font-base);
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+:where(.gsApp .gsLegacy) a {
+  color: var(--color-primary-dark);
+}
+
+:where(.gsApp .gsLegacy) :focus-visible {
+  outline: revert;
+  outline-offset: revert;
 }
 
 @media (prefers-reduced-motion: reduce) {

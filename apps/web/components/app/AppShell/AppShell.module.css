@@ -1,0 +1,163 @@
+.loading {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shell {
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ---------- riel (desde 1080 px) ---------- */
+.railCol {
+  flex: none;
+  width: 248px;
+  height: 100%;
+  border-right: 1px solid var(--app-rail-line);
+  background: var(--app-rail);
+  position: relative;
+  z-index: 20;
+}
+
+.railColCompact {
+  width: 64px;
+}
+
+/* ---------- contenido ---------- */
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.notices {
+  flex: none;
+}
+
+.legacyNotices {
+  padding: 12px 24px 0;
+  background: var(--color-bg-main);
+}
+
+.legacyNotices:empty {
+  display: none;
+}
+
+/* Pantallas viejas: el mismo marco que el shell anterior (relleno de 1.5rem y scroll propio) */
+.legacyContent {
+  flex: 1;
+  min-height: 0;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+/* Pantallas nuevas: ponen su propia cabecera (PageHeader) y su relleno */
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--app-bg);
+}
+
+/* ---------- móvil (menos de 1080 px) ---------- */
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  min-height: 60px;
+  background: var(--app-card);
+  border-bottom: 1px solid var(--app-rail-line);
+}
+
+.barButton {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+.barButton:hover {
+  background: var(--app-active);
+}
+
+.barSearch {
+  color: var(--app-soft);
+}
+
+.barSpacer {
+  flex: 1;
+}
+
+.drawerScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--app-scrim);
+  animation: fade var(--app-t-fast) var(--app-ease);
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  max-width: 100%;
+  animation: slide 0.24s var(--app-ease);
+}
+
+.drawerRail {
+  width: 300px;
+  max-width: calc(100vw - 64px);
+  border-right: 1px solid var(--app-rail-line);
+}
+
+.drawerClose {
+  align-self: flex-start;
+  margin: 12px 0 0 8px;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 10px;
+  background: var(--app-card);
+  color: var(--app-ink);
+  cursor: pointer;
+}
+
+@media (max-width: 1079px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .legacyNotices {
+    padding: 12px 16px 0;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(-100%);
+  }
+}

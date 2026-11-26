@@ -3,10 +3,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell } from 'lucide-react';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useTranslation } from '@/hooks/useTranslation';
 import NotificationList from './NotificationList';
 import styles from './NotificationBell.module.css';
 
-export default function NotificationBell() {
+interface NotificationBellProps {
+  /** `up`: la lista se abre hacia arriba (pie del riel del shell). */
+  placement?: 'down' | 'up';
+}
+
+export default function NotificationBell({ placement = 'down' }: NotificationBellProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
@@ -25,19 +32,17 @@ export default function NotificationBell() {
   }, [open]);
 
   return (
-    <div className={styles.container} ref={containerRef}>
+    <div className={`${styles.container} ${placement === 'up' ? styles.up : ''}`} ref={containerRef}>
       <button
         className={styles.bell}
         onClick={() => setOpen((v) => !v)}
-        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+        aria-label={unreadCount > 0 ? t('shell.notificationsUnread', { count: unreadCount }) : t('shell.notifications')}
         aria-expanded={open}
         aria-haspopup="dialog"
       >
-        <Bell size={20} />
+        <Bell size={16} aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className={styles.badge} aria-hidden="true">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
+          <span className={styles.dot} aria-hidden="true" />
         )}
       </button>
 

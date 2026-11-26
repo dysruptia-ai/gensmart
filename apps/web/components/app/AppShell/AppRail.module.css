@@ -1,0 +1,191 @@
+.rail {
+  width: 248px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--app-rail);
+  color: var(--app-ink);
+  font-family: var(--app-font-sans);
+}
+
+.brand {
+  padding: 20px 18px 6px;
+}
+
+.search {
+  margin: 12px 12px 4px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--app-card);
+  border: 1px solid var(--app-rail-line);
+  color: var(--app-faint);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.search:hover {
+  border-color: var(--app-line);
+  color: var(--app-ink);
+}
+
+.searchText {
+  flex: 1;
+}
+
+.kbd {
+  font: 600 10.5px/1 var(--app-font-sans);
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1px solid var(--app-rail-line);
+  color: var(--app-faint);
+  background: var(--app-kbd);
+}
+
+.create {
+  margin: 6px 12px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--app-go);
+  color: var(--app-go-ink);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.create:hover {
+  background: var(--app-go-hover);
+}
+
+.nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 10px 12px;
+}
+
+.groupTitle {
+  display: block;
+  font: 600 10px/1 var(--app-font-display);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+  padding: 16px 10px 7px;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  color: var(--app-soft);
+  font-size: 13.5px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.item:hover {
+  background: var(--app-active);
+  color: var(--app-ink);
+}
+
+.icon {
+  flex: none;
+  color: var(--app-faint);
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active {
+  background: var(--app-active);
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+.active::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--app-go);
+}
+
+.active .icon {
+  color: var(--app-go);
+}
+
+.count {
+  font-size: 11.5px;
+  padding: 1px 7px;
+  border-radius: var(--app-r-pill);
+  min-width: 22px;
+  text-align: center;
+  background: var(--app-kbd);
+  color: var(--app-soft);
+  font-weight: 500;
+}
+
+.countUrgent {
+  background: var(--app-err-bg);
+  color: var(--app-err);
+  font-weight: 600;
+}
+
+.alerts {
+  align-self: flex-start;
+  margin: 0 14px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--app-link);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.foot {
+  border-top: 1px solid var(--app-rail-line);
+  padding: 12px 12px 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Sin teclado físico el atajo no sirve: se oculta y el botón queda igual */
+@media (hover: none) and (pointer: coarse) {
+  .kbd {
+    display: none;
+  }
+}

@@ -9,55 +9,17 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ToastProvider } from '@/components/ui/Toast';
 import { APP_BOOT_SCRIPT } from '@/lib/app-theme';
 
+// La plataforma no se indexa ni se comparte: sin descripción de marketing, openGraph ni twitter
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.gensmart.co'),
   title: {
-    default: 'GenSmart | Multichannel agentic platform for AI agents',
+    default: 'GenSmart',
     template: '%s | GenSmart',
   },
-  description:
-    'Multichannel agentic platform. Create, connect and activate AI agents in 3 steps for WhatsApp, Instagram, Messenger, Telegram, email and your website.',
-  authors: [{ name: 'GenSmart by Dysruptia' }],
-  creator: 'Dysruptia LLC',
-  publisher: 'GenSmart',
   robots: {
-    index: true,
+    index: false,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
-  openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    alternateLocale: 'es_LA',
-    siteName: 'GenSmart',
-    title: 'GenSmart | Multichannel agentic platform for AI agents',
-    description:
-      'Multichannel agentic platform. Create, connect and activate AI agents in 3 steps for WhatsApp, Instagram, Messenger, Telegram, email and your website.',
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'GenSmart: multichannel agentic platform for AI agents',
-        type: 'image/png',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'GenSmart | Multichannel agentic platform for AI agents',
-    description:
-      'Multichannel agentic platform. Create, connect and activate AI agents in 3 steps for WhatsApp, Instagram, Messenger, Telegram, email and your website.',
-    images: ['/twitter-card.png'],
-    creator: '@gaborgenner',
-  },
-  category: 'SaaS',
 };
 
 export default function RootLayout({

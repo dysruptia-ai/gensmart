@@ -15,16 +15,107 @@
     "active": "Activo",
     "optional": "Opcional"
   },
-  "nav": {
-    "dashboard": "Panel",
-    "agents": "Agentes",
-    "conversations": "Conversaciones",
-    "contacts": "Contactos",
-    "funnel": "Embudo",
-    "calendar": "Calendario",
-    "billing": "Facturación",
-    "settings": "Configuración",
-    "logout": "Cerrar sesión"
+  "shell": {
+    "groups": {
+      "operations": "Operación",
+      "agents": "Agentes",
+      "business": "Negocio"
+    },
+    "items": {
+      "today": {
+        "name": "Hoy",
+        "subtitle": "Lo que pasó hoy en tus conversaciones"
+      },
+      "inbox": {
+        "name": "Bandeja",
+        "subtitle": "Las conversaciones de todos tus canales"
+      },
+      "contacts": {
+        "name": "Contactos",
+        "subtitle": "Las personas que hablaron con tus agentes"
+      },
+      "pipeline": {
+        "name": "Embudo",
+        "subtitle": "En qué etapa está cada contacto"
+      },
+      "calendar": {
+        "name": "Agenda",
+        "subtitle": "Las citas que agendaron tus agentes"
+      },
+      "agents": {
+        "name": "Mis agentes",
+        "subtitle": "Tus agentes y en qué canales responden"
+      },
+      "training": {
+        "name": "Entrenamiento",
+        "subtitle": "Enseña a tus agentes a responder mejor"
+      },
+      "knowledge": {
+        "name": "Conocimiento",
+        "subtitle": "Lo que tus agentes saben de tu negocio"
+      },
+      "reports": {
+        "name": "Informes",
+        "subtitle": "Cómo van tus agentes y tus conversaciones"
+      },
+      "billing": {
+        "name": "Plan y facturación",
+        "subtitle": "Tu plan, tu consumo y tus facturas"
+      },
+      "settings": {
+        "name": "Ajustes",
+        "subtitle": "Tu organización, tu equipo y tu seguridad"
+      }
+    },
+    "navLabel": "Menú principal",
+    "search": "Buscar o ejecutar",
+    "createAgent": "Crear agente",
+    "home": "GenSmart, ir a Hoy",
+    "openMenu": "Abrir el menú",
+    "closeMenu": "Cerrar el menú",
+    "enableAlerts": "Activar avisos",
+    "toDark": "Cambiar a tema oscuro",
+    "toLight": "Cambiar a tema claro",
+    "account": {
+      "open": "Menú de la cuenta",
+      "myAccount": "Mi cuenta",
+      "team": "Equipo",
+      "language": "Idioma: {language}",
+      "admin": "Panel de administración",
+      "logout": "Cerrar sesión",
+      "orgPlan": "{org} · Plan {plan}"
+    },
+    "languages": {
+      "es": "Español",
+      "en": "English"
+    },
+    "trial": {
+      "many": "Tu prueba gratis termina en {n} días. Elige un plan para que tus agentes sigan respondiendo.",
+      "one": "Tu prueba gratis termina en 1 día. Elige un plan para que tus agentes sigan respondiendo.",
+      "today": "Tu prueba gratis termina hoy. Elige un plan para que tus agentes sigan respondiendo.",
+      "cta": "Elegir un plan"
+    },
+    "palette": {
+      "label": "Buscar o ejecutar",
+      "input": "Buscar",
+      "goTo": "Ir a",
+      "actions": "Acciones",
+      "agents": "Agentes",
+      "createAgent": "Crear un agente",
+      "toDark": "Cambiar a tema oscuro",
+      "toLight": "Cambiar a tema claro",
+      "toLanguage": "Cambiar el idioma a {language}",
+      "logout": "Cerrar sesión",
+      "empty": "Nada coincide con lo que escribiste.",
+      "hintMove": "↑ ↓ para moverte",
+      "hintOpen": "Enter para abrir",
+      "hintClose": "Esc para cerrar"
+    },
+    "pending": {
+      "title": "Esta pantalla viene en camino"
+    },
+    "notifications": "Notificaciones",
+    "notificationsUnread": "Notificaciones ({count} sin leer)"
   },
   "access": {
     "meta": {

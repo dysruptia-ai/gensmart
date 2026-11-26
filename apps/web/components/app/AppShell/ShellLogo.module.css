@@ -1,0 +1,23 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--app-font-logo);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.sm {
+  font-size: 26px;
+}
+
+.gen {
+  color: var(--app-ink);
+}
+
+.smart {
+  color: var(--app-logo-smart);
+}
