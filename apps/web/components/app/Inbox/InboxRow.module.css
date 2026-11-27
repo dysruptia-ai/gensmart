@@ -192,3 +192,25 @@
   background: var(--app-info-bg);
   color: var(--app-info);
 }
+
+/* web-43: etiquetas de la conversación (primera + "+N"); se cortan antes de desbordar la fila */
+.tagLabel {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--app-line);
+  color: var(--app-soft);
+  font-weight: 500;
+}
+
+.tagLabelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagMore {
+  flex: none;
+  max-width: none;
+}

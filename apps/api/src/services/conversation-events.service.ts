@@ -17,7 +17,8 @@ export type ConversationEventType =
   | 'snoozed'
   | 'unsnoozed'
   | 'closed'
-  | 'reopened';
+  | 'reopened'
+  | 'note_deleted';
 
 export const CLOSE_OUTCOMES = ['sold', 'resolved', 'no_response', 'spam'] as const;
 export type CloseOutcome = (typeof CLOSE_OUTCOMES)[number];

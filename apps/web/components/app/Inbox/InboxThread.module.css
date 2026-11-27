@@ -528,3 +528,9 @@
   color: var(--app-ink);
   font-weight: 600;
 }
+
+/* web-43: el selector de etiquetas se ancla al menú "Más" */
+.moreWrap {
+  position: relative;
+  display: flex;
+}

@@ -140,9 +140,24 @@ async function processExport(exportRequestId: string, organizationId: string): P
     messagesByConv[convId].push(msg);
   }
 
+  // Notas internas sin borrar (web-43): son del equipo, pero también son datos de la organización.
+  const notesResult = await query<{ id: string; conversation_id: string; author_user_id: string | null; author_name: string | null; body: string; created_at: string }>(
+    `SELECT n.id, n.conversation_id, n.author_user_id, u.name AS author_name, n.body, n.created_at
+     FROM conversation_notes n
+     LEFT JOIN users u ON u.id = n.author_user_id
+     WHERE n.organization_id = $1 AND n.deleted_at IS NULL
+     ORDER BY n.created_at`,
+    [organizationId]
+  );
+  const notesByConv: Record<string, unknown[]> = {};
+  for (const note of notesResult.rows) {
+    (notesByConv[note.conversation_id] ??= []).push(note);
+  }
+
   const conversationsWithMessages = conversationsResult.rows.map((conv: Record<string, unknown>) => ({
     ...conv,
     messages: messagesByConv[String(conv['id'])] ?? [],
+    internal_notes: notesByConv[String(conv['id'])] ?? [],
   }));
 
   // Assemble ZIP

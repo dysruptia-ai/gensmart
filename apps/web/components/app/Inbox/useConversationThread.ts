@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '@/lib/api';
 import type {
   ApiConversationEvent,
+  ApiNote,
+  LabelRef,
   CloseOutcome,
   ConversationDetail,
   DetailResponse,
@@ -21,7 +23,8 @@ export type ThreadEventKind =
   | 'snoozed'
   | 'unsnoozed'
   | 'closed'
-  | 'reopened';
+  | 'reopened'
+  | 'note_deleted';
 
 /**
  * Evento que se pinta centrado en el hilo. Sale de `conversation_events` (web-42); en las
@@ -54,6 +57,7 @@ export interface ConversationChange {
   closedAt?: string | null;
   closedBy?: string | null;
   closedByName?: string | null;
+  labels?: LabelRef[];
   event?: ApiConversationEvent;
   updatedAt: string;
 }
@@ -134,6 +138,8 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [events, setEvents] = useState<ThreadEvent[]>([]);
+  // Notas internas (web-43): fuera de `messages`, el agente nunca las lee
+  const [notes, setNotes] = useState<ApiNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<'not_found' | 'failed' | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -160,6 +166,7 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
       commit(null);
       setMessages([]);
       setEvents([]);
+      setNotes([]);
       setError(null);
       setLoading(false);
       return;
@@ -169,6 +176,7 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
       commit(null);
       setMessages([]);
       setEvents([]);
+      setNotes([]);
       setActionError(null);
     }
     setError(null);
@@ -180,6 +188,7 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
         // Al recargar en silencio se conservan los propios que siguen enviándose o fallaron
         setMessages((prev) => [...data.messages, ...(options?.quiet ? prev.filter((m) => m.delivery) : [])]);
         setEvents(buildEvents(data.conversation, data.events));
+        setNotes(data.notes ?? []);
         setHasMore(data.pagination.hasMore);
         setOldest(data.pagination.oldestTimestamp);
       })
@@ -296,6 +305,7 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
       if (change.closedAt !== undefined) next.closedAt = change.closedAt;
       if (change.closedBy !== undefined) next.closedBy = change.closedBy;
       if (change.closedByName !== undefined) next.closedByName = change.closedByName;
+      if (change.labels !== undefined) next.labels = change.labels;
       if (next.status === 'closed' || next.snoozedUntil) {
         next.needsAttention = false;
         next.waitingSince = null;
@@ -514,10 +524,88 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
     [runAction],
   );
 
+  // ── notas internas (web-43) ──────────────────────────────────────────────
+  const addNote = useCallback((conversation: string, note: ApiNote) => {
+    if (conversation !== idRef.current) return;
+    setNotes((prev) => (prev.some((n) => n.id === note.id) ? prev : [...prev, note]));
+  }, []);
+
+  /** Quita la nota y pinta "X borró una nota" (llega por la respuesta o por `conversation:note-deleted`). */
+  const dropNote = useCallback(
+    (conversation: string, noteId: string, event?: ApiConversationEvent | null) => {
+      if (conversation !== idRef.current) return;
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+      if (event) pushEvent(fromApiEvent(event));
+    },
+    [pushEvent],
+  );
+
+  const saveNote = useCallback(
+    async (body: string): Promise<boolean> => {
+      const id = idRef.current;
+      if (!id) return false;
+      try {
+        const r = await api.post<{ note: ApiNote }>(`/api/conversations/${id}/notes`, { body });
+        addNote(id, r.note);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [addNote],
+  );
+
+  const deleteNote = useCallback(
+    async (noteId: string): Promise<boolean> => {
+      const id = idRef.current;
+      if (!id) return false;
+      try {
+        const r = await api.delete<{ event?: ApiConversationEvent | null }>(`/api/conversations/${id}/notes/${noteId}`);
+        dropNote(id, noteId, r.event);
+        return true;
+      } catch (err) {
+        // Ya la había borrado otra persona: se quita igual
+        if (err instanceof ApiError && err.status === 404) dropNote(id, noteId);
+        return false;
+      }
+    },
+    [dropNote],
+  );
+
+  // ── etiquetas (web-43): optimista, con vuelta atrás si la API falla ──────
+  const setLabels = useCallback(
+    async (next: LabelRef[]): Promise<boolean> => {
+      const id = idRef.current;
+      const prev = convRef.current;
+      if (!id || !prev) return false;
+      const before = prev.labels ?? [];
+      const sorted = [...next].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      commit({ ...prev, labels: sorted });
+      try {
+        const r = await api.put<{ labels: LabelRef[] }>(`/api/conversations/${id}/labels`, { labelIds: sorted.map((l) => l.id) });
+        const current = convRef.current;
+        if (current && current.id === id) commit({ ...current, labels: r.labels });
+        return true;
+      } catch {
+        const current = convRef.current;
+        if (current && current.id === id) commit({ ...current, labels: before });
+        setActionError('inbox.errors.labels');
+        return false;
+      }
+    },
+    [commit],
+  );
+
   return {
     conversation,
     messages,
     events,
+    notes,
+    addNote,
+    dropNote,
+    saveNote,
+    deleteNote,
+    setLabels,
     loading,
     error,
     hasMore,

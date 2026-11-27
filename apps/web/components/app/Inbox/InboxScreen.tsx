@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Trash2, WifiOff, X } from 'lucide-react';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import { api } from '@/lib/api';
@@ -17,7 +17,9 @@ import InboxDialog from './InboxDialog';
 import InboxList from './InboxList';
 import InboxMobileNav from './InboxMobileNav';
 import InboxRail from './InboxRail';
-import InboxThread from './InboxThread';
+import InboxSettings from './InboxSettings';
+import InboxThread, { eventText } from './InboxThread';
+import type { LabelPickerData } from './LabelPicker';
 import SnoozeDialog from './SnoozeDialog';
 import TransferDialog from './TransferDialog';
 import { getChannelMeta } from './channelMeta';
@@ -33,7 +35,9 @@ import {
 } from './useInboxEnv';
 import { useInboxCounts, useInboxList, type RowPatch } from './useInboxList';
 import { normalizeIncoming, useConversationThread } from './useConversationThread';
-import type { CloseOutcome, InboxFilters, InboxView } from './types';
+import { useInboxLabels } from './useInboxLabels';
+import { useQuickReplies } from './useQuickReplies';
+import type { CloseOutcome, InboxFilters, InboxView, LabelRef } from './types';
 import styles from './InboxScreen.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -58,9 +62,12 @@ function isTyping(target: EventTarget | null): boolean {
 export default function InboxScreen() {
   const router = useRouter();
   const params = useParams<{ id?: string }>();
+  const pathname = usePathname();
+  // Ajustes de la bandeja (web-43): misma pantalla, con el riel y sin lista ni hilo
+  const settingsOpen = pathname === '/dashboard/conversations/settings';
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { on, off, joinConversation, leaveConversation } = useWebSocket();
 
   const conversationId = typeof params.id === 'string' ? params.id : null;
@@ -90,6 +97,12 @@ export default function InboxScreen() {
   const [timeZone, setTimeZone] = useState<string | undefined>(undefined);
   const [activityKey, setActivityKey] = useState(0);
   const isManager = user?.role === 'owner' || user?.role === 'admin';
+  // web-43: respuestas rápidas y catálogo de etiquetas de la organización
+  const quick = useQuickReplies();
+  const labelCatalog = useInboxLabels();
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [noteDeleting, setNoteDeleting] = useState(false);
+  const noteCancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     api
@@ -176,9 +189,10 @@ export default function InboxScreen() {
   }, [conversationId, joinConversation, leaveConversation]);
 
   // ── tiempo real ──
-  const live = useRef({ list, thread, conversationId, refreshCounts, t });
+  const reloadLabels = labelCatalog.reload;
+  const live = useRef({ list, thread, conversationId, refreshCounts, t, userId: user?.id, isManager, reloadLabels });
   useLayoutEffect(() => {
-    live.current = { list, thread, conversationId, refreshCounts, t };
+    live.current = { list, thread, conversationId, refreshCounts, t, userId: user?.id, isManager, reloadLabels };
   });
 
   useEffect(() => {
@@ -223,6 +237,7 @@ export default function InboxScreen() {
       if (data.closedAt !== undefined) fields.closedAt = data.closedAt;
       if (data.closedBy !== undefined) fields.closedBy = data.closedBy;
       if (data.closedByName !== undefined) fields.closedByName = data.closedByName;
+      if (data.labels !== undefined) fields.labels = data.labels;
       const changed = !!status || Object.keys(fields).length > 0 || data.takenOverBy !== undefined;
       if (!changed) return;
       l.patch({
@@ -287,7 +302,33 @@ export default function InboxScreen() {
       }
     };
 
+    // Notas internas (web-43): canDelete depende de quien mira, así que se recalcula aquí
+    const handleNote: WebSocketEvents['conversation:note'] = (data) => {
+      const { thread: th, userId, isManager: manager } = live.current;
+      const canDelete = (!!userId && data.note.authorUserId === userId) || manager;
+      th.addNote(data.conversationId, { ...data.note, canDelete });
+    };
+    const handleNoteDeleted: WebSocketEvents['conversation:note-deleted'] = (data) => {
+      live.current.thread.dropNote(data.conversationId, data.noteId, data.event ?? null);
+    };
+    // Se renombró o borró una etiqueta: el catálogo se recarga y las filas y la ficha cambian
+    const handleLabels: WebSocketEvents['inbox-labels:changed'] = (data) => {
+      const { list: l, thread: th, reloadLabels: rl } = live.current;
+      rl();
+      const fix = (labels: LabelRef[]): LabelRef[] =>
+        data.action === 'deleted'
+          ? labels.filter((x) => x.id !== data.labelId)
+          : labels
+              .map((x) => (x.id === data.label.id ? { ...x, name: data.label.name } : x))
+              .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      l.mapLabels(fix);
+      th.patchConversation((c) => (c.labels ? { ...c, labels: fix(c.labels) } : c));
+    };
+
     on('message:new', handleMessage);
+    on('conversation:note', handleNote);
+    on('conversation:note-deleted', handleNoteDeleted);
+    on('inbox-labels:changed', handleLabels);
     on('conversation:update', handleUpdate);
     on('takeover:status', handleTakeover);
     on('notification:new', handleNotification);
@@ -295,6 +336,9 @@ export default function InboxScreen() {
     on('contact:scored', handleScored);
     return () => {
       off('message:new', handleMessage);
+      off('conversation:note', handleNote);
+      off('conversation:note-deleted', handleNoteDeleted);
+      off('inbox-labels:changed', handleLabels);
       off('conversation:update', handleUpdate);
       off('takeover:status', handleTakeover);
       off('notification:new', handleNotification);
@@ -418,6 +462,45 @@ export default function InboxScreen() {
     }
   };
 
+  // ── notas y etiquetas (web-43) ──
+  const doDeleteNote = async () => {
+    if (!noteToDelete) return;
+    setNoteDeleting(true);
+    await thread.deleteNote(noteToDelete);
+    setNoteDeleting(false);
+    setNoteToDelete(null);
+    setAnnouncement(t('inbox.live.noteDeleted'));
+  };
+
+  const changeLabels = useCallback(
+    async (next: LabelRef[]) => {
+      const conv = thread.conversation;
+      if (!conv) return;
+      const before = conv.labels ?? [];
+      const sorted = [...next].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+      list.patch({ conversationId: conv.id, fields: { labels: sorted } });
+      const ok = await thread.setLabels(sorted);
+      if (!ok) list.patch({ conversationId: conv.id, fields: { labels: before } });
+    },
+    [thread, list],
+  );
+
+  const noteActivity = useMemo(
+    () =>
+      thread.events
+        .filter((e) => e.kind === 'note_deleted')
+        .map((e) => ({ id: e.id, at: e.at, text: eventText(e, user?.id, t, language) })),
+    [thread.events, user?.id, t, language],
+  );
+
+  const labelPicker: LabelPickerData = {
+    catalog: labelCatalog.labels,
+    selected: c?.labels ?? [],
+    onChange: (next) => void changeLabels(next),
+    canCreate: isManager,
+    onCreate: labelCatalog.create,
+  };
+
   // ── atajos de teclado ──
   const visibleIds = useMemo(() => list.rows.map((r) => r.id), [list.rows]);
 
@@ -441,7 +524,8 @@ export default function InboxScreen() {
   useLayoutEffect(() => {
     keys.current = { visibleIds, conversationId, c, canTakeover, askClose, openConversation, take };
   });
-  const layersOpen = railOpen || contactOpen || confirmClose || confirmDelete || helpOpen || transferOpen || snoozeOpen;
+  const layersOpen =
+    railOpen || contactOpen || confirmClose || confirmDelete || helpOpen || transferOpen || snoozeOpen || !!noteToDelete;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -514,18 +598,84 @@ export default function InboxScreen() {
   const showPeriod = filters.view === 'all' || filters.view === 'closed';
   const agents = useMemo(() => (orgAgents?.agents ?? []).map((a) => ({ id: a.id, name: a.name })), [orgAgents]);
 
-  const rail = <InboxRail filters={filters} counts={counts} agents={agents} onSelect={selectFilters} />;
+  const rail = (
+    <InboxRail
+      filters={filters}
+      counts={counts}
+      agents={agents}
+      settingsOpen={settingsOpen}
+      onSelect={(patch) => {
+        // Desde Ajustes, elegir una vista vuelve a la Bandeja
+        if (!settingsOpen) return selectFilters(patch);
+        setRailOpen(false);
+        go({ ...filters, ...patch }, null);
+      }}
+    />
+  );
   const contactPanel = (
     <ContactPanel
       conversation={c}
       loading={thread.loading}
       now={now}
       activityKey={activityKey}
+      notes={thread.notes}
+      threadActivity={noteActivity}
+      userId={user?.id}
+      onSaveNote={thread.saveNote}
+      onAskDeleteNote={setNoteToDelete}
+      onRemoveLabel={(labelId) => void changeLabels((c?.labels ?? []).filter((l) => l.id !== labelId))}
+      labelPicker={labelPicker}
       onClose={detailsFixed && !mobile ? undefined : mobile ? () => setContactOpen(false) : () => setDetailsPref(false)}
     />
   );
 
   const pane = mobile ? (conversationId ? 'thread' : 'list') : 'all';
+
+  // Al ir a Ajustes (o volver) el cajón del riel se cierra
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setRailOpen(false);
+  }
+
+  if (settingsOpen) {
+    return (
+      <div className={styles.screen} data-pane="settings" data-open="no">
+        <div className={`${styles.columns} ${styles.settingsColumns}`}>
+          {wide && <div className={styles.railCol}>{rail}</div>}
+          <div className={styles.settingsCol}>
+            <InboxSettings isManager={isManager} onOpenRail={wide ? undefined : () => setRailOpen(true)} />
+          </div>
+        </div>
+        {!wide && railOpen && (
+          <div
+            className={styles.scrim}
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) setRailOpen(false);
+            }}
+          >
+            <div
+              ref={drawerRef}
+              className={styles.drawer}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('inbox.rail.label')}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setRailOpen(false);
+                trapTab(e, drawerRef.current);
+              }}
+            >
+              <div className={styles.drawerHead}>
+                <span>{t('inbox.rail.inbox')}</span>
+                <InboxButton variant="icon" icon={X} onClick={() => setRailOpen(false)} aria-label={t('inbox.rail.close')} />
+              </div>
+              {rail}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={styles.screen} data-pane={pane} data-open={conversationId ? 'yes' : 'no'}>
@@ -608,6 +758,11 @@ export default function InboxScreen() {
               }
               contactOpen={mobile ? contactOpen : detailsOpen}
               textareaRef={textareaRef}
+              quickReplies={quick.replies}
+              onUseReply={quick.markUsed}
+              myName={user?.name ?? null}
+              onAskDeleteNote={setNoteToDelete}
+              labelPicker={labelPicker}
             />
           ) : (
             <div className={styles.pick}>
@@ -728,6 +883,26 @@ export default function InboxScreen() {
         >
           <p>{t('inbox.deleteDialog.text', { name: contactName(c.contact, t('inbox.row.unknownContact')) })}</p>
           {c.contact && <p>{t('inbox.deleteDialog.contactNote', { name: contactName(c.contact, t('inbox.row.unknownContact')) })}</p>}
+        </InboxDialog>
+      )}
+
+      {noteToDelete && (
+        <InboxDialog
+          title={t('inbox.notes.deleteTitle')}
+          onClose={() => setNoteToDelete(null)}
+          initialFocusRef={noteCancelRef}
+          footer={
+            <>
+              <InboxButton ref={noteCancelRef} onClick={() => setNoteToDelete(null)}>
+                {t('inbox.deleteDialog.cancel')}
+              </InboxButton>
+              <InboxButton variant="danger" icon={Trash2} onClick={() => void doDeleteNote()} loading={noteDeleting}>
+                {t('inbox.notes.deleteConfirm')}
+              </InboxButton>
+            </>
+          }
+        >
+          <p>{t('inbox.notes.deleteText')}</p>
         </InboxDialog>
       )}
 

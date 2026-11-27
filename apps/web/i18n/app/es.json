@@ -1710,7 +1710,9 @@
         "closedAsYou": "Tú la cerraste como {outcome}",
         "closedPlain": "Conversación cerrada",
         "reopened": "{name} la reabrió",
-        "reopenedYou": "Tú la reabriste"
+        "reopenedYou": "Tú la reabriste",
+        "noteDeleted": "{name} borró una nota",
+        "noteDeletedYou": "Borraste una nota"
       },
       "takenBar": "{name} está atendiendo esta conversación.",
       "agentBar": "El agente está respondiendo. Toma la conversación para escribir tú.",
@@ -1758,7 +1760,9 @@
       "close": "Cerrar la ficha",
       "tabs": {
         "contact": "Contacto",
-        "activity": "Actividad"
+        "activity": "Actividad",
+        "notes": "Notas",
+        "notesCount": "Notas · {count}"
       },
       "phone": "Teléfono",
       "email": "Correo",
@@ -1820,7 +1824,8 @@
       "transfer": "No pudimos transferir la conversación. Vuelve a intentarlo.",
       "snooze": "No pudimos posponer la conversación. Vuelve a intentarlo.",
       "unsnooze": "No pudimos quitar la posposición. Vuelve a intentarlo.",
-      "reopen": "No pudimos reabrir la conversación. Vuelve a intentarlo."
+      "reopen": "No pudimos reabrir la conversación. Vuelve a intentarlo.",
+      "labels": "No pudimos guardar las etiquetas. Volvieron a como estaban."
     },
     "dialog": {
       "close": "Cerrar"
@@ -1851,7 +1856,8 @@
       "transferred": "Conversación transferida a {name}",
       "released": "Conversación devuelta al agente",
       "snoozed": "Conversación pospuesta",
-      "reopened": "Conversación reabierta"
+      "reopened": "Conversación reabierta",
+      "noteDeleted": "Nota borrada"
     },
     "outcomes": {
       "sold": "Vendido",
@@ -1894,6 +1900,115 @@
       "todayAt": "hoy {time}",
       "tomorrowAt": "mañana {time}",
       "dateAt": "el {day}, {time}"
+    },
+    "notes": {
+      "tabReply": "Responder",
+      "tabNote": "Nota interna",
+      "placeholder": "Escribe una nota que solo ve tu equipo",
+      "label": "Nota interna",
+      "hint": "Solo la ve tu equipo. Ni el cliente ni el agente la leen.",
+      "save": "Guardar nota",
+      "badge": "Nota interna",
+      "delete": "Borrar nota",
+      "onlyTeam": "solo tu equipo la ve",
+      "tooLong": "La nota puede tener hasta 2.000 caracteres.",
+      "saveError": "No pudimos guardar la nota. Intenta de nuevo.",
+      "teamNotes": "Notas del equipo",
+      "empty": "Nadie ha dejado notas.",
+      "newNote": "Nueva nota",
+      "panelPlaceholder": "Solo la ve tu equipo",
+      "counter": "{count} / {max}",
+      "deleteTitle": "¿Borrar esta nota?",
+      "deleteText": "El equipo ya no la verá. Queda registrado en la Actividad que la borraste.",
+      "deleteConfirm": "Borrar nota"
+    },
+    "quickReplies": {
+      "menuTitle": "Respuestas rápidas",
+      "menuTitleQuery": "Respuestas rápidas · «{query}»",
+      "manage": "Administrar",
+      "empty": "Aún no hay respuestas rápidas.",
+      "createOne": "Crear una",
+      "askAdmin": "Pide a un administrador que las cree.",
+      "menuKeys": "↑ ↓ elegir · Enter insertar · Esc cerrar",
+      "placeholder": "Escribe tu respuesta. Con / ves tus respuestas rápidas",
+      "all": "Todas",
+      "allAria": "Ver todas las respuestas rápidas"
+    },
+    "labels": {
+      "add": "Agregar etiqueta",
+      "addShort": "Agregar",
+      "title": "Etiquetas",
+      "remove": "Quitar {name}",
+      "none": "Sin etiquetas",
+      "more": "{count} etiquetas más",
+      "pickerLabel": "Etiquetas de la conversación",
+      "search": "Buscar o crear",
+      "loading": "Cargando etiquetas…",
+      "noneYet": "Aún no hay etiquetas.",
+      "create": "Crear «{name}»",
+      "askAdmin": "Pide a un administrador que la cree.",
+      "tooLong": "Máximo {max} caracteres.",
+      "convLimit": "Esta conversación ya tiene {max} etiquetas, el máximo. Quita una para agregar otra.",
+      "taken": "Ya hay una etiqueta con ese nombre.",
+      "orgLimit": "Tu organización llegó al máximo de etiquetas.",
+      "createError": "No pudimos crear la etiqueta. Intenta de nuevo.",
+      "saveError": "No pudimos guardar la etiqueta. Intenta de nuevo.",
+      "deleteError": "No pudimos borrar la etiqueta. Intenta de nuevo.",
+      "nameRequired": "Escribe un nombre.",
+      "nameLabel": "Nombre de la etiqueta",
+      "editKeys": "Enter guarda · Esc cancela",
+      "new": "Nueva etiqueta",
+      "deleted": "Se borró «{name}».",
+      "undo": "Deshacer",
+      "name": "Nombre",
+      "conversations": "Conversaciones",
+      "rename": "Renombrar",
+      "renameAria": "Renombrar {name}",
+      "deleteAria": "Borrar {name}",
+      "deleteTitle": "¿Borrar «{name}»?",
+      "deleteConfirm": "Borrar etiqueta",
+      "deleteText": "Se quita de {count} conversaciones. Las conversaciones no se borran."
+    },
+    "settings": {
+      "title": "Ajustes de la bandeja",
+      "subtitle": "Cómo se reparten, atienden y escalan las conversaciones.",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "actions": "Acciones",
+      "loadError": "No pudimos cargar esta lista.",
+      "loading": "Cargando…",
+      "edit": "Editar",
+      "delete": "Borrar",
+      "labelsText": "Marcan conversaciones para encontrarlas y filtrarlas. Todo el equipo las puede aplicar.",
+      "qr": {
+        "title": "Respuestas rápidas",
+        "text": "Escribe / en una conversación para usarlas. Son de toda la organización.",
+        "new": "Nueva respuesta",
+        "shortcut": "Atajo",
+        "body": "Texto",
+        "uses": "Usos",
+        "editAria": "Editar /{shortcut}",
+        "deleteAria": "Borrar /{shortcut}",
+        "deleteTitle": "¿Borrar /{shortcut}?",
+        "deleteText": "Nadie del equipo la podrá usar. Los mensajes ya enviados no cambian.",
+        "deleteError": "No pudimos borrar la respuesta. Intenta de nuevo.",
+        "editTitle": "Editar respuesta rápida",
+        "newTitle": "Nueva respuesta rápida",
+        "shortcutInvalid": "Usa entre 2 y 30 caracteres: minúsculas, números y guiones. Sin espacios.",
+        "bodyRequired": "Escribe el texto de la respuesta.",
+        "bodyTooLong": "El texto puede tener hasta 1.000 caracteres.",
+        "shortcutTaken": "Ese atajo ya existe.",
+        "limit": "Tu organización llegó al máximo de {max} respuestas rápidas.",
+        "saveError": "No pudimos guardar la respuesta. Intenta de nuevo.",
+        "shortcutPlaceholder": "envios",
+        "shortcutHelp": "Minúsculas, números y guiones. Sin espacios.",
+        "bodyPlaceholder": "Lo que se inserta al elegirla",
+        "insert": "Insertar:",
+        "variablesHelp": "{nombre} se cambia por el primer nombre del contacto y {agente} por el tuyo. Si falta el dato, se quita.",
+        "preview": "Vista previa",
+        "sampleName": "Laura Gómez",
+        "sampleAgent": "Camila"
+      }
     }
   }
 }

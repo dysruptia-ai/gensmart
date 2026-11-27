@@ -226,3 +226,19 @@
     animation: none;
   }
 }
+
+/* ---------- Ajustes de la bandeja (web-43): riel + ajustes ---------- */
+.columns.settingsColumns {
+  grid-template-columns: 236px minmax(0, 1fr);
+}
+
+.settingsCol {
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (max-width: 1179.98px) {
+  .columns.settingsColumns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

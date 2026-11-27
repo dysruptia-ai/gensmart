@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { CircleCheckBig, Inbox, TriangleAlert, User, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { CircleCheckBig, Inbox, Settings, TriangleAlert, User, type LucideIcon } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getChannelMeta } from './channelMeta';
 import type { InboxCounts, InboxFilters, InboxView } from './types';
@@ -18,6 +19,8 @@ export interface InboxRailProps {
   agents: RailAgent[];
   onSelect: (next: Partial<InboxFilters>) => void;
   className?: string;
+  /** Ajustes de la bandeja abiertos (web-43): ninguna vista queda marcada. */
+  settingsOpen?: boolean;
 }
 
 const VIEWS: Array<{ view: InboxView; icon: LucideIcon }> = [
@@ -28,9 +31,9 @@ const VIEWS: Array<{ view: InboxView; icon: LucideIcon }> = [
 ];
 
 /** Riel de la Bandeja (236 px): vistas, agentes y canales. Bajo 1180 px vive en un cajón. */
-export default function InboxRail({ filters, counts, agents, onSelect, className }: InboxRailProps) {
+export default function InboxRail({ filters, counts, agents, onSelect, className, settingsOpen }: InboxRailProps) {
   const { t } = useTranslation();
-  const scoped = !!(filters.agentId || filters.channel);
+  const scoped = !!(filters.agentId || filters.channel) || !!settingsOpen;
 
   // Agentes: los de la organización (aunque no tengan conversaciones) más los que solo aparecen en los contadores
   const agentCount = new Map((counts?.byAgent ?? []).map((a) => [a.agentId, a.count]));
@@ -72,7 +75,7 @@ export default function InboxRail({ filters, counts, agents, onSelect, className
             <h2 className={styles.heading}>{t('inbox.rail.agents')}</h2>
             <ul className={styles.list}>
               {agentRows.map((agent) => {
-                const current = filters.agentId === agent.id;
+                const current = !settingsOpen && filters.agentId === agent.id;
                 return (
                   <li key={agent.id}>
                     <button
@@ -98,7 +101,7 @@ export default function InboxRail({ filters, counts, agents, onSelect, className
             <div className={styles.chips}>
               {channels.map(({ channel, count }) => {
                 const meta = getChannelMeta(channel);
-                const current = filters.channel === channel;
+                const current = !settingsOpen && filters.channel === channel;
                 return (
                   <button
                     key={channel}
@@ -116,6 +119,17 @@ export default function InboxRail({ filters, counts, agents, onSelect, className
             </div>
           </>
         )}
+      </div>
+      {/* Como en el diseño: el engranaje al pie del riel */}
+      <div className={styles.foot}>
+        <Link
+          href="/dashboard/conversations/settings"
+          className={styles.footLink}
+          aria-current={settingsOpen ? 'page' : undefined}
+        >
+          <Settings size={16} aria-hidden="true" />
+          <span>{t('inbox.settings.title')}</span>
+        </Link>
       </div>
     </nav>
   );

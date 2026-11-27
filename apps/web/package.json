@@ -9,7 +9,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "node scripts/check-i18n-keys.mjs && eslint",
-    "check:i18n": "node scripts/check-i18n-keys.mjs"
+    "check:i18n": "node scripts/check-i18n-keys.mjs",
+    "test:inbox-ui": "tsx --test components/app/Inbox/quickReplies.test.ts"
   },
   "dependencies": {
     "@gensmart/shared": "*",

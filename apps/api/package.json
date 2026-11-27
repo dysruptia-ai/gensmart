@@ -42,7 +42,12 @@
     "test:inbox": "tsx --test src/services/inbox-query.test.ts",
     "test:inbox:db": "INBOX_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-query.test.ts",
     "test:conv-actions": "tsx --test src/services/conversation-actions.test.ts",
-    "test:conv-actions:db": "CONV_ACTIONS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/conversation-actions.test.ts"
+    "test:conv-actions:db": "CONV_ACTIONS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/conversation-actions.test.ts",
+    "test:inbox-notes": "tsx --test src/services/inbox-notes.test.ts",
+    "test:inbox-notes:db": "INBOX_NOTES_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-notes.test.ts",
+    "test:quick-replies": "tsx --test src/services/quick-replies.test.ts",
+    "test:quick-replies:db": "QUICK_REPLIES_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/quick-replies.test.ts",
+    "test:inbox-labels:db": "INBOX_LABELS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-labels.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

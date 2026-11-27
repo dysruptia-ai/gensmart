@@ -154,3 +154,35 @@
     transition: none;
   }
 }
+
+/* web-43: Ajustes de la bandeja al pie del riel (en el diseño, el engranaje del pie) */
+.foot {
+  flex: none;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--app-rail-line);
+}
+
+.footLink {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+  padding: 6px 9px;
+  border-radius: var(--app-r-sm);
+  color: var(--app-mute);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.footLink:hover {
+  background: var(--app-active);
+  color: var(--app-ink);
+  text-decoration: none;
+}
+
+.footLink[aria-current='page'] {
+  background: var(--app-card);
+  color: var(--app-ink);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--app-line-soft);
+}

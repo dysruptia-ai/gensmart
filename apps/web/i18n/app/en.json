@@ -1710,7 +1710,9 @@
         "closedAsYou": "You closed it as {outcome}",
         "closedPlain": "Conversation closed",
         "reopened": "{name} reopened it",
-        "reopenedYou": "You reopened it"
+        "reopenedYou": "You reopened it",
+        "noteDeleted": "{name} deleted a note",
+        "noteDeletedYou": "You deleted a note"
       },
       "takenBar": "{name} is handling this conversation.",
       "agentBar": "The agent is replying. Take the conversation to write yourself.",
@@ -1758,7 +1760,9 @@
       "close": "Close details",
       "tabs": {
         "contact": "Contact",
-        "activity": "Activity"
+        "activity": "Activity",
+        "notes": "Notes",
+        "notesCount": "Notes · {count}"
       },
       "phone": "Phone",
       "email": "Email",
@@ -1820,7 +1824,8 @@
       "transfer": "We couldn't transfer the conversation. Try again.",
       "snooze": "We couldn't snooze the conversation. Try again.",
       "unsnooze": "We couldn't unsnooze it. Try again.",
-      "reopen": "We couldn't reopen the conversation. Try again."
+      "reopen": "We couldn't reopen the conversation. Try again.",
+      "labels": "We couldn't save the labels. They're back to how they were."
     },
     "dialog": {
       "close": "Close"
@@ -1851,7 +1856,8 @@
       "transferred": "Conversation transferred to {name}",
       "released": "Conversation handed back to the agent",
       "snoozed": "Conversation snoozed",
-      "reopened": "Conversation reopened"
+      "reopened": "Conversation reopened",
+      "noteDeleted": "Note deleted"
     },
     "outcomes": {
       "sold": "Sold",
@@ -1894,6 +1900,115 @@
       "todayAt": "today {time}",
       "tomorrowAt": "tomorrow {time}",
       "dateAt": "{day}, {time}"
+    },
+    "notes": {
+      "tabReply": "Reply",
+      "tabNote": "Internal note",
+      "placeholder": "Write a note only your team can see",
+      "label": "Internal note",
+      "hint": "Only your team sees it. Neither the customer nor the agent can read it.",
+      "save": "Save note",
+      "badge": "Internal note",
+      "delete": "Delete note",
+      "onlyTeam": "only your team sees it",
+      "tooLong": "Notes can be up to 2,000 characters.",
+      "saveError": "We couldn't save the note. Try again.",
+      "teamNotes": "Team notes",
+      "empty": "No one has left a note yet.",
+      "newNote": "New note",
+      "panelPlaceholder": "Only your team sees it",
+      "counter": "{count} / {max}",
+      "deleteTitle": "Delete this note?",
+      "deleteText": "Your team won't see it anymore. Activity will show that you deleted it.",
+      "deleteConfirm": "Delete note"
+    },
+    "quickReplies": {
+      "menuTitle": "Quick replies",
+      "menuTitleQuery": "Quick replies · “{query}”",
+      "manage": "Manage",
+      "empty": "No quick replies yet.",
+      "createOne": "Create one",
+      "askAdmin": "Ask an admin to create them.",
+      "menuKeys": "↑ ↓ choose · Enter insert · Esc close",
+      "placeholder": "Type your reply. Type / for quick replies",
+      "all": "All",
+      "allAria": "Show all quick replies"
+    },
+    "labels": {
+      "add": "Add label",
+      "addShort": "Add",
+      "title": "Labels",
+      "remove": "Remove {name}",
+      "none": "No labels",
+      "more": "{count} more labels",
+      "pickerLabel": "Conversation labels",
+      "search": "Search or create",
+      "loading": "Loading labels…",
+      "noneYet": "No labels yet.",
+      "create": "Create “{name}”",
+      "askAdmin": "Ask an admin to create it.",
+      "tooLong": "Up to {max} characters.",
+      "convLimit": "This conversation already has {max} labels, the maximum. Remove one to add another.",
+      "taken": "There's already a label with that name.",
+      "orgLimit": "Your organization has reached the label limit.",
+      "createError": "We couldn't create the label. Try again.",
+      "saveError": "We couldn't save the label. Try again.",
+      "deleteError": "We couldn't delete the label. Try again.",
+      "nameRequired": "Enter a name.",
+      "nameLabel": "Label name",
+      "editKeys": "Enter saves · Esc cancels",
+      "new": "New label",
+      "deleted": "“{name}” deleted.",
+      "undo": "Undo",
+      "name": "Name",
+      "conversations": "Conversations",
+      "rename": "Rename",
+      "renameAria": "Rename {name}",
+      "deleteAria": "Delete {name}",
+      "deleteTitle": "Delete “{name}”?",
+      "deleteConfirm": "Delete label",
+      "deleteText": "It will be removed from {count} conversations. The conversations themselves stay."
+    },
+    "settings": {
+      "title": "Inbox settings",
+      "subtitle": "How conversations are assigned, handled and escalated.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "actions": "Actions",
+      "loadError": "We couldn't load this list.",
+      "loading": "Loading…",
+      "edit": "Edit",
+      "delete": "Delete",
+      "labelsText": "Tag conversations so they're easy to find and filter. Anyone on the team can apply them.",
+      "qr": {
+        "title": "Quick replies",
+        "text": "Type / in a conversation to use them. They're shared across your organization.",
+        "new": "New reply",
+        "shortcut": "Shortcut",
+        "body": "Text",
+        "uses": "Uses",
+        "editAria": "Edit /{shortcut}",
+        "deleteAria": "Delete /{shortcut}",
+        "deleteTitle": "Delete /{shortcut}?",
+        "deleteText": "No one on the team will be able to use it. Messages already sent won't change.",
+        "deleteError": "We couldn't delete the reply. Try again.",
+        "editTitle": "Edit quick reply",
+        "newTitle": "New quick reply",
+        "shortcutInvalid": "Use 2 to 30 characters: lowercase letters, numbers and hyphens. No spaces.",
+        "bodyRequired": "Enter the reply text.",
+        "bodyTooLong": "The text can be up to 1,000 characters.",
+        "shortcutTaken": "That shortcut already exists.",
+        "limit": "Your organization has reached the limit of {max} quick replies.",
+        "saveError": "We couldn't save the reply. Try again.",
+        "shortcutPlaceholder": "shipping",
+        "shortcutHelp": "Lowercase letters, numbers and hyphens. No spaces.",
+        "bodyPlaceholder": "What gets inserted when you pick it",
+        "insert": "Insert:",
+        "variablesHelp": "{nombre} = contact's first name, {agente} = your name ({name} and {agent} work too). If the data is missing, it's left out.",
+        "preview": "Preview",
+        "sampleName": "Laura Gómez",
+        "sampleAgent": "Camila"
+      }
     }
   }
 }

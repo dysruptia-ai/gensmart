@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { listApiQuery, rowMatches, sortRows, withNeeds } from './inboxFormat';
-import type { ConversationRow, InboxCounts, InboxFilters, ListResponse, MessageRole } from './types';
+import type { ConversationRow, InboxCounts, InboxFilters, LabelRef, ListResponse, MessageRole } from './types';
 
 const PAGE_SIZE = 30;
 
@@ -20,7 +20,15 @@ export interface RowPatch {
   fields?: Partial<
     Pick<
       ConversationRow,
-      'snoozedUntil' | 'snoozedBy' | 'followUpAt' | 'followUpPending' | 'closedOutcome' | 'closedAt' | 'closedBy' | 'closedByName'
+      | 'snoozedUntil'
+      | 'snoozedBy'
+      | 'followUpAt'
+      | 'followUpPending'
+      | 'closedOutcome'
+      | 'closedAt'
+      | 'closedBy'
+      | 'closedByName'
+      | 'labels'
     >
   >;
 }
@@ -38,6 +46,8 @@ export interface InboxList {
   patch: (p: RowPatch) => void;
   /** Quita una conversación (se borró). */
   remove: (id: string) => void;
+  /** Cambia las etiquetas de todas las filas cargadas (se renombró o borró una del catálogo). */
+  mapLabels: (fn: (labels: LabelRef[]) => LabelRef[]) => void;
 }
 
 /** Lista paginada de la Bandeja. Nunca carga todas de una vez ni se vuelve a pedir entera con cada evento. */
@@ -203,7 +213,11 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
     setTotal((n) => Math.max(0, n - 1));
   }, []);
 
-  return { rows, total, loading, loadingMore, error, hasMore: page < totalPages, reload, loadMore, patch, remove };
+  const mapLabels = useCallback((fn: (labels: LabelRef[]) => LabelRef[]) => {
+    setRows((prev) => prev.map((r) => (r.labels?.length ? { ...r, labels: fn(r.labels) } : r)));
+  }, []);
+
+  return { rows, total, loading, loadingMore, error, hasMore: page < totalPages, reload, loadMore, patch, remove, mapLabels };
 }
 
 /** Contadores del riel (`GET /api/conversations/counts`). `refresh` agrupa las llamadas seguidas. */

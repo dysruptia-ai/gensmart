@@ -350,3 +350,193 @@
   flex-wrap: wrap;
   gap: 6px 14px;
 }
+
+/* ---------- web-43: etiquetas y notas del equipo ---------- */
+.labels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+.label,
+.addLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: var(--app-r-pill);
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.label {
+  box-shadow: inset 0 0 0 1px var(--app-line);
+  color: var(--app-mute);
+  font-weight: 600;
+}
+
+.labelName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labelRemove {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  margin-right: -4px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.labelRemove:hover {
+  background: var(--app-card);
+}
+
+.addWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.addLabel {
+  border: 0;
+  background: none;
+  box-shadow: inset 0 0 0 1px var(--app-line);
+  color: var(--app-soft);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.addLabel:hover {
+  background: var(--app-active);
+  color: var(--app-ink);
+}
+
+.noteInline {
+  font-size: 12.5px;
+  color: var(--app-soft);
+}
+
+.notes {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.noteItem {
+  position: relative;
+  padding: 9px 34px 9px 11px;
+  border-radius: var(--app-r-sm);
+  background: var(--app-warn-bg);
+  color: var(--app-ink);
+}
+
+.noteBody {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.noteMeta {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--app-warn);
+}
+
+.noteDelete {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--app-warn);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.noteItem:hover .noteDelete,
+.noteDelete:focus-visible {
+  opacity: 1;
+}
+
+.noteDelete:hover {
+  background: var(--app-card);
+  color: var(--app-err);
+}
+
+@media (hover: none) {
+  .noteDelete {
+    opacity: 1;
+  }
+}
+
+.newNote {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.newNoteLabel {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-mute);
+}
+
+.newNoteInput {
+  width: 100%;
+  min-height: 78px;
+  padding: 9px 10px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-bg);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.newNoteInput:focus {
+  outline: none;
+  border-color: var(--app-focus);
+  box-shadow: 0 0 0 1px var(--app-focus);
+}
+
+.counter {
+  justify-self: end;
+  font-size: 11.5px;
+  color: var(--app-faint);
+}
+
+.noteError {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--app-err);
+}
+
+.saveNote {
+  width: 100%;
+  justify-content: center;
+}

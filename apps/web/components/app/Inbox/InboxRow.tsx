@@ -29,6 +29,10 @@ function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: 
   const takenByMe = row.status === 'human_takeover' && !!userId && row.takenOverBy === userId;
   const takenByOther = row.status === 'human_takeover' && !takenByMe;
 
+  // Etiquetas (web-43): la primera en orden alfabético y "+N"
+  const labels = row.labels ?? [];
+  const firstLabel = labels[0];
+
   // Quién escribió el último mensaje
   const last = row.lastMessage;
   let author = '';
@@ -112,6 +116,16 @@ function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: 
             {channel.label}
             {row.agentName ? ` · ${row.agentName}` : ''}
           </span>
+          {firstLabel && (
+            <span className={`${styles.tag} ${styles.tagLabel}`} title={labels.map((l) => l.name).join(', ')}>
+              <span className={styles.tagLabelName}>{firstLabel.name}</span>
+            </span>
+          )}
+          {labels.length > 1 && (
+            <span className={`${styles.tag} ${styles.tagLabel} ${styles.tagMore}`} aria-label={t('inbox.labels.more', { count: labels.length - 1 })}>
+              +{labels.length - 1}
+            </span>
+          )}
         </span>
       </span>
     </button>

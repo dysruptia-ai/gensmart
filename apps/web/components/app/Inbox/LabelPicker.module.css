@@ -1,0 +1,144 @@
+.picker {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: 260px;
+  max-width: calc(100vw - 24px);
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-md);
+  background: var(--app-card);
+  box-shadow: var(--app-shadow-pop);
+  color: var(--app-ink);
+  text-align: left;
+}
+
+.right {
+  left: auto;
+  right: 0;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 9px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-bg);
+  color: var(--app-faint);
+}
+
+.search:focus-within {
+  border-color: var(--app-focus);
+  box-shadow: 0 0 0 1px var(--app-focus);
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  border: 0;
+  background: none;
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.search input:focus {
+  outline: none;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border-radius: var(--app-r-sm);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.option:hover {
+  background: var(--app-active);
+}
+
+.option input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--app-check);
+}
+
+.option input:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.disabled {
+  color: var(--app-faint);
+  cursor: not-allowed;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.create {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  border: 0;
+  border-top: 1px solid var(--app-line-soft);
+  border-radius: 0 0 var(--app-r-sm) var(--app-r-sm);
+  background: none;
+  color: var(--app-link);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.create:hover:not(:disabled) {
+  background: var(--app-active);
+}
+
+.create:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.note,
+.problem {
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--app-soft);
+}
+
+.problem {
+  color: var(--app-err);
+}
+
+.up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}

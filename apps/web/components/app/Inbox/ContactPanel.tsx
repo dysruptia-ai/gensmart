@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Megaphone, User, X } from 'lucide-react';
+import { ExternalLink, Megaphone, Plus, Trash2, User, X } from 'lucide-react';
+import { INBOX_LIMITS } from '@gensmart/shared';
 import { api } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
 import InboxButton from './InboxButton';
+import LabelPicker, { type LabelPickerData } from './LabelPicker';
 import { getChannelMeta } from './channelMeta';
 import { contactName, formatScore, initialsOf, relativeTime } from './inboxFormat';
-import type { ConversationDetail, TimelineEvent } from './types';
+import type { ApiNote, ConversationDetail, TimelineEvent } from './types';
 import styles from './ContactPanel.module.css';
 
 export interface ContactPanelProps {
@@ -19,10 +21,20 @@ export interface ContactPanelProps {
   onClose?: () => void;
   /** Cambia cuando llega un puntaje o una conversación nueva del contacto: recarga la actividad. */
   activityKey: number;
+  /** web-43: notas internas (siempre disponibles, la tenga quien la tenga) y etiquetas. */
+  notes?: ApiNote[];
+  userId?: string;
+  onSaveNote?: (body: string) => Promise<boolean>;
+  onAskDeleteNote?: (noteId: string) => void;
+  onRemoveLabel?: (labelId: string) => void;
+  /** Eventos de esta conversación que también van en Actividad (web-43: "X borró una nota"), con el texto ya armado. */
+  threadActivity?: Array<{ id: string; at: string; text: string }>;
+  /** El selector de etiquetas, anclado a "+ Agregar". */
+  labelPicker?: LabelPickerData;
 }
 
-type Tab = 'contact' | 'activity';
-const TABS: Tab[] = ['contact', 'activity'];
+type Tab = 'contact' | 'activity' | 'notes';
+const TABS: Tab[] = ['contact', 'activity', 'notes'];
 
 function readable(value: unknown): string {
   if (value === null || value === undefined) return '';
@@ -69,11 +81,33 @@ function readReferral(metadata: Record<string, unknown> | undefined): AdReferral
   return Object.values(ad).some(Boolean) ? ad : null;
 }
 
-export default function ContactPanel({ conversation: c, loading, now, onClose, activityKey }: ContactPanelProps) {
+export default function ContactPanel({
+  conversation: c,
+  loading,
+  now,
+  onClose,
+  activityKey,
+  notes = [],
+  userId,
+  onSaveNote,
+  onAskDeleteNote,
+  onRemoveLabel,
+  labelPicker,
+  threadActivity,
+}: ContactPanelProps) {
   const { t, language } = useTranslation();
   const baseId = useId();
   const [tab, setTab] = useState<Tab>('contact');
-  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ contact: null, activity: null });
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({ contact: null, activity: null, notes: null });
+  // web-43: el selector se abre para una conversación; la nota nueva, igual
+  const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const addLabelRef = useRef<HTMLButtonElement>(null);
+  const closePicker = useCallback(() => {
+    setPickerFor(null);
+    addLabelRef.current?.focus();
+  }, []);
+  const [newNote, setNewNote] = useState<{ id: string | null; text: string }>({ id: null, text: '' });
+  const [noteState, setNoteState] = useState<'idle' | 'saving' | 'error'>('idle');
   // Resultado de la actividad, atado al contacto y a la versión que se pidió
   const [timeline, setTimeline] = useState<{ key: string; events: TimelineEvent[] | null } | null>(null);
 
@@ -148,7 +182,13 @@ export default function ContactPanel({ conversation: c, loading, now, onClose, a
   const ad = readReferral(c.channelMetadata);
   // Mientras llega la versión nueva se sigue viendo la anterior del mismo contacto
   const sameContact = !!timeline && !!contactId && timeline.key.startsWith(`${contactId}:`);
-  const events = sameContact ? timeline.events : null;
+  const contactEvents = sameContact ? timeline.events : null;
+  const events: TimelineEvent[] | null = contactEvents
+    ? [
+        ...contactEvents,
+        ...(threadActivity ?? []).map((e) => ({ type: 'thread_event', description: e.text, date: e.at, metadata: { conversationId: c.id } })),
+      ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : null;
   const timelineError = sameContact && timeline.key === `${contactId}:${activityKey}` && timeline.events === null;
 
   return (
@@ -170,7 +210,9 @@ export default function ContactPanel({ conversation: c, loading, now, onClose, a
             className={styles.tab}
             onClick={() => setTab(key)}
           >
-            {t(`inbox.contact.tabs.${key}`)}
+            {key === 'notes' && notes.length > 0
+              ? t('inbox.contact.tabs.notesCount', { count: notes.length })
+              : t(`inbox.contact.tabs.${key}`)}
           </button>
         ))}
       </div>
@@ -293,6 +335,125 @@ export default function ContactPanel({ conversation: c, loading, now, onClose, a
               </dl>
             ) : (
               <p className={styles.note}>{t('inbox.contact.noVariables')}</p>
+            )}
+          </div>
+
+          <div className={styles.section}>
+            <h3 className={styles.heading}>{t('inbox.labels.title')}</h3>
+            <div className={styles.labels}>
+              {(c.labels ?? []).map((label) => (
+                <span key={label.id} className={styles.label}>
+                  <span className={styles.labelName}>{label.name}</span>
+                  {onRemoveLabel && (
+                    <button
+                      type="button"
+                      className={styles.labelRemove}
+                      onClick={() => onRemoveLabel(label.id)}
+                      aria-label={t('inbox.labels.remove', { name: label.name })}
+                    >
+                      <X size={11} aria-hidden="true" />
+                    </button>
+                  )}
+                </span>
+              ))}
+              {!c.labels?.length && <span className={styles.noteInline}>{t('inbox.labels.none')}</span>}
+              {labelPicker && (
+                <span className={styles.addWrap}>
+                  <button
+                    ref={addLabelRef}
+                    type="button"
+                    className={styles.addLabel}
+                    onClick={() => setPickerFor(pickerFor === c.id ? null : c.id)}
+                    aria-expanded={pickerFor === c.id}
+                  >
+                    <Plus size={11} aria-hidden="true" />
+                    {t('inbox.labels.addShort')}
+                  </button>
+                  {pickerFor === c.id && <LabelPicker {...labelPicker} onClose={closePicker} direction="up" />}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : tab === 'notes' ? (
+        <div role="tabpanel" id={`${baseId}-panel-notes`} aria-labelledby={`${baseId}-tab-notes`} className={styles.scroll}>
+          <div className={styles.section}>
+            <h3 className={styles.heading}>{t('inbox.notes.teamNotes')}</h3>
+            {notes.length === 0 ? (
+              <p className={styles.note}>{t('inbox.notes.empty')}</p>
+            ) : (
+              <ul className={styles.notes}>
+                {[...notes].reverse().map((n) => (
+                  <li key={n.id} className={styles.noteItem}>
+                    <p className={styles.noteBody}>{n.body}</p>
+                    <span className={styles.noteMeta}>
+                      {n.authorUserId && n.authorUserId === userId ? t('inbox.row.you') : n.authorName || t('inbox.row.team')} ·{' '}
+                      <time dateTime={n.createdAt}>{relativeTime(n.createdAt, language, now)}</time>
+                    </span>
+                    {n.canDelete && onAskDeleteNote && (
+                      <button
+                        type="button"
+                        className={styles.noteDelete}
+                        onClick={() => onAskDeleteNote(n.id)}
+                        aria-label={t('inbox.notes.delete')}
+                        title={t('inbox.notes.delete')}
+                      >
+                        <Trash2 size={13} aria-hidden="true" />
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {onSaveNote && (
+              <form
+                className={styles.newNote}
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const body = (newNote.id === c.id ? newNote.text : '').trim();
+                  if (!body || noteState === 'saving') return;
+                  setNoteState('saving');
+                  void onSaveNote(body).then((ok) => {
+                    setNoteState(ok ? 'idle' : 'error');
+                    if (ok) setNewNote({ id: c.id, text: '' });
+                  });
+                }}
+              >
+                <label className={styles.newNoteLabel} htmlFor={`${baseId}-new-note`}>
+                  {t('inbox.notes.newNote')}
+                </label>
+                <textarea
+                  id={`${baseId}-new-note`}
+                  className={styles.newNoteInput}
+                  value={newNote.id === c.id ? newNote.text : ''}
+                  onChange={(e) => {
+                    setNewNote({ id: c.id, text: e.target.value });
+                    if (noteState === 'error') setNoteState('idle');
+                  }}
+                  placeholder={t('inbox.notes.panelPlaceholder')}
+                  maxLength={INBOX_LIMITS.noteMaxChars}
+                  aria-describedby={`${baseId}-note-count`}
+                />
+                <span id={`${baseId}-note-count`} className={styles.counter}>
+                  {t('inbox.notes.counter', {
+                    count: [...(newNote.id === c.id ? newNote.text : '')].length.toLocaleString(language === 'es' ? 'es-CO' : 'en-US'),
+                    max: INBOX_LIMITS.noteMaxChars.toLocaleString(language === 'es' ? 'es-CO' : 'en-US'),
+                  })}
+                </span>
+                {noteState === 'error' && (
+                  <p className={styles.noteError} role="alert">
+                    {t('inbox.notes.saveError')}
+                  </p>
+                )}
+                <InboxButton
+                  type="submit"
+                  loading={noteState === 'saving'}
+                  disabled={!(newNote.id === c.id ? newNote.text : '').trim()}
+                  className={styles.saveNote}
+                >
+                  {t('inbox.notes.save')}
+                </InboxButton>
+              </form>
             )}
           </div>
         </div>

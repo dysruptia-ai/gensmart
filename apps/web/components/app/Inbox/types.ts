@@ -32,6 +32,27 @@ export interface RowContact {
   avatarUrl: string | null;
 }
 
+/** Etiqueta aplicada a una conversación (web-43). */
+export interface LabelRef {
+  id: string;
+  name: string;
+}
+
+/** Etiqueta del catálogo de la organización (`GET /api/inbox-labels`). */
+export interface InboxLabel extends LabelRef {
+  conversationCount: number;
+}
+
+/** Nota interna (web-43): solo la ve el equipo; el agente nunca la lee. */
+export interface ApiNote {
+  id: string;
+  body: string;
+  authorUserId: string | null;
+  authorName: string | null;
+  createdAt: string;
+  canDelete: boolean;
+}
+
 export interface ConversationRow {
   id: string;
   agentId: string;
@@ -59,6 +80,8 @@ export interface ConversationRow {
   closedAt?: string | null;
   closedBy?: string | null;
   closedByName?: string | null;
+  /** Etiquetas en orden alfabético (web-43). */
+  labels?: LabelRef[];
   lastMessage: {
     content: string;
     role: MessageRole | null;
@@ -141,6 +164,7 @@ export interface ConversationDetail {
   closedAt?: string | null;
   closedBy?: string | null;
   closedByName?: string | null;
+  labels?: LabelRef[];
 }
 
 export type ConversationEventType =
@@ -151,7 +175,8 @@ export type ConversationEventType =
   | 'snoozed'
   | 'unsnoozed'
   | 'closed'
-  | 'reopened';
+  | 'reopened'
+  | 'note_deleted';
 
 /** Evento guardado en `conversation_events` (web-42). */
 export interface ApiConversationEvent {
@@ -178,6 +203,8 @@ export interface DetailResponse {
   messages: ThreadMessage[];
   /** Historial de eventos (web-42); vacío en las conversaciones anteriores. */
   events?: ApiConversationEvent[];
+  /** Notas internas sin borrar, de la más vieja a la más nueva (web-43). */
+  notes?: ApiNote[];
   pagination: { total: number; hasMore: boolean; oldestTimestamp: string | null };
 }
 

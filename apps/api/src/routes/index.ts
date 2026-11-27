@@ -2,6 +2,8 @@ import { Router } from 'express';
 import authRouter from './auth';
 import agentsRouter from './agents';
 import conversationsRouter from './conversations';
+import quickRepliesRouter from './quick-replies';
+import inboxLabelsRouter from './inbox-labels';
 import contactsRouter from './contacts';
 import funnelRouter from './funnel';
 import { calendarRouter, appointmentRouter } from './calendar';
@@ -33,6 +35,8 @@ router.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Dat
 router.use('/auth', authRouter);
 router.use('/agents', agentsRouter);
 router.use('/conversations', conversationsRouter);
+router.use('/quick-replies', quickRepliesRouter);
+router.use('/inbox-labels', inboxLabelsRouter);
 router.use('/contacts', contactsRouter);
 router.use('/funnel', funnelRouter);
 router.use('/calendars', calendarRouter);

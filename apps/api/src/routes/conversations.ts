@@ -5,7 +5,7 @@ import { validateUUID } from '../middleware/validateUUID';
 import { requireRole } from '../middleware/requireRole';
 import { query } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { INBOX_LIMITS, PLAN_LIMITS } from '@gensmart/shared';
 import { scoringQueue } from '../config/queues';
 import { chat } from '../services/llm.service';
 import { getIO } from '../config/websocket';
@@ -34,6 +34,18 @@ import {
   transferNotificationText,
 } from '../services/conversation-events.service';
 import { createNotification } from '../services/notification.service';
+import {
+  CONVERSATION_LABELS_SQL,
+  type LabelRef,
+  createNote,
+  emitInbox,
+  getConversationLabels,
+  isInboxAdmin,
+  listNotes,
+  noteBodySchema,
+  rowToNote,
+  setLabelsSchema,
+} from '../services/inbox-annotations.service';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -150,6 +162,7 @@ router.get(
         closed_at: string | null;
         closed_by: string | null;
         closed_by_name: string | null;
+        labels: LabelRef[];
       }>(
         `SELECT
            c.id, c.agent_id, a.name as agent_name,
@@ -167,7 +180,8 @@ router.get(
            ${WAITING_SINCE_SQL} AS waiting_since,
            c.snoozed_until, c.snoozed_by, c.follow_up_at,
            ${followUpPendingSql(`$${paramIndex + 2}`)} AS follow_up_pending,
-           c.closed_outcome, c.closed_at, c.closed_by, cb.name AS closed_by_name
+           c.closed_outcome, c.closed_at, c.closed_by, cb.name AS closed_by_name,
+           ${CONVERSATION_LABELS_SQL} AS labels
          ${INBOX_FROM}
          LEFT JOIN users u ON c.taken_over_by = u.id
          LEFT JOIN users cb ON c.closed_by = cb.id
@@ -217,6 +231,7 @@ router.get(
           closedAt: row.closed_at,
           closedBy: row.closed_by,
           closedByName: row.closed_by_name,
+          labels: row.labels ?? [],
           lastMessage: row.last_message_content
             ? {
                 content: row.last_message_content.slice(0, 100),
@@ -394,6 +409,11 @@ router.get(
       const totalMessages = parseInt(msgCountResult.rows[0]?.count ?? '0', 10);
       // Historial de eventos (web-42). Solo la Bandeja lo lee; el agente nunca.
       const events = await listEvents(conversationId, req.org!.id);
+      // Notas internas y etiquetas (web-43). Las notas solo las lee la Bandeja.
+      const [notes, labels] = await Promise.all([
+        listNotes(conversationId, req.org!.id, req.user!.userId, req.user!.role),
+        getConversationLabels(conversationId),
+      ]);
 
       res.json({
         conversation: {
@@ -440,8 +460,10 @@ router.get(
           closedAt: conv.closed_at,
           closedBy: conv.closed_by,
           closedByName: conv.closed_by_name,
+          labels,
         },
         events,
+        notes,
         messages: messageRows.map((m) => ({
           id: m.id,
           role: m.role,
@@ -1271,6 +1293,115 @@ router.delete(
       });
       emitConversationChange(req.org!.id, conversationId, { snoozedUntil: null }, event);
       res.json({ message: 'Snooze removed', event });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/conversations/:id/notes (web-43) ──────────────────────────────
+// Nota interna: cualquier rol, plan y estado (incluso cerrada o fuera de la ventana de 24 h), porque no
+// sale por el canal. No toca la conversación: ni last_message_at, ni message_count, ni la espera.
+router.post(
+  '/:id/notes',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const conversationId = String(req.params['id']);
+      const { body } = noteBodySchema.parse(req.body);
+      const exists = await query('SELECT 1 FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org!.id]);
+      if (!exists.rows[0]) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+      const row = await createNote({ organizationId: req.org!.id, conversationId, authorUserId: req.user!.userId, body });
+      const note = rowToNote(row, req.user!.userId, req.user!.role);
+      // Para el resto del equipo, canDelete depende de cada quien: la web lo recalcula al recibirla
+      emitInbox(req.org!.id, 'conversation:note', { conversationId, note }, conversationId);
+      res.status(201).json({ note });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── DELETE /api/conversations/:id/notes/:noteId (web-43) ────────────────────
+// El autor o un owner/admin. Borrado lógico + evento note_deleted sin el texto.
+router.delete(
+  '/:id/notes/:noteId',
+  validateUUID('id'),
+  validateUUID('noteId'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const conversationId = String(req.params['id']);
+      const noteId = String(req.params['noteId']);
+      const found = await query<{ author_user_id: string | null }>(
+        `SELECT author_user_id FROM conversation_notes
+         WHERE id = $1 AND conversation_id = $2 AND organization_id = $3 AND deleted_at IS NULL`,
+        [noteId, conversationId, req.org!.id]
+      );
+      const note = found.rows[0];
+      if (!note) throw new AppError(404, 'Note not found', 'NOT_FOUND');
+      if (note.author_user_id !== req.user!.userId && !isInboxAdmin(req.user!.role)) {
+        throw new AppError(403, 'Only the author or an admin can delete this note', 'FORBIDDEN');
+      }
+      const r = await query(
+        `UPDATE conversation_notes SET deleted_at = NOW(), deleted_by = $2
+         WHERE id = $1 AND deleted_at IS NULL RETURNING id`,
+        [noteId, req.user!.userId]
+      );
+      if (!r.rows[0]) throw new AppError(404, 'Note not found', 'NOT_FOUND');
+      const event = await recordEventSafe({
+        organizationId: req.org!.id,
+        conversationId,
+        type: 'note_deleted',
+        actorUserId: req.user!.userId,
+        data: { noteId },
+      });
+      emitInbox(req.org!.id, 'conversation:note-deleted', { conversationId, noteId, event }, conversationId);
+      res.json({ noteId, event });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── PUT /api/conversations/:id/labels (web-43) ──────────────────────────────
+// Deja exactamente esas etiquetas. Cualquier rol, solo etiquetas de la organización.
+router.put(
+  '/:id/labels',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const conversationId = String(req.params['id']);
+      const labelIds = [...new Set(setLabelsSchema.parse(req.body).labelIds)];
+      if (labelIds.length > INBOX_LIMITS.labelsPerConversation) {
+        throw new AppError(422, `At most ${INBOX_LIMITS.labelsPerConversation} labels per conversation`, 'conversation_labels_limit');
+      }
+      const exists = await query('SELECT 1 FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org!.id]);
+      if (!exists.rows[0]) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+      if (labelIds.length > 0) {
+        const own = await query<{ count: string }>(
+          'SELECT COUNT(*) AS count FROM inbox_labels WHERE id = ANY($1::uuid[]) AND organization_id = $2',
+          [labelIds, req.org!.id]
+        );
+        if (parseInt(own.rows[0]?.count ?? '0', 10) !== labelIds.length) {
+          throw new AppError(400, 'Unknown label', 'UNKNOWN_LABEL');
+        }
+      }
+      const removed = await query(
+        'DELETE FROM conversation_labels WHERE conversation_id = $1 AND NOT (label_id = ANY($2::uuid[])) RETURNING label_id',
+        [conversationId, labelIds]
+      );
+      const added = await query(
+        `INSERT INTO conversation_labels (conversation_id, label_id, organization_id, added_by)
+         SELECT $1, unnest($2::uuid[]), $3, $4
+         ON CONFLICT (conversation_id, label_id) DO NOTHING
+         RETURNING label_id`,
+        [conversationId, labelIds, req.org!.id, req.user!.userId]
+      );
+      const labels = await getConversationLabels(conversationId);
+      if ((removed.rowCount ?? 0) > 0 || (added.rowCount ?? 0) > 0) {
+        emitConversationChange(req.org!.id, conversationId, { labels });
+      }
+      res.json({ labels });
     } catch (err) {
       next(err);
     }

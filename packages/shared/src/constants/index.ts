@@ -167,3 +167,17 @@ export const MESSAGE_ADDONS = [
 
 /** Porcentaje del límite mensual de mensajes en el que se avisa al usuario (usage.service y página de precios). */
 export const USAGE_WARNING_PERCENT = 80;
+
+/** Bandeja (web-43): topes de notas, respuestas rápidas y etiquetas. Los usan la API y la web. */
+export const INBOX_LIMITS = {
+  noteMaxChars: 2000,
+  notesPerConversationShown: 500,
+  quickRepliesPerOrg: 200,
+  quickReplyMaxChars: 1000,
+  labelsPerOrg: 100,
+  labelsPerConversation: 20,
+  labelNameMaxChars: 30,
+} as const;
+
+/** Atajo de respuesta rápida sin la "/": minúsculas (con tildes), números, "_" y "-". De 2 a 30. */
+export const QUICK_REPLY_SHORTCUT_RE = /^[\p{Ll}\p{N}][\p{Ll}\p{N}_-]{1,29}$/u;

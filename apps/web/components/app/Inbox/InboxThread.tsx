@@ -13,6 +13,7 @@ import {
   Inbox,
   Lock,
   MoreHorizontal,
+  Tag,
   PanelRight,
   RefreshCw,
   RotateCcw,
@@ -27,10 +28,13 @@ import InboxButton from './InboxButton';
 import { useHeaderFit } from './useHeaderFit';
 import ThreadBubble from './ThreadBubble';
 import ThreadComposer from './ThreadComposer';
+import ThreadNote from './ThreadNote';
+import LabelPicker, { type LabelPickerData } from './LabelPicker';
+import type { QuickReply } from './quickReplies';
 import { getChannelMeta } from './channelMeta';
 import { contactName, dayKey, dayLabel, initialsOf, relativeTime, snoozeLabel, waitDuration, clockTime } from './inboxFormat';
 import type { ConversationThreadState, ThreadEvent } from './useConversationThread';
-import type { ThreadMessage } from './types';
+import type { ApiNote, ThreadMessage } from './types';
 import styles from './InboxThread.module.css';
 
 export interface InboxThreadProps {
@@ -62,12 +66,20 @@ export interface InboxThreadProps {
   onOpenContact?: () => void;
   contactOpen?: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  /** web-43: respuestas rápidas, nombre de quien escribe ({agente}), notas y etiquetas. */
+  quickReplies?: QuickReply[] | null;
+  onUseReply?: (id: string) => void;
+  myName?: string | null;
+  onAskDeleteNote?: (noteId: string) => void;
+  /** El selector de etiquetas, anclado al menú "Más". */
+  labelPicker?: LabelPickerData;
 }
 
 type Item =
   | { type: 'day'; key: string; label: string }
   | { type: 'message'; key: string; message: ThreadMessage; continued: boolean }
-  | { type: 'event'; key: string; event: ThreadEvent };
+  | { type: 'event'; key: string; event: ThreadEvent }
+  | { type: 'note'; key: string; note: ApiNote };
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
 
@@ -192,6 +204,8 @@ export function eventText(e: ThreadEvent, userId: string | undefined, t: Transla
       return e.outcome ? k('closedAs', { outcome: t(`inbox.outcomes.${e.outcome}`) }) : k('closed');
     case 'reopened':
       return k('reopened');
+    case 'note_deleted':
+      return k('noteDeleted');
     default:
       return '';
   }
@@ -200,7 +214,14 @@ export function eventText(e: ThreadEvent, userId: string | undefined, t: Transla
 export default function InboxThread(props: InboxThreadProps) {
   const { t, language } = useTranslation();
   const { thread, userId, now } = props;
-  const { conversation: c, messages, events, loading, error, hasMore, loadingOlder } = thread;
+  const { conversation: c, messages, events, notes, loading, error, hasMore, loadingOlder } = thread;
+  // El selector de etiquetas se abre para una conversación: al cambiar de conversación se cierra solo
+  const [pickerFor, setPickerFor] = useState<string | null>(null);
+  const moreWrapRef = useRef<HTMLDivElement>(null);
+  const closePicker = useCallback(() => {
+    setPickerFor(null);
+    moreWrapRef.current?.querySelector<HTMLButtonElement>('button[aria-haspopup="menu"]')?.focus();
+  }, []);
   // Las acciones llevan texto solo si el nombre cabe completo (web-42b)
   const { headRef, nameRef, actionsRef, level: fitLevel } = useHeaderFit([c?.id, c?.status, c?.takenOverBy, c?.contact?.name, language, props.onBack]);
   const iconPrimary = fitLevel >= 2;
@@ -215,10 +236,14 @@ export default function InboxThread(props: InboxThreadProps) {
 
   // Mensajes y eventos en orden, con separadores por día
   const items = useMemo<Item[]>(() => {
-    type Entry = { at: number; msg?: ThreadMessage; event?: ThreadEvent };
+    type Entry = { at: number; msg?: ThreadMessage; event?: ThreadEvent; note?: ApiNote };
+    // Con mensajes por cargar, una nota más vieja que el primero cargado espera a que llegue esa parte
+    const firstLoaded = hasMore ? messages.find((m) => !m.delivery) : undefined;
+    const floor = firstLoaded ? new Date(firstLoaded.createdAt).getTime() : -Infinity;
     const entries: Entry[] = [
       ...messages.map((m) => ({ at: new Date(m.createdAt).getTime(), msg: m })),
       ...events.map((e) => ({ at: new Date(e.at).getTime(), event: e })),
+      ...notes.filter((n) => new Date(n.createdAt).getTime() >= floor).map((n) => ({ at: new Date(n.createdAt).getTime(), note: n })),
     ];
     // Los mensajes que se están enviando van siempre al final
     entries.sort((a, b) => (a.msg?.delivery ? 1 : 0) - (b.msg?.delivery ? 1 : 0) || a.at - b.at);
@@ -226,14 +251,17 @@ export default function InboxThread(props: InboxThreadProps) {
     let day = '';
     let prevAuthor = '';
     for (const entry of entries) {
-      const iso = entry.msg?.createdAt ?? entry.event!.at;
+      const iso = entry.msg?.createdAt ?? entry.note?.createdAt ?? entry.event!.at;
       const key = dayKey(iso);
       if (key !== day) {
         day = key;
         prevAuthor = '';
         out.push({ type: 'day', key: `day-${key}`, label: dayLabel(iso, language, t) });
       }
-      if (entry.event) {
+      if (entry.note) {
+        prevAuthor = '';
+        out.push({ type: 'note', key: `note-${entry.note.id}`, note: entry.note });
+      } else if (entry.event) {
         prevAuthor = '';
         out.push({ type: 'event', key: entry.event.id, event: entry.event });
       } else if (entry.msg) {
@@ -244,7 +272,7 @@ export default function InboxThread(props: InboxThreadProps) {
       }
     }
     return out;
-  }, [messages, events, language, t]);
+  }, [messages, events, notes, hasMore, language, t]);
 
   const scrollToBottom = useCallback((smooth = false) => {
     const el = scrollRef.current;
@@ -409,6 +437,9 @@ export default function InboxThread(props: InboxThreadProps) {
     menuItems.push({ key: 'snooze', label: t('inbox.thread.snooze'), icon: Clock, onSelect: props.onAskSnooze });
   }
   if (!closed) menuItems.push({ key: 'close', label: t('inbox.thread.close'), icon: CircleCheckBig, onSelect: props.onAskClose });
+  if (props.labelPicker) {
+    menuItems.push({ key: 'labels', label: t('inbox.labels.add'), icon: Tag, onSelect: () => setPickerFor(c.id) });
+  }
   if (props.onAskDelete) {
     menuItems.push({ key: 'delete', label: t('inbox.thread.delete'), icon: Trash2, onSelect: props.onAskDelete, danger: true });
   }
@@ -577,7 +608,12 @@ export default function InboxThread(props: InboxThreadProps) {
               aria-controls="inbox-details"
             />
           )}
-          <MoreMenu items={menuItems} />
+          <div ref={moreWrapRef} className={styles.moreWrap}>
+            <MoreMenu items={menuItems} />
+            {pickerFor === c.id && props.labelPicker && (
+              <LabelPicker {...props.labelPicker} onClose={closePicker} align="right" />
+            )}
+          </div>
         </div>
       </header>
 
@@ -643,6 +679,9 @@ export default function InboxThread(props: InboxThreadProps) {
                 </span>
               );
             }
+            if (item.type === 'note') {
+              return <ThreadNote key={item.key} note={item.note} userId={userId} onAskDelete={props.onAskDeleteNote} />;
+            }
             if (item.type === 'event') {
               const e = item.event;
               return (
@@ -695,6 +734,12 @@ export default function InboxThread(props: InboxThreadProps) {
           canRecordVoice={props.canRecordVoice}
           windowClosed={windowClosed}
           textareaRef={props.textareaRef}
+          onSaveNote={thread.saveNote}
+          quickReplies={props.quickReplies ?? null}
+          onUseReply={props.onUseReply ?? (() => undefined)}
+          contactName={c.contact?.name ?? null}
+          agentName={props.myName ?? null}
+          isManager={manager}
         />
       ) : taken ? (
         <div className={styles.bar}>

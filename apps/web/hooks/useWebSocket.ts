@@ -148,6 +148,18 @@ function waitForSocket(): void {
   }, 1000);
 }
 
+/** Evento del historial de la Bandeja (`conversation_events`, web-42/43). */
+export interface InboxEventPayload {
+  id: string;
+  type: 'handoff_requested' | 'taken' | 'released' | 'transferred' | 'snoozed' | 'unsnoozed' | 'closed' | 'reopened' | 'note_deleted';
+  actorUserId: string | null;
+  actorName: string | null;
+  targetUserId: string | null;
+  targetName: string | null;
+  data: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface WebSocketEvents {
   /** Eventos propios de Socket.IO: la Bandeja los usa para la franja "Sin conexión". */
   connect: () => void;
@@ -168,17 +180,18 @@ export interface WebSocketEvents {
     closedAt?: string | null;
     closedBy?: string | null;
     closedByName?: string | null;
-    event?: {
-      id: string;
-      type: 'handoff_requested' | 'taken' | 'released' | 'transferred' | 'snoozed' | 'unsnoozed' | 'closed' | 'reopened';
-      actorUserId: string | null;
-      actorName: string | null;
-      targetUserId: string | null;
-      targetName: string | null;
-      data: Record<string, unknown>;
-      createdAt: string;
-    };
+    /** web-43: etiquetas de la conversación en orden alfabético. */
+    labels?: Array<{ id: string; name: string }>;
+    event?: InboxEventPayload;
   }) => void;
+  /** web-43: nota interna nueva (solo la Bandeja; el agente nunca la lee). */
+  'conversation:note': (data: {
+    conversationId: string;
+    note: { id: string; body: string; authorUserId: string | null; authorName: string | null; createdAt: string; canDelete: boolean };
+  }) => void;
+  'conversation:note-deleted': (data: { conversationId: string; noteId: string; event?: InboxEventPayload | null }) => void;
+  /** web-43: se renombró o borró una etiqueta del catálogo. */
+  'inbox-labels:changed': (data: { action: 'renamed'; label: { id: string; name: string } } | { action: 'deleted'; labelId: string }) => void;
   'message:new': (data: {
     conversationId: string;
     messages?: Array<{
