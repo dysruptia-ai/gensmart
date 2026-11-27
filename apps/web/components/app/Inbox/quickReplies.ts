@@ -16,6 +16,8 @@ export interface QuickReply {
 export interface ReplyVariables {
   contactName?: string | null;
   agentName?: string | null;
+  /** Idioma para la mayúscula al inicio de una línea (toLocaleUpperCase). */
+  language?: string;
 }
 
 const PHONE_LIKE = /^[+\d\s()-]+$/;
@@ -65,14 +67,22 @@ export function applyReplyVariablesParts(body: string, vars: ReplyVariables): Re
   }
   if (last < body.length) parts.push({ text: body.slice(last) });
   if (!removed) return parts;
-  return tidyParts(parts);
+  return tidyParts(parts, vars.language);
 }
 
 /** Limpia los huecos de las variables vacías sin tocar el resto del texto. */
-function tidyParts(parts: ReplyPart[]): ReplyPart[] {
+function tidyParts(parts: ReplyPart[], language?: string): ReplyPart[] {
   // Se trabaja sobre el texto plano de los trozos normales; los valores de variables no se tocan.
   const joined = parts.map((p) => (p.variable ? '\u0001'.repeat(p.text.length) : p.text)).join('');
-  const cleaned = joined
+  // Líneas que empezaban con una variable sin dato: la primera letra que queda va en mayúscula
+  // ("{nombre}, te escribo" → "Te escribo"). Los saltos de línea no se tocan, así que el índice se conserva.
+  const startHoles = new Set(
+    joined
+      .split('\n')
+      .map((line, i) => (/^[ \t]*\u0000/.test(line) ? i : -1))
+      .filter((i) => i >= 0),
+  );
+  const tidied = joined
     // "meses, {nombre}." sin dato: no queda la coma suelta antes del punto
     .replace(/,[ \t]*\u0000(?=[ \t]*[.!?;:…])/g, '\u0000')
     // espacios (no saltos de línea) alrededor del hueco se reducen a uno
@@ -86,6 +96,14 @@ function tidyParts(parts: ReplyPart[]): ReplyPart[] {
     // al inicio de una línea, sin espacio ni coma suelta
     .replace(/(^|\n)[ \t]*[,;:]?[ \t]*/g, '$1')
     .replace(/[ \t]+(\n|$)/g, '$1');
+  const cleaned = startHoles.size
+    ? tidied
+        .split('\n')
+        .map((line, i) =>
+          startHoles.has(i) ? line.replace(/^([¿¡(«"']*)(\p{Ll})/u, (_m, lead: string, ch: string) => lead + ch.toLocaleUpperCase(language === 'es' || language === 'en' ? language : undefined)) : line,
+        )
+        .join('\n')
+    : tidied;
   // Se vuelven a armar los trozos: los \u0001 son los valores, en el mismo orden
   const values = parts.filter((p) => p.variable);
   const out: ReplyPart[] = [];

@@ -1,0 +1,96 @@
+/*
+ * El mockup la pinta clara sobre fondo oscuro. gs-tokens.css no tiene una superficie invertida, así que
+ * es una superficie elevada (card + borde + sombra de popover): se separa de la lista en los dos temas.
+ */
+.bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-md);
+  background: var(--app-card);
+  color: var(--app-ink);
+  box-shadow: var(--app-shadow-pop);
+  overflow: hidden;
+}
+
+.count {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: var(--app-r-sm);
+  background: transparent;
+  color: var(--app-ink);
+  font-size: 13.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.action:hover {
+  background: var(--app-active);
+}
+
+.action:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 1px;
+}
+
+.iconOnly {
+  width: 34px;
+  padding: 0;
+}
+
+.danger {
+  width: 34px;
+  padding: 0;
+  color: var(--app-err);
+}
+
+.danger:hover {
+  background: var(--app-err-bg);
+}
+
+/* Móvil: ocupa el lugar de la navegación inferior */
+.mobile {
+  position: static;
+  flex: none;
+  display: grid;
+  gap: 0;
+  padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+  border-width: 1px 0 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.mobile .action {
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 52px;
+  font-size: 11.5px;
+}
+
+.mobile .danger {
+  width: auto;
+}

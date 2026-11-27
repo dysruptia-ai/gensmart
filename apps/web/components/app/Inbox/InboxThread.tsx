@@ -12,6 +12,7 @@ import {
   Forward,
   Inbox,
   Lock,
+  MailWarning,
   MoreHorizontal,
   Tag,
   PanelRight,
@@ -73,6 +74,8 @@ export interface InboxThreadProps {
   onAskDeleteNote?: (noteId: string) => void;
   /** El selector de etiquetas, anclado al menú "Más". */
   labelPicker?: LabelPickerData;
+  /** web-44: "Marcar como no leída" (también la tecla U). */
+  onMarkUnread?: () => void;
 }
 
 type Item =
@@ -439,6 +442,9 @@ export default function InboxThread(props: InboxThreadProps) {
   if (!closed) menuItems.push({ key: 'close', label: t('inbox.thread.close'), icon: CircleCheckBig, onSelect: props.onAskClose });
   if (props.labelPicker) {
     menuItems.push({ key: 'labels', label: t('inbox.labels.add'), icon: Tag, onSelect: () => setPickerFor(c.id) });
+  }
+  if (props.onMarkUnread) {
+    menuItems.push({ key: 'unread', label: t('inbox.unread.mark'), icon: MailWarning, onSelect: props.onMarkUnread });
   }
   if (props.onAskDelete) {
     menuItems.push({ key: 'delete', label: t('inbox.thread.delete'), icon: Trash2, onSelect: props.onAskDelete, danger: true });

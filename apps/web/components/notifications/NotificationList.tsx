@@ -42,6 +42,10 @@ function getNavTarget(notif: Notification): string | null {
   ) {
     const conversationId = notif.data?.['conversationId'] as string | undefined;
     if (conversationId) return `/dashboard/conversations/${conversationId}`;
+    // web-44: "Te asignó N conversaciones" (una sola notificación por lote) abre "Mías"
+    if (notif.type === 'conversation_transferred' && Array.isArray(notif.data?.['conversationIds'])) {
+      return '/dashboard/conversations?view=mine';
+    }
   }
   if (notif.type === 'plan_usage_80' || notif.type === 'plan_usage_100' || notif.type === 'plan_canceled') {
     return '/dashboard/billing';

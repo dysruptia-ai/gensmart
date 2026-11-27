@@ -73,7 +73,7 @@ export default function ThreadComposer({
   agentName,
   isManager,
 }: ThreadComposerProps) {
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const menuId = useId();
   // Al cambiar de conversación el cuadro se vuelve a montar y empieza en "Responder"
   const [mode, setMode] = useState<ComposerMode>('reply');
@@ -94,7 +94,7 @@ export default function ThreadComposer({
 
   const note = mode === 'note';
   const replies = useMemo(() => quickReplies ?? [], [quickReplies]);
-  const vars = useMemo(() => ({ contactName, agentName }), [contactName, agentName]);
+  const vars = useMemo(() => ({ contactName, agentName, language }), [contactName, agentName, language]);
 
   const setDraft = (value: string, forMode: ComposerMode = mode) => {
     const key = draftKey(conversationId, forMode);

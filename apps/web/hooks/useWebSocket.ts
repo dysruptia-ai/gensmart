@@ -192,6 +192,10 @@ export interface WebSocketEvents {
   'conversation:note-deleted': (data: { conversationId: string; noteId: string; event?: InboxEventPayload | null }) => void;
   /** web-43: se renombró o borró una etiqueta del catálogo. */
   'inbox-labels:changed': (data: { action: 'renamed'; label: { id: string; name: string } } | { action: 'deleted'; labelId: string }) => void;
+  /** web-44: leído / no leído de quien mira, desde sus otras pestañas (solo a su sala). */
+  'conversation:read-state': (data: { organizationId: string; conversationId: string; unread: boolean }) => void;
+  /** web-44: cambió alguna de las vistas guardadas de quien mira. */
+  'inbox-views:changed': (data: { organizationId: string }) => void;
   'message:new': (data: {
     conversationId: string;
     messages?: Array<{

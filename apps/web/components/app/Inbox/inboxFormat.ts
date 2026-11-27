@@ -1,5 +1,5 @@
-import type { CloseOutcome, ConversationRow, InboxFilters, InboxView } from './types';
-import { CLOSE_OUTCOMES, INBOX_VIEWS } from './types';
+import type { CloseOutcome, ConversationRow, InboxFilters, InboxOrder, InboxView, MinScore, SavedViewFilters } from './types';
+import { CLOSE_OUTCOMES, INBOX_ORDERS, INBOX_VIEWS, MIN_SCORES } from './types';
 
 type T = (key: string, values?: Record<string, string | number>) => string;
 
@@ -170,25 +170,67 @@ export function formatScore(score: number | null | undefined): string | null {
 }
 
 // ── URL ─────────────────────────────────────────────────────────────────────
+// Nombres cortos (convención de web-41): agent, channel, label, score, order, savedView. Los filtros con
+// varios valores van separados por comas; `agent=x` y `channel=x` de antes siguen abriendo lo mismo.
+// También se aceptan los nombres largos de la API (agentIds, channels, labelIds, minScore).
+
+function readList(params: URLSearchParams, ...names: string[]): string[] {
+  const out: string[] = [];
+  for (const name of names) {
+    for (const raw of params.getAll(name)) {
+      for (const part of raw.split(',')) {
+        const v = part.trim();
+        if (v && !out.includes(v)) out.push(v);
+      }
+    }
+  }
+  return out;
+}
+
+export function parseMinScore(value: string | null | undefined): MinScore | null {
+  const n = Number(value);
+  return (MIN_SCORES as readonly number[]).includes(n) ? (n as MinScore) : null;
+}
+
+export const EMPTY_FILTERS: InboxFilters = {
+  view: 'all',
+  agentIds: [],
+  channels: [],
+  labelIds: [],
+  minScore: null,
+  allTime: false,
+  outcome: null,
+  order: 'needs',
+  savedView: null,
+};
 
 export function readFilters(params: URLSearchParams): InboxFilters {
   const view = params.get('view');
+  const order = params.get('order');
   return {
     view: (INBOX_VIEWS as readonly string[]).includes(view ?? '') ? (view as InboxView) : 'all',
-    agentId: params.get('agent') || null,
-    channel: params.get('channel') || null,
+    agentIds: readList(params, 'agent', 'agentIds', 'agentId'),
+    channels: readList(params, 'channel', 'channels'),
+    labelIds: readList(params, 'label', 'labelIds'),
+    minScore: parseMinScore(params.get('score') ?? params.get('minScore')),
     allTime: params.get('range') === 'all',
     outcome: view === 'closed' ? parseOutcome(params.get('outcome')) : null,
+    order: (INBOX_ORDERS as readonly string[]).includes(order ?? '') ? (order as InboxOrder) : 'needs',
+    savedView: params.get('savedView') || null,
   };
 }
 
 export function filtersQuery(filters: InboxFilters): string {
   const q = new URLSearchParams();
-  if (filters.view !== 'all') q.set('view', filters.view);
-  if (filters.agentId) q.set('agent', filters.agentId);
-  if (filters.channel) q.set('channel', filters.channel);
-  if (filters.allTime) q.set('range', 'all');
-  if (filters.view === 'closed' && filters.outcome) q.set('outcome', filters.outcome);
+  if (filters.savedView) q.set('savedView', filters.savedView);
+  else if (filters.view !== 'all') q.set('view', filters.view);
+  if (filters.agentIds.length) q.set('agent', filters.agentIds.join(','));
+  if (filters.channels.length) q.set('channel', filters.channels.join(','));
+  if (filters.labelIds.length) q.set('label', filters.labelIds.join(','));
+  if (filters.minScore) q.set('score', String(filters.minScore));
+  if (!filters.savedView && filters.allTime) q.set('range', 'all');
+  if (!filters.savedView && filters.view === 'closed' && filters.outcome) q.set('outcome', filters.outcome);
+  if (!filters.savedView && filters.view === 'all' && filters.order !== 'needs') q.set('order', filters.order);
   const s = q.toString();
   return s ? `?${s}` : '';
 }
@@ -197,30 +239,80 @@ export function inboxHref(filters: InboxFilters, conversationId: string | null):
   return `/dashboard/conversations${conversationId ? `/${conversationId}` : ''}${filtersQuery(filters)}`;
 }
 
+/** Cuántos filtros del panel están puestos (el número del botón). */
+export function activeFilterCount(filters: InboxFilters): number {
+  return filters.agentIds.length + filters.channels.length + filters.labelIds.length + (filters.minScore ? 1 : 0);
+}
+
 /** Parámetros de `GET /api/conversations` para unos filtros. */
 export function listApiQuery(filters: InboxFilters, search: string, page: number, limit: number): string {
   const q = new URLSearchParams({ view: filters.view, page: String(page), limit: String(limit) });
-  if (filters.view === 'all') q.set('order', 'needs');
-  if (filters.agentId) q.set('agentId', filters.agentId);
-  if (filters.channel) q.set('channel', filters.channel);
+  if (filters.savedView) q.set('savedView', filters.savedView);
+  if (filters.view === 'all' && !filters.savedView) q.set('order', filters.order);
+  if (filters.agentIds.length) q.set('agentIds', filters.agentIds.join(','));
+  if (filters.channels.length) q.set('channels', filters.channels.join(','));
+  if (filters.labelIds.length) q.set('labelIds', filters.labelIds.join(','));
+  if (filters.minScore) q.set('minScore', String(filters.minScore));
   if (filters.allTime) q.set('range', 'all');
   if (filters.view === 'closed' && filters.outcome) q.set('outcome', filters.outcome);
   if (search) q.set('search', search);
   return q.toString();
 }
 
-/** ¿La fila cumple la vista? (para quitarla o dejarla tras un evento en tiempo real). */
-export function rowMatches(row: ConversationRow, filters: InboxFilters, userId: string | undefined): boolean {
-  if (filters.agentId && row.agentId !== filters.agentId) return false;
-  if (filters.channel && row.channel !== filters.channel) return false;
+/** Los criterios de una vista guardada como filtros de la lista (estado → vista). */
+export function savedViewAsFilters(f: SavedViewFilters): Pick<InboxFilters, 'view' | 'allTime'> & { agentOnly: boolean } {
+  const state = f.state ?? 'open';
+  const view: InboxView = state === 'needs' ? 'needs' : state === 'mine' ? 'mine' : state === 'closed' ? 'closed' : 'all';
+  return { view, allTime: !!f.allTime, agentOnly: state === 'agent_only' };
+}
+
+/** "Solo el agente" (misma regla que la API): abierta con el agente, sin pedido de ayuda y sin posponer. */
+export function isAgentOnly(row: ConversationRow): boolean {
+  return row.status === 'active' && !row.handoffActive && !row.snoozedUntil;
+}
+
+/** Canal, agente, etiqueta y puntaje (OR dentro de cada uno, AND entre ellos). */
+function matchesCriteria(
+  row: ConversationRow,
+  c: { agentIds?: string[]; channels?: string[]; labelIds?: string[]; minScore?: number | null },
+): boolean {
+  if (c.agentIds?.length && !c.agentIds.includes(row.agentId)) return false;
+  if (c.channels?.length && !c.channels.includes(row.channel)) return false;
+  if (c.labelIds?.length && !(row.labels ?? []).some((l) => c.labelIds!.includes(l.id))) return false;
+  if (c.minScore && !(row.aiScore !== null && row.aiScore >= c.minScore)) return false;
+  return true;
+}
+
+/**
+ * ¿La fila cumple la vista y los filtros? (para quitarla o dejarla tras un evento en tiempo real).
+ * Con una vista guardada, `saved` trae sus criterios. Con búsqueda la lista no se toca (`searching`).
+ */
+export function rowMatches(
+  row: ConversationRow,
+  filters: InboxFilters,
+  userId: string | undefined,
+  saved?: SavedViewFilters | null,
+  searching = false,
+): boolean {
+  if (!matchesCriteria(row, filters)) return false;
+  if (searching) return true;
+  let view = filters.view;
+  let outcome = filters.outcome;
+  if (saved) {
+    if (!matchesCriteria(row, saved)) return false;
+    const s = savedViewAsFilters(saved);
+    if (s.agentOnly && !isAgentOnly(row)) return false;
+    view = s.view;
+    outcome = null;
+  }
   const snoozed = !!row.snoozedUntil;
-  switch (filters.view) {
+  switch (view) {
     case 'needs':
       return row.needsAttention && !snoozed;
     case 'mine':
       return isMine(row, userId);
     case 'closed':
-      return row.status === 'closed' && (!filters.outcome || row.closedOutcome === filters.outcome);
+      return row.status === 'closed' && (!outcome || row.closedOutcome === outcome);
     default:
       return row.status !== 'closed' && !snoozed;
   }
@@ -250,7 +342,7 @@ export function withNeeds(row: ConversationRow, lastCustomerAt: string | null): 
 }
 
 /** Orden de la lista: en "Todas", primero las que necesitan a alguien; en "Necesitan", la que más espera. */
-export function sortRows(rows: ConversationRow[], view: InboxView): ConversationRow[] {
+export function sortRows(rows: ConversationRow[], view: InboxView, order: InboxOrder = 'needs'): ConversationRow[] {
   const time = (iso: string | null) => (iso ? new Date(iso).getTime() : 0);
   const copy = [...rows];
   if (view === 'needs') {
@@ -265,7 +357,8 @@ export function sortRows(rows: ConversationRow[], view: InboxView): Conversation
     );
   } else {
     copy.sort((a, b) => {
-      if (view === 'all' && a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1;
+      if (view === 'all' && order === 'needs' && a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1;
+      if (view === 'all' && order === 'unread' && !!a.unread !== !!b.unread) return a.unread ? -1 : 1;
       return time(b.lastMessageAt) - time(a.lastMessageAt);
     });
   }

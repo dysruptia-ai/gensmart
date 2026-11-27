@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
-import { listApiQuery, rowMatches, sortRows, withNeeds } from './inboxFormat';
-import type { ConversationRow, InboxCounts, InboxFilters, LabelRef, ListResponse, MessageRole } from './types';
+import { listApiQuery, rowMatches, savedViewAsFilters, sortRows, withNeeds } from './inboxFormat';
+import type { ConversationRow, InboxCounts, InboxFilters, LabelRef, ListResponse, MessageRole, SavedViewFilters } from './types';
 
 const PAGE_SIZE = 30;
 
@@ -16,6 +16,8 @@ export interface RowPatch {
   takeoverUserName?: string | null;
   handoffAt?: string;
   aiScore?: number;
+  /** Sin leer para quien mira (web-44). */
+  unread?: boolean;
   /** Campos de web-42 (posponer, cerrar con resultado) tal como llegan en `conversation:update`. */
   fields?: Partial<
     Pick<
@@ -36,6 +38,8 @@ export interface RowPatch {
 export interface InboxList {
   rows: ConversationRow[];
   total: number;
+  /** No leídas con los filtros actuales (web-44). */
+  unreadCount: number;
   loading: boolean;
   loadingMore: boolean;
   error: boolean;
@@ -48,12 +52,27 @@ export interface InboxList {
   remove: (id: string) => void;
   /** Cambia las etiquetas de todas las filas cargadas (se renombró o borró una del catálogo). */
   mapLabels: (fn: (labels: LabelRef[]) => LabelRef[]) => void;
+  /** Cambia el leído de una fila (y el número de no leídas) al instante. */
+  setUnread: (id: string, unread: boolean) => void;
+}
+
+/** El orden local de la lista: el de la vista, el del segmentado de Todas, o por recientes al buscar. */
+function sortFor(rows: ConversationRow[], filters: InboxFilters, saved: SavedViewFilters | null | undefined, searching: boolean) {
+  if (searching) return sortRows(rows, 'all', 'recent');
+  if (saved) return sortRows(rows, savedViewAsFilters(saved).view, 'recent');
+  return sortRows(rows, filters.view, filters.order);
 }
 
 /** Lista paginada de la Bandeja. Nunca carga todas de una vez ni se vuelve a pedir entera con cada evento. */
-export function useInboxList(filters: InboxFilters, search: string, userId: string | undefined): InboxList {
+export function useInboxList(
+  filters: InboxFilters,
+  search: string,
+  userId: string | undefined,
+  saved?: SavedViewFilters | null,
+): InboxList {
   const [rows, setRows] = useState<ConversationRow[]>([]);
   const [total, setTotal] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -69,7 +88,9 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
   const searchRef = useRef(search);
   const userRef = useRef(userId);
   const rowsRef = useRef(rows);
+  const savedRef = useRef(saved);
   useLayoutEffect(() => {
+    savedRef.current = saved;
     filtersRef.current = filters;
     searchRef.current = search;
     userRef.current = userId;
@@ -91,6 +112,7 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
         if (id !== requestId.current) return;
         setRows(data.conversations);
         setTotal(data.pagination.total);
+        setUnreadCount(data.unreadCount ?? 0);
         setTotalPages(data.pagination.totalPages);
         setPage(1);
         setSettled({ key: queryKey, ok: true });
@@ -136,9 +158,10 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
             const kept = prev.map((r) => fresh.get(r.id) ?? r);
             const keptIds = new Set(kept.map((r) => r.id));
             const added = data.conversations.filter((r) => !keptIds.has(r.id));
-            return sortRows([...added, ...kept], filtersRef.current.view);
+            return sortFor([...added, ...kept], filtersRef.current, savedRef.current, !!searchRef.current);
           });
           setTotal(data.pagination.total);
+          setUnreadCount(data.unreadCount ?? 0);
         })
         .catch(() => {
           /* el próximo evento o la reconexión lo vuelven a intentar */
@@ -160,6 +183,8 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
         if (!searchRef.current) mergeFirstPage();
         return;
       }
+      // El número de "Sin leer" se ajusta fuera del updater (React puede llamarlo dos veces)
+      if (p.unread !== undefined && p.unread !== !!current.unread) setUnreadCount((n) => Math.max(0, n + (p.unread ? 1 : -1)));
       setRows((prev) => {
         const index = prev.findIndex((r) => r.id === p.conversationId);
         if (index < 0) return prev;
@@ -193,15 +218,16 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
           row.handedOffAt = p.handoffAt;
         }
         if (p.aiScore !== undefined) row.aiScore = p.aiScore;
+        if (p.unread !== undefined) row.unread = p.unread;
         row = withNeeds(row, lastCustomerAt);
 
         const next = [...prev];
-        if (!rowMatches(row, filtersRef.current, userRef.current)) {
+        if (!rowMatches(row, filtersRef.current, userRef.current, savedRef.current, !!searchRef.current)) {
           next.splice(index, 1);
           return next;
         }
         next[index] = row;
-        return sortRows(next, filtersRef.current.view);
+        return sortFor(next, filtersRef.current, savedRef.current, !!searchRef.current);
       });
     },
     [mergeFirstPage],
@@ -213,11 +239,32 @@ export function useInboxList(filters: InboxFilters, search: string, userId: stri
     setTotal((n) => Math.max(0, n - 1));
   }, []);
 
+  const setUnread = useCallback((id: string, unread: boolean) => {
+    const current = rowsRef.current.find((r) => r.id === id);
+    if (!current || !!current.unread === unread) return;
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, unread } : r)));
+    setUnreadCount((n) => Math.max(0, n + (unread ? 1 : -1)));
+  }, []);
+
   const mapLabels = useCallback((fn: (labels: LabelRef[]) => LabelRef[]) => {
     setRows((prev) => prev.map((r) => (r.labels?.length ? { ...r, labels: fn(r.labels) } : r)));
   }, []);
 
-  return { rows, total, loading, loadingMore, error, hasMore: page < totalPages, reload, loadMore, patch, remove, mapLabels };
+  return {
+    rows,
+    total,
+    unreadCount,
+    loading,
+    loadingMore,
+    error,
+    hasMore: page < totalPages,
+    reload,
+    loadMore,
+    patch,
+    remove,
+    mapLabels,
+    setUnread,
+  };
 }
 
 /** Contadores del riel (`GET /api/conversations/counts`). `refresh` agrupa las llamadas seguidas. */

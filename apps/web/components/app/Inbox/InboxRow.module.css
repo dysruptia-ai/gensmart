@@ -214,3 +214,118 @@
   flex: none;
   max-width: none;
 }
+
+/* ── web-44 ───────────────────────────────────────────────────────────────── */
+
+/* Sin leer: punto antes del nombre, en la primera línea (no choca con el borde ámbar ni con la casilla) */
+.unreadDot {
+  flex: none;
+  align-self: center;
+  width: 7px;
+  height: 7px;
+  margin-right: -2px;
+  border-radius: 50%;
+  background: var(--app-check);
+}
+
+.unread .name {
+  font-weight: 700;
+  color: var(--app-ink);
+}
+
+.unread .time {
+  color: var(--app-ink);
+  font-weight: 700;
+}
+
+.unread .preview {
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+/* La parte que coincide con la búsqueda */
+.row mark {
+  padding: 0 1px;
+  border-radius: 3px;
+  background: var(--app-ok-bg);
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+.matchNote {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  font-size: 12px;
+  color: var(--app-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Modo selección: casilla real a la izquierda */
+.selecting {
+  grid-template-columns: 20px 36px minmax(0, 1fr);
+  align-items: start;
+}
+
+.selecting[data-checked='true'] {
+  background: var(--app-active);
+}
+
+.check {
+  width: 18px;
+  height: 18px;
+  margin: 9px 0 0;
+  accent-color: var(--app-check);
+  cursor: pointer;
+}
+
+.check:disabled {
+  cursor: not-allowed;
+}
+
+.selecting:has(.check:focus-visible) {
+  outline: 2px solid var(--app-focus);
+  outline-offset: -2px;
+}
+
+@media (max-width: 767.98px) {
+  .selecting {
+    min-height: 56px;
+  }
+
+  .check {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* web-44b: line3 nunca esconde contenido. Las etiquetas de estado y "+N" no se encogen; la primera
+   etiqueta tiene un mínimo con elipsis; canal · agente cede primero; si no cabe, pasa a 2 líneas. */
+.line3 {
+  flex-wrap: wrap;
+  row-gap: 4px;
+  overflow: visible;
+}
+
+.line3 > .tag {
+  flex: none;
+}
+
+.line3 > .tagLabel {
+  flex: 0 1 auto;
+  min-width: 56px;
+  max-width: 100%;
+}
+
+.line3 > .tagMore {
+  flex: none;
+  min-width: 0;
+}
+
+.meta {
+  flex: 1 1 0;
+  min-width: 40px;
+}

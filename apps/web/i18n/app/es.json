@@ -1586,7 +1586,34 @@
       "all": "Todas",
       "needs": "Necesitan a alguien",
       "mine": "Mías",
-      "closed": "Cerradas"
+      "closed": "Cerradas",
+      "saved": "Vistas guardadas",
+      "new": "Nueva vista",
+      "edit": "Editar vista",
+      "delete": "Borrar vista",
+      "save": "Guardar vista",
+      "savedToast": "Vista guardada en el riel",
+      "limit": "Llegaste a {max} vistas, el máximo. Borra una para crear otra.",
+      "name": "Nombre",
+      "nameCount": "{n}/{max}",
+      "namePlaceholder": "Por ejemplo: Pagos sin confirmar",
+      "nameRequired": "Ponle un nombre para guardarla.",
+      "nameTaken": "Ya tienes una vista con ese nombre.",
+      "saveError": "No pudimos guardar la vista. Intenta de nuevo.",
+      "deleteTitle": "Borrar vista",
+      "deleteText": "¿Borrar «{name}»? Las conversaciones no cambian.",
+      "minScore": "Puntaje mínimo",
+      "scoreAny": "Cualquiera",
+      "scoreMin": "{n} o más",
+      "scoreChip": "Puntaje {n} o más",
+      "state": "Estado",
+      "states": {
+        "open": "Abiertas",
+        "needs": "Pidió ayuda",
+        "agent_only": "Solo el agente",
+        "mine": "Mías",
+        "closed": "Cerradas"
+      }
     },
     "rail": {
       "label": "Bandejas",
@@ -1617,7 +1644,8 @@
         "followUp": "Seguimiento para hoy",
         "active": "En curso",
         "snoozed": "Pospuestas"
-      }
+      },
+      "clearSearchAndFilters": "Quitar búsqueda y filtros"
     },
     "empty": {
       "all": {
@@ -1641,8 +1669,8 @@
         "text": "Ninguna conversación abierta de este agente o canal en el período."
       },
       "search": {
-        "title": "Sin resultados para \"{query}\"",
-        "text": "Buscamos por nombre, teléfono o correo del contacto. Revisa lo que escribiste o prueba con menos letras."
+        "title": "Sin resultados para «{query}»",
+        "text": "Buscamos en el contacto y dentro de los mensajes, en toda la bandeja. Revisa lo que escribiste o quita algún filtro."
       }
     },
     "row": {
@@ -1658,7 +1686,8 @@
       "scoreTitle": "Puntaje del lead",
       "scoreSr": "Puntaje",
       "snoozedUntil": "Vuelve {when}",
-      "backFromSnooze": "Volvió de posponer"
+      "backFromSnooze": "Volvió de posponer",
+      "unreadSr": "Sin leer."
     },
     "thread": {
       "loading": "Cargando la conversación",
@@ -1839,7 +1868,8 @@
       "search": "Buscar",
       "escape": "Cerrar lo que esté abierto",
       "help": "Ver estos atajos",
-      "palette": "Buscar o ir a"
+      "palette": "Buscar o ir a",
+      "unread": "Marcar como no leída"
     },
     "mobileNav": {
       "label": "Vistas de la Bandeja",
@@ -1967,7 +1997,9 @@
       "deleteAria": "Borrar {name}",
       "deleteTitle": "¿Borrar «{name}»?",
       "deleteConfirm": "Borrar etiqueta",
-      "deleteText": "Se quita de {count} conversaciones. Las conversaciones no se borran."
+      "deleteText": "Se quita de {count} conversaciones. Las conversaciones no se borran.",
+      "more_one": "{count} etiqueta más",
+      "more_other": "{count} etiquetas más"
     },
     "settings": {
       "title": "Ajustes de la bandeja",
@@ -2009,6 +2041,124 @@
         "sampleName": "Laura Gómez",
         "sampleAgent": "Camila"
       }
+    },
+    "search": {
+      "placeholder": "Busca dentro de los mensajes, no solo el contacto",
+      "banner": "Buscando en toda la bandeja, incluidas las cerradas.",
+      "clear": "Limpiar",
+      "inMessage": "Coincide dentro de un mensaje"
+    },
+    "filters": {
+      "title": "Filtros",
+      "buttonCount_one": "Filtros: {count} activo",
+      "buttonCount_other": "Filtros: {count} activos",
+      "channel": "Canal",
+      "agent": "Agente",
+      "label": "Etiqueta",
+      "labelSearch": "Buscar etiqueta",
+      "noLabels": "No hay etiquetas con ese nombre.",
+      "score": "Puntaje",
+      "score7": "Puntaje 7 o más",
+      "remove": "Quitar filtro {name}",
+      "clear": "Quitar filtros",
+      "saveAsView": "Guardar como vista",
+      "chipChannel": "Canal: {name}",
+      "chipAgent": "Agente: {name}",
+      "chipLabel": "Etiqueta: {name}",
+      "unknownLabel": "Etiqueta borrada"
+    },
+    "order": {
+      "label": "Orden",
+      "needs": "Por urgencia",
+      "recent": "Por recientes",
+      "unread": "Sin leer"
+    },
+    "unread": {
+      "mark": "Marcar como no leída",
+      "marked": "Marcada como no leída",
+      "undo": "Deshacer"
+    },
+    "toast": {
+      "dismiss": "Cerrar aviso"
+    },
+    "bulk": {
+      "selectMode": "Seleccionar varias",
+      "exit": "Salir de la selección",
+      "selectRow": "Seleccionar la conversación con {name}",
+      "selectLoaded_one": "Seleccionar la {count} cargada",
+      "selectLoaded_other": "Seleccionar las {count} cargadas",
+      "limit": "Hasta {max} por acción: no se pueden marcar más.",
+      "selected_one": "{count} seleccionada",
+      "selected_other": "{count} seleccionadas",
+      "toolbar_one": "Acciones con {count} seleccionada",
+      "toolbar_other": "Acciones con {count} seleccionadas",
+      "assign": "Asignar",
+      "close": "Cerrar",
+      "label": "Etiquetar",
+      "delete_one": "Borrar {count} conversación",
+      "delete_other": "Borrar {count} conversaciones",
+      "you": "(tú)",
+      "pickPerson": "Elige a quién se las asignas.",
+      "assignTitle_one": "Asignar {count} conversación",
+      "assignTitle_other": "Asignar {count} conversaciones",
+      "assignConfirm_one": "Asignar {count}",
+      "assignConfirm_other": "Asignar {count}",
+      "skip": {
+        "closed_one": "{count} está cerrada. Se saltará.",
+        "closed_other": "{count} están cerradas. Se saltarán.",
+        "notTaken_one": "{count} no la tiene nadie: solo owner o admin pueden asignarla. Se saltará.",
+        "notTaken_other": "{count} no las tiene nadie: solo owner o admin pueden asignarlas. Se saltarán.",
+        "takenBy_one": "{count} la tiene {name}: solo owner o admin pueden reasignarla. Se saltará.",
+        "takenBy_other": "{count} las tiene {name}: solo owner o admin pueden reasignarlas. Se saltarán.",
+        "alreadyHas_one": "{count} ya la tiene esa persona. Se saltará.",
+        "alreadyHas_other": "{count} ya las tiene esa persona. Se saltarán.",
+        "self_one": "{count} no te la puedes asignar a ti. Se saltará.",
+        "self_other": "{count} no te las puedes asignar a ti. Se saltarán."
+      },
+      "closeTitle_one": "Cerrar {count} conversación",
+      "closeTitle_other": "Cerrar {count} conversaciones",
+      "closeText_one": "¿Cómo terminó? Se guarda el resultado en la {count}. Puedes reabrirla cuando quieras.",
+      "closeText_other": "¿Cómo terminaron? Se guarda el mismo resultado en las {count}. Puedes reabrirlas cuando quieras.",
+      "closeConfirm_one": "Cerrar {count}",
+      "closeConfirm_other": "Cerrar {count}",
+      "alreadyClosed_one": "{count} ya está cerrada: no cambia.",
+      "alreadyClosed_other": "{count} ya están cerradas: no cambian.",
+      "labelTitle_one": "Etiquetar {count} conversación",
+      "labelTitle_other": "Etiquetar {count} conversaciones",
+      "labelLegend": "Etiquetas",
+      "labelConfirm": "Aplicar cambios",
+      "someOf": "{n} de {total}",
+      "willAdd_one": "se pone en {count}",
+      "willAdd_other": "se pone en {count}",
+      "willRemove_one": "se quita de {count}",
+      "willRemove_other": "se quita de {count}",
+      "labelLimitNote": "Si una conversación pasaría de {max} etiquetas, esa se salta.",
+      "deleteTitle_one": "¿Borrar {count} conversación?",
+      "deleteTitle_other": "¿Borrar {count} conversaciones?",
+      "deleteText_one": "Se borran sus mensajes y no se puede deshacer. Si el contacto no tiene otras conversaciones, también se borra.",
+      "deleteText_other": "Se borran sus mensajes y no se puede deshacer. Los contactos que no tengan otras conversaciones también se borran.",
+      "deleteConfirm_one": "Borrar {count}",
+      "deleteConfirm_other": "Borrar {count}",
+      "deleted_one": "{count} conversación borrada",
+      "deleted_other": "{count} conversaciones borradas",
+      "doneAll_one": "{count} conversación actualizada",
+      "doneAll_other": "{count} conversaciones actualizadas",
+      "updatedN_one": "{count} actualizada",
+      "updatedN_other": "{count} actualizadas",
+      "skippedN_one": "{count} omitida",
+      "skippedN_other": "{count} omitidas",
+      "donePartial": "{updated}, {skipped}.",
+      "failed": "No pudimos hacerlo. Intenta de nuevo.",
+      "reasons": {
+        "not_found": "Ya no existe.",
+        "already_closed": "Ya estaba cerrada.",
+        "forbidden": "La tiene otra persona.",
+        "same_user": "Ya la tenía esa persona.",
+        "not_in_takeover": "No estaba tomada.",
+        "label_limit": "Pasaría de 20 etiquetas.",
+        "error": "Algo falló."
+      },
+      "deleteShort": "Borrar"
     }
   }
 }

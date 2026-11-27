@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "node scripts/check-i18n-keys.mjs && eslint",
     "check:i18n": "node scripts/check-i18n-keys.mjs",
-    "test:inbox-ui": "tsx --test components/app/Inbox/quickReplies.test.ts"
+    "test:inbox-ui": "tsx --test components/app/Inbox/quickReplies.test.ts components/app/Inbox/inboxSearch.test.ts components/app/Inbox/inboxFormat.test.ts components/app/Inbox/bulkAssign.test.ts components/app/Inbox/bulkBarFit.test.ts lib/translate.test.ts"
   },
   "dependencies": {
     "@gensmart/shared": "*",

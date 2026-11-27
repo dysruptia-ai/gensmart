@@ -77,15 +77,73 @@ export const INBOX_FROM = `FROM conversations c
 
 export const RECENT_SQL = `COALESCE(c.last_message_at, c.created_at) >= NOW() - interval '8 days'`;
 
+/** Los roles de `messages` que la búsqueda lee: nunca `system` (y las notas viven en otra tabla). */
+export const SEARCHABLE_ROLES_SQL = `('user', 'assistant', 'human')`;
+
+/**
+ * Sin leer para una persona (web-44). `user` es un placeholder ($n) con su id.
+ * - hay un mensaje del cliente posterior a GREATEST(su última lectura, su inbox_read_since), o
+ * - la marcó como no leída (marked_unread_at) y no la volvió a abrir.
+ * Los mensajes del agente, del equipo y del sistema no la vuelven no leída, ni las notas.
+ * Sin fila en user_organizations (sesión de una cuenta madre) el punto de partida es la creación del usuario.
+ */
+export function UNREAD_SQL(user: string): string {
+  return `(EXISTS (
+      SELECT 1 FROM conversation_reads rr
+      WHERE rr.conversation_id = c.id AND rr.user_id = ${user} AND rr.marked_unread_at IS NOT NULL)
+    OR EXISTS (
+      SELECT 1 FROM messages um
+      WHERE um.conversation_id = c.id AND um.role = 'user'
+        AND um.created_at > GREATEST(
+          COALESCE((SELECT rr.last_read_at FROM conversation_reads rr WHERE rr.conversation_id = c.id AND rr.user_id = ${user}), '-infinity'::timestamptz),
+          COALESCE(
+            (SELECT uo.inbox_read_since FROM user_organizations uo WHERE uo.user_id = ${user} AND uo.organization_id = c.organization_id),
+            (SELECT u.created_at FROM users u WHERE u.id = ${user}),
+            '-infinity'::timestamptz))))`;
+}
+
+/** "Solo el agente": abierta con el agente, sin pedido de ayuda vigente y sin posponer. */
+export const AGENT_ONLY_SQL = `(c.status = 'active' AND NOT ${HANDOFF_ACTIVE_SQL} AND ${NOT_SNOOZED_SQL})`;
+
+export type InboxOrder = 'needs' | 'recent' | 'unread';
+
+export function parseInboxOrder(value: unknown): InboxOrder | null {
+  return value === 'needs' || value === 'recent' || value === 'unread' ? value : null;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Escapa %, _ y \ para LIKE … ESCAPE '\\' (el texto se busca literal). */
+export function escapeLike(text: string): string {
+  return text.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+}
+
+/** El texto de búsqueda recortado, o null si es más corto que el mínimo (entonces no hay búsqueda). */
+export function normalizeSearch(value: unknown, minChars: number): string | null {
+  if (typeof value !== 'string') return null;
+  const text = value.trim();
+  return [...text].length >= minChars ? text : null;
+}
+
 export interface InboxFilterInput {
   orgId: string;
   userId: string;
   view?: InboxView | null;
   status?: string;
+  /** Compatibilidad: un solo canal (se suma a `channels`). */
   channel?: string;
-  search?: string;
+  channels?: readonly string[];
+  /** Ya recortado y con el largo mínimo (normalizeSearch). Con búsqueda se ignoran la vista y el periodo. */
+  search?: string | null;
   range?: string;
+  /** Compatibilidad: un solo agente (se suma a `agentIds`). */
   agentId?: string;
+  agentIds?: readonly string[];
+  labelIds?: readonly string[];
+  /** Otra lista de etiquetas que también debe cumplirse (AND): los filtros del panel sobre una vista guardada. */
+  extraLabelIds?: readonly string[];
+  minScore?: number | null;
+  agentOnly?: boolean;
   /** Resultado del cierre (web-42): sold | resolved | no_response | spam. */
   outcome?: string | null;
   /** Zona IANA de la organización para "hoy" en "Mías" (por defecto UTC). */
@@ -100,10 +158,18 @@ export interface SqlFilter {
   params: unknown[];
 }
 
+function uniq(values: readonly (string | undefined)[]): string[] {
+  return [...new Set(values.filter((v): v is string => typeof v === 'string' && v.length > 0))];
+}
+
 /**
- * Condiciones parametrizadas de la lista. Sin `view` son exactamente las de antes.
+ * Condiciones parametrizadas de la lista, de los contadores de las vistas guardadas y del lote.
  * - `view=needs` y `view=mine` son colas de trabajo: no las recorta el período.
  * - `view=all` son las abiertas (no cerradas); `view=closed` = `status=closed`.
+ * - Dentro de un filtro vale cualquiera de los valores (OR); entre filtros, todos (AND).
+ * - Un id de agente o de etiqueta que no es un UUID, o que no es de la organización, no coincide con nada.
+ * - Con `search`: contacto (nombre, teléfono, correo) o algún mensaje user/assistant/human, sin
+ *   distinguir mayúsculas ni tildes; se ignoran la vista y el periodo (toda la bandeja, también cerradas).
  */
 export function buildInboxConditions(input: InboxFilterInput): SqlFilter {
   const conditions: string[] = ['c.organization_id = $1'];
@@ -113,7 +179,8 @@ export function buildInboxConditions(input: InboxFilterInput): SqlFilter {
     return `$${params.length}`;
   };
 
-  const view = input.view ?? null;
+  const search = input.search ?? null;
+  const view = search ? null : (input.view ?? null);
   if (view === 'needs') conditions.push(NEEDS_SQL);
   if (view === 'mine') {
     const user = next(input.userId);
@@ -124,17 +191,42 @@ export function buildInboxConditions(input: InboxFilterInput): SqlFilter {
   if (input.outcome) conditions.push(`c.closed_outcome = ${next(input.outcome)}`);
 
   if (input.status) conditions.push(`c.status = ${next(input.status)}`);
-  if (input.channel) conditions.push(`c.channel = ${next(input.channel)}`);
-  if (input.search) {
-    const p = next(`%${input.search}%`);
-    conditions.push(`(co.name ILIKE ${p} OR co.phone ILIKE ${p} OR co.email ILIKE ${p})`);
+  const channels = uniq([...(input.channels ?? []), input.channel]);
+  if (channels.length === 1) conditions.push(`c.channel = ${next(channels[0])}`);
+  else if (channels.length > 1) conditions.push(`c.channel = ANY(${next(channels)}::text[])`);
+  if (search) {
+    const p = next(`%${escapeLike(search)}%`);
+    const like = (col: string) => `gs_search_norm(${col}) LIKE gs_search_norm(${p}) ESCAPE '\\'`;
+    conditions.push(`(${like('co.name')} OR ${like('co.phone')} OR ${like('co.email')}
+      OR c.id IN (SELECT sm.conversation_id FROM messages sm
+        WHERE sm.role IN ${SEARCHABLE_ROLES_SQL} AND ${like('sm.content')}))`);
   }
+  for (const list of [input.labelIds, input.extraLabelIds]) {
+    const labelIds = uniq(list ?? []);
+    if (labelIds.length === 0) continue;
+    const valid = labelIds.filter((id) => UUID_RE.test(id));
+    conditions.push(
+      valid.length === 0
+        ? 'FALSE'
+        : `EXISTS (SELECT 1 FROM conversation_labels cl WHERE cl.conversation_id = c.id AND cl.label_id = ANY(${next(valid)}::uuid[]))`
+    );
+  }
+  if (typeof input.minScore === 'number' && Number.isFinite(input.minScore)) {
+    conditions.push(`c.ai_score >= ${next(input.minScore)}`);
+  }
+  if (input.agentOnly) conditions.push(AGENT_ONLY_SQL);
   const queue = view === 'needs' || view === 'mine';
-  if (input.range !== 'all' && !queue) conditions.push(RECENT_SQL);
+  if (input.range !== 'all' && !queue && !search) conditions.push(RECENT_SQL);
 
   const baseConditions = [...conditions];
   const baseParams = [...params];
-  if (input.agentId) conditions.push(`c.agent_id = ${next(input.agentId)}`);
+  const agentIds = uniq([...(input.agentIds ?? []), input.agentId]);
+  if (agentIds.length > 0) {
+    const valid = agentIds.filter((id) => UUID_RE.test(id));
+    if (valid.length === 0) conditions.push('FALSE');
+    else if (valid.length === 1) conditions.push(`c.agent_id = ${next(valid[0])}`);
+    else conditions.push(`c.agent_id = ANY(${next(valid)}::uuid[])`);
+  }
 
   return { baseConditions, baseParams, conditions, params };
 }
@@ -143,14 +235,24 @@ export function buildInboxConditions(input: InboxFilterInput): SqlFilter {
  * Orden de la lista: por defecto el de siempre; en "Necesitan a alguien", la que más espera primero.
  * En "Mías" (con `followUp`, la expresión de seguimiento ya parametrizada): Seguimiento para hoy,
  * En curso y Pospuestas (la que vuelve antes primero), como los grupos de la pantalla.
+ * web-44: `recent` = por el último mensaje; `unread` (con `unread`, la expresión ya parametrizada) =
+ * primero las no leídas y después por el último mensaje. Con búsqueda siempre por el último mensaje.
  */
-export function inboxOrderBy(view: InboxView | null, order: string | undefined, followUp?: string): string {
+export function inboxOrderBy(
+  view: InboxView | null,
+  order: string | undefined,
+  followUp?: string,
+  unread?: string,
+  searching = false,
+): string {
+  if (searching) return 'c.last_message_at DESC NULLS LAST, c.id';
   if (view === 'mine' && followUp) {
     return `CASE WHEN c.snoozed_until IS NOT NULL THEN 2 WHEN ${followUp} THEN 0 ELSE 1 END,
       c.snoozed_until ASC NULLS LAST, c.last_message_at DESC NULLS LAST`;
   }
   if (view === 'needs') return `${WAITING_SINCE_SQL} ASC NULLS LAST, c.last_message_at DESC NULLS LAST`;
   if (order === 'needs') return `${NEEDS_SQL} DESC, c.last_message_at DESC NULLS LAST`;
+  if (order === 'unread' && unread) return `${unread} DESC, c.last_message_at DESC NULLS LAST`;
   return 'c.last_message_at DESC NULLS LAST';
 }
 

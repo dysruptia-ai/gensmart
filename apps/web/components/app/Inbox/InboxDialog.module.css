@@ -86,3 +86,36 @@
     animation: none;
   }
 }
+
+/* web-44: en el móvil los cuadros se abren como hoja desde abajo */
+@media (max-width: 767.98px) {
+  .scrim {
+    place-items: end stretch;
+    padding: 0;
+  }
+
+  .box {
+    width: 100%;
+    max-height: 88dvh;
+    border-radius: var(--app-r-lg) var(--app-r-lg) 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    animation: sheetUp var(--app-t-fast) var(--app-ease);
+  }
+
+  .foot :global(button) {
+    min-height: 44px;
+  }
+}
+
+@keyframes sheetUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box {
+    animation: none;
+  }
+}

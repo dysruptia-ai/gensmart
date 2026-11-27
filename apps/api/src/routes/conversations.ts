@@ -6,8 +6,6 @@ import { requireRole } from '../middleware/requireRole';
 import { query } from '../config/database';
 import { AppError } from '../middleware/errorHandler';
 import { INBOX_LIMITS, PLAN_LIMITS } from '@gensmart/shared';
-import { scoringQueue } from '../config/queues';
-import { chat } from '../services/llm.service';
 import { getIO } from '../config/websocket';
 import { withoutReservedChannelKeys } from '../services/channel-metadata-keys';
 import {
@@ -18,12 +16,17 @@ import {
   buildCountsGroupQuery,
   buildCountsQuery,
   buildInboxConditions,
+  UNREAD_SQL,
   followUpPendingSql,
   inboxOrderBy,
+  normalizeSearch,
+  escapeLike,
+  parseInboxOrder,
   parseInboxView,
 } from '../services/inbox-query.service';
+import { parseListFilters } from '../services/inbox-list-params';
+import { findOwnView, mergeSavedView } from '../services/inbox-views.service';
 import {
-  type ConversationEvent,
   SNOOZE_MAX_DAYS,
   TRANSFER_NOTE_MAX,
   emitConversationChange,
@@ -31,9 +34,22 @@ import {
   listEvents,
   parseOutcome,
   recordEventSafe,
-  transferNotificationText,
 } from '../services/conversation-events.service';
 import { createNotification } from '../services/notification.service';
+import {
+  allLabelsOwned,
+  applyLabelDelta,
+  bulkAssignNotificationText,
+  closeConversation,
+  findReceiver,
+  planAllowsTakeover,
+  releaseToAgent,
+  runBulk,
+  setConversationLabels,
+  transferConversation,
+} from '../services/conversation-actions.service';
+import { bulkAssignSchema, bulkCloseSchema, bulkDeleteSchema, bulkLabelsSchema, isUuid } from '../services/inbox-bulk.schemas';
+import { markRead, markUnread } from '../services/inbox-reads.service';
 import {
   CONVERSATION_LABELS_SQL,
   type LabelRef,
@@ -65,15 +81,18 @@ router.get(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const {
-        agentId,
         status,
-        channel,
-        search,
         range,
-        order,
         page = '1',
         limit = '20',
       } = req.query as Record<string, string>;
+      const listFilters = parseListFilters(req.query);
+      const search = normalizeSearch(req.query['search'], INBOX_LIMITS.searchMinChars);
+      const rawOrder = req.query['order'];
+      const order = parseInboxOrder(rawOrder) ?? undefined;
+      if (rawOrder !== undefined && rawOrder !== '' && !order) {
+        throw new AppError(400, 'order must be one of: needs, recent, unread', 'VALIDATION_ERROR');
+      }
 
       const rawView = req.query['view'];
       const view = parseInboxView(rawView);
@@ -92,30 +111,38 @@ router.get(
       }
       const timezone = (await getOrgTimezone(req.org!.id)) ?? 'UTC';
 
-      const filter = buildInboxConditions({
+      const requested = {
         orgId: req.org!.id,
         userId: req.user!.userId,
         view,
         status,
-        channel,
         search,
         range,
-        agentId,
         outcome,
         timezone,
-      });
+        ...listFilters,
+      };
+      // web-44: una vista guardada (solo las propias; una ajena o borrada se ignora y queda la lista pedida)
+      const savedViewId = typeof req.query['savedView'] === 'string' ? req.query['savedView'] : '';
+      const savedFilters = savedViewId ? await findOwnView(req.org!.id, req.user!.userId, savedViewId) : null;
+      const input = savedFilters ? mergeSavedView(requested, savedFilters) : requested;
+      const filter = buildInboxConditions(input);
       const where = filter.conditions.join(' AND ');
       // Everything but the agent filter, so the per-agent tabs keep their counts when one is selected
       const countsWhere = filter.baseConditions.join(' AND ');
       const params = filter.params;
       const paramIndex = params.length + 1;
+      // web-44: sin leer para quien pide la lista (mismo placeholder en el total y en las filas)
+      const unreadCountSql = UNREAD_SQL(`$${params.length + 1}`);
+      const unreadRowSql = UNREAD_SQL(`$${paramIndex + 3}`);
+      const effectiveView = search ? null : (input.view ?? null);
 
       const [countResult, agentCountsResult] = await Promise.all([
-        query<{ count: string }>(
-          `SELECT COUNT(*) as count
+        query<{ count: string; unread_count: string }>(
+          `SELECT COUNT(*) as count, COUNT(*) FILTER (WHERE ${unreadCountSql}) AS unread_count
            ${INBOX_FROM}
            WHERE ${where}`,
-          params
+          [...params, req.user!.userId]
         ),
         query<{ agent_id: string; agent_name: string | null; count: string }>(
           `SELECT c.agent_id, a.name as agent_name, COUNT(*) as count
@@ -126,6 +153,7 @@ router.get(
         ),
       ]);
       const total = parseInt(countResult.rows[0]?.count ?? '0', 10);
+      const unreadCount = parseInt(countResult.rows[0]?.unread_count ?? '0', 10);
 
       // Fetch conversations with contact and last message
       const rows = await query<{
@@ -163,8 +191,14 @@ router.get(
         closed_by: string | null;
         closed_by_name: string | null;
         labels: LabelRef[];
+        unread: boolean;
+        search_content: string | null;
+        search_role: string | null;
+        search_created_at: string | null;
+        search_sent_by_name: string | null;
+        search_sent_by_id: string | null;
       }>(
-        `SELECT
+        `${search ? 'SELECT p.*, sm.content AS search_content, sm.role AS search_role, sm.created_at AS search_created_at, sm.sent_by_name AS search_sent_by_name, sm.sent_by_id AS search_sent_by_id FROM (' : ''}SELECT
            c.id, c.agent_id, a.name as agent_name,
            c.contact_id,
            co.name as contact_name, co.phone as contact_phone, co.email as contact_email, co.avatar_url as contact_avatar,
@@ -181,7 +215,8 @@ router.get(
            c.snoozed_until, c.snoozed_by, c.follow_up_at,
            ${followUpPendingSql(`$${paramIndex + 2}`)} AS follow_up_pending,
            c.closed_outcome, c.closed_at, c.closed_by, cb.name AS closed_by_name,
-           ${CONVERSATION_LABELS_SQL} AS labels
+           ${CONVERSATION_LABELS_SQL} AS labels,
+           ${unreadRowSql} AS unread
          ${INBOX_FROM}
          LEFT JOIN users u ON c.taken_over_by = u.id
          LEFT JOIN users cb ON c.closed_by = cb.id
@@ -191,9 +226,23 @@ router.get(
            ORDER BY created_at DESC LIMIT 1
          ) lm ON true
          WHERE ${where}
-         ORDER BY ${inboxOrderBy(view, order, followUpPendingSql(`$${paramIndex + 2}`))}
-         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-        [...params, limitNum, offset, timezone]
+         ORDER BY ${inboxOrderBy(effectiveView, order, followUpPendingSql(`$${paramIndex + 2}`), unreadRowSql, !!search)}
+         LIMIT $${paramIndex} OFFSET $${paramIndex + 1}${
+           // Búsqueda: el mensaje más reciente que coincide, solo para las filas ya limitadas de la página
+           search
+             ? `) p
+         LEFT JOIN LATERAL (
+           SELECT left(m.content, 2000) AS content, m.role, m.created_at,
+                  m.metadata->'sentBy'->>'name' AS sent_by_name, m.metadata->'sentBy'->>'id' AS sent_by_id
+           FROM messages m
+           WHERE m.conversation_id = p.id AND m.role IN ('user', 'assistant', 'human')
+             AND gs_search_norm(m.content) LIKE gs_search_norm($${paramIndex + 4}) ESCAPE '\\'
+           ORDER BY m.created_at DESC LIMIT 1
+         ) sm ON true
+         ORDER BY p.last_message_at DESC NULLS LAST, p.id`
+             : ''
+         }`,
+        [...params, limitNum, offset, timezone, req.user!.userId, ...(search ? [`%${escapeLike(search)}%`] : [])]
       );
 
       res.json({
@@ -232,6 +281,17 @@ router.get(
           closedBy: row.closed_by,
           closedByName: row.closed_by_name,
           labels: row.labels ?? [],
+          unread: row.unread,
+          searchMatch:
+            search && row.search_content !== null
+              ? {
+                  content: row.search_content,
+                  role: row.search_role,
+                  createdAt: row.search_created_at,
+                  sentByName: row.search_sent_by_name,
+                  sentById: row.search_sent_by_id,
+                }
+              : null,
           lastMessage: row.last_message_content
             ? {
                 content: row.last_message_content.slice(0, 100),
@@ -246,6 +306,7 @@ router.get(
           agentName: row.agent_name ?? '',
           count: parseInt(row.count, 10),
         })),
+        unreadCount,
         pagination: {
           total,
           page: pageNum,
@@ -284,6 +345,149 @@ router.get(
         byAgent: a.rows.map((r) => ({ agentId: r.key, agentName: r.name ?? '', count: parseInt(r.count, 10) })),
         byChannel: ch.rows.map((r) => ({ channel: r.key, count: parseInt(r.count, 10) })),
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── Acciones en lote (web-44) ───────────────────────────────────────────────
+// Registradas antes de /:id. Cada conversación sigue las reglas de su acción individual (las mismas
+// funciones de conversation-actions.service); las que no cumplen se saltan con su motivo.
+// Respuesta: { updated: string[], skipped: Array<{ id, reason }> }.
+
+// POST /api/conversations/bulk/assign  { ids, toUserId, note? }
+router.post(
+  '/bulk/assign',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { ids, toUserId, note } = bulkAssignSchema.parse(req.body);
+      if (!planAllowsTakeover(req.org!.plan)) {
+        throw new AppError(403, 'Taking conversations requires the Starter plan or higher', 'PLAN_LIMIT');
+      }
+      const receiver = await findReceiver(req.org!.id, toUserId);
+      if (!receiver) throw new AppError(400, 'That person is not on this team', 'NOT_A_MEMBER');
+      const me = req.user!.userId;
+      let actorName: string | null = null;
+      const result = await runBulk(ids, async (id) => {
+        if (!isUuid(id)) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+        const r = await transferConversation({
+          organizationId: req.org!.id,
+          plan: req.org!.plan,
+          actor: { userId: me, role: req.user!.role },
+          conversationId: id,
+          toUserId,
+          note,
+          receiver,
+          notify: false,
+        });
+        actorName = actorName ?? r.event?.actorName ?? null;
+      });
+      // Una sola notificación para quien recibe, aunque sean varias (mismo tipo que transferir)
+      if (result.updated.length > 0 && toUserId !== me) {
+        if (!actorName) {
+          const u = await query<{ name: string | null }>('SELECT name FROM users WHERE id = $1', [me]);
+          actorName = u.rows[0]?.name ?? null;
+        }
+        const text = bulkAssignNotificationText(receiver.language ?? 'en', actorName, result.updated.length, note || null);
+        await createNotification({
+          userId: toUserId,
+          organizationId: req.org!.id,
+          type: 'conversation_transferred',
+          title: text.title,
+          message: text.message,
+          data: {
+            ...(result.updated.length === 1 ? { conversationId: result.updated[0] } : {}),
+            conversationIds: result.updated,
+            count: result.updated.length,
+            fromUserId: me,
+          },
+          sendEmail: false,
+        }).catch((err: unknown) => console.error('[conversations] Failed to notify bulk assign:', (err as Error).message));
+      }
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/conversations/bulk/close  { ids, outcome }  (el resultado es obligatorio)
+router.post(
+  '/bulk/close',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { ids, outcome } = bulkCloseSchema.parse(req.body);
+      const result = await runBulk(ids, async (id) => {
+        if (!isUuid(id)) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+        await closeConversation({ organizationId: req.org!.id, actorUserId: req.user!.userId, conversationId: id, outcome });
+      });
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/conversations/bulk/labels  { ids, add, remove }  (no reemplaza las que no se tocaron)
+router.post(
+  '/bulk/labels',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { ids, add, remove } = bulkLabelsSchema.parse(req.body);
+      if (!(await allLabelsOwned(req.org!.id, [...new Set([...add, ...remove])]))) {
+        throw new AppError(400, 'Unknown label', 'UNKNOWN_LABEL');
+      }
+      const result = await runBulk(ids, async (id) => {
+        if (!isUuid(id)) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+        const current = await query<{ label_id: string }>(
+          'SELECT label_id FROM conversation_labels WHERE conversation_id = $1 AND organization_id = $2',
+          [id, req.org!.id]
+        );
+        const labelIds = applyLabelDelta(
+          current.rows.map((r) => r.label_id),
+          add,
+          remove
+        );
+        await setConversationLabels({
+          organizationId: req.org!.id,
+          actorUserId: req.user!.userId,
+          conversationId: id,
+          labelIds,
+          ownershipChecked: true,
+        });
+      });
+      res.json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── POST /api/conversations/:id/read y /:id/unread (web-44) ─────────────────
+// Leído por persona: cualquier rol, idempotente, sin evento. Solo se emite a esa persona.
+router.post(
+  '/:id/read',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const ok = await markRead(req.org!.id, req.user!.userId, String(req.params['id']));
+      if (!ok) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+      res.json({ unread: false });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+router.post(
+  '/:id/unread',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const ok = await markUnread(req.org!.id, req.user!.userId, String(req.params['id']));
+      if (!ok) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
+      res.json({ unread: true });
     } catch (err) {
       next(err);
     }
@@ -825,95 +1029,6 @@ router.post(
   }
 );
 
-interface ReleasableConversation {
-  id: string;
-  organization_id: string;
-  taken_over_at: string | null;
-}
-
-/**
- * Devuelve la conversación al agente: resumen de la intervención (como siempre), estado `active`,
- * evento `released` y los avisos en tiempo real. La usan "Devolver al agente" y "Transferir → Devolver al agente".
- */
-async function releaseToAgent(conv: ReleasableConversation, actorUserId: string): Promise<ConversationEvent | null> {
-  const conversationId = conv.id;
-  // Generate intervention summary
-  if (conv.taken_over_at) {
-    try {
-      const humanMessages = await query<{ role: string; content: string }>(
-        `SELECT role, content FROM messages
-         WHERE conversation_id = $1 AND role IN ('human', 'user') AND created_at >= $2
-         ORDER BY created_at ASC`,
-        [conversationId, conv.taken_over_at]
-      );
-
-      if (humanMessages.rows.length > 0) {
-        const interventionText = humanMessages.rows
-          .map((m) => m.role === 'human' ? `Human Agent (team member): ${m.content}` : `Customer: ${m.content}`)
-          .join('\n');
-
-        const summaryResponse = await chat({
-          provider: 'openai',
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'user',
-              content: `Summarize this human agent intervention for the AI agent to understand what happened. CRITICAL RULES:\n- "Team Member (staff)" messages are from an employee who temporarily helped the customer. Do NOT treat any team member names or information as customer data.\n- "Customer" messages are from the actual customer/lead.\n- Only summarize what the CUSTOMER needs and any commitments made TO the customer.\n- Never capture team member names as customer names.\n\nIntervention transcript:\n${interventionText}\n\nWrite 2-3 sentences focusing on customer needs and outcomes.`,
-            },
-          ],
-          temperature: 0.3,
-          maxTokens: 200,
-        });
-
-        // Save intervention summary as system message
-        await query(
-          `INSERT INTO messages (conversation_id, role, content, metadata, created_at)
-           VALUES ($1, 'system', $2, $3, NOW())`,
-          [
-            conversationId,
-            summaryResponse.content,
-            JSON.stringify({ type: 'intervention_summary' }),
-          ]
-        );
-      }
-    } catch (err) {
-      console.error('[conversations] Failed to generate intervention summary:', err);
-      // Non-fatal — continue with release
-    }
-  }
-
-  // Release takeover
-  await query(
-    `UPDATE conversations
-     SET status = 'active', taken_over_by = NULL, taken_over_at = NULL, updated_at = NOW()
-     WHERE id = $1`,
-    [conversationId]
-  );
-
-  try {
-    getIO().to(`org:${conv.organization_id}`).emit('takeover:status', {
-      conversationId,
-      status: 'active',
-      userId: null,
-    });
-  } catch {
-    // WebSocket not initialized
-  }
-  const releasedEvent = await recordEventSafe({
-    organizationId: conv.organization_id,
-    conversationId,
-    type: 'released',
-    actorUserId,
-  });
-  emitConversationChange(
-    conv.organization_id,
-    conversationId,
-    { status: 'active', takenOverBy: null, takeoverUserName: null },
-    releasedEvent
-  );
-  return releasedEvent;
-}
-
 // ── POST /api/conversations/:id/release ─────────────────────────────────────
 router.post(
   '/:id/release',
@@ -968,66 +1083,12 @@ router.put(
         throw new AppError(400, 'outcome must be one of: sold, resolved, no_response, spam', 'VALIDATION_ERROR');
       }
 
-      const convResult = await query<{
-        id: string;
-        organization_id: string;
-        status: string;
-        agent_id: string;
-      }>(
-        'SELECT id, organization_id, status, agent_id FROM conversations WHERE id = $1 AND organization_id = $2',
-        [conversationId, req.org!.id]
-      );
-
-      const conv = convResult.rows[0];
-      if (!conv) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
-
-      if (conv.status === 'closed') {
-        throw new AppError(400, 'Conversation is already closed', 'ALREADY_CLOSED');
-      }
-
-      const closedResult = await query<{ closed_at: string }>(
-        `UPDATE conversations
-         SET status = 'closed', closed_outcome = $2, closed_at = NOW(), closed_by = $3,
-             snoozed_until = NULL, follow_up_at = NULL, updated_at = NOW()
-         WHERE id = $1
-         RETURNING closed_at`,
-        [conversationId, outcome, req.user!.userId]
-      );
-      const closedAt = closedResult.rows[0]?.closed_at ?? new Date().toISOString();
-      const closedEvent = await recordEventSafe({
-        organizationId: conv.organization_id,
-        conversationId,
-        type: 'closed',
+      const { closedAt, event: closedEvent } = await closeConversation({
+        organizationId: req.org!.id,
         actorUserId: req.user!.userId,
-        data: outcome ? { outcome } : {},
-      });
-
-      // Enqueue AI scoring job
-      try {
-        await scoringQueue.add('score-conversation', {
-          conversationId,
-          organizationId: conv.organization_id,
-          trigger: 'conversation_close',
-        });
-      } catch (err) {
-        console.error('[conversations] Failed to enqueue scoring job:', err);
-        // Non-fatal
-      }
-
-      emitConversationChange(
-        conv.organization_id,
         conversationId,
-        {
-          status: 'closed',
-          closedOutcome: outcome,
-          closedAt,
-          closedBy: req.user!.userId,
-          closedByName: closedEvent?.actorName ?? null,
-          snoozedUntil: null,
-          followUpAt: null,
-        },
-        closedEvent
-      );
+        outcome,
+      });
 
       res.json({ message: 'Conversation closed', outcome, closedAt, event: closedEvent });
     } catch (err) {
@@ -1089,7 +1150,6 @@ router.post(
       const conversationId = String(req.params['id']);
       const body = (req.body ?? {}) as { toUserId?: unknown; note?: unknown };
       const me = req.user!.userId;
-      const isManager = req.user!.role === 'owner' || req.user!.role === 'admin';
 
       if (body.toUserId !== null && typeof body.toUserId !== 'string') {
         throw new AppError(400, 'toUserId is required (a user id, or null to hand it back to the agent)', 'VALIDATION_ERROR');
@@ -1106,108 +1166,19 @@ router.post(
         throw new AppError(400, `note must be at most ${TRANSFER_NOTE_MAX} characters`, 'VALIDATION_ERROR');
       }
 
-      const convResult = await query<{
-        id: string;
-        organization_id: string;
-        status: string;
-        taken_over_by: string | null;
-        taken_over_at: string | null;
-        contact_name: string | null;
-      }>(
-        `SELECT c.id, c.organization_id, c.status, c.taken_over_by, c.taken_over_at, co.name AS contact_name
-         FROM conversations c LEFT JOIN contacts co ON co.id = c.contact_id
-         WHERE c.id = $1 AND c.organization_id = $2`,
-        [conversationId, req.org!.id]
-      );
-      const conv = convResult.rows[0];
-      if (!conv) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
-      if (conv.status === 'closed') throw new AppError(400, 'Conversation is closed', 'ALREADY_CLOSED');
-
-      const holder = conv.status === 'human_takeover' ? conv.taken_over_by : null;
-      if (holder !== me && !isManager) {
-        throw new AppError(403, 'Only whoever has the conversation, an owner or an admin can transfer it', 'FORBIDDEN');
-      }
-
-      // ── back to the agent
+      const result = await transferConversation({
+        organizationId: req.org!.id,
+        plan: req.org!.plan,
+        actor: { userId: me, role: req.user!.role },
+        conversationId,
+        toUserId,
+        note,
+      });
       if (toUserId === null) {
-        if (conv.status !== 'human_takeover') {
-          throw new AppError(400, 'Conversation is not in takeover mode', 'NOT_IN_TAKEOVER');
-        }
-        const releasedEvent = await releaseToAgent(conv, me);
-        res.json({ message: 'Conversation released to AI', status: 'active', event: releasedEvent });
+        res.json({ message: 'Conversation released to AI', status: 'active', event: result.event });
         return;
       }
-
-      if (toUserId === holder) {
-        throw new AppError(400, 'That person already has the conversation', 'SAME_USER');
-      }
-      if (toUserId === me && !isManager) {
-        throw new AppError(400, 'You cannot transfer a conversation to yourself', 'SAME_USER');
-      }
-
-      const plan = req.org!.plan as PlanKey;
-      if (!PLAN_LIMITS[plan]?.humanTakeover) {
-        throw new AppError(403, 'Taking conversations requires the Starter plan or higher', 'PLAN_LIMIT');
-      }
-      const member = await query<{ name: string | null; language: string | null }>(
-        `SELECT u.name, u.language FROM user_organizations uo JOIN users u ON u.id = uo.user_id
-         WHERE uo.organization_id = $1 AND uo.user_id = $2`,
-        [req.org!.id, toUserId]
-      );
-      const receiver = member.rows[0];
-      if (!receiver) throw new AppError(400, 'That person is not on this team', 'NOT_A_MEMBER');
-
-      // Keep taken_over_at when it was already taken: the release summary covers the whole intervention
-      await query(
-        `UPDATE conversations
-         SET status = 'human_takeover', taken_over_by = $1, taken_over_at = COALESCE(taken_over_at, NOW()),
-             snoozed_until = NULL, handoff_attended_at = NOW(), updated_at = NOW()
-         WHERE id = $2`,
-        [toUserId, conversationId]
-      );
-
-      const takingItMyself = toUserId === me;
-      const event = await recordEventSafe({
-        organizationId: conv.organization_id,
-        conversationId,
-        type: takingItMyself ? 'taken' : 'transferred',
-        actorUserId: me,
-        targetUserId: takingItMyself ? null : toUserId,
-        data: takingItMyself ? (holder ? { fromUserId: holder } : {}) : { ...(note ? { note } : {}), ...(holder ? { fromUserId: holder } : {}) },
-      });
-
-      try {
-        getIO().to(`org:${conv.organization_id}`).emit('takeover:status', {
-          conversationId,
-          status: 'human_takeover',
-          userId: toUserId,
-          userDisplayName: receiver.name ?? null,
-          takenOverAt: new Date().toISOString(),
-        });
-      } catch {
-        // WebSocket not initialized
-      }
-      emitConversationChange(
-        conv.organization_id,
-        conversationId,
-        { status: 'human_takeover', takenOverBy: toUserId, takeoverUserName: receiver.name ?? null, snoozedUntil: null },
-        event
-      );
-
-      if (!takingItMyself) {
-        const text = transferNotificationText(receiver.language ?? 'en', event?.actorName ?? null, conv.contact_name, note || null);
-        await createNotification({
-          userId: toUserId,
-          organizationId: conv.organization_id,
-          type: 'conversation_transferred',
-          title: text.title,
-          message: text.message,
-          data: { conversationId, fromUserId: me },
-          sendEmail: false,
-        }).catch((err: unknown) => console.error('[conversations] Failed to notify transfer:', (err as Error).message));
-      }
-
-      res.json({ message: 'Conversation transferred', status: 'human_takeover', takenOverBy: toUserId, event });
+      res.json({ message: 'Conversation transferred', status: 'human_takeover', takenOverBy: toUserId, event: result.event });
     } catch (err) {
       next(err);
     }
@@ -1372,35 +1343,12 @@ router.put(
     try {
       const conversationId = String(req.params['id']);
       const labelIds = [...new Set(setLabelsSchema.parse(req.body).labelIds)];
-      if (labelIds.length > INBOX_LIMITS.labelsPerConversation) {
-        throw new AppError(422, `At most ${INBOX_LIMITS.labelsPerConversation} labels per conversation`, 'conversation_labels_limit');
-      }
-      const exists = await query('SELECT 1 FROM conversations WHERE id = $1 AND organization_id = $2', [conversationId, req.org!.id]);
-      if (!exists.rows[0]) throw new AppError(404, 'Conversation not found', 'NOT_FOUND');
-      if (labelIds.length > 0) {
-        const own = await query<{ count: string }>(
-          'SELECT COUNT(*) AS count FROM inbox_labels WHERE id = ANY($1::uuid[]) AND organization_id = $2',
-          [labelIds, req.org!.id]
-        );
-        if (parseInt(own.rows[0]?.count ?? '0', 10) !== labelIds.length) {
-          throw new AppError(400, 'Unknown label', 'UNKNOWN_LABEL');
-        }
-      }
-      const removed = await query(
-        'DELETE FROM conversation_labels WHERE conversation_id = $1 AND NOT (label_id = ANY($2::uuid[])) RETURNING label_id',
-        [conversationId, labelIds]
-      );
-      const added = await query(
-        `INSERT INTO conversation_labels (conversation_id, label_id, organization_id, added_by)
-         SELECT $1, unnest($2::uuid[]), $3, $4
-         ON CONFLICT (conversation_id, label_id) DO NOTHING
-         RETURNING label_id`,
-        [conversationId, labelIds, req.org!.id, req.user!.userId]
-      );
-      const labels = await getConversationLabels(conversationId);
-      if ((removed.rowCount ?? 0) > 0 || (added.rowCount ?? 0) > 0) {
-        emitConversationChange(req.org!.id, conversationId, { labels });
-      }
+      const { labels } = await setConversationLabels({
+        organizationId: req.org!.id,
+        actorUserId: req.user!.userId,
+        conversationId,
+        labelIds,
+      });
       res.json({ labels });
     } catch (err) {
       next(err);
@@ -1416,12 +1364,11 @@ router.delete(
   requireRole('owner', 'admin'),
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { conversationIds } = req.body as { conversationIds: string[] };
-      if (!Array.isArray(conversationIds) || conversationIds.length === 0) {
-        throw new AppError(400, 'conversationIds array is required', 'VALIDATION_ERROR');
-      }
-      if (conversationIds.length > 50) {
-        throw new AppError(400, 'Maximum 50 conversations at a time', 'VALIDATION_ERROR');
+      // web-44: mismo tope y mensajes que las demás acciones en lote; un id que no es UUID no existe
+      const conversationIds = bulkDeleteSchema.parse(req.body).conversationIds.filter(isUuid);
+      if (conversationIds.length === 0) {
+        res.json({ deleted: 0, contactsDeleted: 0 });
+        return;
       }
 
       // Fetch all valid conversations

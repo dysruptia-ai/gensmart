@@ -1,10 +1,11 @@
 'use client';
 
-import React, { memo } from 'react';
-import { AlarmClock, Clock, User } from 'lucide-react';
+import React, { memo, useRef } from 'react';
+import { AlarmClock, Clock, Search, User } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getChannelMeta } from './channelMeta';
 import { contactName, formatScore, initialsOf, relativeTime, snoozeLabel, waitDuration } from './inboxFormat';
+import { highlightMatch, matchesQuery } from './inboxSearch';
 import type { ConversationRow } from './types';
 import styles from './InboxRow.module.css';
 
@@ -17,10 +18,57 @@ export interface InboxRowProps {
   timeZone?: string;
   /** En "Cerradas": el resultado del cierre (web-42). */
   showOutcome?: boolean;
+  /** web-44: la búsqueda (para resaltar el nombre y el mensaje que coincide). */
+  search?: string;
+  /** Modo selección: la fila es una casilla; tocarla la marca en vez de abrirla. */
+  selecting?: boolean;
+  checked?: boolean;
+  /** Se llegó al tope del lote: las que faltan no se pueden marcar. */
+  checkDisabled?: boolean;
+  onToggle?: (id: string) => void;
+  /** Pulsación larga (~500 ms, móvil): entra al modo selección con esta fila. */
+  onLongPress?: (id: string) => void;
 }
 
-function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: InboxRowProps) {
+const LONG_PRESS_MS = 500;
+
+function HighlightedName({ text, query }: { text: string; query: string }) {
+  return (
+    <>
+      {highlightMatch(text, query, { maxLength: Number.MAX_SAFE_INTEGER }).map((seg, i) =>
+        seg.match ? <mark key={i}>{seg.text}</mark> : <React.Fragment key={i}>{seg.text}</React.Fragment>,
+      )}
+    </>
+  );
+}
+
+function InboxRow({
+  row,
+  current,
+  userId,
+  now,
+  onOpen,
+  timeZone,
+  showOutcome,
+  search = '',
+  selecting,
+  checked,
+  checkDisabled,
+  onToggle,
+  onLongPress,
+}: InboxRowProps) {
   const { t, language } = useTranslation();
+  const query = search.trim();
+  const press = useRef<{ timer: ReturnType<typeof setTimeout> | null; x: number; y: number; fired: boolean }>({
+    timer: null,
+    x: 0,
+    y: 0,
+    fired: false,
+  });
+  const cancelPress = () => {
+    if (press.current.timer) clearTimeout(press.current.timer);
+    press.current.timer = null;
+  };
   const name = contactName(row.contact, t('inbox.row.unknownContact'));
   const initials = initialsOf(row.contact?.name ?? '');
   const channel = getChannelMeta(row.channel);
@@ -33,8 +81,11 @@ function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: 
   const labels = row.labels ?? [];
   const firstLabel = labels[0];
 
-  // Quién escribió el último mensaje
-  const last = row.lastMessage;
+  // Quién escribió el último mensaje (con búsqueda: el mensaje que coincide)
+  const match = query ? row.searchMatch : null;
+  const last = match
+    ? { content: match.content, role: match.role, sentById: match.sentById ?? null, sentByName: match.sentByName ?? null }
+    : row.lastMessage;
   let author = '';
   if (last?.role === 'human') {
     const mine = last.sentById ? last.sentById === userId : takenByMe;
@@ -44,15 +95,26 @@ function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: 
   } else if (last?.role === 'system') {
     author = t('inbox.row.system');
   }
+  const contactMatches =
+    !!query && (matchesQuery(row.contact?.name, query) || matchesQuery(row.contact?.phone, query) || matchesQuery(row.contact?.email, query));
+  // La fila abierta no se ve como no leída
+  const unread = !!row.unread && !current;
+  const className = [styles.row, row.needsAttention && styles.needs, unread && styles.unread, selecting && styles.selecting]
+    .filter(Boolean)
+    .join(' ');
 
-  return (
-    <button
-      type="button"
-      className={[styles.row, row.needsAttention && styles.needs].filter(Boolean).join(' ')}
-      aria-current={current ? 'true' : undefined}
-      data-conversation-id={row.id}
-      onClick={() => onOpen(row.id)}
-    >
+  const content = (
+    <>
+      {selecting && (
+        <input
+          type="checkbox"
+          className={styles.check}
+          checked={!!checked}
+          disabled={checkDisabled && !checked}
+          onChange={() => onToggle?.(row.id)}
+          aria-label={t('inbox.bulk.selectRow', { name })}
+        />
+      )}
       <span className={styles.avatar} aria-hidden="true">
         {row.contact?.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -68,7 +130,11 @@ function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: 
       </span>
       <span className={styles.main}>
         <span className={styles.line1}>
-          <b className={styles.name}>{name}</b>
+          {unread && <span className={styles.unreadDot} aria-hidden="true" />}
+          <b className={styles.name}>
+            {unread && <span className="gsSr">{t('inbox.row.unreadSr')} </span>}
+            {contactMatches && row.contact?.name ? <HighlightedName text={name} query={query} /> : name}
+          </b>
           {score && (
             <span className={styles.score} title={t('inbox.row.scoreTitle')}>
               <span className="gsSr">{t('inbox.row.scoreSr')} </span>
@@ -83,8 +149,20 @@ function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: 
         </span>
         <span className={styles.preview}>
           {author && <span className={styles.author}>{author}: </span>}
-          {last?.content ?? t('inbox.row.noMessages')}
+          {match ? (
+            highlightMatch(match.content, query).map((seg, i) =>
+              seg.match ? <mark key={i}>{seg.text}</mark> : <React.Fragment key={i}>{seg.text}</React.Fragment>,
+            )
+          ) : (
+            last?.content ?? t('inbox.row.noMessages')
+          )}
         </span>
+        {match && !contactMatches && (
+          <span className={styles.matchNote}>
+            <Search size={11} aria-hidden="true" />
+            {t('inbox.search.inMessage')}
+          </span>
+        )}
         <span className={styles.line3}>
           {row.waitingSince && (
             <span className={`${styles.tag} ${styles.tagWarn}`}>
@@ -122,12 +200,65 @@ function InboxRow({ row, current, userId, now, onOpen, timeZone, showOutcome }: 
             </span>
           )}
           {labels.length > 1 && (
-            <span className={`${styles.tag} ${styles.tagLabel} ${styles.tagMore}`} aria-label={t('inbox.labels.more', { count: labels.length - 1 })}>
-              +{labels.length - 1}
+            <span className={`${styles.tag} ${styles.tagLabel} ${styles.tagMore}`}>
+              <span aria-hidden="true">+{labels.length - 1}</span>
+              <span className="gsSr">{t('inbox.labels.more', { count: labels.length - 1 })}</span>
             </span>
           )}
         </span>
       </span>
+    </>
+  );
+
+  // Modo selección: la fila es la etiqueta de su casilla (tocarla la marca)
+  if (selecting) {
+    return (
+      <label className={className} data-conversation-id={row.id} data-checked={checked ? 'true' : undefined}>
+        {content}
+      </label>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={className}
+      aria-current={current ? 'true' : undefined}
+      data-conversation-id={row.id}
+      onClick={() => {
+        if (press.current.fired) {
+          press.current.fired = false;
+          return;
+        }
+        onOpen(row.id);
+      }}
+      onPointerDown={
+        onLongPress
+          ? (e) => {
+              if (e.pointerType === 'mouse') return;
+              press.current.fired = false;
+              press.current.x = e.clientX;
+              press.current.y = e.clientY;
+              cancelPress();
+              press.current.timer = setTimeout(() => {
+                press.current.timer = null;
+                press.current.fired = true;
+                onLongPress(row.id);
+              }, LONG_PRESS_MS);
+            }
+          : undefined
+      }
+      onPointerMove={(e) => {
+        // Si el dedo se mueve (scroll), no es una pulsación larga
+        if (press.current.timer && Math.hypot(e.clientX - press.current.x, e.clientY - press.current.y) > 10) cancelPress();
+      }}
+      onPointerUp={cancelPress}
+      onPointerCancel={cancelPress}
+      onContextMenu={(e) => {
+        if (press.current.fired) e.preventDefault();
+      }}
+    >
+      {content}
     </button>
   );
 }

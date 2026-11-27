@@ -15,20 +15,19 @@ const ORG = '00000000-0000-0000-0000-000000000001';
 const USER = '00000000-0000-0000-0000-000000000002';
 
 test('sin view las condiciones son las de antes', () => {
-  const f = buildInboxConditions({ orgId: ORG, userId: USER, status: 'active', channel: 'web', search: 'ana', agentId: 'ag' });
-  assert.deepEqual(f.conditions, [
-    'c.organization_id = $1',
-    'c.status = $2',
-    'c.channel = $3',
-    '(co.name ILIKE $4 OR co.phone ILIKE $4 OR co.email ILIKE $4)',
-    RECENT_SQL,
-    'c.agent_id = $5',
-  ]);
-  assert.deepEqual(f.params, [ORG, 'active', 'web', '%ana%', 'ag']);
+  const AG = '00000000-0000-0000-0000-0000000000aa';
+  const f = buildInboxConditions({ orgId: ORG, userId: USER, status: 'active', channel: 'web', agentId: AG });
+  assert.deepEqual(f.conditions, ['c.organization_id = $1', 'c.status = $2', 'c.channel = $3', RECENT_SQL, 'c.agent_id = $4']);
+  assert.deepEqual(f.params, [ORG, 'active', 'web', AG]);
   // Los contadores por agente no llevan el filtro de agente
-  assert.equal(f.baseConditions.length, 5);
-  assert.deepEqual(f.baseParams, [ORG, 'active', 'web', '%ana%']);
+  assert.equal(f.baseConditions.length, 4);
+  assert.deepEqual(f.baseParams, [ORG, 'active', 'web']);
   assert.ok(!buildInboxConditions({ orgId: ORG, userId: USER, range: 'all' }).conditions.includes(RECENT_SQL));
+  // web-44: la búsqueda lee también los mensajes e ignora la vista y el periodo (ver inbox-search.test.ts)
+  const s = buildInboxConditions({ orgId: ORG, userId: USER, view: 'all', search: 'ana' });
+  assert.equal(s.conditions.length, 2);
+  assert.ok(!s.conditions.includes(RECENT_SQL));
+  assert.deepEqual(s.params, [ORG, '%ana%']);
 });
 
 test('view=needs y view=mine son colas: no las recorta el período', () => {

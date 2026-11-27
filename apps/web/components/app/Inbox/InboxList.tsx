@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
-import { CircleCheckBig, Inbox, Menu, RefreshCw, Search, SearchX, TriangleAlert, User, type LucideIcon } from 'lucide-react';
+import { CircleCheckBig, Info, Inbox, Menu, RefreshCw, Search, SearchX, TriangleAlert, User, type LucideIcon } from 'lucide-react';
+import { INBOX_LIMITS } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
 import InboxButton from './InboxButton';
 import InboxRow from './InboxRow';
 import { mineGroup } from './inboxFormat';
-import { CLOSE_OUTCOMES, type CloseOutcome, type ConversationRow, type InboxView } from './types';
+import { CLOSE_OUTCOMES, INBOX_ORDERS, type CloseOutcome, type ConversationRow, type InboxOrder, type InboxView } from './types';
 import styles from './InboxList.module.css';
 
 export interface InboxListProps {
@@ -39,6 +40,29 @@ export interface InboxListProps {
   /** Bajo 1180 px: abre el cajón con el riel de la Bandeja. */
   onOpenRail?: () => void;
   railOpen?: boolean;
+  // ── web-44 ──
+  /** Botones de la cabecera (filtros y "Seleccionar varias"). */
+  headerActions?: React.ReactNode;
+  /** Chips de los filtros o de los criterios de la vista guardada, bajo el buscador. */
+  chips?: React.ReactNode;
+  /** Hay búsqueda de verdad (2 letras o más): banner, sin grupos ni orden. */
+  searching?: boolean;
+  onClearSearchAndFilters?: () => void;
+  /** Total de resultados (el número junto a "Resultados"). */
+  total?: number;
+  /** Orden de "Todas" (solo sin búsqueda). */
+  showOrder?: boolean;
+  order?: InboxOrder;
+  onOrder?: (order: InboxOrder) => void;
+  unreadCount?: number;
+  /** Modo selección. */
+  selecting?: boolean;
+  selectedIds?: ReadonlySet<string>;
+  onToggleRow?: (id: string) => void;
+  onSelectLoaded?: () => void;
+  onLongPress?: (id: string) => void;
+  /** La barra de acciones del lote (flotante dentro de la columna). */
+  bulkBar?: React.ReactNode;
 }
 
 const EMPTY_ICON: Record<InboxView, LucideIcon> = { all: Inbox, needs: CircleCheckBig, mine: User, closed: CircleCheckBig };
@@ -46,6 +70,9 @@ const EMPTY_ICON: Record<InboxView, LucideIcon> = { all: Inbox, needs: CircleChe
 export default function InboxList({ searchRef, onLoadMore, ...props }: InboxListProps) {
   const { t } = useTranslation();
   const { rows, view, loading, error, hasMore, loadingMore } = props;
+  const searching = !!props.searching;
+  const selected = props.selectedIds;
+  const atLimit = !!selected && selected.size >= INBOX_LIMITS.bulkMax;
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef(onLoadMore);
   useLayoutEffect(() => {
@@ -77,6 +104,12 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
           onOpen={props.onOpen}
           timeZone={props.timeZone}
           showOutcome={view === 'closed'}
+          search={searching ? props.search : ''}
+          selecting={props.selecting}
+          checked={selected?.has(row.id)}
+          checkDisabled={atLimit}
+          onToggle={props.onToggleRow}
+          onLongPress={props.onLongPress}
         />
       </li>
     ));
@@ -111,7 +144,6 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
       </div>
     );
   } else if (rows.length === 0) {
-    const searching = !!props.search.trim();
     const key = searching ? 'search' : props.scoped && view === 'all' ? 'scoped' : view;
     const Icon = searching ? SearchX : EMPTY_ICON[view];
     body = (
@@ -122,11 +154,13 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
         <b>{t(`inbox.empty.${key}.title`, { query: props.search.trim() })}</b>
         <p>{t(`inbox.empty.${key}.text`)}</p>
         {searching && (
-          <InboxButton onClick={() => props.onSearch('')}>{t('inbox.list.clearSearch')}</InboxButton>
+          <InboxButton onClick={() => (props.onClearSearchAndFilters ?? (() => props.onSearch('')))()}>
+            {t('inbox.list.clearSearchAndFilters')}
+          </InboxButton>
         )}
       </div>
     );
-  } else if (view === 'all' && !props.search.trim()) {
+  } else if (view === 'all' && !searching && (props.order ?? 'needs') === 'needs') {
     const help = rows.filter((r) => r.needsAttention);
     const fine = rows.filter((r) => !r.needsAttention);
     body = (
@@ -150,7 +184,7 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
         )}
       </>
     );
-  } else if (view === 'mine' && !props.search.trim()) {
+  } else if (view === 'mine' && !searching) {
     // Como en el prototipo: Seguimiento para hoy, En curso y Pospuestas (solo los grupos con algo)
     const groups = (['followUp', 'active', 'snoozed'] as const)
       .map((key) => ({ key, rows: rows.filter((r) => mineGroup(r) === key) }))
@@ -187,7 +221,14 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
               aria-haspopup="dialog"
             />
           )}
-          <h1 className={styles.title}>{props.title}</h1>
+          <h1 className={styles.title}>
+            {props.title}
+            {searching && typeof props.total === 'number' && !loading && <>
+                <span className="gsSr">, </span>
+                <span className={styles.titleCount}>{props.total}</span>
+              </>}
+          </h1>
+          {props.headerActions}
         </div>
         <label className={styles.search}>
           <Search size={16} aria-hidden="true" />
@@ -196,7 +237,7 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
             type="search"
             value={props.search}
             onChange={(e) => props.onSearch(e.target.value)}
-            placeholder={t('inbox.list.searchPlaceholder')}
+            placeholder={t('inbox.search.placeholder')}
             aria-label={t('inbox.list.searchLabel')}
             onKeyDown={(e) => {
               if (e.key === 'Escape' && props.search) {
@@ -209,7 +250,29 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
             /
           </kbd>
         </label>
-        {view === 'closed' && props.onOutcome && (
+        {props.chips}
+        {searching && (
+          <div className={styles.banner} role="status">
+            <Info size={14} aria-hidden="true" />
+            <span>{t('inbox.search.banner')}</span>
+            <button type="button" className={styles.bannerAction} onClick={() => props.onSearch('')}>
+              {t('inbox.search.clear')}
+            </button>
+          </div>
+        )}
+        {props.selecting && rows.length > 0 && (
+          <div className={styles.selectBar}>
+            <button type="button" className={styles.selectAll} onClick={props.onSelectLoaded} disabled={atLimit}>
+              {t('inbox.bulk.selectLoaded', { count: Math.min(rows.length, INBOX_LIMITS.bulkMax) })}
+            </button>
+            {atLimit && (
+              <span className={styles.limitNote} role="status">
+                {t('inbox.bulk.limit', { max: INBOX_LIMITS.bulkMax })}
+              </span>
+            )}
+          </div>
+        )}
+        {!searching && view === 'closed' && props.onOutcome && (
           <div className={styles.outcomes} role="group" aria-label={t('inbox.list.outcomeFilter')}>
             {([null, ...CLOSE_OUTCOMES] as const).map((o) => (
               <button
@@ -223,7 +286,17 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
             ))}
           </div>
         )}
-        {props.showPeriod && (
+        {props.showOrder && !searching && props.onOrder && (
+          <div className={styles.period} role="group" aria-label={t('inbox.order.label')}>
+            {INBOX_ORDERS.map((o) => (
+              <button key={o} type="button" aria-pressed={(props.order ?? 'needs') === o} onClick={() => props.onOrder?.(o)}>
+                {t(`inbox.order.${o}`)}
+                {o === 'unread' && (props.unreadCount ?? 0) > 0 && <b className={styles.orderCount}>{props.unreadCount}</b>}
+              </button>
+            ))}
+          </div>
+        )}
+        {props.showPeriod && !searching && (
           <div className={styles.period} role="group" aria-label={t('inbox.list.period')}>
             <span>{t('inbox.list.period')}</span>
             <button type="button" aria-pressed={!props.allTime} onClick={() => props.onPeriod(false)}>
@@ -245,6 +318,7 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
           </div>
         )}
       </div>
+      {props.bulkBar}
     </section>
   );
 }

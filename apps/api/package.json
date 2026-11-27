@@ -47,7 +47,12 @@
     "test:inbox-notes:db": "INBOX_NOTES_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-notes.test.ts",
     "test:quick-replies": "tsx --test src/services/quick-replies.test.ts",
     "test:quick-replies:db": "QUICK_REPLIES_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/quick-replies.test.ts",
-    "test:inbox-labels:db": "INBOX_LABELS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-labels.test.ts"
+    "test:inbox-labels:db": "INBOX_LABELS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-labels.test.ts",
+    "test:inbox-search:db": "INBOX_SEARCH_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-search.test.ts",
+    "test:inbox-filters:db": "INBOX_FILTERS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-filters.test.ts",
+    "test:inbox-views:db": "INBOX_VIEWS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-views.test.ts",
+    "test:inbox-bulk:db": "INBOX_BULK_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-bulk.test.ts",
+    "test:inbox-unread:db": "INBOX_UNREAD_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-unread.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

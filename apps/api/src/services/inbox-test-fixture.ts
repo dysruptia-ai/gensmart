@@ -22,12 +22,14 @@ export async function startInboxFixture(prefix: string) {
   const conversationsRouter = (await import('../routes/conversations')).default;
   const quickRepliesRouter = (await import('../routes/quick-replies')).default;
   const inboxLabelsRouter = (await import('../routes/inbox-labels')).default;
+  const inboxViewsRouter = (await import('../routes/inbox-views')).default;
 
   const app = express();
   app.use(express.json());
   app.use('/api/conversations', conversationsRouter);
   app.use('/api/quick-replies', quickRepliesRouter);
   app.use('/api/inbox-labels', inboxLabelsRouter);
+  app.use('/api/inbox-views', inboxViewsRouter);
   app.use(errorHandler);
   const server = app.listen(0);
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
@@ -99,6 +101,8 @@ export async function startInboxFixture(prefix: string) {
       await query('DELETE FROM messages WHERE conversation_id IN (SELECT id FROM conversations WHERE organization_id = $1)', [id]);
       await query('DELETE FROM conversations WHERE organization_id = $1', [id]); // CASCADE: notas, eventos, etiquetas aplicadas
       await query('DELETE FROM inbox_labels WHERE organization_id = $1', [id]);
+      await query('DELETE FROM inbox_views WHERE organization_id = $1', [id]);
+      await query('DELETE FROM notifications WHERE organization_id = $1', [id]);
       await query('DELETE FROM quick_replies WHERE organization_id = $1', [id]);
       await query('DELETE FROM contacts WHERE organization_id = $1', [id]);
       await query('DELETE FROM agents WHERE organization_id = $1', [id]);
@@ -109,7 +113,37 @@ export async function startInboxFixture(prefix: string) {
     await pool.end();
   }
 
-  return { query, makeOrg, makeUser, makeAgent, makeConversation, call, cleanup };
+  /**
+   * Graba lo que se emite por WebSocket (sala → evento → payload) sin un servidor real: reemplaza
+   * `to()` del servidor de Socket.IO que levanta sobre el mismo HTTP server.
+   */
+  async function spyEmits(): Promise<{ emits: Emitted[]; reset: () => void }> {
+    const { initWebSocket } = await import('../config/websocket');
+    const io = initWebSocket(server) as unknown as { to: (room: string) => FakeTarget };
+    const emits: Emitted[] = [];
+    const target = (rooms: string[]): FakeTarget => ({
+      to: (room: string) => target([...rooms, room]),
+      emit: (event: string, payload: Record<string, unknown>) => {
+        emits.push({ rooms, event, payload });
+        return true;
+      },
+    });
+    io.to = (room: string) => target([room]);
+    return { emits, reset: () => emits.splice(0, emits.length) };
+  }
+
+  return { query, makeOrg, makeUser, makeAgent, makeConversation, call, cleanup, spyEmits };
+}
+
+export interface Emitted {
+  rooms: string[];
+  event: string;
+  payload: Record<string, unknown>;
+}
+
+interface FakeTarget {
+  to: (room: string) => FakeTarget;
+  emit: (event: string, payload: Record<string, unknown>) => boolean;
 }
 
 export const errorCode = (r: CallResult): string | undefined => (r.json['error'] as { code?: string } | undefined)?.code;

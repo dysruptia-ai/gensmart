@@ -14,14 +14,51 @@ export const CLOSE_OUTCOMES: readonly CloseOutcome[] = ['sold', 'resolved', 'no_
 /** Quién escribió un mensaje: cliente, agente (IA), persona del equipo o sistema. */
 export type MessageRole = 'user' | 'assistant' | 'human' | 'system';
 
+/** Orden de "Todas" (web-44): por urgencia (el de siempre), por recientes o sin leer primero. */
+export type InboxOrder = 'needs' | 'recent' | 'unread';
+
+export const INBOX_ORDERS: readonly InboxOrder[] = ['needs', 'recent', 'unread'];
+
+/** Puntajes mínimos que se pueden elegir. */
+export const MIN_SCORES = [5, 7, 9] as const;
+export type MinScore = (typeof MIN_SCORES)[number];
+
 export interface InboxFilters {
   view: InboxView;
-  agentId: string | null;
-  channel: string | null;
+  /** Agentes, canales y etiquetas (web-44): cualquiera de los valores dentro de cada filtro. */
+  agentIds: string[];
+  channels: string[];
+  labelIds: string[];
+  minScore: MinScore | null;
   /** `true` = todo el historial; `false` = últimos 8 días (por defecto). */
   allTime: boolean;
   /** Filtro de "Cerradas" por resultado (`?outcome=`). */
   outcome: CloseOutcome | null;
+  order: InboxOrder;
+  /** Vista guardada abierta (`?savedView=`). */
+  savedView: string | null;
+}
+
+/** Estado de una vista guardada (web-44). */
+export type ViewState = 'open' | 'needs' | 'agent_only' | 'mine' | 'closed';
+
+export const VIEW_STATES: readonly ViewState[] = ['open', 'needs', 'agent_only', 'mine', 'closed'];
+
+export interface SavedViewFilters {
+  channels?: string[];
+  agentIds?: string[];
+  labelIds?: string[];
+  minScore?: MinScore | null;
+  state?: ViewState;
+  allTime?: boolean;
+}
+
+/** Vista guardada (`GET /api/inbox-views`): personal, solo la ve quien la creó. */
+export interface SavedView {
+  id: string;
+  name: string;
+  filters: SavedViewFilters;
+  count: number;
 }
 
 export interface RowContact {
@@ -82,6 +119,16 @@ export interface ConversationRow {
   closedByName?: string | null;
   /** Etiquetas en orden alfabético (web-43). */
   labels?: LabelRef[];
+  /** Sin leer para quien mira (web-44). */
+  unread?: boolean;
+  /** Con búsqueda: el mensaje más reciente que coincide (null si solo coincide el contacto). */
+  searchMatch?: {
+    content: string;
+    role: MessageRole | null;
+    createdAt: string;
+    sentByName?: string | null;
+    sentById?: string | null;
+  } | null;
   lastMessage: {
     content: string;
     role: MessageRole | null;
@@ -92,6 +139,8 @@ export interface ConversationRow {
 
 export interface ListResponse {
   conversations: ConversationRow[];
+  /** No leídas con los filtros y la vista actuales (web-44). */
+  unreadCount?: number;
   pagination: { total: number; page: number; limit: number; totalPages: number };
 }
 
@@ -188,6 +237,12 @@ export interface ApiConversationEvent {
   targetName: string | null;
   data: Record<string, unknown>;
   createdAt: string;
+}
+
+/** Resultado de una acción en lote (web-44). */
+export interface BulkResult {
+  updated: string[];
+  skipped: Array<{ id: string; reason: string }>;
 }
 
 /** Persona del equipo (`GET /api/organization/members`). */

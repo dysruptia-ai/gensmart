@@ -177,6 +177,11 @@ export const INBOX_LIMITS = {
   labelsPerOrg: 100,
   labelsPerConversation: 20,
   labelNameMaxChars: 30,
+  // web-44: vistas guardadas, acciones en lote y búsqueda
+  savedViewsPerUser: 20,
+  savedViewNameMax: 40,
+  bulkMax: 100,
+  searchMinChars: 2,
 } as const;
 
 /** Atajo de respuesta rápida sin la "/": minúsculas (con tildes), números, "_" y "-". De 2 a 30. */

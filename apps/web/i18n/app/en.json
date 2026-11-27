@@ -1586,7 +1586,34 @@
       "all": "All",
       "needs": "Need someone",
       "mine": "Mine",
-      "closed": "Closed"
+      "closed": "Closed",
+      "saved": "Saved views",
+      "new": "New view",
+      "edit": "Edit view",
+      "delete": "Delete view",
+      "save": "Save view",
+      "savedToast": "View saved to the sidebar",
+      "limit": "You've reached {max} views, the maximum. Delete one to create another.",
+      "name": "Name",
+      "nameCount": "{n}/{max}",
+      "namePlaceholder": "For example: Unconfirmed payments",
+      "nameRequired": "Give it a name to save it.",
+      "nameTaken": "You already have a view with that name.",
+      "saveError": "We couldn't save the view. Try again.",
+      "deleteTitle": "Delete view",
+      "deleteText": "Delete “{name}”? Your conversations stay as they are.",
+      "minScore": "Minimum score",
+      "scoreAny": "Any",
+      "scoreMin": "{n} or higher",
+      "scoreChip": "Score {n} or higher",
+      "state": "Status",
+      "states": {
+        "open": "Open",
+        "needs": "Asked for help",
+        "agent_only": "Agent only",
+        "mine": "Mine",
+        "closed": "Closed"
+      }
     },
     "rail": {
       "label": "Inboxes",
@@ -1617,7 +1644,8 @@
         "followUp": "Follow up today",
         "active": "In progress",
         "snoozed": "Snoozed"
-      }
+      },
+      "clearSearchAndFilters": "Clear search and filters"
     },
     "empty": {
       "all": {
@@ -1641,8 +1669,8 @@
         "text": "No open conversations for this agent or channel in the period."
       },
       "search": {
-        "title": "No results for \"{query}\"",
-        "text": "We search the contact's name, phone and email. Check the spelling or try fewer letters."
+        "title": "No results for “{query}”",
+        "text": "We search the contact and inside messages across the whole inbox. Check the spelling or remove a filter."
       }
     },
     "row": {
@@ -1658,7 +1686,8 @@
       "scoreTitle": "Lead score",
       "scoreSr": "Score",
       "snoozedUntil": "Back {when}",
-      "backFromSnooze": "Back from snooze"
+      "backFromSnooze": "Back from snooze",
+      "unreadSr": "Unread."
     },
     "thread": {
       "loading": "Loading the conversation",
@@ -1839,7 +1868,8 @@
       "search": "Search",
       "escape": "Close whatever is open",
       "help": "Show these shortcuts",
-      "palette": "Search or go to"
+      "palette": "Search or go to",
+      "unread": "Mark as unread"
     },
     "mobileNav": {
       "label": "Inbox views",
@@ -1967,7 +1997,9 @@
       "deleteAria": "Delete {name}",
       "deleteTitle": "Delete “{name}”?",
       "deleteConfirm": "Delete label",
-      "deleteText": "It will be removed from {count} conversations. The conversations themselves stay."
+      "deleteText": "It will be removed from {count} conversations. The conversations themselves stay.",
+      "more_one": "{count} more label",
+      "more_other": "{count} more labels"
     },
     "settings": {
       "title": "Inbox settings",
@@ -2009,6 +2041,124 @@
         "sampleName": "Laura Gómez",
         "sampleAgent": "Camila"
       }
+    },
+    "search": {
+      "placeholder": "Search inside messages, not just the contact",
+      "banner": "Searching the whole inbox, including closed conversations.",
+      "clear": "Clear",
+      "inMessage": "Matches inside a message"
+    },
+    "filters": {
+      "title": "Filters",
+      "buttonCount_one": "Filters: {count} on",
+      "buttonCount_other": "Filters: {count} on",
+      "channel": "Channel",
+      "agent": "Agent",
+      "label": "Label",
+      "labelSearch": "Find a label",
+      "noLabels": "No labels match that name.",
+      "score": "Score",
+      "score7": "Score 7 or higher",
+      "remove": "Remove filter {name}",
+      "clear": "Clear filters",
+      "saveAsView": "Save as view",
+      "chipChannel": "Channel: {name}",
+      "chipAgent": "Agent: {name}",
+      "chipLabel": "Label: {name}",
+      "unknownLabel": "Deleted label"
+    },
+    "order": {
+      "label": "Sort",
+      "needs": "Most urgent",
+      "recent": "Most recent",
+      "unread": "Unread"
+    },
+    "unread": {
+      "mark": "Mark as unread",
+      "marked": "Marked as unread",
+      "undo": "Undo"
+    },
+    "toast": {
+      "dismiss": "Dismiss"
+    },
+    "bulk": {
+      "selectMode": "Select several",
+      "exit": "Exit selection",
+      "selectRow": "Select the conversation with {name}",
+      "selectLoaded_one": "Select the {count} loaded",
+      "selectLoaded_other": "Select all {count} loaded",
+      "limit": "Up to {max} per action: you can't select more.",
+      "selected_one": "{count} selected",
+      "selected_other": "{count} selected",
+      "toolbar_one": "Actions for {count} selected",
+      "toolbar_other": "Actions for {count} selected",
+      "assign": "Assign",
+      "close": "Close",
+      "label": "Label",
+      "delete_one": "Delete {count} conversation",
+      "delete_other": "Delete {count} conversations",
+      "you": "(you)",
+      "pickPerson": "Choose who gets them.",
+      "assignTitle_one": "Assign {count} conversation",
+      "assignTitle_other": "Assign {count} conversations",
+      "assignConfirm_one": "Assign {count}",
+      "assignConfirm_other": "Assign {count}",
+      "skip": {
+        "closed_one": "{count} is closed. It will be skipped.",
+        "closed_other": "{count} are closed. They will be skipped.",
+        "notTaken_one": "{count} isn't taken by anyone: only an owner or admin can assign it. It will be skipped.",
+        "notTaken_other": "{count} aren't taken by anyone: only an owner or admin can assign them. They will be skipped.",
+        "takenBy_one": "{name} has {count}: only an owner or admin can reassign it. It will be skipped.",
+        "takenBy_other": "{name} has {count}: only an owner or admin can reassign them. They will be skipped.",
+        "alreadyHas_one": "That person already has {count}. It will be skipped.",
+        "alreadyHas_other": "That person already has {count}. They will be skipped.",
+        "self_one": "You can't assign {count} to yourself. It will be skipped.",
+        "self_other": "You can't assign {count} to yourself. They will be skipped."
+      },
+      "closeTitle_one": "Close {count} conversation",
+      "closeTitle_other": "Close {count} conversations",
+      "closeText_one": "How did it end? The outcome is saved on it. You can reopen it any time.",
+      "closeText_other": "How did they end? The same outcome is saved on all {count}. You can reopen them any time.",
+      "closeConfirm_one": "Close {count}",
+      "closeConfirm_other": "Close {count}",
+      "alreadyClosed_one": "{count} is already closed: it stays as it is.",
+      "alreadyClosed_other": "{count} are already closed: they stay as they are.",
+      "labelTitle_one": "Label {count} conversation",
+      "labelTitle_other": "Label {count} conversations",
+      "labelLegend": "Labels",
+      "labelConfirm": "Apply changes",
+      "someOf": "{n} of {total}",
+      "willAdd_one": "added to {count}",
+      "willAdd_other": "added to {count}",
+      "willRemove_one": "removed from {count}",
+      "willRemove_other": "removed from {count}",
+      "labelLimitNote": "A conversation that would go over {max} labels is skipped.",
+      "deleteTitle_one": "Delete {count} conversation?",
+      "deleteTitle_other": "Delete {count} conversations?",
+      "deleteText_one": "Its messages are deleted and this can't be undone. If the contact has no other conversations, it's deleted too.",
+      "deleteText_other": "Their messages are deleted and this can't be undone. Contacts with no other conversations are deleted too.",
+      "deleteConfirm_one": "Delete {count}",
+      "deleteConfirm_other": "Delete {count}",
+      "deleted_one": "{count} conversation deleted",
+      "deleted_other": "{count} conversations deleted",
+      "doneAll_one": "{count} conversation updated",
+      "doneAll_other": "{count} conversations updated",
+      "updatedN_one": "{count} updated",
+      "updatedN_other": "{count} updated",
+      "skippedN_one": "{count} skipped",
+      "skippedN_other": "{count} skipped",
+      "donePartial": "{updated}, {skipped}.",
+      "failed": "We couldn't do that. Try again.",
+      "reasons": {
+        "not_found": "It no longer exists.",
+        "already_closed": "It was already closed.",
+        "forbidden": "Someone else has it.",
+        "same_user": "That person already had it.",
+        "not_in_takeover": "It wasn't taken.",
+        "label_limit": "It would go over 20 labels.",
+        "error": "Something went wrong."
+      },
+      "deleteShort": "Delete"
     }
   }
 }

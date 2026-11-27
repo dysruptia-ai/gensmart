@@ -2,28 +2,34 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Trash2, WifiOff, X } from 'lucide-react';
-import { PLAN_LIMITS } from '@gensmart/shared';
+import { Filter, SquareCheck, Trash2, WifiOff, X } from 'lucide-react';
+import { INBOX_LIMITS, PLAN_LIMITS } from '@gensmart/shared';
 import { api } from '@/lib/api';
 import { trapTab } from '@/lib/focus-trap';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useWebSocket, type WebSocketEvents } from '@/hooks/useWebSocket';
 import { useOrgAgents } from '@/components/app/AppShell/useShellData';
+import BulkBar from './BulkBar';
+import { BulkAssignDialog, BulkCloseDialog, BulkLabelDialog } from './BulkDialogs';
+import { topSkipReason } from './bulkAssign';
 import CloseDialog from './CloseDialog';
+import FilterPopover from './FilterPopover';
+import InboxToast, { type ToastData } from './InboxToast';
+import SavedViewDialog from './SavedViewDialog';
 import ContactPanel from './ContactPanel';
 import InboxButton from './InboxButton';
 import InboxDialog from './InboxDialog';
 import InboxList from './InboxList';
 import InboxMobileNav from './InboxMobileNav';
-import InboxRail from './InboxRail';
+import InboxRail, { railScope } from './InboxRail';
 import InboxSettings from './InboxSettings';
 import InboxThread, { eventText } from './InboxThread';
 import type { LabelPickerData } from './LabelPicker';
 import SnoozeDialog from './SnoozeDialog';
 import TransferDialog from './TransferDialog';
 import { getChannelMeta } from './channelMeta';
-import { contactName, inboxHref, readFilters, validTimeZone } from './inboxFormat';
+import { EMPTY_FILTERS, activeFilterCount, contactName, inboxHref, readFilters, validTimeZone } from './inboxFormat';
 import {
   DETAILS_FIXED_QUERY,
   MOBILE_QUERY,
@@ -37,7 +43,9 @@ import { useInboxCounts, useInboxList, type RowPatch } from './useInboxList';
 import { normalizeIncoming, useConversationThread } from './useConversationThread';
 import { useInboxLabels } from './useInboxLabels';
 import { useQuickReplies } from './useQuickReplies';
-import type { CloseOutcome, InboxFilters, InboxView, LabelRef } from './types';
+import { useSavedViews } from './useSavedViews';
+import type { BulkResult, CloseOutcome, InboxFilters, InboxView, LabelRef, SavedView, SavedViewFilters } from './types';
+import listStyles from './InboxList.module.css';
 import styles from './InboxScreen.module.css';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
@@ -47,6 +55,7 @@ const SHORTCUTS: Array<[keys: string, key: string]> = [
   ['J / K', 'next'],
   ['T', 'take'],
   ['E', 'close'],
+  ['U', 'unread'],
   ['/', 'search'],
   ['Esc', 'escape'],
   ['?', 'help'],
@@ -86,10 +95,32 @@ export default function InboxScreen() {
     return () => clearTimeout(id);
   }, [searchInput]);
 
+  // web-44: con menos de 2 letras no se busca (la lista sigue como si no hubiera búsqueda)
+  const activeSearch = [...search].length >= INBOX_LIMITS.searchMinChars ? search : '';
+  const searching = !!activeSearch;
+
+  // ── vistas guardadas (web-44): personales ──
+  const savedViews = useSavedViews(!!user);
+  const activeView: SavedView | null = filters.savedView ? (savedViews.views?.find((v) => v.id === filters.savedView) ?? null) : null;
+
   // ── datos ──
   const me = useMemo(() => (user ? { id: user.id, name: user.name } : null), [user]);
-  const list = useInboxList(filters, search, user?.id);
-  const { counts, refresh: refreshCounts } = useInboxCounts(filters.allTime);
+  const list = useInboxList(filters, activeSearch, user?.id, activeView?.filters ?? null);
+  const { counts, refresh: refreshRailCounts } = useInboxCounts(filters.allTime);
+  // Los contadores de las vistas se refrescan con los mismos eventos que los del riel (agrupados)
+  const viewsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reloadViews = savedViews.reload;
+  const refreshCounts = useCallback(() => {
+    refreshRailCounts();
+    if (viewsTimer.current) clearTimeout(viewsTimer.current);
+    viewsTimer.current = setTimeout(reloadViews, 800);
+  }, [refreshRailCounts, reloadViews]);
+  useEffect(
+    () => () => {
+      if (viewsTimer.current) clearTimeout(viewsTimer.current);
+    },
+    [],
+  );
   const thread = useConversationThread(conversationId, me);
   const orgAgents = useOrgAgents(user?.orgId);
   const [plan, setPlan] = useState<string | null>(null);
@@ -150,6 +181,8 @@ export default function InboxScreen() {
   const selectFilters = useCallback(
     (patch: Partial<InboxFilters>) => {
       const next = { ...filters, ...patch };
+      // Una vista guardada fija su estado y su periodo: el resultado de "Cerradas" y el orden no aplican
+      if (next.savedView) next.outcome = null;
       setRailOpen(false);
       // En móvil, elegir una vista vuelve a la lista
       go(next, mobile ? null : conversationId);
@@ -190,10 +223,40 @@ export default function InboxScreen() {
 
   // ── tiempo real ──
   const reloadLabels = labelCatalog.reload;
-  const live = useRef({ list, thread, conversationId, refreshCounts, t, userId: user?.id, isManager, reloadLabels });
+  const readBlockedRef = useRef<string | null>(null);
+  const lastReadAt = useRef(0);
+  const live = useRef({ list, thread, conversationId, refreshCounts, t, userId: user?.id, isManager, reloadLabels, orgId: user?.orgId, reloadViews });
   useLayoutEffect(() => {
-    live.current = { list, thread, conversationId, refreshCounts, t, userId: user?.id, isManager, reloadLabels };
+    live.current = { list, thread, conversationId, refreshCounts, t, userId: user?.id, isManager, reloadLabels, orgId: user?.orgId, reloadViews };
   });
+
+  // ── leído / no leído (web-44): por persona ──
+  const markRead = useCallback((id: string) => {
+    lastReadAt.current = Date.now();
+    live.current.list.setUnread(id, false);
+    api.post(`/api/conversations/${id}/read`).catch(() => {
+      /* la próxima apertura lo vuelve a intentar */
+    });
+  }, []);
+
+  // Abrir una conversación la marca leída al instante (salvo que se acabe de marcar como no leída)
+  useEffect(() => {
+    if (!conversationId) return;
+    if (readBlockedRef.current !== conversationId) readBlockedRef.current = null;
+    if (readBlockedRef.current) return;
+    markRead(conversationId);
+  }, [conversationId, markRead]);
+
+  // Al volver a la pestaña, la abierta que recibió mensajes se marca leída
+  useEffect(() => {
+    const onVisible = () => {
+      const { conversationId: openId, list: l } = live.current;
+      if (document.visibilityState !== 'visible' || !openId || readBlockedRef.current === openId) return;
+      if (l.rows.find((r) => r.id === openId)?.unread) markRead(openId);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [markRead]);
 
   useEffect(() => {
     const nameOf = (id: string): string => {
@@ -208,8 +271,14 @@ export default function InboxScreen() {
       const last = msgs[msgs.length - 1];
       if (!last) return;
       const { list: l, thread: th, conversationId: openId, refreshCounts: rc, t: tr } = live.current;
+      // web-44: un mensaje del cliente la deja sin leer, salvo la abierta con la pestaña visible
+      const fromCustomer = msgs.some((m) => m.role === 'user');
+      const watching =
+        data.conversationId === openId && document.visibilityState === 'visible' && readBlockedRef.current !== openId;
+      if (fromCustomer && watching && Date.now() - lastReadAt.current > 4000) markRead(data.conversationId);
       l.patch({
         conversationId: data.conversationId,
+        ...(fromCustomer ? { unread: !watching } : {}),
         message: {
           role: last.role,
           content: last.content,
@@ -325,6 +394,18 @@ export default function InboxScreen() {
       th.patchConversation((c) => (c.labels ? { ...c, labels: fix(c.labels) } : c));
     };
 
+    const handleReadState: WebSocketEvents['conversation:read-state'] = (data) => {
+      const { list: l, orgId } = live.current;
+      if (orgId && data.organizationId !== orgId) return;
+      l.setUnread(data.conversationId, data.unread);
+    };
+    const handleViews: WebSocketEvents['inbox-views:changed'] = (data) => {
+      const { orgId, reloadViews: rv } = live.current;
+      if (!orgId || data.organizationId === orgId) rv();
+    };
+
+    on('conversation:read-state', handleReadState);
+    on('inbox-views:changed', handleViews);
     on('message:new', handleMessage);
     on('conversation:note', handleNote);
     on('conversation:note-deleted', handleNoteDeleted);
@@ -335,6 +416,8 @@ export default function InboxScreen() {
     on('variables:update', handleVariables);
     on('contact:scored', handleScored);
     return () => {
+      off('conversation:read-state', handleReadState);
+      off('inbox-views:changed', handleViews);
       off('message:new', handleMessage);
       off('conversation:note', handleNote);
       off('conversation:note-deleted', handleNoteDeleted);
@@ -345,7 +428,7 @@ export default function InboxScreen() {
       off('variables:update', handleVariables);
       off('contact:scored', handleScored);
     };
-  }, [on, off]);
+  }, [on, off, markRead]);
 
   // Al volver la conexión se recarga lo que se pudo perder
   const { online } = useConnection(() => {
@@ -520,12 +603,188 @@ export default function InboxScreen() {
     pushedRef.current = false;
     go(filters, nextId);
   };
-  const keys = useRef({ visibleIds, conversationId, c, canTakeover, askClose, openConversation, take });
+  // ── avisos (web-44) ──
+  const [toast, setToast] = useState<ToastData | null>(null);
+  const showToast = useCallback((text: string, action?: ToastData['action']) => {
+    setToast({ id: Date.now(), text, action });
+  }, []);
+
+  // ── marcar como no leída (web-44): el hilo sigue abierto y no se vuelve a marcar leída mientras siga así ──
+  const markUnread = useCallback(() => {
+    const id = thread.conversation?.id;
+    if (!id) return;
+    readBlockedRef.current = id;
+    list.setUnread(id, true);
+    api.post(`/api/conversations/${id}/unread`).catch(() => {
+      list.setUnread(id, false);
+    });
+    showToast(t('inbox.unread.marked'), {
+      label: t('inbox.unread.undo'),
+      run: () => {
+        readBlockedRef.current = null;
+        markRead(id);
+      },
+    });
+  }, [thread.conversation?.id, list, showToast, t, markRead]);
+
+  // ── selección y lote (web-44) ──
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [bulkDialog, setBulkDialog] = useState<'assign' | 'close' | 'label' | 'delete' | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const exitSelection = useCallback(() => {
+    setSelecting(false);
+    setSelected(new Set());
+    setBulkDialog(null);
+  }, []);
+  // Cambiar de vista, de filtro o buscar sale de la selección
+  const selectionKey = `${query}#${activeSearch}`;
+  const [lastSelectionKey, setLastSelectionKey] = useState(selectionKey);
+  if (lastSelectionKey !== selectionKey) {
+    setLastSelectionKey(selectionKey);
+    if (selecting || selected.size) {
+      setSelecting(false);
+      setSelected(new Set());
+      setBulkDialog(null);
+    }
+  }
+  const toggleRow = useCallback((id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < INBOX_LIMITS.bulkMax) next.add(id);
+      return next;
+    });
+  }, []);
+  const selectLoaded = useCallback(() => {
+    setSelected(new Set(list.rows.slice(0, INBOX_LIMITS.bulkMax).map((r) => r.id)));
+  }, [list.rows]);
+  const startSelectionWith = useCallback((id: string) => {
+    setSelecting(true);
+    setSelected(new Set([id]));
+  }, []);
+  const selectedRows = useMemo(() => list.rows.filter((r) => selected.has(r.id)), [list.rows, selected]);
+
+  const finishBulk = (result: BulkResult) => {
+    const u = result.updated.length;
+    const k = result.skipped.length;
+    if (k === 0) showToast(t('inbox.bulk.doneAll', { count: u }));
+    else {
+      const reason = topSkipReason(result.skipped);
+      const head = t('inbox.bulk.donePartial', { updated: t('inbox.bulk.updatedN', { count: u }), skipped: t('inbox.bulk.skippedN', { count: k }) });
+      showToast(reason ? `${head} ${t(`inbox.bulk.reasons.${reason}`)}` : head);
+    }
+    exitSelection();
+    list.reload();
+    refreshCounts();
+  };
+
+  const runBulk = async (path: string, body: Record<string, unknown>) => {
+    setBulkBusy(true);
+    try {
+      const result = await api.post<BulkResult>(path, { ids: [...selected], ...body });
+      finishBulk(result);
+    } catch {
+      showToast(t('inbox.bulk.failed'));
+      setBulkDialog(null);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    setBulkBusy(true);
+    try {
+      const ids = [...selected];
+      const r = await api.delete<{ deleted: number }>('/api/conversations/bulk', { conversationIds: ids });
+      showToast(t('inbox.bulk.deleted', { count: r.deleted }));
+      if (conversationId && ids.includes(conversationId)) go(filters, null);
+      exitSelection();
+      list.reload();
+      refreshCounts();
+    } catch {
+      showToast(t('inbox.bulk.failed'));
+      setBulkDialog(null);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // ── filtros y vistas guardadas (web-44) ──
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersBtnRef = useRef<HTMLButtonElement>(null);
+  const [viewDialog, setViewDialog] = useState<{ view: SavedView | null; initial?: SavedViewFilters } | null>(null);
+
+  // Una vista que no existe (borrada o de otra persona) vuelve a Todas sin error
+  useEffect(() => {
+    if (filters.savedView && savedViews.views && !activeView) {
+      go({ ...filters, savedView: null, view: 'all' }, conversationId);
+    }
+  }, [filters, savedViews.views, activeView, go, conversationId]);
+
+  const openView = useCallback(
+    (id: string) => {
+      setRailOpen(false);
+      go({ ...EMPTY_FILTERS, savedView: id }, mobile ? null : conversationId);
+    },
+    [go, mobile, conversationId],
+  );
+
+  const panelFilters: SavedViewFilters = {
+    ...(filters.channels.length ? { channels: filters.channels } : {}),
+    ...(filters.agentIds.length ? { agentIds: filters.agentIds } : {}),
+    ...(filters.labelIds.length ? { labelIds: filters.labelIds } : {}),
+    ...(filters.minScore ? { minScore: filters.minScore } : {}),
+    state: filters.view === 'needs' ? 'needs' : filters.view === 'mine' ? 'mine' : filters.view === 'closed' ? 'closed' : 'open',
+    allTime: filters.allTime,
+  };
+
+  const saveView = async (name: string, f: SavedViewFilters): Promise<'ok' | 'taken' | 'error'> => {
+    try {
+      const editing = viewDialog?.view;
+      const view = editing ? await savedViews.update(editing.id, name, f) : await savedViews.create(name, f);
+      setViewDialog(null);
+      showToast(t('inbox.views.savedToast'));
+      go({ ...EMPTY_FILTERS, savedView: view.id }, conversationId);
+      return 'ok';
+    } catch (err) {
+      return (err as { code?: string }).code === 'view_name_taken' ? 'taken' : 'error';
+    }
+  };
+
+  const deleteView = async (): Promise<boolean> => {
+    const v = viewDialog?.view;
+    if (!v) return false;
+    try {
+      await savedViews.remove(v.id);
+      setViewDialog(null);
+      if (filters.savedView === v.id) go({ ...EMPTY_FILTERS }, conversationId);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const selectingRef = useRef(selecting);
   useLayoutEffect(() => {
-    keys.current = { visibleIds, conversationId, c, canTakeover, askClose, openConversation, take };
+    selectingRef.current = selecting;
+  });
+  const keys = useRef({ visibleIds, conversationId, c, canTakeover, askClose, openConversation, take, markUnread });
+  useLayoutEffect(() => {
+    keys.current = { visibleIds, conversationId, c, canTakeover, askClose, openConversation, take, markUnread };
   });
   const layersOpen =
-    railOpen || contactOpen || confirmClose || confirmDelete || helpOpen || transferOpen || snoozeOpen || !!noteToDelete;
+    railOpen ||
+    contactOpen ||
+    confirmClose ||
+    confirmDelete ||
+    helpOpen ||
+    transferOpen ||
+    snoozeOpen ||
+    !!noteToDelete ||
+    filtersOpen ||
+    !!viewDialog ||
+    !!bulkDialog;
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -533,6 +792,7 @@ export default function InboxScreen() {
       if (e.key === 'Escape') {
         if (layersOpen && !railOpen && !contactOpen) return;
         if (railOpen) setRailOpen(false);
+        else if (selectingRef.current) exitSelection();
         else if (contactOpen) setContactOpen(false);
         else if (detailsOpen) setDetailsPref(false);
         return;
@@ -562,6 +822,11 @@ export default function InboxScreen() {
           e.preventDefault();
           k.askClose();
         }
+      } else if (key === 'u' || key === 'U') {
+        if (k.c) {
+          e.preventDefault();
+          k.markUnread();
+        }
       } else if (key === '/') {
         e.preventDefault();
         searchRef.current?.focus();
@@ -572,7 +837,7 @@ export default function InboxScreen() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [railOpen, contactOpen, layersOpen, detailsOpen, setDetailsPref]);
+  }, [railOpen, contactOpen, layersOpen, detailsOpen, setDetailsPref, exitSelection]);
 
   // Foco en los cajones al abrirlos
   useEffect(() => {
@@ -583,20 +848,152 @@ export default function InboxScreen() {
   }, [contactOpen]);
 
   // ── títulos ──
-  const agentName =
-    filters.agentId &&
-    (orgAgents?.agents.find((a) => a.id === filters.agentId)?.name ??
-      counts?.byAgent.find((a) => a.agentId === filters.agentId)?.agentName);
-  const title = search
+  const scope = railScope(filters);
+  const agentNameOf = (id: string) =>
+    orgAgents?.agents.find((a) => a.id === id)?.name ?? counts?.byAgent.find((a) => a.agentId === id)?.agentName ?? null;
+  const title = searching
     ? t('inbox.list.results')
-    : filters.agentId
-      ? agentName || t('inbox.rail.unnamedAgent')
-      : filters.channel
-        ? getChannelMeta(filters.channel).label
-        : t(`inbox.views.${filters.view}`);
-  const scoped = !!(filters.agentId || filters.channel);
-  const showPeriod = filters.view === 'all' || filters.view === 'closed';
+    : filters.savedView
+      ? (activeView?.name ?? '')
+      : scope.agentId
+        ? agentNameOf(scope.agentId) || t('inbox.rail.unnamedAgent')
+        : scope.channel
+          ? getChannelMeta(scope.channel).label
+          : t(`inbox.views.${filters.view}`);
+  const scoped = !!(scope.agentId || scope.channel || filters.savedView);
+  const showPeriod = !filters.savedView && (filters.view === 'all' || filters.view === 'closed');
+  const showOrder = !filters.savedView && filters.view === 'all';
   const agents = useMemo(() => (orgAgents?.agents ?? []).map((a) => ({ id: a.id, name: a.name })), [orgAgents]);
+
+  // ── opciones de los filtros y chips (web-44) ──
+  const channelOptions = useMemo(() => {
+    const keys = [...new Set([...(counts?.byChannel ?? []).map((c) => c.channel), ...filters.channels])];
+    return keys.map((ch) => ({ value: ch, label: getChannelMeta(ch).label, dot: getChannelMeta(ch).color }));
+  }, [counts, filters.channels]);
+  const agentOptions = useMemo(() => agents.map((a) => ({ value: a.id, label: a.name })), [agents]);
+  const labelOptions = useMemo(() => (labelCatalog.labels ?? []).map((l) => ({ value: l.id, label: l.name })), [labelCatalog.labels]);
+  const labelName = (id: string) => labelCatalog.labels?.find((l) => l.id === id)?.name ?? t('inbox.filters.unknownLabel');
+  const filterCount = activeFilterCount(filters);
+
+  const removeChip = (patch: Partial<InboxFilters>) => selectFilters(patch);
+  const chip = (key: string, text: string, onRemove?: () => void) => (
+    <span key={key} className={`${listStyles.chip} ${onRemove ? '' : listStyles.chipStatic}`}>
+      <span className={listStyles.chipText} title={text}>
+        {text}
+      </span>
+      {onRemove && (
+        <button type="button" className={listStyles.chipX} onClick={onRemove} aria-label={t('inbox.filters.remove', { name: text })}>
+          <X size={12} aria-hidden="true" />
+        </button>
+      )}
+    </span>
+  );
+  const viewCriteria: React.ReactNode[] = [];
+  if (activeView) {
+    const f = activeView.filters;
+    for (const ch of f.channels ?? []) viewCriteria.push(chip(`v-ch-${ch}`, t('inbox.filters.chipChannel', { name: getChannelMeta(ch).label })));
+    for (const id of f.agentIds ?? []) viewCriteria.push(chip(`v-ag-${id}`, t('inbox.filters.chipAgent', { name: agentNameOf(id) ?? '…' })));
+    for (const id of f.labelIds ?? []) viewCriteria.push(chip(`v-lb-${id}`, t('inbox.filters.chipLabel', { name: labelName(id) })));
+    if (f.minScore) viewCriteria.push(chip('v-score', t('inbox.views.scoreChip', { n: f.minScore })));
+    viewCriteria.push(chip('v-state', t(`inbox.views.states.${f.state ?? 'open'}`)));
+    viewCriteria.push(chip('v-period', f.allTime ? t('inbox.list.allTime') : t('inbox.list.last8days')));
+  }
+  const filterChips: React.ReactNode[] = [
+    ...filters.channels.map((ch) =>
+      chip(`ch-${ch}`, getChannelMeta(ch).label, () => removeChip({ channels: filters.channels.filter((x) => x !== ch) })),
+    ),
+    ...filters.agentIds.map((id) =>
+      chip(`ag-${id}`, agentNameOf(id) || t('inbox.rail.unnamedAgent'), () => removeChip({ agentIds: filters.agentIds.filter((x) => x !== id) })),
+    ),
+    ...filters.labelIds.map((id) => chip(`lb-${id}`, labelName(id), () => removeChip({ labelIds: filters.labelIds.filter((x) => x !== id) }))),
+    ...(filters.minScore ? [chip('score', t('inbox.filters.score7'), () => removeChip({ minScore: null }))] : []),
+  ];
+  const chips =
+    viewCriteria.length || filterChips.length ? (
+      <div className={listStyles.chips}>
+        {viewCriteria}
+        {activeView && (
+          <button type="button" className={listStyles.chipAction} onClick={() => setViewDialog({ view: activeView })}>
+            {t('inbox.views.edit')}
+          </button>
+        )}
+        {filterChips}
+        {filterChips.length > 0 && (
+          <>
+            <button type="button" className={listStyles.chipAction} onClick={() => removeChip({ channels: [], agentIds: [], labelIds: [], minScore: null })}>
+              {t('inbox.filters.clear')}
+            </button>
+            {!activeView && (savedViews.views?.length ?? 0) < INBOX_LIMITS.savedViewsPerUser && (
+              <button type="button" className={listStyles.chipAction} onClick={() => setViewDialog({ view: null, initial: panelFilters })}>
+                {t('inbox.filters.saveAsView')}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    ) : null;
+
+  const mobileSelecting = mobile && selecting;
+  const headerActions = mobileSelecting ? (
+    <InboxButton variant="icon" icon={X} onClick={exitSelection} aria-label={t('inbox.bulk.exit')} />
+  ) : (
+    <>
+      <InboxButton
+        variant="icon"
+        icon={SquareCheck}
+        onClick={() => (selecting ? exitSelection() : setSelecting(true))}
+        aria-pressed={selecting}
+        aria-label={t('inbox.bulk.selectMode')}
+        title={t('inbox.bulk.selectMode')}
+      />
+      <span className={listStyles.popWrap}>
+        <InboxButton
+          ref={filtersBtnRef}
+          variant="icon"
+          icon={Filter}
+          className={listStyles.headerBtn}
+          onClick={() => setFiltersOpen((o) => !o)}
+          aria-pressed={filterCount > 0}
+          aria-expanded={filtersOpen}
+          aria-controls={filtersOpen ? 'inbox-filters' : undefined}
+          aria-label={filterCount ? t('inbox.filters.buttonCount', { count: filterCount }) : t('inbox.filters.title')}
+          title={t('inbox.filters.title')}
+        />
+        {filterCount > 0 && (
+          <span className={listStyles.filterCount} aria-hidden="true">
+            {filterCount}
+          </span>
+        )}
+        {filtersOpen && (
+          <FilterPopover
+            id="inbox-filters"
+            filters={filters}
+            channels={channelOptions}
+            agents={agentOptions}
+            labels={labelOptions}
+            onChange={(patch) => selectFilters(patch)}
+            onClose={() => setFiltersOpen(false)}
+            anchorRef={filtersBtnRef}
+          />
+        )}
+      </span>
+    </>
+  );
+  const canAssign = canTakeover === true;
+  const bulkBar =
+    selecting && selected.size > 0 ? (
+      <BulkBar
+        count={selected.size}
+        canAssign={canAssign}
+        canDelete={isManager}
+        onAssign={() => setBulkDialog('assign')}
+        onClose={() => setBulkDialog('close')}
+        onLabel={() => setBulkDialog('label')}
+        onDelete={() => setBulkDialog('delete')}
+        onExit={exitSelection}
+        mobile={mobile}
+      />
+    ) : null;
 
   const rail = (
     <InboxRail
@@ -604,6 +1001,18 @@ export default function InboxScreen() {
       counts={counts}
       agents={agents}
       settingsOpen={settingsOpen}
+      savedViews={savedViews.views}
+      onOpenView={(id) => {
+        if (settingsOpen) setRailOpen(false);
+        if (settingsOpen) go({ ...EMPTY_FILTERS, savedView: id }, null);
+        else openView(id);
+      }}
+      onNewView={() => {
+        setRailOpen(false);
+        // Desde Ajustes se vuelve a la Bandeja (el cuadro se dibuja allí; la pantalla no se desmonta)
+        if (settingsOpen) go(filters, null);
+        setViewDialog({ view: null });
+      }}
       onSelect={(patch) => {
         // Desde Ajustes, elegir una vista vuelve a la Bandeja
         if (!settingsOpen) return selectFilters(patch);
@@ -691,7 +1100,26 @@ export default function InboxScreen() {
 
         <div className={styles.listCol}>
           <InboxList
-            title={title}
+            title={mobileSelecting ? t('inbox.bulk.selected', { count: selected.size }) : title}
+            headerActions={headerActions}
+            chips={chips}
+            searching={searching}
+            onClearSearchAndFilters={() => {
+              setSearchInput('');
+              setSearch('');
+              selectFilters({ channels: [], agentIds: [], labelIds: [], minScore: null });
+            }}
+            total={list.total}
+            showOrder={showOrder}
+            order={filters.order}
+            onOrder={(order) => selectFilters({ order })}
+            unreadCount={list.unreadCount}
+            selecting={selecting}
+            selectedIds={selected}
+            onToggleRow={toggleRow}
+            onSelectLoaded={selectLoaded}
+            onLongPress={mobile ? startSelectionWith : undefined}
+            bulkBar={mobile ? undefined : bulkBar}
             view={filters.view}
             scoped={scoped}
             allTime={filters.allTime}
@@ -717,15 +1145,18 @@ export default function InboxScreen() {
             onOpenRail={wide ? undefined : () => setRailOpen(true)}
             railOpen={railOpen}
           />
-          {mobile && (
-            <InboxMobileNav
-              filters={filters}
-              counts={counts}
-              onSelect={(view: InboxView) => selectFilters({ view, agentId: null, channel: null })}
-              onMore={() => setRailOpen(true)}
-              moreOpen={railOpen}
-            />
-          )}
+          {mobile &&
+            (mobileSelecting && bulkBar ? (
+              bulkBar
+            ) : (
+              <InboxMobileNav
+                filters={filters}
+                counts={counts}
+                onSelect={(view: InboxView) => selectFilters({ view, savedView: null, agentIds: [], channels: [] })}
+                onMore={() => setRailOpen(true)}
+                moreOpen={railOpen}
+              />
+            ))}
         </div>
 
         <div className={styles.threadCol}>
@@ -763,6 +1194,7 @@ export default function InboxScreen() {
               myName={user?.name ?? null}
               onAskDeleteNote={setNoteToDelete}
               labelPicker={labelPicker}
+              onMarkUnread={markUnread}
             />
           ) : (
             <div className={styles.pick}>
@@ -905,6 +1337,70 @@ export default function InboxScreen() {
           <p>{t('inbox.notes.deleteText')}</p>
         </InboxDialog>
       )}
+
+      {viewDialog && (
+        <SavedViewDialog
+          view={viewDialog.view}
+          initial={viewDialog.initial}
+          channels={channelOptions}
+          agents={agentOptions}
+          labels={labelOptions}
+          onCancel={() => setViewDialog(null)}
+          onSave={saveView}
+          onDelete={viewDialog.view ? deleteView : undefined}
+        />
+      )}
+
+      {bulkDialog === 'assign' && (
+        <BulkAssignDialog
+          rows={selectedRows}
+          userId={user?.id}
+          isManager={isManager}
+          busy={bulkBusy}
+          onCancel={() => setBulkDialog(null)}
+          onConfirm={(toUserId, note) => void runBulk('/api/conversations/bulk/assign', { toUserId, ...(note ? { note } : {}) })}
+        />
+      )}
+      {bulkDialog === 'close' && (
+        <BulkCloseDialog
+          rows={selectedRows}
+          busy={bulkBusy}
+          onCancel={() => setBulkDialog(null)}
+          onConfirm={(outcome) => void runBulk('/api/conversations/bulk/close', { outcome })}
+        />
+      )}
+      {bulkDialog === 'label' && (
+        <BulkLabelDialog
+          rows={selectedRows}
+          catalog={labelCatalog.labels}
+          canCreate={isManager}
+          onCreate={labelCatalog.create}
+          busy={bulkBusy}
+          onCancel={() => setBulkDialog(null)}
+          onConfirm={(add, remove) => void runBulk('/api/conversations/bulk/labels', { add, remove })}
+        />
+      )}
+      {bulkDialog === 'delete' && (
+        <InboxDialog
+          title={t('inbox.bulk.deleteTitle', { count: selected.size })}
+          onClose={() => setBulkDialog(null)}
+          initialFocusRef={deleteRef}
+          footer={
+            <>
+              <InboxButton ref={deleteRef} onClick={() => setBulkDialog(null)}>
+                {t('inbox.deleteDialog.cancel')}
+              </InboxButton>
+              <InboxButton variant="danger" icon={Trash2} onClick={() => void bulkDelete()} loading={bulkBusy}>
+                {t('inbox.bulk.deleteConfirm', { count: selected.size })}
+              </InboxButton>
+            </>
+          }
+        >
+          <p>{t('inbox.bulk.deleteText', { count: selected.size })}</p>
+        </InboxDialog>
+      )}
+
+      <InboxToast toast={toast} onDismiss={() => setToast(null)} />
 
       {helpOpen && (
         <InboxDialog

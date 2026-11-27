@@ -35,7 +35,7 @@ test('applyReplyVariables sin dato: quita la variable y arregla el texto', () =>
   assert.equal(applyReplyVariables('Hola {nombre}, puedes pagar con PSE.', none), 'Hola, puedes pagar con PSE.');
   assert.equal(applyReplyVariables('Gracias {nombre}.', none), 'Gracias.');
   assert.equal(applyReplyVariables('La garantía cubre 12 meses, {nombre}.', none), 'La garantía cubre 12 meses.');
-  assert.equal(applyReplyVariables('{nombre}, te escribo', none), 'te escribo');
+  assert.equal(applyReplyVariables('{nombre}, te escribo', none), 'Te escribo', 'web-44: mayúscula al inicio de la línea');
   assert.equal(applyReplyVariables('Hola {nombre} ¿cómo estás?', none), 'Hola ¿cómo estás?');
   assert.equal(applyReplyVariables('Soy {agente} y te ayudo', none), 'Soy y te ayudo');
   assert.equal(applyReplyVariables('Línea 1 {nombre}\nLínea 2', none), 'Línea 1\nLínea 2', 'conserva los saltos de línea');
@@ -91,4 +91,12 @@ test('insertReply reemplaza la ficha y deja el cursor al final', () => {
 test('topReplies: las 3 más usadas', () => {
   const list = [qr('a', '', 1), qr('b', '', 5), qr('c', '', 3), qr('d', '', 4)];
   assert.deepEqual(topReplies(list).map((r) => r.shortcut), ['b', 'd', 'c']);
+});
+
+test('applyReplyVariables: variable sin dato al inicio de la línea deja la mayúscula', () => {
+  const none = { contactName: null, agentName: null, language: 'es' };
+  assert.equal(applyReplyVariables('{nombre}, te escribo por tu pedido.', none), 'Te escribo por tu pedido.');
+  assert.equal(applyReplyVariables('Hola.\n{nombre}, ¿te ayudo?\n{nombre} ésta es la otra', none), 'Hola.\n¿Te ayudo?\nÉsta es la otra');
+  assert.equal(applyReplyVariables('Gracias {nombre}, te escribo', none), 'Gracias, te escribo', 'en medio de la frase no cambia');
+  assert.equal(applyReplyVariables('{name}, thanks', { contactName: null, language: 'en' }), 'Thanks');
 });

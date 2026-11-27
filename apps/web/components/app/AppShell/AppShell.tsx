@@ -63,7 +63,13 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   // Título de la pestaña en el idioma activo ("Hoy | GenSmart"). Next escribe el <title> de la
   // metadata (en inglés) a veces después de este efecto: se vuelve a poner mientras haga falta.
-  const tabTitle = active ? `${t(active.labelKey)} | GenSmart` : 'GenSmart';
+  // web-44: Ajustes de la bandeja tiene su propio título ("Ajustes de la bandeja | GenSmart")
+  const tabTitle =
+    pathname === '/dashboard/conversations/settings'
+      ? `${t('inbox.settings.title')} | GenSmart`
+      : active
+        ? `${t(active.labelKey)} | GenSmart`
+        : 'GenSmart';
   useEffect(() => {
     const apply = () => {
       if (document.title !== tabTitle) document.title = tabTitle;

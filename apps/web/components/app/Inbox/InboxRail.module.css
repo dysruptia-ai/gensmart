@@ -186,3 +186,25 @@
   font-weight: 600;
   box-shadow: inset 0 0 0 1px var(--app-line-soft);
 }
+
+/* web-44: "+ Nueva vista" y el aviso del tope */
+.newView {
+  color: var(--app-link);
+}
+
+.newView:disabled {
+  color: var(--app-faint);
+  cursor: not-allowed;
+}
+
+.newView:disabled:hover {
+  background: transparent;
+  color: var(--app-faint);
+}
+
+.note {
+  margin: 2px 9px 4px;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--app-mute);
+}

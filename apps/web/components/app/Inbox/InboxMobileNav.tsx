@@ -17,7 +17,7 @@ export interface InboxMobileNavProps {
 /** Navegación inferior en móvil: Todas, Ayuda, Mías y Más (abre el cajón con el riel). */
 export default function InboxMobileNav({ filters, counts, onSelect, onMore, moreOpen }: InboxMobileNavProps) {
   const { t } = useTranslation();
-  const scoped = !!(filters.agentId || filters.channel);
+  const scoped = !!filters.savedView || filters.agentIds.length > 0 || filters.channels.length > 0;
   const items: Array<{ view: InboxView; icon: typeof Inbox; badge: number }> = [
     { view: 'all', icon: Inbox, badge: 0 },
     { view: 'needs', icon: TriangleAlert, badge: counts?.needs ?? 0 },

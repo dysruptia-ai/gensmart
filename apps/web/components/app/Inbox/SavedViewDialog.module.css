@@ -1,0 +1,122 @@
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  color: var(--app-ink);
+  font-size: 14px;
+}
+
+.fieldHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.fieldHead small {
+  font-weight: 400;
+  color: var(--app-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.field input {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  color: var(--app-ink);
+  font-size: 14px;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: var(--app-focus);
+  box-shadow: 0 0 0 1px var(--app-focus);
+}
+
+.field input[aria-invalid='true'] {
+  border-color: var(--app-err);
+}
+
+.error {
+  margin: 0;
+  color: var(--app-err);
+  font-size: 13px;
+}
+
+.pills {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.legend {
+  margin: 0 0 6px;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+}
+
+.pillRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 3px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-pill);
+  background: var(--app-card);
+  color: var(--app-mute);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pill:hover {
+  background: var(--app-active);
+}
+
+.pill input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.pill:has(input:checked) {
+  border-color: var(--app-go);
+  background: var(--app-active);
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+.pill:has(input:focus-visible) {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.deleteBtn {
+  margin-right: auto;
+  color: var(--app-err);
+}
+
+@media (max-width: 767.98px) {
+  .pill {
+    min-height: 44px;
+  }
+}
