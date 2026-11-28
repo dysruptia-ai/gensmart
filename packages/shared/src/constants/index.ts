@@ -143,3 +143,9 @@ export const MESSAGE_ADDONS = [
   { messages: 2000, price: 30 },
   { messages: 5000, price: 60 },
 ] as const;
+
+/**
+ * Paying during the GenSmart trial: Stripe requires subscription_data.trial_end to be at least 48 h
+ * in the future. With fewer hours left than this (one hour of margin), Checkout charges right away.
+ */
+export const TRIAL_DEFERRED_CHARGE_MIN_HOURS = 49;

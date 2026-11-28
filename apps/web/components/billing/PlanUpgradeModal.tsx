@@ -3,7 +3,9 @@
 import React, { useState } from 'react';
 import { X, Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import { TRIAL_DEFERRED_CHARGE_MIN_HOURS } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
+import { formatDate } from '@/lib/formatters';
 import styles from './PlanUpgradeModal.module.css';
 
 type PlanName = 'solo' | 'starter' | 'pro' | 'enterprise';
@@ -11,6 +13,12 @@ type Interval = 'monthly' | 'quarterly' | 'yearly';
 
 interface Props {
   currentPlan: string;
+  /** Plan preselected when the modal opens (e.g. "Pay the plan" during the trial). */
+  initialPlan?: PlanName | null;
+  /** True once the org has a Stripe subscription; until then the current plan can be paid. */
+  hasSubscription: boolean;
+  /** GenSmart trial end shown to the client (null when not on trial). */
+  trialEndsAt: string | null;
   onClose: () => void;
   onSelect: (plan: PlanName, interval: Interval) => void;
   loading: boolean;
@@ -83,10 +91,19 @@ const PLANS: Array<{
   },
 ];
 
-export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loading }: Props) {
-  const { t } = useTranslation();
+export default function PlanUpgradeModal({ currentPlan, initialPlan = null, hasSubscription, trialEndsAt, onClose, onSelect, loading }: Props) {
+  const { t, language } = useTranslation();
   const [interval, setInterval] = useState<Interval>('monthly');
-  const [selected, setSelected] = useState<PlanName | null>(null);
+  const [selected, setSelected] = useState<PlanName | null>(initialPlan);
+  const [openedAt] = useState(() => Date.now());
+
+  // Same 48 h rule as the API (checkoutTrialEnd): first charge deferred to the trial end, or today.
+  const deferredChargeAt = (() => {
+    if (hasSubscription || !trialEndsAt) return null;
+    const end = new Date(trialEndsAt);
+    if (isNaN(end.getTime())) return null;
+    return end.getTime() - openedAt >= TRIAL_DEFERRED_CHARGE_MIN_HOURS * 60 * 60 * 1000 ? end : null;
+  })();
 
   const SAVINGS: Record<Interval, string | null> = {
     monthly: null,
@@ -95,7 +112,7 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
   };
 
   function handleSelect(plan: PlanName) {
-    if (plan === currentPlan) return;
+    if (plan === currentPlan && hasSubscription) return;
     setSelected(plan);
   }
 
@@ -150,7 +167,7 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
                 className={[
                   styles.planCard,
                   isSelected ? styles.planCardSelected : '',
-                  isCurrent ? styles.planCardCurrent : '',
+                  isCurrent && hasSubscription ? styles.planCardCurrent : '',
                 ].filter(Boolean).join(' ')}
                 onClick={() => handleSelect(plan.key)}
               >
@@ -183,9 +200,16 @@ export default function PlanUpgradeModal({ currentPlan, onClose, onSelect, loadi
             style={{ minWidth: '200px' }}
           >
             {selected
-              ? t('billing.upgrade.upgradeTo', { plan: selected.charAt(0).toUpperCase() + selected.slice(1) })
+              ? t(hasSubscription ? 'billing.upgrade.upgradeTo' : 'billing.upgrade.payPlan', { plan: selected.charAt(0).toUpperCase() + selected.slice(1) })
               : t('billing.upgrade.selectPlan')}
           </Button>
+          {!hasSubscription && selected && (
+            <div className={styles.currentLabel}>
+              {deferredChargeAt
+                ? t('billing.upgrade.deferredCharge', { date: formatDate(deferredChargeAt, language) })
+                : t('billing.upgrade.chargedToday')}
+            </div>
+          )}
           <div className={styles.currentLabel}>
             {t('billing.upgrade.currentlyOn', { plan: currentPlan })}
           </div>

@@ -1441,7 +1441,11 @@
       "trial": "Prueba",
       "freeForeverNote": "Gratis para siempre, sin tarjeta de crédito",
       "cancels": "Se cancela",
-      "renews": "Se renueva"
+      "renews": "Se renueva",
+      "freeTrial": "Prueba gratis",
+      "trialEndsOn": "Termina el {date}",
+      "payPlan": "Pagar el plan {plan}",
+      "subscribedFirstCharge": "Suscrito · primer cobro el {date}"
     },
     "usage": {
       "title": "Uso este mes",
@@ -1494,7 +1498,10 @@
       "current": "Actual",
       "upgradeTo": "Mejorar a {plan}",
       "selectPlan": "Selecciona un plan",
-      "currentlyOn": "Actualmente en plan {plan} · Con tecnología de Stripe"
+      "currentlyOn": "Actualmente en plan {plan} · Con tecnología de Stripe",
+      "payPlan": "Pagar {plan}",
+      "deferredCharge": "Guardas tu tarjeta hoy. El primer cobro es el {date}, cuando termina tu prueba.",
+      "chargedToday": "Se cobra hoy."
     },
     "banner": {
       "allUsed": "Has usado todos tus {limit} mensajes mensuales. Tus agentes están pausados.",
@@ -1523,6 +1530,20 @@
         "name": "Enterprise",
         "description": "Para grandes organizaciones"
       }
+    },
+    "toast": {
+      "paidDeferred": "Listo. Tu plan sigue activo y el primer cobro es el {date}.",
+      "paidNow": "Listo. Tu plan quedó pagado.",
+      "planUpdated": "Plan actualizado.",
+      "addonPurchased": "Mensajes adicionales comprados.",
+      "portalFailed": "No se pudo abrir el portal de facturación.",
+      "checkoutFailed": "No se pudo iniciar el pago."
+    },
+    "trialBanner": {
+      "endsIn": "Tu prueba del plan {plan} termina en {days} días",
+      "payNow": "Pagar ahora",
+      "endsInOne": "Tu prueba del plan {plan} termina en 1 día",
+      "endsToday": "Tu prueba del plan {plan} termina hoy"
     }
   },
   "settings": {

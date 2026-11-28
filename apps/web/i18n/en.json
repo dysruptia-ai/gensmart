@@ -1441,7 +1441,11 @@
       "trial": "Trial",
       "freeForeverNote": "Free forever, no credit card required",
       "cancels": "Cancels",
-      "renews": "Renews"
+      "renews": "Renews",
+      "freeTrial": "Free trial",
+      "trialEndsOn": "Ends on {date}",
+      "payPlan": "Pay the {plan} plan",
+      "subscribedFirstCharge": "Subscribed · first charge on {date}"
     },
     "usage": {
       "title": "Usage This Month",
@@ -1494,7 +1498,10 @@
       "current": "Current",
       "upgradeTo": "Upgrade to {plan}",
       "selectPlan": "Select a Plan",
-      "currentlyOn": "Currently on {plan} plan · Powered by Stripe"
+      "currentlyOn": "Currently on {plan} plan · Powered by Stripe",
+      "payPlan": "Pay {plan}",
+      "deferredCharge": "You save your card today. The first charge is on {date}, when your trial ends.",
+      "chargedToday": "You are charged today."
     },
     "banner": {
       "allUsed": "You've used all {limit} of your monthly messages. Your agents are paused.",
@@ -1523,6 +1530,20 @@
         "name": "Enterprise",
         "description": "For large organizations"
       }
+    },
+    "toast": {
+      "paidDeferred": "Done. Your plan stays active and the first charge is on {date}.",
+      "paidNow": "Done. Your plan is paid.",
+      "planUpdated": "Plan updated successfully.",
+      "addonPurchased": "Add-on messages purchased successfully.",
+      "portalFailed": "Could not open the billing portal.",
+      "checkoutFailed": "Could not start checkout."
+    },
+    "trialBanner": {
+      "endsIn": "Your {plan} trial ends in {days} days",
+      "payNow": "Pay now",
+      "endsInOne": "Your {plan} trial ends in 1 day",
+      "endsToday": "Your {plan} trial ends today"
     }
   },
   "settings": {
