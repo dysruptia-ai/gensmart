@@ -15,6 +15,8 @@ export interface InboxSettingsValues {
   outOfHoursNotice: boolean;
   responseGoalMinutes: number;
   alertEmailMinutes: number | null;
+  /** web-46: resumen y sugeridas con IA (encendido por defecto). */
+  aiAssistEnabled?: boolean;
 }
 
 export interface InboxTeamMember {

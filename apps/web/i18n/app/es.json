@@ -1745,9 +1745,10 @@
         "reopenedYou": "Tú la reabriste",
         "noteDeleted": "{name} borró una nota",
         "noteDeletedYou": "Borraste una nota",
-        "handoffPaused": "Pidió ayuda: el agente está pausado",
         "assigned": "Se asignó a {target}",
-        "assignedToYou": "Se te asignó la conversación"
+        "assignedToYou": "Se te asignó la conversación",
+        "handoffWhy": "El agente pidió ayuda: {cause}",
+        "handoffPaused": "Llegó con el agente pausado"
       },
       "takenBar": "{name} está atendiendo esta conversación.",
       "agentBar": "El agente está respondiendo. Toma la conversación para escribir tú.",
@@ -1829,7 +1830,9 @@
       "adTitle": "Llegó desde un anuncio",
       "adImage": "Imagen del anuncio",
       "adLink": "Ver anuncio",
-      "adVideo": "Ver el video del anuncio"
+      "adVideo": "Ver el video del anuncio",
+      "why": "Por qué te llegó",
+      "whyPaused": "Llegó con el agente pausado."
     },
     "closeDialog": {
       "pickOutcome": "Elige cómo terminó la conversación",
@@ -2142,6 +2145,14 @@
         "help": "La meta cuenta solo en horario de atención. El correo va a quien tiene la conversación; si nadie la tiene, a owner y admin. Uno por conversación.",
         "goalAria": "Meta de respuesta, en minutos",
         "alertAria": "Avisar por correo si pasan, en minutos"
+      },
+      "ai": {
+        "title": "Resumen y respuestas sugeridas con IA",
+        "text_one": "Cuando el agente pide ayuda, un resumen de la conversación; cuando la tienes tú, {n} respuestas para empezar. Cada resumen o juego de sugeridas usa {count} mensaje de tu plan.",
+        "text_other": "Cuando el agente pide ayuda, un resumen de la conversación; cuando la tienes tú, {n} respuestas para empezar. Cada resumen o juego de sugeridas usa {count} mensajes de tu plan.",
+        "adminOnly": "Lo cambia un administrador.",
+        "solo": "El resumen y las respuestas sugeridas con IA son desde el plan Starter.",
+        "saveError": "No pudimos guardar el cambio. Intenta de nuevo."
       }
     },
     "search": {
@@ -2317,6 +2328,64 @@
       },
       "threadNotice": "El agente está pausado: no responde hasta que lo reactiven.",
       "confirmOpen": "Las conversaciones abiertas siguen igual: las que ya tiene una persona no cambian."
+    },
+    "steps": {
+      "title_one": "Lo que hizo el agente · {count} paso",
+      "title_other": "Lo que hizo el agente · {count} pasos",
+      "captured": "Guardó: {names}",
+      "capturedNone": "Guardó datos del cliente",
+      "checkedDate": "Revisó la agenda del {date}",
+      "checked": "Revisó la agenda",
+      "booked": "Agendó una cita",
+      "handoff": "Pidió ayuda a una persona",
+      "sentMedia": "Envió una foto o un archivo",
+      "cartAdd": "Agregó un producto al carrito",
+      "cartRemove": "Quitó un producto del carrito",
+      "cartView": "Revisó el carrito",
+      "dropiSearch": "Buscó productos en Dropi",
+      "dropiCategories": "Revisó las categorías de Dropi",
+      "dropiOptions": "Revisó las opciones de un producto",
+      "dropiQuote": "Cotizó el envío",
+      "dropiPrepare": "Preparó un pedido",
+      "dropiConfirm": "Confirmó un pedido",
+      "dropiStatus": "Consultó el estado de un pedido",
+      "used": "Usó {name}"
+    },
+    "handoffCause": {
+      "customer_asked": "el cliente pidió hablar con una persona",
+      "could_not_solve": "no pudo resolverlo después de dos intentos",
+      "out_of_scope": "el tema está fuera de lo que puede hacer",
+      "agent_paused": "el agente está pausado"
+    },
+    "summary": {
+      "title": "Resumen del agente",
+      "score": "{score} de interés",
+      "needs": "El agente pidió ayuda.",
+      "because": {
+        "customer_asked": "El agente pidió ayuda porque el cliente quiere hablar con una persona.",
+        "could_not_solve": "El agente pidió ayuda porque no pudo resolverlo después de dos intentos.",
+        "out_of_scope": "El agente pidió ayuda porque el tema está fuera de lo que puede hacer.",
+        "agent_paused": "El agente está pausado."
+      },
+      "takenBy": "La atiende {name}.",
+      "taken": "La atiende alguien del equipo.",
+      "closedAs": "Cerrada como {outcome}.",
+      "closed": "Cerrada.",
+      "agent": "El agente lleva la conversación.",
+      "stage": "Etapa: {stage}.",
+      "more": "Ver más",
+      "less": "Ver menos",
+      "loading": "Generando el resumen",
+      "takenYou": "La tienes tú."
+    },
+    "suggestions": {
+      "label": "Sugeridas",
+      "group": "Respuestas sugeridas",
+      "loading": "Cargando respuestas sugeridas",
+      "note_one": "Usa {count} mensaje de tu plan · Revísalas antes de enviar",
+      "note_other": "Usa {count} mensajes de tu plan · Revísalas antes de enviar",
+      "limit": "No quedan mensajes este mes para las sugeridas.",
+      "limitLink": "Plan y facturación"
     }
   }
 }

@@ -186,6 +186,8 @@ export interface WebSocketEvents {
     handedOffAt?: string | null;
     handoffActive?: boolean;
     event?: InboxEventPayload;
+    /** web-46: el resumen con IA del pedido de ayuda, cuando termina de generarse. */
+    aiSummary?: { text: string; createdAt: string; eventId: string };
   }) => void;
   /** web-43: nota interna nueva (solo la Bandeja; el agente nunca la lee). */
   'conversation:note': (data: {

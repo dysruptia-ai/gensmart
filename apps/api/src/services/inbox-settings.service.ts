@@ -17,6 +17,8 @@ export interface InboxSettings {
   outOfHoursNotice: boolean;
   responseGoalMinutes: number;
   alertEmailMinutes: number | null;
+  /** web-46: resumen y sugeridas con IA. Encendido por defecto (también sin fila). */
+  aiAssistEnabled: boolean;
 }
 
 export const DEFAULT_INBOX_SETTINGS: InboxSettings = {
@@ -26,6 +28,7 @@ export const DEFAULT_INBOX_SETTINGS: InboxSettings = {
   outOfHoursNotice: false,
   responseGoalMinutes: 15,
   alertEmailMinutes: null,
+  aiAssistEnabled: true,
 };
 
 export interface InboxSettingsRow {
@@ -35,6 +38,7 @@ export interface InboxSettingsRow {
   out_of_hours_notice: boolean;
   response_goal_minutes: number;
   alert_email_minutes: number | null;
+  ai_assist_enabled: boolean;
 }
 
 export function rowToSettings(row: InboxSettingsRow | undefined): InboxSettings {
@@ -46,12 +50,14 @@ export function rowToSettings(row: InboxSettingsRow | undefined): InboxSettings 
     outOfHoursNotice: row.out_of_hours_notice,
     responseGoalMinutes: row.response_goal_minutes,
     alertEmailMinutes: row.alert_email_minutes,
+    aiAssistEnabled: row.ai_assist_enabled ?? true,
   };
 }
 
 export async function getInboxSettings(organizationId: string): Promise<InboxSettings> {
   const r = await query<InboxSettingsRow>(
-    `SELECT assignment_mode, keep_last_person, business_hours, out_of_hours_notice, response_goal_minutes, alert_email_minutes
+    `SELECT assignment_mode, keep_last_person, business_hours, out_of_hours_notice, response_goal_minutes, alert_email_minutes,
+            ai_assist_enabled
      FROM inbox_settings WHERE organization_id = $1`,
     [organizationId]
   );

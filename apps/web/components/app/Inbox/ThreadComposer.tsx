@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Clock, Lock, Mic, Paperclip, Send, Square, User, X } from 'lucide-react';
-import { INBOX_LIMITS } from '@gensmart/shared';
+import { Clock, Lock, Mic, Paperclip, Send, Sparkles, Square, User, X } from 'lucide-react';
+import Link from 'next/link';
+import { INBOX_AI, INBOX_LIMITS } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
 import QuickReplyMenu, { optionId } from './QuickReplyMenu';
 import {
@@ -16,6 +17,7 @@ import {
   type SlashToken,
 } from './quickReplies';
 import type { SendPayload } from './useConversationThread';
+import type { SuggestionsState } from './useSuggestions';
 import styles from './ThreadComposer.module.css';
 
 export type ComposerMode = 'reply' | 'note';
@@ -37,6 +39,8 @@ export interface ThreadComposerProps {
   /** Quien escribe ({agente}). */
   agentName: string | null;
   isManager: boolean;
+  /** web-46: respuestas sugeridas para el último mensaje del cliente (solo en Responder). */
+  suggestions?: SuggestionsState;
 }
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -72,6 +76,7 @@ export default function ThreadComposer({
   contactName,
   agentName,
   isManager,
+  suggestions,
 }: ThreadComposerProps) {
   const { t, language } = useTranslation();
   const menuId = useId();
@@ -169,6 +174,23 @@ export default function ThreadComposer({
       el.setSelectionRange(pos, pos);
     });
     onUseReply(reply.id);
+  }
+
+  /** Sugerida (web-46): se inserta en el cursor, como un chip; nunca reemplaza el borrador ni se envía sola. */
+  function pickSuggestion(body: string) {
+    const el = textareaRef.current;
+    const caret = el?.selectionStart ?? draft.length;
+    const end = el?.selectionEnd ?? caret;
+    const before = draft.slice(0, caret);
+    const pad = before && !/\s$/.test(before) ? ' ' : '';
+    const result = insertReply(draft, { start: caret, query: '' }, end, pad + body);
+    setDraft(result.text);
+    setToken(null);
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(result.caret, result.caret);
+    });
   }
 
   function openAll() {
@@ -310,6 +332,48 @@ export default function ThreadComposer({
         <p className={styles.window} role="note">
           <Clock size={15} aria-hidden="true" />
           {t('inbox.composer.whatsappWindow')}
+        </p>
+      )}
+      {!note && suggestions?.kind === 'loading' && (
+        <div className={styles.suggestions} role="group" aria-label={t('inbox.suggestions.group')} aria-busy="true">
+          <div className={styles.suggestionsHead}>
+            <span className={styles.suggestionsLabel}>
+              <Sparkles size={12} aria-hidden="true" />
+              {t('inbox.suggestions.label')}
+            </span>
+          </div>
+          <div className={styles.suggestionsGrid}>
+            {Array.from({ length: INBOX_AI.suggestionsCount }, (_, i) => (
+              <span key={i} className={styles.suggestionSkeleton} aria-hidden="true" />
+            ))}
+          </div>
+          <span className="gsSr">{t('inbox.suggestions.loading')}</span>
+        </div>
+      )}
+      {!note && suggestions?.kind === 'ready' && suggestions.items.length > 0 && (
+        <div className={styles.suggestions} role="group" aria-label={t('inbox.suggestions.group')}>
+          <div className={styles.suggestionsHead}>
+            <span className={styles.suggestionsLabel} aria-hidden="true">
+              <Sparkles size={12} aria-hidden="true" />
+              {t('inbox.suggestions.label')}
+            </span>
+            <span className={styles.suggestionsNote}>{t('inbox.suggestions.note', { count: INBOX_AI.messagesPerGeneration })}</span>
+          </div>
+          <div className={styles.suggestionsGrid}>
+            {suggestions.items.map((text) => (
+              <button key={text} type="button" className={styles.suggestion} title={text} onClick={() => pickSuggestion(text)}>
+                <span className={styles.suggestionText}>{text}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      {!note && suggestions?.kind === 'limit' && (
+        <p className={styles.suggestionsNote}>
+          {t('inbox.suggestions.limit')}{' '}
+          <Link href="/dashboard/billing" className={styles.suggestionsLink}>
+            {t('inbox.suggestions.limitLink')}
+          </Link>
         </p>
       )}
       {!note && chips.length > 0 && (

@@ -345,8 +345,10 @@ export default function InboxScreen() {
       // web-45: un pedido de ayuda nuevo (p. ej. el agente está pausado) entra a "Necesitan"
       if (data.handoffActive && data.handedOffAt) {
         l.patch({ conversationId: data.conversationId, handoffAt: data.handedOffAt });
-        if (data.conversationId === openId) th.applyHandoff(data.handedOffAt);
+        if (data.conversationId === openId) th.applyHandoff(data.handedOffAt, data.event);
       }
+      // web-46: el resumen con IA solo le importa al hilo abierto
+      if (data.aiSummary && data.conversationId === openId) th.applyChange({ aiSummary: data.aiSummary, updatedAt: data.updatedAt });
       const changed = !!status || Object.keys(fields).length > 0 || data.takenOverBy !== undefined;
       if (!changed) {
         if (data.handoffActive) rc();
@@ -1123,6 +1125,7 @@ export default function InboxScreen() {
       loading={thread.loading}
       now={now}
       activityKey={activityKey}
+      handoff={thread.handoff}
       notes={thread.notes}
       threadActivity={noteActivity}
       userId={user?.id}

@@ -332,6 +332,11 @@
   max-width: min(440px, 100%);
 }
 
+/* web-46b: el pedido de ayuda lleva la causa; a 1440 cabe en una línea */
+.eventBlock.eventBlockHelp {
+  max-width: min(640px, 100%);
+}
+
 .eventNote {
   margin: -6px 0 12px;
   padding: 8px 12px;

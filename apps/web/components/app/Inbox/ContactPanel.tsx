@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ExternalLink, Megaphone, Plus, Trash2, User, X } from 'lucide-react';
+import { ExternalLink, Megaphone, Plus, Trash2, TriangleAlert, User, X } from 'lucide-react';
 import { INBOX_LIMITS } from '@gensmart/shared';
 import { api } from '@/lib/api';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -10,7 +10,8 @@ import InboxButton from './InboxButton';
 import LabelPicker, { type LabelPickerData } from './LabelPicker';
 import { getChannelMeta } from './channelMeta';
 import { contactName, formatScore, initialsOf, relativeTime } from './inboxFormat';
-import type { ApiNote, ConversationDetail, TimelineEvent } from './types';
+import { reasonKey } from './summaryText';
+import type { ApiNote, ConversationDetail, HandoffInfo, TimelineEvent } from './types';
 import styles from './ContactPanel.module.css';
 
 export interface ContactPanelProps {
@@ -21,6 +22,8 @@ export interface ContactPanelProps {
   onClose?: () => void;
   /** Cambia cuando llega un puntaje o una conversación nueva del contacto: recarga la actividad. */
   activityKey: number;
+  /** web-46: causa y resumen del pedido de ayuda ("Por qué te llegó"). */
+  handoff?: HandoffInfo | null;
   /** web-43: notas internas (siempre disponibles, la tenga quien la tenga) y etiquetas. */
   notes?: ApiNote[];
   userId?: string;
@@ -85,6 +88,7 @@ export default function ContactPanel({
   conversation: c,
   loading,
   now,
+  handoff,
   onClose,
   activityKey,
   notes = [],
@@ -179,6 +183,9 @@ export default function ContactPanel({
     ([, v]) => readable(v) !== '',
   );
   const stage = contact?.funnelStage;
+  // "Necesitan a alguien": pidió ayuda y nadie la tomó
+  const needsSomeone = c.handoffActive && !c.takenOverBy && c.status !== 'closed';
+  const whyReason = reasonKey(handoff?.reason);
   const ad = readReferral(c.channelMetadata);
   // Mientras llega la versión nueva se sigue viendo la anterior del mismo contacto
   const sameContact = !!timeline && !!contactId && timeline.key.startsWith(`${contactId}:`);
@@ -219,6 +226,22 @@ export default function ContactPanel({
 
       {tab === 'contact' ? (
         <div role="tabpanel" id={`${baseId}-panel-contact`} aria-labelledby={`${baseId}-tab-contact`} className={styles.scroll}>
+          {needsSomeone && (
+            <div className={`${styles.section} ${styles.whySection}`}>
+              <h3 className={`${styles.heading} ${styles.whyHeading}`}>
+                <TriangleAlert size={12} aria-hidden="true" />
+                {t('inbox.contact.why')}
+              </h3>
+              <p className={styles.whyText}>
+                {whyReason === 'agent_paused'
+                  ? t('inbox.contact.whyPaused')
+                  : whyReason
+                  ? t('inbox.thread.events.handoffWhy', { cause: t(`inbox.handoffCause.${whyReason}`) })
+                  : t('inbox.thread.events.handoff')}
+              </p>
+              {handoff?.teamSummary && <p className={styles.whySummary}>{handoff.teamSummary}</p>}
+            </div>
+          )}
           <div className={styles.section}>
             <div className={styles.who}>
               <span className={styles.avatar} aria-hidden="true">

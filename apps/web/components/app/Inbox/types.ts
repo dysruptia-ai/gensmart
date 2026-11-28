@@ -1,4 +1,7 @@
 /** Tipos de la Bandeja (web-41). Reflejan lo que responde `GET /api/conversations` y su detalle. */
+import type { HandoffReason } from '@gensmart/shared';
+
+export type { HandoffReason };
 
 export type InboxView = 'all' | 'needs' | 'mine' | 'closed';
 
@@ -267,6 +270,27 @@ export interface TeamMember {
   role: string;
 }
 
+/** El pedido de ayuda vigente (web-46): causa y resumen del traspaso (o de la notificación, si es viejo). */
+export interface HandoffInfo {
+  eventId: string;
+  requestedAt: string;
+  reason: HandoffReason | null;
+  teamSummary: string | null;
+}
+
+/** Resumen con IA de un pedido de ayuda sin team_summary (web-46). */
+export interface AiSummary {
+  text: string;
+  createdAt: string;
+}
+
+/** Si la IA de la Bandeja está disponible para la organización (web-46). */
+export interface AiAccess {
+  enabled: boolean;
+  planAllows: boolean;
+  limitReached: boolean;
+}
+
 export interface DetailResponse {
   conversation: ConversationDetail;
   messages: ThreadMessage[];
@@ -274,6 +298,10 @@ export interface DetailResponse {
   events?: ApiConversationEvent[];
   /** Notas internas sin borrar, de la más vieja a la más nueva (web-43). */
   notes?: ApiNote[];
+  /** web-46 */
+  handoff?: HandoffInfo | null;
+  aiSummary?: AiSummary | null;
+  ai?: AiAccess;
   pagination: { total: number; hasMore: boolean; oldestTimestamp: string | null };
 }
 

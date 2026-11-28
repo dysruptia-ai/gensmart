@@ -24,10 +24,13 @@ import {
   UserCheck,
   type LucideIcon,
 } from 'lucide-react';
+import { HANDOFF_REASONS } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
 import InboxButton from './InboxButton';
 import { useHeaderFit } from './useHeaderFit';
 import ThreadBubble from './ThreadBubble';
+import AgentSummary from './AgentSummary';
+import { useSuggestions, type SuggestionsState } from './useSuggestions';
 import ThreadComposer from './ThreadComposer';
 import ThreadNote from './ThreadNote';
 import LabelPicker, { type LabelPickerData } from './LabelPicker';
@@ -92,6 +95,7 @@ type Item =
   | { type: 'note'; key: string; note: ApiNote };
 
 const WINDOW_MS = 24 * 60 * 60 * 1000;
+const HANDOFF_CAUSES = new Set<string>(HANDOFF_REASONS);
 
 interface MenuItem {
   key: string;
@@ -196,7 +200,12 @@ export function eventText(e: ThreadEvent, userId: string | undefined, t: Transla
     t(`inbox.thread.events.${key}${mine ? 'You' : ''}`, { name, ...values });
   switch (e.kind) {
     case 'handoff':
-      return e.reason === 'agent_paused' ? t('inbox.thread.events.handoffPaused') : t('inbox.thread.events.handoff');
+      // web-46: con la causa, si la hay ("El agente pidió ayuda: el cliente pidió hablar con una persona")
+      // web-46b: un agente pausado no pide ayuda; la conversación llega sola
+      if (e.reason === 'agent_paused') return t('inbox.thread.events.handoffPaused');
+      return e.reason && e.reason !== 'other' && HANDOFF_CAUSES.has(e.reason)
+        ? t('inbox.thread.events.handoffWhy', { cause: t(`inbox.handoffCause.${e.reason}`) })
+        : t('inbox.thread.events.handoff');
     case 'assigned':
       if (userId && e.targetId === userId) return t('inbox.thread.events.assignedToYou');
       return t('inbox.thread.events.assigned', { target: e.targetName || t('inbox.row.team') });
@@ -346,6 +355,29 @@ export default function InboxThread(props: InboxThreadProps) {
       });
     }
   };
+
+  // ── respuestas sugeridas (web-46): solo si es tuya y el último mensaje es del cliente ──
+  const lastSent = [...messages].reverse().find((m) => m.role !== 'system' && !m.delivery);
+  const pendingOwn = messages.some((m) => m.delivery === 'sending');
+  const suggestAnchor = lastSent?.role === 'user' && !pendingOwn ? lastSent.id : null;
+  const suggestWindowClosed =
+    c?.channel === 'whatsapp' && !!c.lastCustomerMessageAt && now - new Date(c.lastCustomerMessageAt).getTime() > WINDOW_MS;
+  const suggestEnabled =
+    !!c &&
+    c.status === 'human_takeover' &&
+    !!userId &&
+    c.takenOverBy === userId &&
+    !!thread.ai?.enabled &&
+    thread.ai.planAllows &&
+    !thread.ai.limitReached &&
+    !suggestWindowClosed;
+  const fetched = useSuggestions(c?.id ?? '', suggestAnchor, suggestEnabled);
+  // Sin mensajes desde que se abrió: la línea discreta, sin pedir nada
+  const suggestions: SuggestionsState =
+    !!c && c.status === 'human_takeover' && c.takenOverBy === userId && !!suggestAnchor && !suggestWindowClosed &&
+    !!thread.ai?.enabled && thread.ai.planAllows && thread.ai.limitReached
+      ? { kind: 'limit' }
+      : fetched;
 
   // ── estados sin conversación ──
   if (loading) {
@@ -635,6 +667,8 @@ export default function InboxThread(props: InboxThreadProps) {
 
       {props.topNotices}
 
+      <AgentSummary conversation={c} handoff={thread.handoff} aiSummary={thread.aiSummary} ai={thread.ai} events={events} userId={userId} />
+
       {!closed && !taken && props.canTakeover === false && <div className={styles.soloBar}>{upsell}</div>}
 
       {thread.actionError && (
@@ -703,7 +737,7 @@ export default function InboxThread(props: InboxThreadProps) {
             if (item.type === 'event') {
               const e = item.event;
               return (
-                <div key={item.key} className={styles.eventBlock}>
+                <div key={item.key} className={`${styles.eventBlock} ${e.kind === 'handoff' ? styles.eventBlockHelp : ''}`}>
                   <p className={`${styles.event} ${e.kind === 'handoff' ? styles.eventHelp : ''}`}>
                     {eventText(e, userId, t, language, props.timeZone)}
                     <time dateTime={e.at}>{clockTime(e.at, language)}</time>
@@ -760,6 +794,7 @@ export default function InboxThread(props: InboxThreadProps) {
           contactName={c.contact?.name ?? null}
           agentName={props.myName ?? null}
           isManager={manager}
+          suggestions={suggestions}
         />
       ) : taken ? (
         <div className={styles.bar}>

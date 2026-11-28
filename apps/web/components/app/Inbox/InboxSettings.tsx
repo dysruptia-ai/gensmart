@@ -9,6 +9,7 @@ import AssignmentSettings from './AssignmentSettings';
 import HoursSettings from './HoursSettings';
 import LabelsSettings from './LabelsSettings';
 import QuickRepliesSettings from './QuickRepliesSettings';
+import AiAssistSettings from './AiAssistSettings';
 import type { useInboxSettings } from './useInboxSettings';
 import styles from './InboxSettings.module.css';
 
@@ -86,7 +87,12 @@ export default function InboxSettings({ isManager, userId, inbox, onOpenRail }: 
       </header>
       <div className={styles.body} role="tabpanel" id={`settings-panel-${tab}`} aria-labelledby={`settings-tab-${tab}`}>
         {tab === 'labels' && <LabelsSettings isManager={isManager} />}
-        {tab === 'quick-replies' && <QuickRepliesSettings isManager={isManager} />}
+        {tab === 'quick-replies' && (
+          <div className={styles.tabStack}>
+            <AiAssistSettings data={inbox.data} onSaved={inbox.setData} isManager={isManager} />
+            <QuickRepliesSettings isManager={isManager} />
+          </div>
+        )}
         {(tab === 'assignment' || tab === 'hours') && !inbox.data && (
           <p className={inbox.error ? styles.error : styles.help} role={inbox.error ? 'alert' : 'status'}>
             {inbox.error ? t('inbox.settings.loadError') : t('inbox.settings.loading')}

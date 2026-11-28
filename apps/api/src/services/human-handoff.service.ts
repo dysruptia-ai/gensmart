@@ -1,4 +1,4 @@
-import type { HandoffConfig, HandoffContact } from '@gensmart/shared';
+import { HANDOFF_REASONS, type HandoffConfig, type HandoffContact, type HandoffReason } from '@gensmart/shared';
 import { ToolDefinition } from './llm.service';
 import { sendCtaUrlMessage } from './whatsapp.service';
 import { sendButtonMessage as sendMessengerButtonMessage } from './messenger.service';
@@ -35,6 +35,12 @@ export const requestHumanHandoffToolDef: ToolDefinition = {
       team_summary: {
         type: 'string',
         description: `Factual summary for the team (internal, the customer never sees it), in third person and in the language the agent works in according to its prompt; never default to English and never copy wording from these instructions (max ${HANDOFF_TEAM_SUMMARY_MAX} characters): who the customer is (name and business if known), what they ask for and what they were answered. Only facts from the conversation; do not invent or judge.`,
+      },
+      reason: {
+        type: 'string',
+        enum: ['customer_asked', 'could_not_solve', 'out_of_scope', 'other'],
+        description:
+          'Why you are handing off: customer_asked = the customer asked for a person; could_not_solve = you tried twice and could not solve it; out_of_scope = the topic is outside what you can do; other = anything else.',
       },
       customer_name: {
         type: 'string',
@@ -306,6 +312,12 @@ export interface HumanHandoffResult {
   message: string; // What the LLM sees as tool result
 }
 
+/** Causa que manda el modelo: si no es una de las conocidas, 'other'. Sin causa, null. */
+export function parseHandoffReason(raw: unknown): HandoffReason | null {
+  if (raw === undefined || raw === null || raw === '') return null;
+  return typeof raw === 'string' && (HANDOFF_REASONS as readonly string[]).includes(raw) ? (raw as HandoffReason) : 'other';
+}
+
 const cooldownKey = (conversationId: string) => `handoff:cooldown:${conversationId}`;
 const stickyKey = (conversationId: string) => `handoff:contact:${conversationId}`;
 const nameAskedKey = (conversationId: string) => `handoff:name-asked:${conversationId}`;
@@ -316,6 +328,7 @@ export async function handleHumanHandoff(
     customer_message?: unknown;
     prefill_text?: unknown;
     team_summary?: unknown;
+    reason?: unknown;
     customer_name?: unknown;
     name_already_requested?: unknown;
   },
@@ -530,7 +543,11 @@ export async function handleHumanHandoff(
 
     // 8. Mark the conversation as handed off (event + automatic assignment) and remember the chosen contact
     try {
-      await markHandoffRequested(context.conversationId, { organizationId: context.organizationId });
+      await markHandoffRequested(context.conversationId, {
+        organizationId: context.organizationId,
+        reason: parseHandoffReason(args.reason) ?? undefined,
+        teamSummary,
+      });
       await redis.set(
         stickyKey(context.conversationId),
         contact.id,

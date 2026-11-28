@@ -38,6 +38,14 @@ import {
 } from '../services/conversation-events.service';
 import { createNotification } from '../services/notification.service';
 import {
+  NotYoursError,
+  getAiAccess,
+  getAiSummary,
+  getHandoffInfo,
+  getSuggestions,
+  publicAccess,
+} from '../services/inbox-ai.service';
+import {
   allLabelsOwned,
   applyLabelDelta,
   bulkAssignNotificationText,
@@ -667,10 +675,14 @@ router.get(
       // Historial de eventos (web-42). Solo la Bandeja lo lee; el agente nunca.
       const events = await listEvents(conversationId, req.org!.id);
       // Notas internas y etiquetas (web-43). Las notas solo las lee la Bandeja.
-      const [notes, labels] = await Promise.all([
+      const [notes, labels, handoff, aiAccess] = await Promise.all([
         listNotes(conversationId, req.org!.id, req.user!.userId, req.user!.role),
         getConversationLabels(conversationId),
+        // web-46: causa y resumen del pedido de ayuda, y si la IA de la Bandeja está disponible
+        getHandoffInfo(conversationId, req.org!.id),
+        getAiAccess(req.org!.id),
       ]);
+      const aiSummary = handoff ? await getAiSummary(conversationId, handoff.eventId) : null;
 
       res.json({
         conversation: {
@@ -721,6 +733,9 @@ router.get(
         },
         events,
         notes,
+        handoff,
+        aiSummary,
+        ai: publicAccess(aiAccess),
         messages: messageRows.map((m) => ({
           id: m.id,
           role: m.role,
@@ -1332,6 +1347,26 @@ router.delete(
 );
 
 // ── POST /api/conversations/:id/notes (web-43) ──────────────────────────────
+// ── POST /api/conversations/:id/suggestions (web-46) ────────────────────────
+// Tres respuestas para el último mensaje del cliente. Solo quien la tiene tomada. Una generación por
+// mensaje del cliente (la segunda petición devuelve la guardada sin cobrar). No se emiten al equipo.
+router.post(
+  '/:id/suggestions',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const result = await getSuggestions(String(req.params['id']), req.org!.id, req.user!.userId);
+      res.json(result);
+    } catch (err) {
+      if (err instanceof NotYoursError) {
+        next(new AppError(403, 'Only the person handling this conversation can get suggestions', 'NOT_YOURS'));
+        return;
+      }
+      next(err);
+    }
+  }
+);
+
 // Nota interna: cualquier rol, plan y estado (incluso cerrada o fuera de la ventana de 24 h), porque no
 // sale por el canal. No toca la conversación: ni last_message_at, ni message_count, ni la espera.
 router.post(

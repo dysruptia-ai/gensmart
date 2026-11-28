@@ -1,0 +1,81 @@
+/* "Lo que hizo el agente" (web-46): como `.why` del diseño, plegado por defecto. */
+.why {
+  align-self: flex-end;
+  max-width: 100%;
+  margin: 4px 0 8px;
+  padding-right: 12px;
+  border-right: 2px solid var(--app-line);
+  text-align: left;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  border: 0;
+  background: none;
+  color: var(--app-mute);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.toggle:hover {
+  color: var(--app-ink);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+  border-radius: var(--app-r-sm);
+}
+
+.chev,
+.chevOpen {
+  flex: none;
+  transition: transform var(--app-t-fast) var(--app-ease);
+}
+
+.chevOpen {
+  transform: rotate(90deg);
+}
+
+.list {
+  display: grid;
+  gap: 3px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.list[hidden] {
+  display: none;
+}
+
+.list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  color: var(--app-soft);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.list li > span {
+  flex: none;
+  min-width: 16px;
+  color: var(--app-mute);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chev,
+  .chevOpen {
+    transition: none;
+  }
+}

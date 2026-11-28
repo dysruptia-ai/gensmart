@@ -4,6 +4,7 @@ import React, { memo } from 'react';
 import { FileText, Image as ImageIcon, Mic, RefreshCw, X } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { clockTime } from './inboxFormat';
+import AgentStepsBlock from './AgentStepsBlock';
 import type { ThreadMessage } from './types';
 import styles from './ThreadBubble.module.css';
 
@@ -120,6 +121,7 @@ function ThreadBubble({ message, authorName, continued, onRetry, onDiscard }: Th
           )}
         </span>
       </div>
+      {role === 'assistant' && <AgentStepsBlock toolsCalled={metadata['toolsCalled']} />}
       {message.delivery === 'failed' && (
         <span className={styles.failActions}>
           <button type="button" onClick={() => onRetry(message.id)}>

@@ -1745,9 +1745,10 @@
         "reopenedYou": "You reopened it",
         "noteDeleted": "{name} deleted a note",
         "noteDeletedYou": "You deleted a note",
-        "handoffPaused": "Asked for help: the agent is paused",
         "assigned": "Assigned to {target}",
-        "assignedToYou": "The conversation was assigned to you"
+        "assignedToYou": "The conversation was assigned to you",
+        "handoffWhy": "The agent asked for help: {cause}",
+        "handoffPaused": "Came in while the agent was paused"
       },
       "takenBar": "{name} is handling this conversation.",
       "agentBar": "The agent is replying. Take the conversation to write yourself.",
@@ -1829,7 +1830,9 @@
       "adTitle": "Came from an ad",
       "adImage": "Ad image",
       "adLink": "View ad",
-      "adVideo": "View ad video"
+      "adVideo": "View ad video",
+      "why": "Why it came to you",
+      "whyPaused": "It came in while the agent was paused."
     },
     "closeDialog": {
       "pickOutcome": "Choose how the conversation ended",
@@ -2142,6 +2145,14 @@
         "help": "The goal only counts during business hours. The email goes to whoever has the conversation; if nobody has it, to owners and admins. One per conversation.",
         "goalAria": "Response goal, in minutes",
         "alertAria": "Send an email alert after, in minutes"
+      },
+      "ai": {
+        "title": "AI summary and suggested replies",
+        "text_one": "When the agent asks for help, a summary of the conversation; when it's yours, {n} replies to get you started. Each summary or set of suggestions uses {count} message from your plan.",
+        "text_other": "When the agent asks for help, a summary of the conversation; when it's yours, {n} replies to get you started. Each summary or set of suggestions uses {count} messages from your plan.",
+        "adminOnly": "An admin can change this.",
+        "solo": "The AI summary and suggested replies are available from the Starter plan.",
+        "saveError": "We couldn't save the change. Try again."
       }
     },
     "search": {
@@ -2317,6 +2328,64 @@
       },
       "threadNotice": "The agent is paused: it won't reply until it's turned back on.",
       "confirmOpen": "Open conversations stay as they are: the ones a person already has don't change."
+    },
+    "steps": {
+      "title_one": "What the agent did · {count} step",
+      "title_other": "What the agent did · {count} steps",
+      "captured": "Saved: {names}",
+      "capturedNone": "Saved customer details",
+      "checkedDate": "Checked the calendar for {date}",
+      "checked": "Checked the calendar",
+      "booked": "Booked an appointment",
+      "handoff": "Asked a person for help",
+      "sentMedia": "Sent a photo or a file",
+      "cartAdd": "Added a product to the cart",
+      "cartRemove": "Removed a product from the cart",
+      "cartView": "Checked the cart",
+      "dropiSearch": "Searched products in Dropi",
+      "dropiCategories": "Checked the Dropi categories",
+      "dropiOptions": "Checked a product's options",
+      "dropiQuote": "Quoted the shipping",
+      "dropiPrepare": "Prepared an order",
+      "dropiConfirm": "Confirmed an order",
+      "dropiStatus": "Checked an order's status",
+      "used": "Used {name}"
+    },
+    "handoffCause": {
+      "customer_asked": "the customer asked to talk to a person",
+      "could_not_solve": "it couldn't solve it after two tries",
+      "out_of_scope": "the topic is outside what it can do",
+      "agent_paused": "the agent is paused"
+    },
+    "summary": {
+      "title": "Agent summary",
+      "score": "{score} interest",
+      "needs": "The agent asked for help.",
+      "because": {
+        "customer_asked": "The agent asked for help because the customer wants to talk to a person.",
+        "could_not_solve": "The agent asked for help because it couldn't solve it after two tries.",
+        "out_of_scope": "The agent asked for help because the topic is outside what it can do.",
+        "agent_paused": "The agent is paused."
+      },
+      "takenBy": "{name} is handling it.",
+      "taken": "Someone on the team is handling it.",
+      "closedAs": "Closed as {outcome}.",
+      "closed": "Closed.",
+      "agent": "The agent is handling the conversation.",
+      "stage": "Stage: {stage}.",
+      "more": "Show more",
+      "less": "Show less",
+      "loading": "Generating the summary",
+      "takenYou": "You're handling it."
+    },
+    "suggestions": {
+      "label": "Suggested",
+      "group": "Suggested replies",
+      "loading": "Loading suggested replies",
+      "note_one": "Uses {count} message from your plan · Review them before sending",
+      "note_other": "Uses {count} messages from your plan · Review them before sending",
+      "limit": "No messages left this month for suggestions.",
+      "limitLink": "Plan & billing"
     }
   }
 }

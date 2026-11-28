@@ -69,6 +69,7 @@ export const inboxSettingsUpdateSchema = z
     outOfHoursNotice: z.boolean().optional(),
     responseGoalMinutes: z.number().int().min(1).max(240).optional(),
     alertEmailMinutes: z.number().int().min(1).max(1440).nullable().optional(),
+    aiAssistEnabled: z.boolean().optional(),
     members: z
       .array(
         z.object({
@@ -138,12 +139,13 @@ router.put(
         await client.query('BEGIN');
         await client.query(
           `INSERT INTO inbox_settings (organization_id, assignment_mode, keep_last_person, business_hours, out_of_hours_notice,
-                                       response_goal_minutes, alert_email_minutes, updated_by, updated_at)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+                                       response_goal_minutes, alert_email_minutes, ai_assist_enabled, updated_by, updated_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $9, $8, NOW())
            ON CONFLICT (organization_id) DO UPDATE SET
              assignment_mode = EXCLUDED.assignment_mode, keep_last_person = EXCLUDED.keep_last_person,
              business_hours = EXCLUDED.business_hours, out_of_hours_notice = EXCLUDED.out_of_hours_notice,
              response_goal_minutes = EXCLUDED.response_goal_minutes, alert_email_minutes = EXCLUDED.alert_email_minutes,
+             ai_assist_enabled = EXCLUDED.ai_assist_enabled,
              updated_by = EXCLUDED.updated_by, updated_at = NOW()`,
           [
             orgId,
@@ -154,6 +156,7 @@ router.put(
             next_.responseGoalMinutes,
             next_.alertEmailMinutes,
             req.user!.userId,
+            next_.aiAssistEnabled,
           ]
         );
         for (const m of body.members ?? []) {

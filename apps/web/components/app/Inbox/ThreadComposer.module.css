@@ -284,3 +284,128 @@
   font: inherit;
   font-size: 11px;
 }
+
+/* Respuestas sugeridas (web-46b): etiqueta y aviso arriba; tres columnas iguales con hasta 2 líneas. */
+.suggestions {
+  display: grid;
+  gap: 6px;
+}
+
+.suggestionsHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.suggestionsLabel {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 5px;
+  /* Texto: verde oscuro en claro y de marca en oscuro (contraste ≥ 4,5:1). La chispa, verde de marca. */
+  color: var(--app-ok);
+  font-family: var(--app-font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.suggestionsLabel svg {
+  color: var(--app-go);
+}
+
+.suggestionsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.suggestion {
+  min-width: 0;
+  padding: 5px 10px;
+  border: 1px solid color-mix(in oklab, var(--app-go) 32%, var(--app-line));
+  border-radius: var(--app-r-md);
+  background: color-mix(in oklab, var(--app-go) 7%, transparent);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--app-t-fast) var(--app-ease);
+}
+
+.suggestionText {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.suggestion:hover {
+  background: color-mix(in oklab, var(--app-go) 16%, transparent);
+}
+
+.suggestion:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.suggestionSkeleton {
+  height: 44px;
+  border-radius: var(--app-r-md);
+  background: linear-gradient(90deg, var(--app-line-soft), var(--app-line), var(--app-line-soft));
+  background-size: 200% 100%;
+  animation: suggestionShimmer 1.4s linear infinite;
+}
+
+@keyframes suggestionShimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.suggestionsNote {
+  margin: 0;
+  min-width: 0;
+  color: var(--app-mute);
+  font-size: 11.5px;
+}
+
+/* Móvil: una debajo de otra y a una línea; al tocarla, el texto completo pasa al cuadro */
+@media (max-width: 767px) {
+  .suggestionsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .suggestionText {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .suggestionSkeleton {
+    height: 28px;
+  }
+}
+
+.suggestionsLink {
+  color: var(--app-link);
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggestion {
+    transition: none;
+  }
+
+  .suggestionSkeleton {
+    animation: none;
+  }
+}

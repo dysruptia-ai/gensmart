@@ -184,5 +184,24 @@ export const INBOX_LIMITS = {
   searchMinChars: 2,
 } as const;
 
+/** Bandeja (web-46): resumen y respuestas sugeridas con IA. Un solo lugar para cambiar el modelo. */
+export const INBOX_AI = {
+  provider: 'openai',
+  model: 'gpt-4o-mini',
+  /** Mensajes del plan que gasta cada generación (un resumen, o un juego de sugeridas). */
+  messagesPerGeneration: 1,
+  suggestionsCount: 3,
+  suggestionMaxChars: 300,
+  summaryMaxChars: 400,
+  /** Últimos mensajes de la conversación que se le pasan al modelo. */
+  transcriptMessages: 20,
+  /** Recorte del prompt del agente que se le pasa a las sugeridas. */
+  agentPromptMaxChars: 4000,
+} as const;
+
+/** Por qué pidió ayuda el agente (web-46). `agent_paused` lo pone el sistema. */
+export const HANDOFF_REASONS = ['customer_asked', 'could_not_solve', 'out_of_scope', 'agent_paused', 'other'] as const;
+export type HandoffReason = (typeof HANDOFF_REASONS)[number];
+
 /** Atajo de respuesta rápida sin la "/": minúsculas (con tildes), números, "_" y "-". De 2 a 30. */
 export const QUICK_REPLY_SHORTCUT_RE = /^[\p{Ll}\p{N}][\p{Ll}\p{N}_-]{1,29}$/u;

@@ -158,7 +158,7 @@ export function emitConversationChange(
  */
 export async function markHandoffRequested(
   conversationId: string,
-  opts: { organizationId: string; reason?: string }
+  opts: { organizationId: string; reason?: string; teamSummary?: string }
 ): Promise<ConversationEvent | null> {
   const r = await query<{ handed_off_at: string }>(
     'UPDATE conversations SET handed_off_at = NOW() WHERE id = $1 AND organization_id = $2 RETURNING handed_off_at',
@@ -169,11 +169,21 @@ export async function markHandoffRequested(
     organizationId: opts.organizationId,
     conversationId,
     type: 'handoff_requested',
-    data: opts.reason ? { reason: opts.reason } : {},
+    data: {
+      ...(opts.reason ? { reason: opts.reason } : {}),
+      ...(opts.teamSummary ? { teamSummary: opts.teamSummary } : {}),
+    },
   });
   emitConversationChange(opts.organizationId, conversationId, { handedOffAt: r.rows[0].handed_off_at, handoffActive: true }, event);
   const { autoAssignSafe } = await import('./inbox-assignment.service');
   await autoAssignSafe(conversationId);
+  // web-46: sin team_summary (p. ej. agente pausado), el resumen con IA, sin bloquear a nadie
+  if (event && !opts.teamSummary) {
+    const { generateHandoffSummary } = await import('./inbox-ai.service');
+    generateHandoffSummary(conversationId, event.id, opts.organizationId).catch((err: unknown) =>
+      console.error('[inbox-ai] Handoff summary failed:', (err as Error).message)
+    );
+  }
   return event;
 }
 

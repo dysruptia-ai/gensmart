@@ -1,8 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { HANDOFF_REASONS } from '@gensmart/shared';
 import { api, ApiError } from '@/lib/api';
 import type {
+  AiAccess,
+  AiSummary,
+  HandoffInfo,
+  HandoffReason,
   ApiConversationEvent,
   ApiNote,
   LabelRef,
@@ -63,7 +68,23 @@ export interface ConversationChange {
   closedByName?: string | null;
   labels?: LabelRef[];
   event?: ApiConversationEvent;
+  /** web-46: el resumen con IA del pedido de ayuda, cuando termina de generarse. */
+  aiSummary?: AiSummary & { eventId: string };
   updatedAt: string;
+}
+
+const HANDOFF_REASON_SET = new Set<string>(HANDOFF_REASONS);
+
+/** El pedido de ayuda a partir del evento que llega en vivo (web-46). */
+export function handoffFromEvent(e: ApiConversationEvent): HandoffInfo {
+  const reason = e.data['reason'];
+  const summary = e.data['teamSummary'];
+  return {
+    eventId: e.id,
+    requestedAt: e.createdAt,
+    reason: typeof reason === 'string' && HANDOFF_REASON_SET.has(reason) ? (reason as HandoffReason) : null,
+    teamSummary: typeof summary === 'string' && summary.trim() ? summary.trim() : null,
+  };
 }
 
 export function fromApiEvent(e: ApiConversationEvent): ThreadEvent {
@@ -146,6 +167,11 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
   const [events, setEvents] = useState<ThreadEvent[]>([]);
   // Notas internas (web-43): fuera de `messages`, el agente nunca las lee
   const [notes, setNotes] = useState<ApiNote[]>([]);
+  // web-46: causa y resumen del pedido de ayuda, y si la IA está disponible
+  const [handoff, setHandoff] = useState<HandoffInfo | null>(null);
+  const [aiSummary, setAiSummary] = useState<AiSummary | null>(null);
+  const [ai, setAi] = useState<AiAccess | null>(null);
+  const handoffRef = useRef<HandoffInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<'not_found' | 'failed' | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -173,6 +199,10 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
       setMessages([]);
       setEvents([]);
       setNotes([]);
+      handoffRef.current = null;
+      setHandoff(null);
+      setAiSummary(null);
+      setAi(null);
       setError(null);
       setLoading(false);
       return;
@@ -183,6 +213,10 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
       setMessages([]);
       setEvents([]);
       setNotes([]);
+      handoffRef.current = null;
+      setHandoff(null);
+      setAiSummary(null);
+      setAi(null);
       setActionError(null);
     }
     setError(null);
@@ -195,6 +229,10 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
         setMessages((prev) => [...data.messages, ...(options?.quiet ? prev.filter((m) => m.delivery) : [])]);
         setEvents(buildEvents(data.conversation, data.events));
         setNotes(data.notes ?? []);
+        handoffRef.current = data.handoff ?? null;
+        setHandoff(data.handoff ?? null);
+        setAiSummary(data.aiSummary ?? null);
+        setAi(data.ai ?? null);
         setHasMore(data.pagination.hasMore);
         setOldest(data.pagination.oldestTimestamp);
       })
@@ -317,17 +355,37 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
         next.waitingSince = null;
       }
       commit(next);
-      if (change.event) pushEvent(fromApiEvent(change.event));
+      if (change.event) {
+        pushEvent(fromApiEvent(change.event));
+        if (change.event.type === 'handoff_requested') {
+          const h = handoffFromEvent(change.event);
+          handoffRef.current = h;
+          setHandoff(h);
+          setAiSummary(null);
+        }
+      }
+      if (change.aiSummary && change.aiSummary.eventId === handoffRef.current?.eventId) {
+        setAiSummary({ text: change.aiSummary.text, createdAt: change.aiSummary.createdAt });
+      }
     },
     [commit, pushEvent],
   );
 
   const applyHandoff = useCallback(
-    (at: string) => {
+    (at: string, event?: ApiConversationEvent) => {
       const prev = convRef.current;
       if (!prev || (prev.handoffActive && prev.handedOffAt === at)) return;
       commit({ ...prev, handoffActive: true, handedOffAt: at });
-      pushEvent({ id: `handoff-${at}`, kind: 'handoff', at });
+      // web-46: con el evento guardado, su causa y su resumen
+      if (event?.type === 'handoff_requested') {
+        pushEvent(fromApiEvent(event));
+        const h = handoffFromEvent(event);
+        handoffRef.current = h;
+        setHandoff(h);
+        setAiSummary(null);
+      } else {
+        pushEvent({ id: `handoff-${at}`, kind: 'handoff', at });
+      }
     },
     [commit, pushEvent],
   );
@@ -607,6 +665,9 @@ export function useConversationThread(conversationId: string | null, me: Me | nu
     messages,
     events,
     notes,
+    handoff,
+    aiSummary,
+    ai,
     addNote,
     dropNote,
     saveNote,

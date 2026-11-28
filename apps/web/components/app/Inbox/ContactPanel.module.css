@@ -540,3 +540,30 @@
   width: 100%;
   justify-content: center;
 }
+
+/* "Por qué te llegó" (web-46) */
+.whySection {
+  background: var(--app-warn-bg);
+}
+
+.whyHeading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--app-warn);
+}
+
+.whyText {
+  margin: 0;
+  color: var(--app-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.whySummary {
+  margin: 6px 0 0;
+  color: var(--app-soft);
+  font-size: 13px;
+  line-height: 1.45;
+}
