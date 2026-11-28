@@ -1541,7 +1541,9 @@
     },
     "trialBanner": {
       "endsIn": "Tu prueba del plan {plan} termina en {days} días",
-      "payNow": "Pagar ahora"
+      "payNow": "Pagar ahora",
+      "endsInOne": "Tu prueba del plan {plan} termina en 1 día",
+      "endsToday": "Tu prueba del plan {plan} termina hoy"
     }
   },
   "settings": {

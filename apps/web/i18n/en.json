@@ -1541,7 +1541,9 @@
     },
     "trialBanner": {
       "endsIn": "Your {plan} trial ends in {days} days",
-      "payNow": "Pay now"
+      "payNow": "Pay now",
+      "endsInOne": "Your {plan} trial ends in 1 day",
+      "endsToday": "Your {plan} trial ends today"
     }
   },
   "settings": {

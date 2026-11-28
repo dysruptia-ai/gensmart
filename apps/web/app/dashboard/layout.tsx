@@ -257,10 +257,15 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         {trialEndsAt && (
           <div className={styles.trialBanner}>
             <span>
-              {t('billing.trialBanner.endsIn', {
-                plan: orgPlan ? orgPlan.charAt(0).toUpperCase() + orgPlan.slice(1) : '',
-                days: String(trialDaysLeft),
-              })}
+              {t(
+                trialDaysLeft === 0 ? 'billing.trialBanner.endsToday'
+                  : trialDaysLeft === 1 ? 'billing.trialBanner.endsInOne'
+                  : 'billing.trialBanner.endsIn',
+                {
+                  plan: orgPlan ? orgPlan.charAt(0).toUpperCase() + orgPlan.slice(1) : '',
+                  days: String(trialDaysLeft),
+                },
+              )}
               {' '}&mdash;{' '}
               {/* Never the Stripe portal: without a subscription it only saves a card. */}
               <button
