@@ -40,8 +40,13 @@ export interface AppNavItem {
   subtitleKey: string;
   href: string;
   icon: LucideIcon;
-  /** `pending`: la ruta existe, pero solo con el estado vacío "viene en camino". */
-  status: 'ready' | 'pending';
+  /**
+   * Qué contenedor pinta el shell:
+   * - `legacy`: pantalla del dashboard viejo, dentro de `gsLegacy` (platform.css) hasta que llegue su diseño;
+   * - `ready`: pantalla del diseño nuevo (`gsApp`, tokens `--app-*`), sin el envoltorio viejo;
+   * - `pending`: la ruta existe, pero solo con el estado vacío "viene en camino" (también diseño nuevo).
+   */
+  status: 'legacy' | 'ready' | 'pending';
   /** Activo solo con la ruta exacta (Hoy); el resto, por prefijo. */
   exact?: boolean;
 }
@@ -56,7 +61,7 @@ function item(
   id: AppNavItemId,
   href: string,
   icon: LucideIcon,
-  status: AppNavItem['status'] = 'ready',
+  status: AppNavItem['status'] = 'legacy',
   exact = false,
 ): AppNavItem {
   return {
@@ -75,8 +80,8 @@ export const APP_NAV: readonly AppNavGroup[] = [
     id: 'operations',
     labelKey: 'shell.groups.operations',
     items: [
-      item('today', '/dashboard', Home, 'ready', true),
-      item('inbox', '/dashboard/conversations', Inbox),
+      item('today', '/dashboard', Home, 'legacy', true),
+      item('inbox', '/dashboard/conversations', Inbox, 'ready'),
       item('contacts', '/dashboard/contacts', Users),
       item('pipeline', '/dashboard/funnel', Filter),
       item('calendar', '/dashboard/calendar', Calendar),
@@ -95,7 +100,7 @@ export const APP_NAV: readonly AppNavGroup[] = [
     id: 'business',
     labelKey: 'shell.groups.business',
     items: [
-      item('reports', '/dashboard/reports', LineChart, 'pending'),
+      item('reports', '/dashboard/reports', LineChart, 'ready'),
       item('billing', '/dashboard/billing', CreditCard),
       item('settings', '/dashboard/settings', Settings),
     ],

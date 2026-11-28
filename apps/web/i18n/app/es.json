@@ -2387,5 +2387,115 @@
       "limit": "No quedan mensajes este mes para las sugeridas.",
       "limitLink": "Plan y facturación"
     }
+  },
+  "reports": {
+    "period": {
+      "label": "Período",
+      "today": "Hoy",
+      "7d": "7 días",
+      "30d": "30 días"
+    },
+    "range": {
+      "today": "Hoy, hasta las {time} ({zone})",
+      "days": "{range} ({zone})"
+    },
+    "export": "Exportar CSV",
+    "kpi": {
+      "agentResolved": "Resueltas por el agente",
+      "agentResolvedSub": "sin intervención de una persona",
+      "agentResolvedOf": "{count} de {total}",
+      "firstResponse": "Primera respuesta",
+      "firstResponseSub": "mediana del agente",
+      "humanWait": "Espera de una persona",
+      "humanWaitSub": "mediana en horario de atención",
+      "stillWaiting_one": "{count} sigue esperando",
+      "stillWaiting_other": "{count} siguen esperando",
+      "goal": "Meta de respuesta",
+      "goalSub": "cumplida en {minutes} min",
+      "goalOf": "{met} de {total} a tiempo",
+      "lessThanMinute": "menos de 1 min",
+      "noConversations": "Sin conversaciones en este período",
+      "noResponses": "El agente no respondió en este período",
+      "noHandoffs": "Sin pedidos de ayuda en este período",
+      "noAttended": "Nadie atendió un pedido de ayuda en este período",
+      "noGoalCases": "Ningún pedido cumplió ni pasó la meta todavía"
+    },
+    "compare": {
+      "when": {
+        "today": "vs. ayer",
+        "7d": "vs. los 7 días anteriores",
+        "30d": "vs. los 30 días anteriores"
+      },
+      "better": "mejor",
+      "worse": "peor",
+      "same": "Igual {when}",
+      "up": "Subió {amount} {when}, {verdict}",
+      "down": "Bajó {amount} {when}, {verdict}"
+    },
+    "hours": {
+      "title": "Conversaciones por hora",
+      "peak": "Entre las {from} y las {to} llega el {pct} % de las conversaciones. Ahí conviene tener más gente en línea.",
+      "chart": "Conversaciones por hora del día",
+      "chartPeak": "Conversaciones por hora del día. La franja con más volumen es de {from} a {to} h, con el {pct} %.",
+      "tooltip_one": "{from}-{to} h · {count} conversación",
+      "tooltip_other": "{from}-{to} h · {count} conversaciones",
+      "hour": "Hora",
+      "conversations": "Conversaciones",
+      "hourRange": "{from}-{to} h"
+    },
+    "channels": {
+      "title": "Por canal",
+      "empty": "Sin conversaciones en este período"
+    },
+    "reasons": {
+      "title": "Por qué pide ayuda el agente",
+      "empty": "Sin pedidos de ayuda en este período",
+      "other": "Otra causa",
+      "none": "Sin causa registrada",
+      "count_one": "{count} pedido",
+      "count_other": "{count} pedidos"
+    },
+    "agents": {
+      "title": "Agentes",
+      "agent": "Agente",
+      "conversations": "Conversaciones ({period})",
+      "resolvedAlone": "Resuelve solo",
+      "askedHelp": "Pidió ayuda",
+      "status": "Estado",
+      "active": "Activo",
+      "paused": "Pausado",
+      "unpublished": "Sin publicar",
+      "empty": "Todavía no tienes agentes."
+    },
+    "empty": "Todavía no hay conversaciones en este período",
+    "error": "No pudimos cargar los informes.",
+    "retry": "Reintentar",
+    "csv": {
+      "header": {
+        "section": "seccion",
+        "label": "etiqueta",
+        "value": "valor",
+        "previous": "valor_anterior"
+      },
+      "sections": {
+        "summary": "resumen",
+        "hour": "hora",
+        "channel": "canal",
+        "reason": "causa",
+        "agent": "agente"
+      },
+      "conversations": "Conversaciones",
+      "agentResolvedPct": "{name} · Resuelve solo (%)",
+      "agentResolvedCount": "Resueltas por el agente",
+      "firstResponse": "Primera respuesta del agente, mediana (s)",
+      "humanWait": "Espera de una persona, mediana (min)",
+      "stillWaiting": "Siguen esperando",
+      "goal": "Meta de respuesta cumplida (%)",
+      "goalMinutes": "Meta de respuesta (min)",
+      "agentConversations": "{name} · Conversaciones",
+      "agentResolved": "{name} · Resuelve solo",
+      "agentAskedHelp": "{name} · Pidió ayuda",
+      "agentStatus": "{name} · Estado"
+    }
   }
 }

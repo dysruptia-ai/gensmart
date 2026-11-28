@@ -1,0 +1,38 @@
+/* Igual que .period de la lista de la Bandeja */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--app-line);
+  border-radius: 9px;
+  background: var(--app-card);
+}
+
+.switch button {
+  min-height: 30px;
+  padding: 2px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--app-mute);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--app-t-fast) var(--app-ease);
+}
+
+.switch button:hover {
+  background: var(--app-active);
+}
+
+.switch button[aria-pressed='true'] {
+  background: var(--app-card-2);
+  color: var(--app-ink);
+  font-weight: 600;
+}
+
+.switch button:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 1px;
+}

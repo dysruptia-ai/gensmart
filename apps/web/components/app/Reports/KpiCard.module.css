@@ -1,0 +1,81 @@
+.kpi {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-lg);
+  background: var(--app-card);
+}
+
+.label {
+  font-size: 12.5px;
+  color: var(--app-soft);
+}
+
+.value {
+  font-family: var(--app-font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: var(--app-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.sub,
+.detail {
+  font-size: 12px;
+  color: var(--app-faint);
+}
+
+.cmp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-mute);
+}
+
+.better {
+  color: var(--app-ok);
+}
+
+.worse {
+  color: var(--app-err);
+}
+
+.locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--app-info);
+}
+
+.locked svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.lockedLink {
+  color: inherit;
+  font-weight: 700;
+}
+
+
+@media (max-width: 767.98px) {
+  .kpi {
+    padding: 14px;
+  }
+
+  .value {
+    font-size: 26px;
+  }
+}

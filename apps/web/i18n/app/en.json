@@ -2387,5 +2387,115 @@
       "limit": "No messages left this month for suggestions.",
       "limitLink": "Plan & billing"
     }
+  },
+  "reports": {
+    "period": {
+      "label": "Period",
+      "today": "Today",
+      "7d": "7 days",
+      "30d": "30 days"
+    },
+    "range": {
+      "today": "Today, up to {time} ({zone})",
+      "days": "{range} ({zone})"
+    },
+    "export": "Export CSV",
+    "kpi": {
+      "agentResolved": "Resolved by the agent",
+      "agentResolvedSub": "with no one from the team stepping in",
+      "agentResolvedOf": "{count} of {total}",
+      "firstResponse": "First response",
+      "firstResponseSub": "agent median",
+      "humanWait": "Wait for a person",
+      "humanWaitSub": "median in business hours",
+      "stillWaiting_one": "{count} still waiting",
+      "stillWaiting_other": "{count} still waiting",
+      "goal": "Response goal",
+      "goalSub": "met within {minutes} min",
+      "goalOf": "{met} of {total} on time",
+      "lessThanMinute": "under 1 min",
+      "noConversations": "No conversations in this period",
+      "noResponses": "The agent didn't reply in this period",
+      "noHandoffs": "No requests for help in this period",
+      "noAttended": "No one picked up a request for help in this period",
+      "noGoalCases": "No request has met or missed the goal yet"
+    },
+    "compare": {
+      "when": {
+        "today": "vs. yesterday",
+        "7d": "vs. the previous 7 days",
+        "30d": "vs. the previous 30 days"
+      },
+      "better": "better",
+      "worse": "worse",
+      "same": "Same {when}",
+      "up": "Up {amount} {when}, {verdict}",
+      "down": "Down {amount} {when}, {verdict}"
+    },
+    "hours": {
+      "title": "Conversations by hour",
+      "peak": "Between {from}:00 and {to}:00, {pct}% of conversations come in. That's when it pays to have more people online.",
+      "chart": "Conversations by hour of the day",
+      "chartPeak": "Conversations by hour of the day. The busiest window is {from}:00 to {to}:00, with {pct}%.",
+      "tooltip_one": "{from}-{to}h · {count} conversation",
+      "tooltip_other": "{from}-{to}h · {count} conversations",
+      "hour": "Hour",
+      "conversations": "Conversations",
+      "hourRange": "{from}-{to}h"
+    },
+    "channels": {
+      "title": "By channel",
+      "empty": "No conversations in this period"
+    },
+    "reasons": {
+      "title": "Why the agent asks for help",
+      "empty": "No requests for help in this period",
+      "other": "Other reason",
+      "none": "No cause recorded",
+      "count_one": "{count} request",
+      "count_other": "{count} requests"
+    },
+    "agents": {
+      "title": "Agents",
+      "agent": "Agent",
+      "conversations": "Conversations ({period})",
+      "resolvedAlone": "Resolves alone",
+      "askedHelp": "Asked for help",
+      "status": "Status",
+      "active": "Active",
+      "paused": "Paused",
+      "unpublished": "Not published",
+      "empty": "You don't have any agents yet."
+    },
+    "empty": "No conversations in this period yet",
+    "error": "We couldn't load the reports.",
+    "retry": "Try again",
+    "csv": {
+      "header": {
+        "section": "section",
+        "label": "label",
+        "value": "value",
+        "previous": "previous_value"
+      },
+      "sections": {
+        "summary": "summary",
+        "hour": "hour",
+        "channel": "channel",
+        "reason": "reason",
+        "agent": "agent"
+      },
+      "conversations": "Conversations",
+      "agentResolvedPct": "{name} · Resolves alone (%)",
+      "agentResolvedCount": "Resolved by the agent",
+      "firstResponse": "Agent first response, median (s)",
+      "humanWait": "Wait for a person, median (min)",
+      "stillWaiting": "Still waiting",
+      "goal": "Response goal met (%)",
+      "goalMinutes": "Response goal (min)",
+      "agentConversations": "{name} · Conversations",
+      "agentResolved": "{name} · Resolves alone",
+      "agentAskedHelp": "{name} · Asked for help",
+      "agentStatus": "{name} · Status"
+    }
   }
 }

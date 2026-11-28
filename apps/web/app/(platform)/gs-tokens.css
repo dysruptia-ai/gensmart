@@ -46,6 +46,11 @@
   --app-err: #b42318;
   --app-err-bg: #fdecea;
   --app-ok: #0b6b36;
+  /* Gráficos de Informes (web-47b): ≥ 3:1 con la tarjeta; la resaltada se distingue por luminosidad */
+  --app-chart-bar: #5d957a;
+  --app-chart-bar-hi: var(--app-ok);
+  /* Cuánto del color del canal queda en sus barras (el resto, negro): en claro, para pasar 3:1 */
+  --app-chart-ch-keep: 80%;
   --app-ok-bg: #e4f6ec;
   --app-warn: #8a5a00;
   --app-warn-bg: #fbf1dc;
@@ -115,6 +120,9 @@
   --app-err: #ff8a7e;
   --app-err-bg: rgba(255, 138, 126, 0.12);
   --app-ok: #3ddc84;
+  --app-chart-bar: #2a8a57;
+  --app-chart-bar-hi: var(--app-ok);
+  --app-chart-ch-keep: 100%;
   --app-ok-bg: rgba(61, 220, 132, 0.12);
   --app-warn: #e8c98e;
   --app-warn-bg: rgba(232, 201, 142, 0.12);
@@ -152,6 +160,9 @@
     --app-err: #ff8a7e;
     --app-err-bg: rgba(255, 138, 126, 0.12);
     --app-ok: #3ddc84;
+    --app-chart-bar: #2a8a57;
+    --app-chart-bar-hi: var(--app-ok);
+    --app-chart-ch-keep: 100%;
     --app-ok-bg: rgba(61, 220, 132, 0.12);
     --app-warn: #e8c98e;
     --app-warn-bg: rgba(232, 201, 142, 0.12);
@@ -197,13 +208,19 @@
   outline-offset: 2px;
 }
 
+/* Oculto a la vista, presente para lectores de pantalla. Una <table> no respeta height ni overflow:
+   va dentro de un <div class="gsSr">, nunca con la clase en la tabla (web-47b). */
 .gsApp .gsSr {
   position: absolute;
   width: 1px;
   height: 1px;
+  padding: 0;
+  margin: -1px;
   overflow: hidden;
   clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
+  border: 0;
 }
 
 /* Pantallas viejas dentro del shell nuevo (hasta que se migren): vuelven a la base de

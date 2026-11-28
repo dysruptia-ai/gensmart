@@ -57,8 +57,10 @@
     "test:inbox-settings:db": "INBOX_SETTINGS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-settings.test.ts",
     "test:agent-pause:db": "AGENT_PAUSE_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/agent-pause.test.ts",
     "test:inbox-wait-alert:db": "INBOX_WAIT_ALERT_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-wait-alert.test.ts",
-    "test:inbox-ai": "tsx --test src/services/inbox-ai.test.ts",
+    "test:inbox-ai": "tsx --test --test-force-exit src/services/inbox-ai.test.ts",
     "test:inbox-ai:db": "INBOX_AI_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-ai.test.ts",
+    "test:reports": "tsx --test src/services/reports.test.ts",
+    "test:reports:db": "REPORTS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/reports.test.ts",
     "test:channel-health:db": "CHANNEL_HEALTH_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/channel-health.test.ts"
   },
   "dependencies": {

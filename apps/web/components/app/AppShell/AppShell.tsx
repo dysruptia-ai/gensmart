@@ -54,8 +54,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   const active = activeNavItem(pathname);
   const compact = isInboxRoute(pathname);
-  // Pantallas ya migradas al diseño nuevo: las de "viene en camino" y la Bandeja (web-41)
-  const legacy = active?.status !== 'pending' && !compact;
+  // El registro del menú decide el contenedor: solo las pantallas `legacy` van dentro de gsLegacy (web-47b).
+  // Una ruta que no está en el menú sigue como antes (vieja); las de la Bandeja van aparte (compact).
+  const legacy = (active?.status ?? 'legacy') === 'legacy' && !compact;
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) router.replace('/login');

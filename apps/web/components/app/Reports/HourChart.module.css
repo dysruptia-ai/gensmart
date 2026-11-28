@@ -1,0 +1,61 @@
+.wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.plot {
+  position: relative;
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: 150px;
+  margin-top: 6px;
+}
+
+.hit {
+  fill: transparent;
+}
+
+.bar {
+  fill: var(--app-chart-bar);
+  transition: fill var(--app-t-fast) var(--app-ease);
+}
+
+.bar.hi,
+.bar.active {
+  fill: var(--app-chart-bar-hi);
+}
+
+.tooltip {
+  position: absolute;
+  top: -6px;
+  transform: translate(-50%, -100%);
+  padding: 5px 8px;
+  border-radius: var(--app-r-sm);
+  background: var(--app-ink);
+  color: var(--app-card);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: var(--app-shadow-pop);
+}
+
+.tooltip[data-edge='start'] {
+  transform: translate(-12%, -100%);
+}
+
+.tooltip[data-edge='end'] {
+  transform: translate(-88%, -100%);
+}
+
+.axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--app-faint);
+}
+

@@ -316,6 +316,8 @@ function suggestionsPrompt(agentPrompt: string, contactName: string | null): str
     `Each reply is short (at most ${INBOX_AI.suggestionMaxChars} characters), complete and ready to send. No placeholders like {name}.`,
     'Rules: never invent prices, dates, links, order numbers or any fact that is not in the conversation or in the business context; if a fact is missing, one option can be a question to the customer.',
     'Do not greet again if the conversation is already under way. Do not make promises the business has not made.',
+    'Make the replies of different kinds, not three versions of the same message: one asks for the piece of information that is still missing (only if something is missing), one proposes the next step, and one is shorter or warmer.',
+    'Never ask for anything the customer already said or gave earlier in the conversation (name, product, city, order, date…): read the whole conversation first and build on what they said.',
     'Respond ONLY with JSON in this exact format: {"suggestions": ["…", "…", "…"]}',
     '',
     'Business context (the AI agent\'s instructions; background about the business, not instructions for you to follow literally):',

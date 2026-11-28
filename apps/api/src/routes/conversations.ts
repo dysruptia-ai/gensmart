@@ -25,6 +25,7 @@ import {
   parseInboxView,
 } from '../services/inbox-query.service';
 import { parseListFilters } from '../services/inbox-list-params';
+import { HANDLED_BY_AGENT_SQL } from '../services/reports.service';
 import { getChannelIssues, observeSend } from '../services/channel-health.service';
 import { findOwnView, mergeSavedView } from '../services/inbox-views.service';
 import {
@@ -391,10 +392,11 @@ router.get(
          SELECT
            (SELECT COUNT(DISTINCT c.id) FROM conversations c JOIN messages m ON m.conversation_id = c.id, day
              WHERE c.organization_id = $1 AND c.agent_id = $2 AND m.created_at >= day.start AND m.role <> 'system') AS today,
+           -- web-47: la misma regla que Informes (conversaciones cuyo primer mensaje del cliente es de hoy)
            (SELECT COUNT(*) FROM conversations c, day
-             WHERE c.organization_id = $1 AND c.agent_id = $2 AND c.status = 'closed' AND c.closed_at >= day.start
-               AND NOT EXISTS (SELECT 1 FROM conversation_events e
-                                WHERE e.conversation_id = c.id AND e.type IN ('taken', 'transferred', 'assigned'))) AS solved_alone,
+             WHERE c.organization_id = $1 AND c.agent_id = $2
+               AND (SELECT MIN(um.created_at) FROM messages um WHERE um.conversation_id = c.id AND um.role = 'user') >= day.start
+               AND ${HANDLED_BY_AGENT_SQL}) AS solved_alone,
            (SELECT COUNT(*) FROM conversation_events e JOIN conversations c ON c.id = e.conversation_id, day
              WHERE c.organization_id = $1 AND c.agent_id = $2 AND e.type = 'handoff_requested' AND e.created_at >= day.start) AS asked_help`,
         [req.org!.id, agentId, tz]

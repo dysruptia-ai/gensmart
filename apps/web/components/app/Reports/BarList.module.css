@@ -1,0 +1,88 @@
+.bars {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bars > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  grid-template-areas: 'name track value';
+  gap: 12px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.name {
+  grid-area: name;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--app-soft);
+}
+
+.name i {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.text {
+  /* Hasta 2 líneas: las causas son frases largas y no deben cortarse */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.track {
+  grid-area: track;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--app-r-pill);
+  background: var(--app-card-2);
+}
+
+.track u {
+  display: block;
+  height: 100%;
+  border-radius: var(--app-r-pill);
+  background: var(--app-mute);
+  text-decoration: none;
+}
+
+/* Barra con el color del canal (--bar), oscurecida en claro para pasar 3:1 */
+.track u[data-color] {
+  background: color-mix(in oklab, var(--bar) var(--app-chart-ch-keep), #000);
+}
+
+.name i {
+  background: color-mix(in oklab, var(--bar) var(--app-chart-ch-keep), #000);
+}
+
+.value {
+  grid-area: value;
+  min-width: 34px;
+  text-align: right;
+  font-weight: 600;
+  color: var(--app-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 767.98px) {
+  .bars > li {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name value'
+      'track track';
+    row-gap: 6px;
+  }
+}

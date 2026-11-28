@@ -1,5 +1,10 @@
-import PendingScreen from '@/components/app/PendingScreen/PendingScreen';
+import { Suspense } from 'react';
+import ReportsScreen from '@/components/app/Reports/ReportsScreen';
 
 export default function Page() {
-  return <PendingScreen id="reports" />;
+  return (
+    <Suspense>
+      <ReportsScreen />
+    </Suspense>
+  );
 }

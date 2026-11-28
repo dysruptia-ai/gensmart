@@ -25,6 +25,7 @@ export async function startInboxFixture(prefix: string) {
   const inboxViewsRouter = (await import('../routes/inbox-views')).default;
   const inboxSettingsRouter = (await import('../routes/inbox-settings')).default;
   const agentsRouter = (await import('../routes/agents')).default;
+  const reportsRouter = (await import('../routes/reports')).default;
 
   const app = express();
   app.use(express.json());
@@ -34,6 +35,7 @@ export async function startInboxFixture(prefix: string) {
   app.use('/api/inbox-views', inboxViewsRouter);
   app.use('/api/inbox-settings', inboxSettingsRouter);
   app.use('/api/agents', agentsRouter);
+  app.use('/api/reports', reportsRouter);
   app.use(errorHandler);
   const server = app.listen(0);
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
