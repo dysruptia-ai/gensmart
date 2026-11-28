@@ -4,6 +4,7 @@ import { verifyAccessToken } from './jwt';
 import { env } from './env';
 import { query } from './database';
 import { resolveEffectiveRole } from '../middleware/effective-role';
+import { socketConnected, socketDisconnected } from '../services/presence.service';
 
 let io: SocketIOServer | null = null;
 
@@ -159,8 +160,19 @@ export function initWebSocket(httpServer: HttpServer): SocketIOServer {
     });
     console.log(`[ws] Client connected: ${socket.id} (org: ${orgId})`);
 
+    // Presencia de la Bandeja (web-45): al pasar a "en línea" se reparte lo que esperaba
+    if (socketConnected(orgId, userId)) {
+      io?.to(`org:${orgId}`).emit('inbox-presence:changed', { userId, online: true });
+      void import('../services/inbox-assignment.service')
+        .then((m) => m.assignPending(orgId))
+        .catch((err: unknown) => console.error('[ws] assignPending failed:', (err as Error).message));
+    }
+
     socket.on('disconnect', () => {
       console.log(`[ws] Client disconnected: ${socket.id}`);
+      if (socketDisconnected(orgId, userId)) {
+        io?.to(`org:${orgId}`).emit('inbox-presence:changed', { userId, online: false });
+      }
     });
 
     // Conversation rooms for real-time updates (authorized against the socket's organization)

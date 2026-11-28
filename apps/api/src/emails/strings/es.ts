@@ -112,6 +112,20 @@ export const es = {
     cta: 'Ver la conversación',
     note: 'Te avisamos cuando un contacto llega a un puntaje de 8 o más.',
   },
+  inboxWaitAlert: {
+    subject: (wait: string, contact: string) => `${contact} lleva ${wait} esperando respuesta`,
+    preheader: 'Una conversación de la Bandeja pasó el tiempo de alerta y nadie le respondió.',
+    heading: 'Una conversación sigue esperando',
+    body: (name: string) => `Hola, ${name}: esta conversación pidió ayuda y todavía nadie le respondió.`,
+    unnamedContact: 'Contacto sin nombre',
+    waiting: 'Lleva esperando',
+    contact: 'Contacto',
+    channel: 'Canal',
+    agent: 'Agente',
+    cta: 'Abrir la conversación',
+    note: (minutes: string) =>
+      `Te avisamos cuando una conversación espera más de ${minutes} minutos en horario de atención. Lo cambias en Ajustes de la Bandeja → Horarios y meta.`,
+  },
   planLimit: {
     subject: 'Llegaste al límite de mensajes de tu plan',
     preheader: 'Tus agentes no responden mensajes nuevos hasta que amplíes el límite.',

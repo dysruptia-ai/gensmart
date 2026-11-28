@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EMPTY_FILTERS, activeFilterCount, filtersQuery, listApiQuery, readFilters, rowMatches } from './inboxFormat';
+import { EMPTY_FILTERS, activeFilterCount, filtersQuery, listApiQuery, readFilters, rowMatches, sortRows } from './inboxFormat';
 import type { ConversationRow, InboxFilters } from './types';
 
 const read = (qs: string) => readFilters(new URLSearchParams(qs));
@@ -83,4 +83,12 @@ test('rowMatches con los filtros nuevos y las vistas guardadas', () => {
   assert.equal(rowMatches(row({ status: 'closed' }), g, 'u', { state: 'closed' }), true);
   // con búsqueda solo cuentan los filtros, no la vista
   assert.equal(rowMatches(row({ status: 'closed' }), EMPTY_FILTERS, 'u', null, true), true);
+});
+
+test('web-45b: "Más urgente" pone primero la que más espera dentro de las que necesitan a alguien', () => {
+  const at = (min: number) => new Date(Date.now() - min * 60_000).toISOString();
+  const long = row({ id: 'w22', needsAttention: true, waitingSince: at(22), lastMessageAt: at(21) });
+  const short = row({ id: 'w7', needsAttention: true, waitingSince: at(7), lastMessageAt: at(1) });
+  const fine = row({ id: 'ok', needsAttention: false, waitingSince: null, lastMessageAt: at(0) });
+  assert.deepEqual(sortRows([fine, short, long], 'all', 'needs').map((r) => r.id), ['w22', 'w7', 'ok']);
 });

@@ -37,6 +37,12 @@
   display: flex;
   gap: 4px;
   overflow-x: auto;
+  /* web-45b: se desplaza sin la barra gris (sobre todo a 375) */
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .tab {
@@ -443,5 +449,355 @@
 
   .stack td.strong {
     padding-right: 80px;
+  }
+}
+
+/* ---------- web-45: Asignación y Horarios y meta ---------- */
+.tabStack {
+  display: grid;
+  gap: 16px;
+}
+
+.subTitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.inlineLink {
+  color: var(--app-link);
+  font-weight: 600;
+}
+
+.inlineLink:focus-visible,
+.linkButton:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.planNotice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  max-width: 900px;
+  padding: 10px 13px;
+  border-radius: var(--app-r-sm);
+  background: var(--app-warn-bg);
+  color: var(--app-ink);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.planNotice svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--app-warn);
+}
+
+/* Las tres formas de reparto (el `.opt` del diseño) */
+.options {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  font-size: 13.5px;
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  border-color: var(--app-go);
+  background: var(--app-active);
+}
+
+.option:has(input:focus-visible) {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.option input {
+  margin: 2px 0 0;
+  accent-color: var(--app-go);
+}
+
+.option b {
+  display: block;
+  font-weight: 600;
+}
+
+.option small,
+.switchRow small {
+  display: block;
+  color: var(--app-soft);
+  font-size: 12px;
+}
+
+.options:disabled .option {
+  cursor: default;
+}
+
+/* El `.sw` del diseño: texto a la izquierda, interruptor a la derecha */
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+/* Tu equipo */
+.presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--app-soft);
+}
+
+.presence i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid var(--app-faint);
+}
+
+.presenceOn {
+  color: var(--app-ok);
+  font-weight: 600;
+}
+
+.presenceOn i {
+  border-color: var(--app-ok);
+  background: var(--app-ok);
+}
+
+.full {
+  color: var(--app-warn);
+  font-weight: 600;
+}
+
+.capInput {
+  width: 72px;
+}
+
+.select {
+  height: 34px;
+  min-width: 0;
+  max-width: 260px;
+  width: 100%;
+  padding: 0 8px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-bg);
+  color: var(--app-ink);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 1px;
+}
+
+.assignees {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid var(--app-line-soft);
+}
+
+.assigneeList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assigneeList li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
+  align-items: center;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+/* Guardar cambios, al pie de la pestaña */
+.saveBar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.saveBar > p {
+  margin: 0 auto 0 0;
+}
+
+.saved {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--app-ok);
+}
+
+/* Horario por día */
+.days {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day {
+  display: grid;
+  grid-template-columns: 110px auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 14px;
+  min-height: 42px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--app-line-soft);
+  font-size: 13.5px;
+}
+
+.day:last-child {
+  border-bottom: 0;
+}
+
+.dayName {
+  font-weight: 600;
+}
+
+.range {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--app-soft);
+}
+
+.range input {
+  width: 124px;
+}
+
+.closedTag {
+  justify-self: start;
+  padding: 2px 8px;
+  border-radius: var(--app-r-pill);
+  background: var(--app-card-2);
+  color: var(--app-mute);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dayError {
+  grid-column: 3;
+}
+
+.example {
+  margin: -6px 0 0;
+  padding: 8px 11px;
+  border-left: 3px solid var(--app-line);
+  color: var(--app-soft);
+  font-size: 12.5px;
+  font-style: italic;
+}
+
+.goalGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.suffixed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--app-soft);
+  font-size: 13.5px;
+}
+
+.suffixed input {
+  width: 96px;
+}
+
+.goalGrid .switchRow label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-mute);
+}
+
+@media (max-width: 767px) {
+  /* Tu equipo: lista apilada en el móvil */
+  .teamTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .teamTable,
+  .teamTable tbody,
+  .teamTable tr,
+  .teamTable td {
+    display: block;
+    width: auto;
+  }
+
+  .teamTable tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--app-line-soft);
+  }
+
+  .teamTable tr:last-child {
+    border-bottom: 0;
+  }
+
+  .teamTable td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 3px 0;
+    border: 0;
+    text-align: left !important;
+  }
+
+  .teamTable td::before {
+    content: attr(data-label);
+    color: var(--app-faint);
+    font-size: 12px;
+  }
+
+  .teamTable td.strong::before {
+    content: none;
+  }
+
+  .assigneeList li,
+  .goalGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .day {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .day .range,
+  .day .closedTag,
+  .dayError {
+    grid-column: 1 / -1;
   }
 }

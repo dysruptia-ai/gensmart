@@ -251,7 +251,10 @@ export function inboxOrderBy(
       c.snoozed_until ASC NULLS LAST, c.last_message_at DESC NULLS LAST`;
   }
   if (view === 'needs') return `${WAITING_SINCE_SQL} ASC NULLS LAST, c.last_message_at DESC NULLS LAST`;
-  if (order === 'needs') return `${NEEDS_SQL} DESC, c.last_message_at DESC NULLS LAST`;
+  // web-45b: dentro de las que necesitan a alguien, la que más espera primero (como "Necesitan a alguien")
+  if (order === 'needs') {
+    return `${NEEDS_SQL} DESC, CASE WHEN ${NEEDS_SQL} THEN ${WAITING_SINCE_SQL} END ASC NULLS LAST, c.last_message_at DESC NULLS LAST`;
+  }
   if (order === 'unread' && unread) return `${unread} DESC, c.last_message_at DESC NULLS LAST`;
   return 'c.last_message_at DESC NULLS LAST';
 }
@@ -271,7 +274,8 @@ export function buildCountsQuery(
       COUNT(*) FILTER (WHERE c.status <> 'closed' AND ${NOT_SNOOZED_SQL} AND ${recent}) AS all_count,
       COUNT(*) FILTER (WHERE ${NEEDS_SQL}) AS needs_count,
       COUNT(*) FILTER (WHERE ${mineSql('$2', '$3')}) AS mine_count,
-      COUNT(*) FILTER (WHERE c.status = 'closed' AND ${recent}) AS closed_count
+      COUNT(*) FILTER (WHERE c.status = 'closed' AND ${recent}) AS closed_count,
+      MIN(${WAITING_SINCE_SQL}) FILTER (WHERE ${NEEDS_SQL}) AS oldest_waiting_since
     ${INBOX_FROM}
     WHERE c.organization_id = $1`;
   return { sql, params: [orgId, userId, timezone || 'UTC'] };
@@ -285,11 +289,11 @@ export function buildCountsGroupQuery(
   const recent = range === 'all' ? '' : ` AND ${RECENT_SQL}`;
   const sql =
     by === 'agent'
-      ? `SELECT c.agent_id AS key, a.name AS name, COUNT(*) AS count
+      ? `SELECT c.agent_id AS key, a.name AS name, COUNT(*) AS count, a.inbox_paused_at AS paused_at
          FROM conversations c LEFT JOIN agents a ON c.agent_id = a.id
          WHERE c.organization_id = $1 AND c.status <> 'closed' AND c.snoozed_until IS NULL${recent}
-         GROUP BY c.agent_id, a.name ORDER BY a.name NULLS LAST`
-      : `SELECT c.channel AS key, NULL AS name, COUNT(*) AS count
+         GROUP BY c.agent_id, a.name, a.inbox_paused_at ORDER BY a.name NULLS LAST`
+      : `SELECT c.channel AS key, NULL AS name, COUNT(*) AS count, NULL AS paused_at
          FROM conversations c
          WHERE c.organization_id = $1 AND c.status <> 'closed' AND c.snoozed_until IS NULL${recent}
          GROUP BY c.channel ORDER BY COUNT(*) DESC`;

@@ -24,7 +24,8 @@ export type ThreadEventKind =
   | 'unsnoozed'
   | 'closed'
   | 'reopened'
-  | 'note_deleted';
+  | 'note_deleted'
+  | 'assigned';
 
 /**
  * Evento que se pinta centrado en el hilo. Sale de `conversation_events` (web-42); en las
@@ -42,6 +43,9 @@ export interface ThreadEvent {
   note?: string | null;
   until?: string | null;
   outcome?: CloseOutcome | null;
+  /** web-45: el motivo del pedido de ayuda ('agent_paused') o la forma del reparto. */
+  reason?: string | null;
+  mode?: string | null;
 }
 
 /** Cambios que llegan en `conversation:update` (web-42). */
@@ -75,6 +79,8 @@ export function fromApiEvent(e: ApiConversationEvent): ThreadEvent {
     note: str(e.data['note']),
     until: str(e.data['until']),
     outcome: (str(e.data['outcome']) as CloseOutcome | null) ?? null,
+    reason: str(e.data['reason']),
+    mode: str(e.data['mode']),
   };
 }
 

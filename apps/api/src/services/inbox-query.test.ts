@@ -192,6 +192,8 @@ test('endpoint: vistas, contadores, waitingSince y la lista de siempre', { skip:
     assert.equal(all.pagination.total, 8);
     const flags = all.conversations.map((c) => c.needsAttention);
     assert.deepEqual(flags, [true, true, true, true, false, false, false, false], 'order=needs pone primero las que necesitan a alguien');
+    // web-45b: dentro de ese grupo, el mismo orden que "Necesitan a alguien" (la que más espera primero)
+    assert.deepEqual(all.conversations.slice(0, 4).map((c) => c.id), needs.conversations.map((c) => c.id));
     const answered = all.conversations.find((c) => c.id === takenAnswered)!;
     assert.equal(answered.waitingSince, null);
     assert.equal(all.conversations.find((c) => c.id === agentOk)!.waitingSince, null);
@@ -210,7 +212,7 @@ test('endpoint: vistas, contadores, waitingSince y la lista de siempre', { skip:
     }>(ana.token, '/counts');
     // El traspaso vencido (48 h) ya no necesita a nadie, pero sigue abierta y dentro de los 8 días
     assert.deepEqual({ all: counts.all, needs: counts.needs, mine: counts.mine, closed: counts.closed }, { all: 8, needs: 4, mine: 2, closed: 1 });
-    assert.deepEqual(counts.byAgent, [{ agentId, agentName: 'Agente de prueba', count: 8 }]);
+    assert.deepEqual(counts.byAgent, [{ agentId, agentName: 'Agente de prueba', count: 8, inboxPausedAt: null }]);
     assert.deepEqual(
       [...counts.byChannel].sort((a, b) => a.channel.localeCompare(b.channel)),
       [{ channel: 'web', count: 7 }, { channel: 'whatsapp', count: 1 }]

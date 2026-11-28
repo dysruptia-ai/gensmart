@@ -149,8 +149,21 @@ export interface InboxCounts {
   needs: number;
   mine: number;
   closed: number;
-  byAgent: Array<{ agentId: string; agentName: string; count: number }>;
+  byAgent: Array<{ agentId: string; agentName: string; count: number; inboxPausedAt?: string | null }>;
   byChannel: Array<{ channel: string; count: number }>;
+  /** web-45: desde cuándo espera la más antigua de "Necesitan" (null si no hay ninguna). */
+  oldestWaitingSince?: string | null;
+  /** web-45: canales desconectados o por vencer, por agente (correo y web no entran). */
+  channelIssues?: ChannelIssue[];
+}
+
+export interface ChannelIssue {
+  agentId: string;
+  agentName: string;
+  channel: string;
+  kind: 'disconnected' | 'expiring';
+  since?: string;
+  expiresAt?: string;
 }
 
 export interface MessageMetadata {
@@ -225,7 +238,8 @@ export type ConversationEventType =
   | 'unsnoozed'
   | 'closed'
   | 'reopened'
-  | 'note_deleted';
+  | 'note_deleted'
+  | 'assigned';
 
 /** Evento guardado en `conversation_events` (web-42). */
 export interface ApiConversationEvent {

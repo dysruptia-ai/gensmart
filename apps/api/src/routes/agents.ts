@@ -40,6 +40,8 @@ import { env } from '../config/env';
 import { agentCreateSchema, agentUpdateSchema, PLAN_LIMITS, injectConfigVariablesDeep } from '@gensmart/shared';
 import { ragQueue, scrapingQueue } from '../config/queues';
 import { query } from '../config/database';
+import { AppError } from '../middleware/errorHandler';
+import { getIO } from '../config/websocket';
 import { connectAndListTools, executeMCPTool, sanitizeName } from '../services/mcp-client.service';
 import type { MCPToolInfo } from '../services/mcp-client.service';
 import {
@@ -2395,6 +2397,49 @@ router.post(
         redis.del(`preview-vars:${agentId}:${req.user!.userId}`).catch(() => {}),
       ]);
       res.json({ message: 'Preview history cleared' });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── PATCH /api/agents/:id/inbox-pause (web-45) ─────────────────────────────
+// Pausar el agente en la Bandeja: no responde y todo lo nuevo pasa a "Necesitan a alguien". Owner y
+// admin, desde Starter. No toca `status` (sigue publicado).
+router.patch(
+  '/:id/inbox-pause',
+  validateUUID('id'),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const role = req.user!.role;
+      if (role !== 'owner' && role !== 'admin') {
+        throw new AppError(403, 'Only an owner or an admin can pause an agent', 'FORBIDDEN');
+      }
+      if (!PLAN_LIMITS[req.org!.plan as keyof typeof PLAN_LIMITS]?.humanTakeover) {
+        throw new AppError(403, 'Pausing an agent requires the Starter plan or higher', 'PLAN_LIMIT');
+      }
+      const paused = z.object({ paused: z.boolean() }).strict().parse(req.body).paused;
+      const agentId = String(req.params['id']);
+      const r = await query<{ inbox_paused_at: string | null; inbox_paused_by_name: string | null }>(
+        `WITH upd AS (
+           UPDATE agents
+           SET inbox_paused_at = CASE WHEN $3 THEN COALESCE(inbox_paused_at, NOW()) ELSE NULL END,
+               inbox_paused_by = CASE WHEN $3 THEN COALESCE(inbox_paused_by, $4::uuid) ELSE NULL END
+           WHERE id = $1 AND organization_id = $2
+           RETURNING inbox_paused_at, inbox_paused_by
+         )
+         SELECT upd.inbox_paused_at, u.name AS inbox_paused_by_name FROM upd LEFT JOIN users u ON u.id = upd.inbox_paused_by`,
+        [agentId, req.org!.id, paused, req.user!.userId]
+      );
+      const row = r.rows[0];
+      if (!row) throw new AppError(404, 'Agent not found', 'AGENT_NOT_FOUND');
+      const payload = { agentId, inboxPausedAt: row.inbox_paused_at, inboxPausedByName: row.inbox_paused_by_name };
+      try {
+        getIO().to(`org:${req.org!.id}`).emit('agent:update', payload);
+      } catch {
+        // WebSocket not initialized (tests)
+      }
+      res.json(payload);
     } catch (err) {
       next(err);
     }

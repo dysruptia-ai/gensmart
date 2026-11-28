@@ -23,6 +23,8 @@ export async function startInboxFixture(prefix: string) {
   const quickRepliesRouter = (await import('../routes/quick-replies')).default;
   const inboxLabelsRouter = (await import('../routes/inbox-labels')).default;
   const inboxViewsRouter = (await import('../routes/inbox-views')).default;
+  const inboxSettingsRouter = (await import('../routes/inbox-settings')).default;
+  const agentsRouter = (await import('../routes/agents')).default;
 
   const app = express();
   app.use(express.json());
@@ -30,6 +32,8 @@ export async function startInboxFixture(prefix: string) {
   app.use('/api/quick-replies', quickRepliesRouter);
   app.use('/api/inbox-labels', inboxLabelsRouter);
   app.use('/api/inbox-views', inboxViewsRouter);
+  app.use('/api/inbox-settings', inboxSettingsRouter);
+  app.use('/api/agents', agentsRouter);
   app.use(errorHandler);
   const server = app.listen(0);
   const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;
@@ -58,22 +62,28 @@ export async function startInboxFixture(prefix: string) {
     return { id, token: generateAccessToken({ userId: id, orgId, role, email, isSuperAdmin: false }) };
   }
 
-  async function makeAgent(orgId: string): Promise<string> {
+  async function makeAgent(orgId: string, name = 'Agente de prueba'): Promise<string> {
     const r = await query<{ id: string }>(
       `INSERT INTO agents (organization_id, name, system_prompt, llm_provider, llm_model)
-       VALUES ($1, 'Agente de prueba', 'x', 'openai', 'gpt-4o-mini') RETURNING id`,
-      [orgId]
+       VALUES ($1, $2, 'x', 'openai', 'gpt-4o-mini') RETURNING id`,
+      [orgId, name]
     );
     return r.rows[0]!.id;
   }
 
   /** Conversación con un mensaje del cliente hace 10 minutos. */
-  async function makeConversation(orgId: string, agentId: string, opts: { takenBy?: string; status?: string } = {}): Promise<string> {
-    const contact = await query<{ id: string }>('INSERT INTO contacts (organization_id, agent_id, name) VALUES ($1, $2, $3) RETURNING id', [
-      orgId,
-      agentId,
-      `Cliente ${suffix}`,
-    ]);
+  async function makeConversation(
+    orgId: string,
+    agentId: string,
+    opts: { takenBy?: string; status?: string; contactId?: string } = {}
+  ): Promise<string> {
+    const contact = opts.contactId
+      ? { rows: [{ id: opts.contactId }] }
+      : await query<{ id: string }>('INSERT INTO contacts (organization_id, agent_id, name) VALUES ($1, $2, $3) RETURNING id', [
+          orgId,
+          agentId,
+          `Cliente ${suffix}`,
+        ]);
     const r = await query<{ id: string }>(
       `INSERT INTO conversations (organization_id, agent_id, contact_id, channel, status, taken_over_by, taken_over_at, last_message_at, message_count)
        VALUES ($1, $2, $3, 'web', $4, $5, CASE WHEN $5::uuid IS NULL THEN NULL ELSE NOW() END, NOW() - interval '10 minutes', 1)

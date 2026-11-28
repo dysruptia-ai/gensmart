@@ -242,3 +242,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* web-45: la meta, el canal desconectado y la vista del agente, arriba de la lista */
+.listNotices {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}

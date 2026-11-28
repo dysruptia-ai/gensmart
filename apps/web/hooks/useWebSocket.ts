@@ -182,6 +182,9 @@ export interface WebSocketEvents {
     closedByName?: string | null;
     /** web-43: etiquetas de la conversación en orden alfabético. */
     labels?: Array<{ id: string; name: string }>;
+    /** web-45: pedido de ayuda nuevo (agente pausado o traspaso). */
+    handedOffAt?: string | null;
+    handoffActive?: boolean;
     event?: InboxEventPayload;
   }) => void;
   /** web-43: nota interna nueva (solo la Bandeja; el agente nunca la lee). */
@@ -196,6 +199,10 @@ export interface WebSocketEvents {
   'conversation:read-state': (data: { organizationId: string; conversationId: string; unread: boolean }) => void;
   /** web-44: cambió alguna de las vistas guardadas de quien mira. */
   'inbox-views:changed': (data: { organizationId: string }) => void;
+  // web-45: ajustes de la bandeja, presencia del equipo y la pausa de un agente
+  'inbox-settings:changed': (data: { updatedBy: string }) => void;
+  'inbox-presence:changed': (data: { userId: string; online: boolean }) => void;
+  'agent:update': (data: { agentId: string; inboxPausedAt: string | null; inboxPausedByName: string | null }) => void;
   'message:new': (data: {
     conversationId: string;
     messages?: Array<{

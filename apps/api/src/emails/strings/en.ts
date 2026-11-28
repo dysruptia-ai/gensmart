@@ -110,6 +110,20 @@ export const en: EmailStrings = {
     cta: 'View the conversation',
     note: 'We let you know when a contact reaches a score of 8 or more.',
   },
+  inboxWaitAlert: {
+    subject: (wait, contact) => `${contact} has been waiting ${wait} for a reply`,
+    preheader: 'A conversation in your inbox passed the alert time and nobody has replied yet.',
+    heading: 'A conversation is still waiting',
+    body: (name) => `Hi ${name}, this conversation asked for help and nobody has replied yet.`,
+    unnamedContact: 'Unnamed contact',
+    waiting: 'Waiting for',
+    contact: 'Contact',
+    channel: 'Channel',
+    agent: 'Agent',
+    cta: 'Open the conversation',
+    note: (minutes) =>
+      `We let you know when a conversation waits more than ${minutes} minutes during business hours. Change it in Inbox settings → Hours & goal.`,
+  },
   planLimit: {
     subject: 'You reached your plan’s message limit',
     preheader: 'Your agents won’t answer new messages until you raise the limit.',

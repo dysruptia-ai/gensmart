@@ -161,6 +161,11 @@
   color: var(--app-warn);
 }
 
+.tagBad {
+  background: var(--app-err-bg);
+  color: var(--app-err);
+}
+
 .tagOk {
   background: var(--app-ok-bg);
   color: var(--app-ok);

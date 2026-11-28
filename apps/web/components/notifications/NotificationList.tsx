@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, AlertTriangle, XCircle, Bell, UserRound, Clock } from 'lucide-react';
+import { Star, AlertTriangle, XCircle, Bell, UserRound, Clock, Unplug } from 'lucide-react';
 import { Notification } from '@/hooks/useNotifications';
 import { useTranslation } from '@/hooks/useTranslation';
 import { formatRelativeTime } from '@/lib/formatters';
@@ -24,6 +24,9 @@ function NotifIcon({ type }: { type: string }) {
   if (type === 'human_handoff_offhours') return <Clock size={16} className={styles.iconWarning} />;
   if (type === 'conversation_transferred') return <UserRound size={16} className={styles.iconNeutral} />;
   if (type === 'conversation_snooze_ended') return <Clock size={16} className={styles.iconNeutral} />;
+  if (type === 'conversation_assigned') return <UserRound size={16} className={styles.iconNeutral} />;
+  if (type === 'inbox_wait_alert') return <Clock size={16} className={styles.iconWarning} />;
+  if (type === 'channel_disconnected') return <Unplug size={16} className={styles.iconWarning} />;
   return <Bell size={16} className={styles.iconNeutral} />;
 }
 
@@ -38,7 +41,9 @@ function getNavTarget(notif: Notification): string | null {
     notif.type === 'human_handoff' ||
     notif.type === 'human_handoff_offhours' ||
     notif.type === 'conversation_transferred' ||
-    notif.type === 'conversation_snooze_ended'
+    notif.type === 'conversation_snooze_ended' ||
+    notif.type === 'conversation_assigned' ||
+    notif.type === 'inbox_wait_alert'
   ) {
     const conversationId = notif.data?.['conversationId'] as string | undefined;
     if (conversationId) return `/dashboard/conversations/${conversationId}`;
@@ -46,6 +51,11 @@ function getNavTarget(notif: Notification): string | null {
     if (notif.type === 'conversation_transferred' && Array.isArray(notif.data?.['conversationIds'])) {
       return '/dashboard/conversations?view=mine';
     }
+  }
+  // web-45: canal desconectado → los Canales de ese agente
+  if (notif.type === 'channel_disconnected') {
+    const agentId = notif.data?.['agentId'];
+    if (typeof agentId === 'string') return `/dashboard/agents/${encodeURIComponent(agentId)}?tab=channels`;
   }
   if (notif.type === 'plan_usage_80' || notif.type === 'plan_usage_100' || notif.type === 'plan_canceled') {
     return '/dashboard/billing';

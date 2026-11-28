@@ -18,7 +18,8 @@ export type ConversationEventType =
   | 'unsnoozed'
   | 'closed'
   | 'reopened'
-  | 'note_deleted';
+  | 'note_deleted'
+  | 'assigned';
 
 export const CLOSE_OUTCOMES = ['sold', 'resolved', 'no_response', 'spam'] as const;
 export type CloseOutcome = (typeof CLOSE_OUTCOMES)[number];
@@ -146,6 +147,34 @@ export function emitConversationChange(
   } catch {
     // WebSocket not initialized (tests)
   }
+}
+
+// ── pedido de ayuda ──────────────────────────────────────────────────────────
+
+/**
+ * Marca un pedido de ayuda (web-45): `handed_off_at`, el evento `handoff_requested` y el reparto
+ * automático. Lo usan el traspaso del agente (human-handoff, paso 8) y el agente pausado (worker).
+ * Un fallo del reparto no deshace el pedido.
+ */
+export async function markHandoffRequested(
+  conversationId: string,
+  opts: { organizationId: string; reason?: string }
+): Promise<ConversationEvent | null> {
+  const r = await query<{ handed_off_at: string }>(
+    'UPDATE conversations SET handed_off_at = NOW() WHERE id = $1 AND organization_id = $2 RETURNING handed_off_at',
+    [conversationId, opts.organizationId]
+  );
+  if (!r.rows[0]) return null;
+  const event = await recordEventSafe({
+    organizationId: opts.organizationId,
+    conversationId,
+    type: 'handoff_requested',
+    data: opts.reason ? { reason: opts.reason } : {},
+  });
+  emitConversationChange(opts.organizationId, conversationId, { handedOffAt: r.rows[0].handed_off_at, handoffActive: true }, event);
+  const { autoAssignSafe } = await import('./inbox-assignment.service');
+  await autoAssignSafe(conversationId);
+  return event;
 }
 
 // ── zona horaria de la organización ─────────────────────────────────────────

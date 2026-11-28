@@ -1,7 +1,7 @@
 import { query } from '../config/database';
 import { getIO } from '../config/websocket';
 import { sendRendered } from '../config/email';
-import { highScoreLeadEmail, orgSuspendedEmail, planLimitEmail, toEmailLang } from '../emails';
+import { highScoreLeadEmail, inboxWaitAlertEmail, orgSuspendedEmail, planLimitEmail, toEmailLang } from '../emails';
 import { displayName } from '../emails/parts';
 
 export interface Notification {
@@ -147,6 +147,7 @@ const CHANNEL_LABELS: Record<string, { es: string; en: string }> = {
   email: { es: 'Correo', en: 'Email' },
   instagram: { es: 'Instagram', en: 'Instagram' },
   messenger: { es: 'Messenger', en: 'Messenger' },
+  facebook: { es: 'Messenger', en: 'Messenger' },
   telegram: { es: 'Telegram', en: 'Telegram' },
 };
 
@@ -206,6 +207,25 @@ async function sendNotificationEmail(
           service: typeof data['service'] === 'string' ? data['service'] : null,
           agentName: ctx.agentName,
           channelLabel: channel,
+          conversationId,
+        },
+        lang
+      )
+    );
+  } else if (type === 'inbox_wait_alert') {
+    const conversationId = typeof data['conversationId'] === 'string' ? data['conversationId'] : null;
+    if (!conversationId) return;
+    const ctx = await loadLeadContext(organizationId, undefined, conversationId);
+    await sendRendered(
+      user.email,
+      inboxWaitAlertEmail(
+        {
+          name,
+          waitingMinutes: typeof data['waitingMinutes'] === 'number' ? data['waitingMinutes'] : 0,
+          alertMinutes: typeof data['alertMinutes'] === 'number' ? data['alertMinutes'] : 0,
+          contactName: typeof data['contactName'] === 'string' ? data['contactName'] : null,
+          agentName: ctx.agentName,
+          channelLabel: (ctx.channel ? CHANNEL_LABELS[ctx.channel]?.[lang] : null) ?? ctx.channel ?? '',
           conversationId,
         },
         lang

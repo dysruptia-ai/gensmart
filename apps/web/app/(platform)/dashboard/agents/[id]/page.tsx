@@ -145,7 +145,8 @@ export default function AgentEditorPage() {
   const [rolling, setRolling] = useState(false);
   const [showPromptGen, setShowPromptGen] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
-  const [activeTab, setActiveTab] = useState('prompt');
+  // web-45: "Reconectar" de la Bandeja abre ?tab=channels
+  const [activeTab, setActiveTab] = useState(() => (searchParams.get('tab') === 'channels' ? 'channels' : 'prompt'));
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   // Day 21: config variables — pending counter for the tab badge + missing-keys

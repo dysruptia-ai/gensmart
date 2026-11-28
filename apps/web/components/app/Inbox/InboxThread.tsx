@@ -39,6 +39,13 @@ import type { ApiNote, ThreadMessage } from './types';
 import styles from './InboxThread.module.css';
 
 export interface InboxThreadProps {
+  /** web-45: avisos bajo la cabecera (la meta, el agente pausado) y sobre el compositor (canal desconectado). */
+  topNotices?: React.ReactNode;
+  composerNotices?: React.ReactNode;
+  /** web-45b: pasó la meta (el aviso rojo de topNotices reemplaza al ámbar de la espera). */
+  goalOver?: boolean;
+  /** web-45b: el agente de la conversación está pausado (cambia el pie). */
+  agentPaused?: boolean;
   thread: ConversationThreadState;
   userId: string | undefined;
   /** `null` mientras no se sabe el plan: no se muestra ni "Tomar" ni el aviso. */
@@ -189,7 +196,10 @@ export function eventText(e: ThreadEvent, userId: string | undefined, t: Transla
     t(`inbox.thread.events.${key}${mine ? 'You' : ''}`, { name, ...values });
   switch (e.kind) {
     case 'handoff':
-      return t('inbox.thread.events.handoff');
+      return e.reason === 'agent_paused' ? t('inbox.thread.events.handoffPaused') : t('inbox.thread.events.handoff');
+    case 'assigned':
+      if (userId && e.targetId === userId) return t('inbox.thread.events.assignedToYou');
+      return t('inbox.thread.events.assigned', { target: e.targetName || t('inbox.row.team') });
     case 'taken':
       return k('taken');
     case 'released':
@@ -623,6 +633,8 @@ export default function InboxThread(props: InboxThreadProps) {
         </div>
       </header>
 
+      {props.topNotices}
+
       {!closed && !taken && props.canTakeover === false && <div className={styles.soloBar}>{upsell}</div>}
 
       {thread.actionError && (
@@ -647,7 +659,7 @@ export default function InboxThread(props: InboxThreadProps) {
         </div>
       )}
 
-      {waitingSince && (
+      {waitingSince && !props.goalOver && (
         <div className={styles.waitBar}>
           <TriangleAlert size={15} aria-hidden="true" />
           <span>
@@ -729,6 +741,8 @@ export default function InboxThread(props: InboxThreadProps) {
         )}
       </div>
 
+      {!closed && props.composerNotices}
+
       {closed ? (
         closedBar
       ) : mine ? (
@@ -755,7 +769,7 @@ export default function InboxThread(props: InboxThreadProps) {
       ) : (
         <div className={styles.bar}>
           <Bot size={15} aria-hidden="true" />
-          <span className={styles.barText}>{t('inbox.thread.agentBar')}</span>
+          <span className={styles.barText}>{t(props.agentPaused ? 'inbox.thread.agentBarPaused' : 'inbox.thread.agentBar')}</span>
           {props.canTakeover === true ? takeButton : props.canTakeover === false ? upsell : null}
         </div>
       )}

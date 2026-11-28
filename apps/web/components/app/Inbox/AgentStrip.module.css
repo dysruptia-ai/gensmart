@@ -1,0 +1,73 @@
+.wrap {
+  display: grid;
+  gap: 10px;
+}
+
+/* El `.strip` del diseño */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  border-radius: var(--app-r-sm);
+  background: var(--app-line-soft);
+  overflow: hidden;
+}
+
+.strip > div {
+  padding: 8px 10px;
+  background: var(--app-card);
+}
+
+.strip b {
+  display: block;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.strip span {
+  display: block;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--app-soft);
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13.5px;
+}
+
+.switchRow b {
+  font-weight: 600;
+}
+
+.switchRow small {
+  display: block;
+  color: var(--app-soft);
+  font-size: 12px;
+}
+
+.locked {
+  margin-top: 2px;
+}
+
+.link {
+  color: var(--app-link);
+  font-weight: 600;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.error {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--app-err);
+}

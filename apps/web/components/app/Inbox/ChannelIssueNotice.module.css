@@ -1,0 +1,27 @@
+.reconnect {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-r-sm);
+  background: var(--app-card);
+  color: var(--app-ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.reconnect:hover {
+  background: var(--app-card-2);
+}
+
+.reconnect:focus-visible {
+  outline: 2px solid var(--app-focus);
+  outline-offset: 2px;
+}
+
+.member {
+  color: var(--app-mute);
+}

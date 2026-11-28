@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { clearChannelHealth } from '../services/channel-health.service';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { checkChannelAccess } from '../middleware/planLimits';
@@ -580,6 +581,8 @@ router.post(
 
       console.log(`[instagram-signup] Agent ${agentId} connected to Instagram account ${selected.instagramId} (Page ${selected.pageId})`);
 
+      // web-45: reconectar limpia el aviso de canal desconectado
+      void clearChannelHealth(agentId, 'instagram').catch(() => undefined);
       res.json({
         success: true,
         instagramId: selected.instagramId,

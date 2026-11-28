@@ -4,6 +4,7 @@ import React, { memo, useRef } from 'react';
 import { AlarmClock, Clock, Search, User } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import { getChannelMeta } from './channelMeta';
+import { isOverGoal, type GoalConfig } from './inboxGoal';
 import { contactName, formatScore, initialsOf, relativeTime, snoozeLabel, waitDuration } from './inboxFormat';
 import { highlightMatch, matchesQuery } from './inboxSearch';
 import type { ConversationRow } from './types';
@@ -28,6 +29,8 @@ export interface InboxRowProps {
   onToggle?: (id: string) => void;
   /** Pulsación larga (~500 ms, móvil): entra al modo selección con esta fila. */
   onLongPress?: (id: string) => void;
+  /** web-45: la meta de respuesta (la espera se pone roja con "pasó la meta"). */
+  goal?: GoalConfig | null;
 }
 
 const LONG_PRESS_MS = 500;
@@ -56,6 +59,7 @@ function InboxRow({
   checkDisabled,
   onToggle,
   onLongPress,
+  goal,
 }: InboxRowProps) {
   const { t, language } = useTranslation();
   const query = search.trim();
@@ -164,12 +168,18 @@ function InboxRow({
           </span>
         )}
         <span className={styles.line3}>
-          {row.waitingSince && (
-            <span className={`${styles.tag} ${styles.tagWarn}`}>
-              <Clock size={11} aria-hidden="true" />
-              {t('inbox.row.waiting', { time: waitDuration(row.waitingSince, now) })}
-            </span>
-          )}
+          {row.waitingSince &&
+            (isOverGoal(row.waitingSince, goal ?? null, now) ? (
+              <span className={`${styles.tag} ${styles.tagBad}`}>
+                <Clock size={11} aria-hidden="true" />
+                {t('inbox.row.waitingOver', { time: waitDuration(row.waitingSince, now) })}
+              </span>
+            ) : (
+              <span className={`${styles.tag} ${styles.tagWarn}`}>
+                <Clock size={11} aria-hidden="true" />
+                {t('inbox.row.waiting', { time: waitDuration(row.waitingSince, now) })}
+              </span>
+            ))}
           {row.snoozedUntil && row.status !== 'closed' && (
             <span className={`${styles.tag} ${styles.tagInfo}`}>
               <AlarmClock size={11} aria-hidden="true" />

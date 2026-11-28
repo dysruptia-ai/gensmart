@@ -9,6 +9,7 @@ import {
   appointmentConfirmedEmail,
   appointmentNewEmail,
   highScoreLeadEmail,
+  inboxWaitAlertEmail,
   invitationEmail,
   orgAccessEmail,
   orgSuspendedEmail,
@@ -55,6 +56,10 @@ export const EMAIL_REGISTRY: readonly RegistryEntry[] = [
   {
     id: 'high-score-lead', label: 'Lead con puntaje alto', recipient: 'los usuarios de la organización', languages: BOTH,
     build: (l) => highScoreLeadEmail({ name: sample(l).name, score: 9, contactName: sample(l).contact, service: sample(l).service, agentName: sample(l).agent, channelLabel: sample(l).channel, conversationId: '00000000-0000-0000-0000-000000000000' }, l),
+  },
+  {
+    id: 'inbox-wait-alert', label: 'Bandeja: conversación esperando (meta de respuesta)', recipient: 'quien la tiene, o owner y admin', languages: BOTH,
+    build: (l) => inboxWaitAlertEmail({ name: sample(l).name, waitingMinutes: 34, alertMinutes: 30, contactName: sample(l).contact, agentName: sample(l).agent, channelLabel: sample(l).channel, conversationId: '00000000-0000-0000-0000-000000000000' }, l),
   },
   { id: 'plan-limit', label: 'Límite de mensajes (100 %)', recipient: 'los usuarios de la organización', languages: BOTH, build: (l) => planLimitEmail({ name: sample(l).name, organizationName: sample(l).org, used: 1000, limit: 1000 }, l) },
   { id: 'trial-ended', label: 'Prueba terminada', recipient: 'los usuarios de la organización', languages: BOTH, build: (l) => orgSuspendedEmail({ name: sample(l).name, organizationName: sample(l).org, reason: 'trial_expired' }, l) },

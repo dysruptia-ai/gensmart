@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { clearChannelHealth } from '../services/channel-health.service';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
 import { checkChannelAccess } from '../middleware/planLimits';
@@ -563,6 +564,8 @@ router.post(
 
       console.log(`[messenger-signup] Agent ${agentId} connected to Facebook Page ${selectedPage.id}`);
 
+      // web-45: reconectar limpia el aviso de canal desconectado
+      void clearChannelHealth(agentId, 'facebook').catch(() => undefined);
       res.json({
         success: true,
         pageId: selectedPage.id,

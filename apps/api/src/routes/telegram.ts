@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { clearChannelHealth } from '../services/channel-health.service';
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
@@ -415,6 +416,8 @@ router.post(
 
       console.log(`[telegram-connect] Agent ${agentId} connected to bot ${bot.id}`);
 
+      // web-45: reconectar limpia el aviso de canal desconectado
+      void clearChannelHealth(agentId, 'telegram').catch(() => undefined);
       res.json({
         success: true,
         botUsername: bot.username,

@@ -5,27 +5,40 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { useTranslation } from '@/hooks/useTranslation';
 import InboxButton from './InboxButton';
+import AssignmentSettings from './AssignmentSettings';
+import HoursSettings from './HoursSettings';
 import LabelsSettings from './LabelsSettings';
 import QuickRepliesSettings from './QuickRepliesSettings';
+import type { useInboxSettings } from './useInboxSettings';
 import styles from './InboxSettings.module.css';
 
-type SettingsTab = 'quick-replies' | 'labels';
-const TABS: SettingsTab[] = ['quick-replies', 'labels'];
+type SettingsTab = 'assignment' | 'hours' | 'quick-replies' | 'labels';
+// El orden del diseño ("Cuándo pide ayuda" va en Entrenamiento)
+const TABS: SettingsTab[] = ['assignment', 'hours', 'quick-replies', 'labels'];
+const TAB_LABEL: Record<SettingsTab, string> = {
+  assignment: 'inbox.settings.assign.tab',
+  hours: 'inbox.settings.hours.tab',
+  'quick-replies': 'inbox.settings.qr.title',
+  labels: 'inbox.labels.title',
+};
 
 export interface InboxSettingsProps {
   isManager: boolean;
+  userId: string | undefined;
+  /** Los ajustes de la bandeja (los mismos que usa la meta de la lista). */
+  inbox: ReturnType<typeof useInboxSettings>;
   /** Bajo 1180 px: abre el riel en un cajón. */
   onOpenRail?: () => void;
 }
 
-/** Ajustes de la bandeja (web-43): por ahora solo Respuestas rápidas y Etiquetas (las demás pestañas, web-45). */
-export default function InboxSettings({ isManager, onOpenRail }: InboxSettingsProps) {
+/** Ajustes de la bandeja: Asignación y Horarios y meta (web-45), Respuestas rápidas y Etiquetas (web-43). */
+export default function InboxSettings({ isManager, userId, inbox, onOpenRail }: InboxSettingsProps) {
   const { t } = useTranslation();
   const router = useRouter();
   const params = useSearchParams();
   const raw = params.get('tab');
-  const tab: SettingsTab = raw === 'labels' ? 'labels' : 'quick-replies';
-  const tabRefs = useRef<Record<SettingsTab, HTMLButtonElement | null>>({ 'quick-replies': null, labels: null });
+  const tab: SettingsTab = TABS.includes(raw as SettingsTab) ? (raw as SettingsTab) : 'assignment';
+  const tabRefs = useRef<Record<SettingsTab, HTMLButtonElement | null>>({ assignment: null, hours: null, 'quick-replies': null, labels: null });
 
   const go = (next: SettingsTab) => router.replace(`/dashboard/conversations/settings?tab=${next}`, { scroll: false });
 
@@ -66,13 +79,31 @@ export default function InboxSettings({ isManager, onOpenRail }: InboxSettingsPr
               className={styles.tab}
               onClick={() => go(key)}
             >
-              {t(key === 'labels' ? 'inbox.labels.title' : 'inbox.settings.qr.title')}
+              {t(TAB_LABEL[key])}
             </button>
           ))}
         </div>
       </header>
       <div className={styles.body} role="tabpanel" id={`settings-panel-${tab}`} aria-labelledby={`settings-tab-${tab}`}>
-        {tab === 'labels' ? <LabelsSettings isManager={isManager} /> : <QuickRepliesSettings isManager={isManager} />}
+        {tab === 'labels' && <LabelsSettings isManager={isManager} />}
+        {tab === 'quick-replies' && <QuickRepliesSettings isManager={isManager} />}
+        {(tab === 'assignment' || tab === 'hours') && !inbox.data && (
+          <p className={inbox.error ? styles.error : styles.help} role={inbox.error ? 'alert' : 'status'}>
+            {inbox.error ? t('inbox.settings.loadError') : t('inbox.settings.loading')}
+          </p>
+        )}
+        {tab === 'assignment' && inbox.data && (
+          <AssignmentSettings
+            key={JSON.stringify([inbox.data.settings, inbox.data.agentAssignees, inbox.data.team.map((m) => [m.capacity, m.receives])])}
+            data={inbox.data}
+            onSaved={inbox.setData}
+            isManager={isManager}
+            userId={userId}
+          />
+        )}
+        {tab === 'hours' && inbox.data && (
+          <HoursSettings key={JSON.stringify(inbox.data.settings)} data={inbox.data} onSaved={inbox.setData} isManager={isManager} />
+        )}
       </div>
     </div>
   );

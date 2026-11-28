@@ -1621,7 +1621,9 @@
       "agents": "Agentes",
       "channels": "Canales",
       "close": "Cerrar bandejas",
-      "unnamedAgent": "Agente sin nombre"
+      "unnamedAgent": "Agente sin nombre",
+      "paused": "Pausado",
+      "offline": "Sin conexión"
     },
     "list": {
       "label": "Conversaciones",
@@ -1687,7 +1689,8 @@
       "scoreSr": "Puntaje",
       "snoozedUntil": "Vuelve {when}",
       "backFromSnooze": "Volvió de posponer",
-      "unreadSr": "Sin leer."
+      "unreadSr": "Sin leer.",
+      "waitingOver": "Espera {time} · pasó la meta"
     },
     "thread": {
       "loading": "Cargando la conversación",
@@ -1741,7 +1744,10 @@
         "reopened": "{name} la reabrió",
         "reopenedYou": "Tú la reabriste",
         "noteDeleted": "{name} borró una nota",
-        "noteDeletedYou": "Borraste una nota"
+        "noteDeletedYou": "Borraste una nota",
+        "handoffPaused": "Pidió ayuda: el agente está pausado",
+        "assigned": "Se asignó a {target}",
+        "assignedToYou": "Se te asignó la conversación"
       },
       "takenBar": "{name} está atendiendo esta conversación.",
       "agentBar": "El agente está respondiendo. Toma la conversación para escribir tú.",
@@ -1763,7 +1769,8 @@
       "closedBarBy": "por {name}, {when}.",
       "closedBarByYou": "por ti, {when}.",
       "closedBarWhen": "{when}.",
-      "closedBarNoReply": "No se puede responder hasta reabrirla."
+      "closedBarNoReply": "No se puede responder hasta reabrirla.",
+      "agentBarPaused": "El agente está pausado. Toma la conversación para responder."
     },
     "composer": {
       "label": "Tu respuesta",
@@ -2040,6 +2047,101 @@
         "preview": "Vista previa",
         "sampleName": "Laura Gómez",
         "sampleAgent": "Camila"
+      },
+      "managersOnly": "Solo owner y admin cambian estos ajustes. Los miembros los ven sin poder editar.",
+      "saveChanges": "Guardar cambios",
+      "saved": "Cambios guardados.",
+      "saveError": "No pudimos guardar los cambios. Intenta de nuevo.",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Miembro"
+      },
+      "assign": {
+        "tab": "Asignación",
+        "title": "Cómo se reparten las conversaciones",
+        "text": "Aplica cuando el agente pide ayuda o cuando alguien la deja sin dueño.",
+        "modes": {
+          "rotating": {
+            "title": "Reparto rotativo",
+            "text": "Por turnos entre quienes están en línea y con cupo."
+          },
+          "agent": {
+            "title": "Por agente",
+            "text": "Cada agente tiene una persona responsable."
+          },
+          "none": {
+            "title": "Sin asignar",
+            "text": "La toma quien llegue primero (como hoy)."
+          }
+        },
+        "keepLast": "Mantener con la última persona que habló con el contacto",
+        "keepLastHelp": "Si vuelve a escribir, le llega a quien lo atendió antes, si está en línea y con cupo.",
+        "team": "Tu equipo",
+        "cols": {
+          "name": "Nombre",
+          "role": "Rol",
+          "status": "Estado",
+          "open": "Tiene ahora",
+          "capacity": "Cupo",
+          "receives": "Recibe"
+        },
+        "you": "{name} (tú)",
+        "online": "En línea",
+        "offline": "Desconectado",
+        "full": "lleno",
+        "capacityOf": "Cupo de {name}",
+        "capacityError": "Entre 1 y 100.",
+        "receivesOf": "{name} recibe conversaciones",
+        "byAgentTitle": "Agente → persona responsable",
+        "noAgents": "Todavía no hay agentes.",
+        "noAssignee": "Sin responsable",
+        "nobody": "Si nadie puede recibirla (desconectados o llenos), queda sin dueño en \"Necesitan a alguien\", como hoy, y se reparte en cuanto alguien se conecte o libere cupo.",
+        "soloTitle": "El reparto es desde Starter.",
+        "soloText": "En el plan Solo nadie del equipo puede tomar conversaciones.",
+        "soloLink": "Ver Plan y facturación"
+      },
+      "hours": {
+        "tab": "Horarios y meta",
+        "title": "Horario de atención",
+        "zone": "Zona: {zone}",
+        "changeZone": "cambiar en Ajustes",
+        "copyWeekdays": "Copiar a los días hábiles",
+        "alwaysOpen": "Siempre abierto",
+        "alwaysOpenText": "Sin horario, la meta corre todo el día y el agente no avisa nada fuera de horario.",
+        "define": "Definir horario",
+        "useAlwaysOpen": "Quitar el horario (siempre abierto)",
+        "days": {
+          "1": "Lunes",
+          "2": "Martes",
+          "3": "Miércoles",
+          "4": "Jueves",
+          "5": "Viernes",
+          "6": "Sábado",
+          "7": "Domingo"
+        },
+        "openOn": "Abierto el {day}",
+        "from": "{day}: desde",
+        "until": "{day}: hasta",
+        "to": "a",
+        "closed": "Cerrado",
+        "rangeError": "La hora de apertura tiene que ser antes del cierre.",
+        "notice": "Fuera de horario, el agente avisa que una persona responde al abrir",
+        "noticeHelp": "Sigue atendiendo lo que puede resolver solo. Lo dice una vez por conversación, en el idioma del cliente.",
+        "noticeExample": "Ejemplo: \"Te ayudo con lo que pueda ahora. Para esto necesitas a una persona del equipo: te responde {when}.\"",
+        "noticeNeedsHours": "Define un horario de atención para usar este aviso."
+      },
+      "goal": {
+        "title": "Meta de respuesta",
+        "respondIn": "Cuando el agente pide ayuda, responder en",
+        "goalError": "Entre 1 y 240 minutos.",
+        "alertIf": "Avisar por correo si pasan",
+        "alertToggle": "Avisar por correo",
+        "alertRange": "Hasta 1.440 minutos.",
+        "alertNotAbove": "Tiene que ser mayor a la meta de respuesta ({goal} min).",
+        "help": "La meta cuenta solo en horario de atención. El correo va a quien tiene la conversación; si nadie la tiene, a owner y admin. Uno por conversación.",
+        "goalAria": "Meta de respuesta, en minutos",
+        "alertAria": "Avisar por correo si pasan, en minutos"
       }
     },
     "search": {
@@ -2159,6 +2261,62 @@
         "error": "Algo falló."
       },
       "deleteShort": "Borrar"
+    },
+    "goal": {
+      "oldest": "La más antigua espera {time}.",
+      "target": "Meta: responder en {minutes} min.",
+      "overSr": "Pasó la meta.",
+      "progress": "Espera frente a la meta",
+      "closed": "Fuera de horario. La meta se retoma {when}.",
+      "closedNoOpening": "Fuera de horario.",
+      "threadWaiting": "Lleva {time} esperando.",
+      "threadGoal": "La meta es {minutes} min."
+    },
+    "when": {
+      "todayAt": "hoy a las {time}",
+      "tomorrowAt": "mañana a las {time}",
+      "weekdayAt": "el {day} a las {time}",
+      "today": "hoy {time}",
+      "yesterday": "ayer {time}",
+      "date": "el {day}, {time}",
+      "zone": "(hora de {zone})",
+      "zoneUtc": "(UTC)"
+    },
+    "channelIssue": {
+      "reconnect": "Reconectar",
+      "disconnectedSince": "{channel} de {agent} desconectado desde {since}.",
+      "disconnected": "{channel} de {agent} desconectado.",
+      "expiring_one": "El permiso de {channel} de {agent} vence en {count} día.",
+      "expiring_other": "El permiso de {channel} de {agent} vence en {count} días.",
+      "disconnectedText": "Las respuestas no están saliendo. Hay que volver a conectar la cuenta.",
+      "expiringText": "Reconéctalo antes para no cortar las respuestas.",
+      "threadText": "Las respuestas de esta conversación no están saliendo.",
+      "askAdmin": "Avísale a un administrador para reconectarlo."
+    },
+    "pause": {
+      "active": "Agente activo",
+      "paused": "Agente pausado",
+      "activeHelp": "Responde solo hasta que alguien tome la conversación.",
+      "pausedHelp": "Todo lo que llegue pasa a Necesitan a alguien.",
+      "solo": "Pausar el agente es desde Starter: en Solo nadie del equipo puede responder.",
+      "seePlans": "Ver planes",
+      "switchLabel": "{agent} activo",
+      "pausedBy": "Pausado por {name}",
+      "pausedSince": "desde {since}. Todo lo que llega pasa a \"Necesitan a alguien\".",
+      "error": "No pudimos cambiar el estado del agente. Intenta de nuevo.",
+      "confirmTitle": "¿Pausar {agent}?",
+      "confirm": "Pausar agente",
+      "confirmText": "Mientras esté pausado no responde a nadie. Cada mensaje nuevo llega a Necesitan a alguien para que lo atienda una persona del equipo.",
+      "online_one": "Ahora hay {count} persona en línea para responder.",
+      "online_other": "Ahora hay {count} personas en línea para responder.",
+      "nobodyOnline": "Ahora no hay nadie en línea para responder.",
+      "stats": {
+        "today": "conversaciones hoy",
+        "solvedAlone": "resueltas sin ayuda",
+        "askedHelp": "pidieron ayuda"
+      },
+      "threadNotice": "El agente está pausado: no responde hasta que lo reactiven.",
+      "confirmOpen": "Las conversaciones abiertas siguen igual: las que ya tiene una persona no cambian."
     }
   }
 }

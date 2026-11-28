@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Filter, SquareCheck, Trash2, WifiOff, X } from 'lucide-react';
+import { Clock, Filter, PauseCircle, SquareCheck, Trash2, WifiOff, X } from 'lucide-react';
 import { INBOX_LIMITS, PLAN_LIMITS } from '@gensmart/shared';
 import { api } from '@/lib/api';
 import { trapTab } from '@/lib/focus-trap';
@@ -10,7 +10,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useWebSocket, type WebSocketEvents } from '@/hooks/useWebSocket';
 import { useOrgAgents } from '@/components/app/AppShell/useShellData';
+import AgentStrip, { type AgentPause } from './AgentStrip';
 import BulkBar from './BulkBar';
+import ChannelIssueNotice from './ChannelIssueNotice';
+import InboxGoalBar from './InboxGoalBar';
+import InboxNotice from './InboxNotice';
+import { formatWaitMinutes, isOverGoal, waitBusinessMinutes } from './inboxGoal';
+import { useGoalConfig, useInboxSettings } from './useInboxSettings';
 import { BulkAssignDialog, BulkCloseDialog, BulkLabelDialog } from './BulkDialogs';
 import { topSkipReason } from './bulkAssign';
 import CloseDialog from './CloseDialog';
@@ -146,6 +152,35 @@ export default function InboxScreen() {
   }, []);
   const limits = plan ? PLAN_LIMITS[plan as PlanKey] : undefined;
   const canTakeover = limits ? limits.humanTakeover : null;
+
+  // ── web-45: la meta (Ajustes de la bandeja), la pausa de cada agente y la presencia ──
+  const inboxSettings = useInboxSettings(!!user);
+  const goal = useGoalConfig(inboxSettings.data, timeZone);
+  const onlineCount = inboxSettings.data ? inboxSettings.data.team.filter((m) => m.online).length : null;
+  const [pauses, setPauses] = useState<Record<string, AgentPause>>({});
+  useEffect(() => {
+    if (!user?.orgId) return;
+    api
+      .get<{ agents: Array<{ id: string; inboxPausedAt?: string | null; inboxPausedByName?: string | null }> }>('/api/agents?limit=100')
+      .then((r) =>
+        setPauses(
+          Object.fromEntries(r.agents.map((a) => [a.id, { pausedAt: a.inboxPausedAt ?? null, pausedByName: a.inboxPausedByName ?? null }])),
+        ),
+      )
+      .catch(() => {
+        /* sin el dato, ningún agente se ve pausado */
+      });
+  }, [user?.orgId]);
+  useEffect(() => {
+    const onAgent: WebSocketEvents['agent:update'] = (d) =>
+      setPauses((prev) => ({ ...prev, [d.agentId]: { pausedAt: d.inboxPausedAt, pausedByName: d.inboxPausedByName } }));
+    on('agent:update', onAgent);
+    return () => off('agent:update', onAgent);
+  }, [on, off]);
+  const pausedAgentIds = useMemo(
+    () => new Set(Object.entries(pauses).filter(([, p]) => !!p.pausedAt).map(([id]) => id)),
+    [pauses],
+  );
 
   // ── capas abiertas ──
   // El cajón solo existe bajo 1180 px: al ensanchar la ventana deja de estar abierto
@@ -307,8 +342,16 @@ export default function InboxScreen() {
       if (data.closedBy !== undefined) fields.closedBy = data.closedBy;
       if (data.closedByName !== undefined) fields.closedByName = data.closedByName;
       if (data.labels !== undefined) fields.labels = data.labels;
+      // web-45: un pedido de ayuda nuevo (p. ej. el agente está pausado) entra a "Necesitan"
+      if (data.handoffActive && data.handedOffAt) {
+        l.patch({ conversationId: data.conversationId, handoffAt: data.handedOffAt });
+        if (data.conversationId === openId) th.applyHandoff(data.handedOffAt);
+      }
       const changed = !!status || Object.keys(fields).length > 0 || data.takenOverBy !== undefined;
-      if (!changed) return;
+      if (!changed) {
+        if (data.handoffActive) rc();
+        return;
+      }
       l.patch({
         conversationId: data.conversationId,
         status,
@@ -995,11 +1038,64 @@ export default function InboxScreen() {
       />
     ) : null;
 
+  // ── web-45: avisos de la lista (la meta, el canal, la vista del agente) y del hilo ──
+  const channelIssues = counts?.channelIssues ?? [];
+  const scopedIssues = scope.channel && !filters.savedView ? channelIssues.filter((i) => i.channel === scope.channel) : [];
+  const showGoal = !searching && !scoped && filters.view === 'needs';
+  const showAgent = !searching && !!scope.agentId && !filters.savedView;
+  const listNotices =
+    showGoal || showAgent || (!searching && scopedIssues.length > 0) ? (
+      <div className={styles.listNotices}>
+        {showGoal && <InboxGoalBar oldestWaitingSince={counts?.oldestWaitingSince} goal={goal} now={now} />}
+        {!searching &&
+          scopedIssues.map((issue) => (
+            <ChannelIssueNotice key={`${issue.agentId}-${issue.kind}`} issue={issue} isManager={isManager} timeZone={timeZone} now={now} />
+          ))}
+        {showAgent && scope.agentId && (
+          <AgentStrip
+            key={scope.agentId}
+            agentId={scope.agentId}
+            agentName={agentNameOf(scope.agentId) || t('inbox.rail.unnamedAgent')}
+            pause={pauses[scope.agentId] ?? { pausedAt: null, pausedByName: null }}
+            onPaused={(p) => setPauses((prev) => ({ ...prev, [scope.agentId!]: p }))}
+            isManager={isManager}
+            canPause={canTakeover !== false}
+            onlineCount={onlineCount}
+            openCount={counts?.byAgent.find((a) => a.agentId === scope.agentId)?.count ?? 0}
+            timeZone={timeZone}
+            now={now}
+            refreshKey={counts}
+          />
+        )}
+      </div>
+    ) : null;
+
+  const threadTopNotices = c ? (
+    <>
+      {c.status !== 'closed' && c.waitingSince && isOverGoal(c.waitingSince, goal, now) && goal && (
+        <InboxNotice tone="bad" icon={Clock} slim>
+          <b>{t('inbox.goal.threadWaiting', { time: formatWaitMinutes(waitBusinessMinutes(c.waitingSince, goal, now)) })}</b>{' '}
+          {t('inbox.goal.threadGoal', { minutes: goal.goalMinutes })}
+        </InboxNotice>
+      )}
+      {c.status !== 'closed' && pausedAgentIds.has(c.agentId) && (
+        <InboxNotice tone="warn" icon={PauseCircle} slim>
+          {t('inbox.pause.threadNotice')}
+        </InboxNotice>
+      )}
+    </>
+  ) : null;
+  const threadIssue = c ? channelIssues.find((i) => i.kind === 'disconnected' && i.agentId === c.agentId && i.channel === c.channel) : undefined;
+  const threadComposerNotices = threadIssue ? (
+    <ChannelIssueNotice issue={threadIssue} isManager={isManager} timeZone={timeZone} now={now} slim />
+  ) : null;
+
   const rail = (
     <InboxRail
       filters={filters}
       counts={counts}
       agents={agents}
+      pausedAgentIds={pausedAgentIds}
       settingsOpen={settingsOpen}
       savedViews={savedViews.views}
       onOpenView={(id) => {
@@ -1053,7 +1149,12 @@ export default function InboxScreen() {
         <div className={`${styles.columns} ${styles.settingsColumns}`}>
           {wide && <div className={styles.railCol}>{rail}</div>}
           <div className={styles.settingsCol}>
-            <InboxSettings isManager={isManager} onOpenRail={wide ? undefined : () => setRailOpen(true)} />
+            <InboxSettings
+              isManager={isManager}
+              userId={user?.id}
+              inbox={inboxSettings}
+              onOpenRail={wide ? undefined : () => setRailOpen(true)}
+            />
           </div>
         </div>
         {!wide && railOpen && (
@@ -1144,6 +1245,8 @@ export default function InboxScreen() {
             now={now}
             onOpenRail={wide ? undefined : () => setRailOpen(true)}
             railOpen={railOpen}
+            notices={listNotices}
+            goal={goal}
           />
           {mobile &&
             (mobileSelecting && bulkBar ? (
@@ -1162,6 +1265,10 @@ export default function InboxScreen() {
         <div className={styles.threadCol}>
           {conversationId ? (
             <InboxThread
+              goalOver={!!c && c.status !== 'closed' && isOverGoal(c.waitingSince, goal, now)}
+              agentPaused={!!c && pausedAgentIds.has(c.agentId)}
+              topNotices={threadTopNotices}
+              composerNotices={threadComposerNotices}
               thread={thread}
               userId={user?.id}
               canTakeover={canTakeover}

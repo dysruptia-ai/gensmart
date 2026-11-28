@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { clearChannelHealth } from '../services/channel-health.service';
 import crypto from 'crypto';
 import { requireAuth } from '../middleware/auth';
 import { orgContext } from '../middleware/orgContext';
@@ -635,6 +636,8 @@ router.post(
         [agentId]
       );
 
+      // web-45: reconectar limpia el aviso de canal desconectado
+      void clearChannelHealth(agentId, 'whatsapp').catch(() => undefined);
       res.json({
         verifyToken: agentVerifyToken,
         webhookUrl: `${env.API_URL}/api/whatsapp/webhook`,
@@ -1351,6 +1354,8 @@ router.post(
 
       console.log(`[embedded-signup] Agent ${agentId} connected to WhatsApp: ${verifiedPhoneDisplay}`);
 
+      // web-45: reconectar limpia el aviso de canal desconectado
+      void clearChannelHealth(agentId, 'whatsapp').catch(() => undefined);
       res.json({
         success: true,
         phoneNumber: verifiedPhoneDisplay,

@@ -18,6 +18,8 @@ export interface InboxRailProps {
   filters: InboxFilters;
   counts: InboxCounts | null;
   agents: RailAgent[];
+  /** web-45: los agentes pausados en la Bandeja (etiqueta "Pausado" y punto gris). */
+  pausedAgentIds?: ReadonlySet<string>;
   onSelect: (next: Partial<InboxFilters>) => void;
   className?: string;
   /** Ajustes de la bandeja abiertos (web-43): ninguna vista queda marcada. */
@@ -47,6 +49,7 @@ export default function InboxRail({
   filters,
   counts,
   agents,
+  pausedAgentIds,
   onSelect,
   className,
   settingsOpen,
@@ -67,6 +70,8 @@ export default function InboxRail({
     if (!agentRows.some((r) => r.id === a.agentId)) agentRows.push({ id: a.agentId, name: a.agentName || t('inbox.rail.unnamedAgent') });
   }
   const channels = counts?.byChannel ?? [];
+  // web-45: el chip de un canal con algún agente desconectado dice "Sin conexión"
+  const offlineChannels = new Set((counts?.channelIssues ?? []).filter((i) => i.kind === 'disconnected').map((i) => i.channel));
 
   return (
     <nav className={[styles.rail, className].filter(Boolean).join(' ')} aria-label={t('inbox.rail.label')}>
@@ -141,6 +146,7 @@ export default function InboxRail({
             <ul className={styles.list}>
               {agentRows.map((agent) => {
                 const current = !settingsOpen && !filters.savedView && scope.agentId === agent.id;
+                const paused = !!pausedAgentIds?.has(agent.id);
                 return (
                   <li key={agent.id}>
                     <button
@@ -149,8 +155,9 @@ export default function InboxRail({
                       aria-current={current ? 'page' : undefined}
                       onClick={() => onSelect({ view: 'all', savedView: null, agentIds: [agent.id], channels: [] })}
                     >
-                      <span className={styles.dot} aria-hidden="true" />
+                      <span className={`${styles.dot} ${paused ? styles.dotPaused : ''}`} aria-hidden="true" />
                       <span className={styles.name}>{agent.name}</span>
+                      {paused && <span className={styles.pausedTag}>{t('inbox.rail.paused')}</span>}
                       {counts && <span className={styles.count}>{agentCount.get(agent.id) ?? 0}</span>}
                     </button>
                   </li>
@@ -167,17 +174,18 @@ export default function InboxRail({
               {channels.map(({ channel, count }) => {
                 const meta = getChannelMeta(channel);
                 const current = !settingsOpen && !filters.savedView && scope.channel === channel;
+                const offline = offlineChannels.has(channel);
                 return (
                   <button
                     key={channel}
                     type="button"
-                    className={styles.chip}
+                    className={`${styles.chip} ${offline ? styles.chipOffline : ''}`}
                     aria-pressed={current}
                     onClick={() => onSelect({ view: 'all', savedView: null, agentIds: [], channels: current ? [] : [channel] })}
                   >
                     <i className={styles.chipDot} style={{ background: meta.color }} aria-hidden="true" />
                     {meta.label}
-                    <b>{count}</b>
+                    {offline ? <b className={styles.chipOfflineText}>{t('inbox.rail.offline')}</b> : <b>{count}</b>}
                   </button>
                 );
               })}

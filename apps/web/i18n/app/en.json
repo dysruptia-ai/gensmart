@@ -1621,7 +1621,9 @@
       "agents": "Agents",
       "channels": "Channels",
       "close": "Close inboxes",
-      "unnamedAgent": "Unnamed agent"
+      "unnamedAgent": "Unnamed agent",
+      "paused": "Paused",
+      "offline": "Disconnected"
     },
     "list": {
       "label": "Conversations",
@@ -1687,7 +1689,8 @@
       "scoreSr": "Score",
       "snoozedUntil": "Back {when}",
       "backFromSnooze": "Back from snooze",
-      "unreadSr": "Unread."
+      "unreadSr": "Unread.",
+      "waitingOver": "Waiting {time} · past the goal"
     },
     "thread": {
       "loading": "Loading the conversation",
@@ -1741,7 +1744,10 @@
         "reopened": "{name} reopened it",
         "reopenedYou": "You reopened it",
         "noteDeleted": "{name} deleted a note",
-        "noteDeletedYou": "You deleted a note"
+        "noteDeletedYou": "You deleted a note",
+        "handoffPaused": "Asked for help: the agent is paused",
+        "assigned": "Assigned to {target}",
+        "assignedToYou": "The conversation was assigned to you"
       },
       "takenBar": "{name} is handling this conversation.",
       "agentBar": "The agent is replying. Take the conversation to write yourself.",
@@ -1763,7 +1769,8 @@
       "closedBarBy": "by {name}, {when}.",
       "closedBarByYou": "by you, {when}.",
       "closedBarWhen": "{when}.",
-      "closedBarNoReply": "You can't reply until it's reopened."
+      "closedBarNoReply": "You can't reply until it's reopened.",
+      "agentBarPaused": "The agent is paused. Take the conversation to reply."
     },
     "composer": {
       "label": "Your reply",
@@ -2040,6 +2047,101 @@
         "preview": "Preview",
         "sampleName": "Laura Gómez",
         "sampleAgent": "Camila"
+      },
+      "managersOnly": "Only owners and admins can change these settings. Members can see them but not edit them.",
+      "saveChanges": "Save changes",
+      "saved": "Changes saved.",
+      "saveError": "We couldn't save your changes. Try again.",
+      "roles": {
+        "owner": "Owner",
+        "admin": "Admin",
+        "member": "Member"
+      },
+      "assign": {
+        "tab": "Assignment",
+        "title": "How conversations are assigned",
+        "text": "Applies when the agent asks for help or when someone leaves a conversation without an owner.",
+        "modes": {
+          "rotating": {
+            "title": "Round robin",
+            "text": "Taking turns among people who are online and have capacity."
+          },
+          "agent": {
+            "title": "By agent",
+            "text": "Each agent has a person in charge."
+          },
+          "none": {
+            "title": "Unassigned",
+            "text": "Whoever gets there first takes it (as today)."
+          }
+        },
+        "keepLast": "Keep with the last person who talked to the contact",
+        "keepLastHelp": "If they write again, it goes to whoever helped them before, if that person is online and has capacity.",
+        "team": "Your team",
+        "cols": {
+          "name": "Name",
+          "role": "Role",
+          "status": "Status",
+          "open": "Has now",
+          "capacity": "Capacity",
+          "receives": "Receives"
+        },
+        "you": "{name} (you)",
+        "online": "Online",
+        "offline": "Offline",
+        "full": "full",
+        "capacityOf": "{name}'s capacity",
+        "capacityError": "Between 1 and 100.",
+        "receivesOf": "{name} receives conversations",
+        "byAgentTitle": "Agent → person in charge",
+        "noAgents": "There are no agents yet.",
+        "noAssignee": "No one in charge",
+        "nobody": "If nobody can take it (offline or full), it stays without an owner in \"Need someone\", as today, and gets assigned as soon as someone comes online or frees up capacity.",
+        "soloTitle": "Assignment starts on Starter.",
+        "soloText": "On the Solo plan nobody on the team can take conversations.",
+        "soloLink": "See Plan & billing"
+      },
+      "hours": {
+        "tab": "Hours & goal",
+        "title": "Business hours",
+        "zone": "Time zone: {zone}",
+        "changeZone": "change it in Settings",
+        "copyWeekdays": "Copy to weekdays",
+        "alwaysOpen": "Always open",
+        "alwaysOpenText": "Without business hours, the goal runs all day and the agent doesn't say anything about being closed.",
+        "define": "Set business hours",
+        "useAlwaysOpen": "Remove business hours (always open)",
+        "days": {
+          "1": "Monday",
+          "2": "Tuesday",
+          "3": "Wednesday",
+          "4": "Thursday",
+          "5": "Friday",
+          "6": "Saturday",
+          "7": "Sunday"
+        },
+        "openOn": "Open on {day}",
+        "from": "{day}: from",
+        "until": "{day}: until",
+        "to": "to",
+        "closed": "Closed",
+        "rangeError": "The opening time has to be before the closing time.",
+        "notice": "Outside business hours, the agent says a person will reply when you open",
+        "noticeHelp": "It keeps handling what it can solve on its own. It says it once per conversation, in the customer's language.",
+        "noticeExample": "Example: \"I can help with what I can right now. For this you need a person from the team: they'll reply {when}.\"",
+        "noticeNeedsHours": "Set business hours to use this notice."
+      },
+      "goal": {
+        "title": "Response goal",
+        "respondIn": "When the agent asks for help, reply within",
+        "goalError": "Between 1 and 240 minutes.",
+        "alertIf": "Send an email alert after",
+        "alertToggle": "Email alert",
+        "alertRange": "Up to 1,440 minutes.",
+        "alertNotAbove": "It has to be longer than the response goal ({goal} min).",
+        "help": "The goal only counts during business hours. The email goes to whoever has the conversation; if nobody has it, to owners and admins. One per conversation.",
+        "goalAria": "Response goal, in minutes",
+        "alertAria": "Send an email alert after, in minutes"
       }
     },
     "search": {
@@ -2159,6 +2261,62 @@
         "error": "Something went wrong."
       },
       "deleteShort": "Delete"
+    },
+    "goal": {
+      "oldest": "The oldest has been waiting {time}.",
+      "target": "Goal: reply within {minutes} min.",
+      "overSr": "Past the goal.",
+      "progress": "Wait against the goal",
+      "closed": "Outside business hours. The goal resumes {when}.",
+      "closedNoOpening": "Outside business hours.",
+      "threadWaiting": "Waiting for {time}.",
+      "threadGoal": "The goal is {minutes} min."
+    },
+    "when": {
+      "todayAt": "today at {time}",
+      "tomorrowAt": "tomorrow at {time}",
+      "weekdayAt": "on {day} at {time}",
+      "today": "today {time}",
+      "yesterday": "yesterday {time}",
+      "date": "{day}, {time}",
+      "zone": "({zone} time)",
+      "zoneUtc": "(UTC)"
+    },
+    "channelIssue": {
+      "reconnect": "Reconnect",
+      "disconnectedSince": "{agent}'s {channel} disconnected since {since}.",
+      "disconnected": "{agent}'s {channel} is disconnected.",
+      "expiring_one": "{agent}'s {channel} permission expires in {count} day.",
+      "expiring_other": "{agent}'s {channel} permission expires in {count} days.",
+      "disconnectedText": "Replies aren't going out. The account needs to be connected again.",
+      "expiringText": "Reconnect it before then so replies don't stop.",
+      "threadText": "Replies in this conversation aren't going out.",
+      "askAdmin": "Let an admin know so they can reconnect it."
+    },
+    "pause": {
+      "active": "Agent active",
+      "paused": "Agent paused",
+      "activeHelp": "It replies on its own until someone takes the conversation.",
+      "pausedHelp": "Everything that comes in goes to Need someone.",
+      "solo": "Pausing the agent starts on Starter: on Solo nobody on the team can reply.",
+      "seePlans": "See plans",
+      "switchLabel": "{agent} active",
+      "pausedBy": "Paused by {name}",
+      "pausedSince": "since {since}. Everything that comes in goes to \"Need someone\".",
+      "error": "We couldn't change the agent's status. Try again.",
+      "confirmTitle": "Pause agent {agent}?",
+      "confirm": "Pause agent",
+      "confirmText": "While it's paused it doesn't reply to anyone. Every new message goes to Need someone so a person on the team can handle it.",
+      "online_one": "There is {count} person online to reply right now.",
+      "online_other": "There are {count} people online to reply right now.",
+      "nobodyOnline": "There's nobody online to reply right now.",
+      "stats": {
+        "today": "conversations today",
+        "solvedAlone": "solved without help",
+        "askedHelp": "asked for help"
+      },
+      "threadNotice": "The agent is paused: it won't reply until it's turned back on.",
+      "confirmOpen": "Open conversations stay as they are: the ones a person already has don't change."
     }
   }
 }

@@ -1,0 +1,49 @@
+/* El `.sla` del diseño: texto en --app-ink (contraste en los dos temas), el tono en la barra y el borde */
+.sla {
+  display: grid;
+  gap: 6px;
+  padding: 9px 11px;
+  border-radius: var(--app-r-sm);
+  background: var(--app-warn-bg);
+  box-shadow: inset 3px 0 0 var(--app-warn);
+  color: var(--app-ink);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.sla b {
+  font-weight: 700;
+}
+
+.bar {
+  height: 5px;
+  border-radius: var(--app-r-pill);
+  background: var(--app-line);
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  border-radius: var(--app-r-pill);
+  background: var(--app-warn);
+}
+
+.over {
+  background: var(--app-err-bg);
+  box-shadow: inset 3px 0 0 var(--app-err);
+}
+
+.over .bar i {
+  background: var(--app-err);
+}
+
+.closed {
+  background: var(--app-card-2);
+  box-shadow: inset 3px 0 0 var(--app-line);
+  color: var(--app-mute);
+}
+
+.closed svg {
+  vertical-align: -2px;
+}

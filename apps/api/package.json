@@ -52,7 +52,12 @@
     "test:inbox-filters:db": "INBOX_FILTERS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-filters.test.ts",
     "test:inbox-views:db": "INBOX_VIEWS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-views.test.ts",
     "test:inbox-bulk:db": "INBOX_BULK_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-bulk.test.ts",
-    "test:inbox-unread:db": "INBOX_UNREAD_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-unread.test.ts"
+    "test:inbox-unread:db": "INBOX_UNREAD_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-unread.test.ts",
+    "test:inbox-assignment:db": "INBOX_ASSIGNMENT_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-assignment.test.ts",
+    "test:inbox-settings:db": "INBOX_SETTINGS_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-settings.test.ts",
+    "test:agent-pause:db": "AGENT_PAUSE_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/agent-pause.test.ts",
+    "test:inbox-wait-alert:db": "INBOX_WAIT_ALERT_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/inbox-wait-alert.test.ts",
+    "test:channel-health:db": "CHANNEL_HEALTH_DB_TEST=1 dotenv -e ../../.env -- tsx --test --test-force-exit src/services/channel-health.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

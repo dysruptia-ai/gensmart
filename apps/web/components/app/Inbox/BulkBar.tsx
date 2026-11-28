@@ -24,7 +24,20 @@ export interface BulkBarProps {
 /**
  * Barra de acciones con la selección (web-44). Flotante dentro de la columna de la lista y nunca la
  * desborda: si los textos no caben pasa a íconos con aria-label (se mide, como useHeaderFit).
+ * web-45: con texto, Asignar, Cerrar y Etiquetar van solo con el texto (como el mockup Lote); los
+ * íconos quedan para el modo compacto. Borrar y × son siempre íconos.
  */
+/**
+ * web-45b: el ancho del texto de "N seleccionadas" más su relleno. `.count` es flex: 1, así que su
+ * scrollWidth es todo el espacio que sobra (y la barra caía a íconos por unos pocos píxeles).
+ */
+function countTextWidth(el: HTMLElement | null): number {
+  const inner = el?.firstElementChild as HTMLElement | null;
+  if (!el || !inner) return 0;
+  const cs = getComputedStyle(el);
+  return Math.ceil(inner.getBoundingClientRect().width + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight));
+}
+
 export default function BulkBar({ count, canAssign, canDelete, onAssign, onClose, onLabel, onDelete, onExit, mobile }: BulkBarProps) {
   const { t } = useTranslation();
   const barRef = useRef<HTMLDivElement>(null);
@@ -47,7 +60,7 @@ export default function BulkBar({ count, canAssign, canDelete, onAssign, onClose
       const cs = getComputedStyle(bar);
       const level = bulkBarLevel({
         width: bar.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight),
-        countWidth: countRef.current?.scrollWidth ?? 0,
+        countWidth: countTextWidth(countRef.current),
         textWidths: widths as number[],
         fixedIcons: bar.querySelectorAll('[data-fixed-icon]').length,
         iconWidth: 34,
@@ -78,7 +91,7 @@ export default function BulkBar({ count, canAssign, canDelete, onAssign, onClose
         data-text-action={!mobile && !opts.danger ? key : undefined}
         data-fixed-icon={!mobile && opts.danger ? '' : undefined}
       >
-        <Icon size={mobile ? 20 : 16} aria-hidden="true" />
+        {(mobile || iconOnly) && <Icon size={mobile ? 20 : 16} aria-hidden="true" />}
         {!iconOnly && <span>{visible}</span>}
       </button>
     );
@@ -93,7 +106,11 @@ export default function BulkBar({ count, canAssign, canDelete, onAssign, onClose
       role="toolbar"
       aria-label={t('inbox.bulk.toolbar', { count })}
     >
-      {!mobile && <span ref={countRef} className={styles.count}>{t('inbox.bulk.selected', { count })}</span>}
+      {!mobile && (
+        <span ref={countRef} className={styles.count}>
+          <span>{t('inbox.bulk.selected', { count })}</span>
+        </span>
+      )}
       {canAssign && action('assign', t('inbox.bulk.assign'), Forward, onAssign)}
       {action('close', t('inbox.bulk.close'), CircleCheckBig, onClose)}
       {action('label', t('inbox.bulk.label'), Tag, onLabel)}

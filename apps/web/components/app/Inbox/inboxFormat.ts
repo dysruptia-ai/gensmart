@@ -1,3 +1,4 @@
+import { formatOrgTime } from '@/lib/org-time';
 import type { CloseOutcome, ConversationRow, InboxFilters, InboxOrder, InboxView, MinScore, SavedViewFilters } from './types';
 import { CLOSE_OUTCOMES, INBOX_ORDERS, INBOX_VIEWS, MIN_SCORES } from './types';
 
@@ -121,6 +122,41 @@ export function snoozeLabel(iso: string, language: string, t: T, timeZone?: stri
   if (days === 1) return t('inbox.snooze.tomorrowAt', { time });
   const day = new Intl.DateTimeFormat(locale(language), { weekday: 'long', day: 'numeric', month: 'long', timeZone }).format(date);
   return t('inbox.snooze.dateAt', { day, time });
+}
+
+/** web-45b: la hora en la zona de la organización, con la zona al final si quien mira está en otra. */
+function orgTime(date: Date, language: string, t: T, timeZone?: string): string {
+  return formatOrgTime(date, timeZone, language, {
+    zoneLabel: (zone) => (zone === 'UTC' ? t('inbox.when.zoneUtc') : t('inbox.when.zone', { zone })),
+  });
+}
+
+/** Días de calendario entre dos instantes, en la zona de la organización (0 = el mismo día). */
+function calendarDays(date: Date, now: Date, timeZone?: string): number {
+  const a = wallTime(date, timeZone);
+  const b = wallTime(now, timeZone);
+  return Math.round((Date.UTC(a.year, a.month - 1, a.day) - Date.UTC(b.year, b.month - 1, b.day)) / 86400000);
+}
+
+/** web-45: "hoy a las 8:00 a. m." / "mañana a las …" / "el lunes a las …" (cuándo se retoma la meta). */
+export function formatOpening(date: Date, language: string, t: T, timeZone?: string, now: number = Date.now()): string {
+  const time = orgTime(date, language, t, timeZone);
+  const days = calendarDays(date, new Date(now), timeZone);
+  if (days === 0) return t('inbox.when.todayAt', { time });
+  if (days === 1) return t('inbox.when.tomorrowAt', { time });
+  const day = new Intl.DateTimeFormat(locale(language), { weekday: 'long', timeZone }).format(date);
+  return t('inbox.when.weekdayAt', { day, time });
+}
+
+/** web-45: "hoy 2:10 p. m." / "ayer 6:40 p. m." / "3 de noviembre, 6:40 p. m." (desde cuándo). */
+export function sinceLabel(iso: string, language: string, t: T, timeZone?: string, now: number = Date.now()): string {
+  const date = new Date(iso);
+  const time = orgTime(date, language, t, timeZone);
+  const days = calendarDays(date, new Date(now), timeZone);
+  if (days === 0) return t('inbox.when.today', { time });
+  if (days === -1) return t('inbox.when.yesterday', { time });
+  const day = new Intl.DateTimeFormat(locale(language), { day: 'numeric', month: 'long', timeZone }).format(date);
+  return t('inbox.when.date', { day, time });
 }
 
 export function parseOutcome(value: string | null | undefined): CloseOutcome | null {
@@ -358,6 +394,11 @@ export function sortRows(rows: ConversationRow[], view: InboxView, order: InboxO
   } else {
     copy.sort((a, b) => {
       if (view === 'all' && order === 'needs' && a.needsAttention !== b.needsAttention) return a.needsAttention ? -1 : 1;
+      // web-45b: dentro de las que necesitan a alguien, la que más espera primero
+      if (view === 'all' && order === 'needs' && a.needsAttention && b.needsAttention) {
+        const byWait = time(a.waitingSince) - time(b.waitingSince);
+        if (byWait !== 0) return byWait;
+      }
       if (view === 'all' && order === 'unread' && !!a.unread !== !!b.unread) return a.unread ? -1 : 1;
       return time(b.lastMessageAt) - time(a.lastMessageAt);
     });

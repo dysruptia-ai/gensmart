@@ -30,7 +30,13 @@
   margin: 0;
   padding: 0;
   display: grid;
+  /* web-45b: sin esto la columna crece al ancho del nombre más largo y nada se recorta */
+  grid-template-columns: minmax(0, 1fr);
   gap: 1px;
+}
+
+.list > li {
+  min-width: 0;
 }
 
 .item {
@@ -75,6 +81,7 @@
 }
 
 .count {
+  flex-shrink: 0;
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
   color: var(--app-faint);
@@ -207,4 +214,30 @@
   font-size: 12.5px;
   line-height: 1.4;
   color: var(--app-mute);
+}
+
+/* web-45: agente pausado (punto gris y la etiqueta, nunca solo el color) */
+.dotPaused {
+  background: var(--app-faint);
+}
+
+.pausedTag {
+  flex: none;
+  white-space: nowrap;
+  padding: 1px 7px;
+  border-radius: var(--app-r-pill);
+  background: var(--app-card-2);
+  color: var(--app-mute);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* web-45: canal con algún agente desconectado */
+.chipOffline {
+  box-shadow: inset 0 0 0 1px var(--app-err);
+}
+
+.chipOfflineText {
+  color: var(--app-err);
+  font-weight: 600;
 }

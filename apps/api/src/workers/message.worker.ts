@@ -101,6 +101,11 @@ import {
   isOverLimit,
 } from '../utils/booking-limits';
 import { stripAndExtractToolCallArtifacts } from '../utils/text';
+import { HANDOFF_ACTIVE_SQL } from '../services/inbox-query.service';
+import { getOrgTimezone, markHandoffRequested } from '../services/conversation-events.service';
+import { getInboxSettings } from '../services/inbox-settings.service';
+import { buildOutOfHoursPromptBlock } from '../services/inbox-hours.service';
+import { observeSend } from '../services/channel-health.service';
 import { mentionsShippingCost, correctShippingHallucination, isEmptyShippingZonesResult } from '../services/shipping-guard.service';
 
 // MCP cache TTL: 1 hour
@@ -226,9 +231,19 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     return;
   }
 
-  // Step 3: If human takeover — save user message + notify dashboard, skip LLM
-  if (conv.status === 'human_takeover') {
-    console.log(`[msg-worker] Human takeover — saving user message, skipping LLM`);
+  // Step 3: If human takeover — save user message + notify dashboard, skip LLM.
+  // Bandeja (web-45): an agent paused in the inbox takes the same path (no LLM, no tools, no usage, no
+  // scoring) and leaves a help request so the conversation shows up in "Needs someone".
+  const pausedResult = await query<{ inbox_paused_at: string | null }>('SELECT inbox_paused_at FROM agents WHERE id = $1', [
+    conv.agent_id,
+  ]);
+  const agentPaused = !!pausedResult.rows[0]?.inbox_paused_at && conv.status !== 'human_takeover';
+  if (conv.status === 'human_takeover' || agentPaused) {
+    console.log(
+      agentPaused
+        ? `[msg-worker] Agent paused in the inbox — saving user message, skipping LLM`
+        : `[msg-worker] Human takeover — saving user message, skipping LLM`
+    );
 
     const takeoverUserMeta: Record<string, unknown> = {};
     if (imageItems.length > 0) {
@@ -271,6 +286,20 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
       });
     } catch {
       // WebSocket might not be initialized
+    }
+
+    if (agentPaused) {
+      try {
+        const active = await query<{ active: boolean }>(
+          `SELECT ${HANDOFF_ACTIVE_SQL} AS active FROM conversations c LEFT JOIN agents a ON a.id = c.agent_id WHERE c.id = $1`,
+          [conversationId]
+        );
+        if (!active.rows[0]?.active) {
+          await markHandoffRequested(conversationId, { organizationId, reason: 'agent_paused' });
+        }
+      } catch (err) {
+        console.error('[msg-worker] Failed to mark help request for paused agent:', (err as Error).message);
+      }
     }
 
     return;
@@ -500,6 +529,17 @@ async function processMessage(job: Job<MessageJobData>): Promise<void> {
     const knownCustomerName = resolveKnownCustomerName(handoffContactName, conv.captured_variables);
     fullSystemPrompt += '\n\n' + buildHumanHandoffPromptBlock(knownCustomerName);
     console.log(`[human-handoff] Prompt block added for conversation ${conversationId} name_known=${knownCustomerName !== null}`);
+  }
+
+  // Bandeja (web-45): outside business hours, the agent says when the team is back (once, only if asked)
+  try {
+    const inboxSettings = await getInboxSettings(organizationId);
+    if (inboxSettings.outOfHoursNotice && inboxSettings.businessHours !== null) {
+      const offHoursBlock = buildOutOfHoursPromptBlock(inboxSettings, (await getOrgTimezone(organizationId)) ?? 'UTC');
+      if (offHoursBlock) fullSystemPrompt += '\n\n' + offHoursBlock;
+    }
+  } catch (err) {
+    console.warn('[msg-worker] Business hours check skipped:', (err as Error).message);
   }
 
   // add_to_cart_widget / remove_from_cart_widget: SOLO los puede ejecutar el widget storefront de Tiendanube (nube.send("cart:add")
@@ -1097,6 +1137,7 @@ async function sendToChannel(
         if (phone) {
           const accessToken = await resolveAccessToken(waConfig);
           await sendTextMessage(String(waConfig.phone_number_id), accessToken, phone, text);
+          observeSend(agentId, 'whatsapp', null);
           console.log(`[msg-worker] WhatsApp message sent to ${phone.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
           console.warn(`[msg-worker] No phone for contact — conv: ${conversationId}`);
@@ -1105,6 +1146,7 @@ async function sendToChannel(
         console.warn(`[msg-worker] WhatsApp not configured for agent ${agentId}`);
       }
     } catch (err) {
+      observeSend(agentId, 'whatsapp', err);
       console.error(`[msg-worker] WhatsApp send error for conv ${conversationId}:`, (err as Error).message);
     }
   } else if (conv.channel === 'facebook') {
@@ -1125,6 +1167,7 @@ async function sendToChannel(
         if (psid) {
           const pageToken = resolveMessengerAccessToken(fbConfig);
           await sendMessengerTextMessage(pageToken, psid, text);
+          observeSend(agentId, 'facebook', null);
           console.log(`[msg-worker] Messenger message sent to ${psid.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
           console.warn(`[msg-worker] No PSID for contact — conv: ${conversationId}`);
@@ -1133,6 +1176,7 @@ async function sendToChannel(
         console.warn(`[msg-worker] Messenger not configured for agent ${agentId}`);
       }
     } catch (err) {
+      observeSend(agentId, 'facebook', err);
       console.error(`[msg-worker] Messenger send error for conv ${conversationId}:`, (err as Error).message);
     }
   } else if (conv.channel === 'instagram') {
@@ -1157,6 +1201,7 @@ async function sendToChannel(
             igsid,
             text
           );
+          observeSend(agentId, 'instagram', null);
           console.log(`[msg-worker] Instagram message sent to ${igsid.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
           console.warn(`[msg-worker] No IGSID for contact — conv: ${conversationId}`);
@@ -1168,6 +1213,7 @@ async function sendToChannel(
       if (err instanceof InstagramMessagingDisabledError) {
         console.warn(`[msg-worker] Instagram: cliente no activó "Permitir acceso a mensajes" — conv: ${conversationId}`);
       } else {
+        observeSend(agentId, 'instagram', err);
         console.error(`[msg-worker] Instagram send error for conv ${conversationId}:`, (err as Error).message);
       }
     }
@@ -1188,6 +1234,7 @@ async function sendToChannel(
 
         if (chatId) {
           await sendTelegramMessage(resolveTelegramBotToken(tgConfig), chatId, text);
+          observeSend(agentId, 'telegram', null);
           console.log(`[msg-worker] Telegram message sent to ${chatId.slice(0, 4)}*** conv: ${conversationId}`);
         } else {
           console.warn(`[msg-worker] No chat_id for contact — conv: ${conversationId}`);
@@ -1196,6 +1243,7 @@ async function sendToChannel(
         console.warn(`[msg-worker] Telegram not configured for agent ${agentId}`);
       }
     } catch (err) {
+      observeSend(agentId, 'telegram', err);
       console.error(`[msg-worker] Telegram send error for conv ${conversationId}:`, (err as Error).message);
     }
   } else if (conv.channel === 'email') {
@@ -1827,3 +1875,6 @@ export function startMessageWorker(): Worker<MessageJobData> {
 
   return worker;
 }
+
+/** Solo para los tests :db (web-45): procesar un trabajo sin levantar el Worker de BullMQ. */
+export const processMessageForTests = processMessage;

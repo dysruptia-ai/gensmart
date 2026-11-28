@@ -25,6 +25,7 @@ import {
   parseInboxView,
 } from '../services/inbox-query.service';
 import { parseListFilters } from '../services/inbox-list-params';
+import { getChannelIssues, observeSend } from '../services/channel-health.service';
 import { findOwnView, mergeSavedView } from '../services/inbox-views.service';
 import {
   SNOOZE_MAX_DAYS,
@@ -330,11 +331,18 @@ router.get(
       const totals = buildCountsQuery(req.org!.id, req.user!.userId, range, await getOrgTimezone(req.org!.id));
       const byAgent = buildCountsGroupQuery(req.org!.id, range, 'agent');
       const byChannel = buildCountsGroupQuery(req.org!.id, range, 'channel');
-      type GroupRow = { key: string; name: string | null; count: string };
-      const [t, a, ch] = await Promise.all([
-        query<{ all_count: string; needs_count: string; mine_count: string; closed_count: string }>(totals.sql, totals.params),
+      type GroupRow = { key: string; name: string | null; count: string; paused_at: string | null };
+      const [t, a, ch, channelIssues] = await Promise.all([
+        query<{
+          all_count: string;
+          needs_count: string;
+          mine_count: string;
+          closed_count: string;
+          oldest_waiting_since: string | null;
+        }>(totals.sql, totals.params),
         query<GroupRow>(byAgent.sql, byAgent.params),
         query<GroupRow>(byChannel.sql, byChannel.params),
+        getChannelIssues(req.org!.id),
       ]);
       const row = t.rows[0];
       res.json({
@@ -342,8 +350,53 @@ router.get(
         needs: parseInt(row?.needs_count ?? '0', 10),
         mine: parseInt(row?.mine_count ?? '0', 10),
         closed: parseInt(row?.closed_count ?? '0', 10),
-        byAgent: a.rows.map((r) => ({ agentId: r.key, agentName: r.name ?? '', count: parseInt(r.count, 10) })),
+        byAgent: a.rows.map((r) => ({
+          agentId: r.key,
+          agentName: r.name ?? '',
+          count: parseInt(r.count, 10),
+          inboxPausedAt: r.paused_at,
+        })),
         byChannel: ch.rows.map((r) => ({ channel: r.key, count: parseInt(r.count, 10) })),
+        // web-45: la meta de respuesta (la más antigua de "Necesitan") y los avisos de canal
+        oldestWaitingSince: row?.oldest_waiting_since ? new Date(row.oldest_waiting_since).toISOString() : null,
+        channelIssues,
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ── GET /api/conversations/agent-stats?agentId= (web-45) ────────────────────
+// Los números del día de un agente, en la zona horaria de la organización. Registrada antes de /:id.
+router.get(
+  '/agent-stats',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const agentId = typeof req.query['agentId'] === 'string' ? req.query['agentId'] : '';
+      if (!isUuid(agentId)) throw new AppError(400, 'agentId is required', 'VALIDATION_ERROR');
+      const tz = (await getOrgTimezone(req.org!.id)) ?? 'UTC';
+      const r = await query<{ today: string; solved_alone: string; asked_help: string }>(
+        `WITH day AS (
+           SELECT (date_trunc('day', NOW() AT TIME ZONE $3) AT TIME ZONE $3) AS start
+         )
+         SELECT
+           (SELECT COUNT(DISTINCT c.id) FROM conversations c JOIN messages m ON m.conversation_id = c.id, day
+             WHERE c.organization_id = $1 AND c.agent_id = $2 AND m.created_at >= day.start AND m.role <> 'system') AS today,
+           (SELECT COUNT(*) FROM conversations c, day
+             WHERE c.organization_id = $1 AND c.agent_id = $2 AND c.status = 'closed' AND c.closed_at >= day.start
+               AND NOT EXISTS (SELECT 1 FROM conversation_events e
+                                WHERE e.conversation_id = c.id AND e.type IN ('taken', 'transferred', 'assigned'))) AS solved_alone,
+           (SELECT COUNT(*) FROM conversation_events e JOIN conversations c ON c.id = e.conversation_id, day
+             WHERE c.organization_id = $1 AND c.agent_id = $2 AND e.type = 'handoff_requested' AND e.created_at >= day.start) AS asked_help`,
+        [req.org!.id, agentId, tz]
+      );
+      const row = r.rows[0];
+      res.json({
+        agentId,
+        today: parseInt(row?.today ?? '0', 10),
+        solvedAlone: parseInt(row?.solved_alone ?? '0', 10),
+        askedHelp: parseInt(row?.asked_help ?? '0', 10),
       });
     } catch (err) {
       next(err);
@@ -818,9 +871,11 @@ router.post(
               const { sendTextMessage, decryptAccessToken } = await import('../services/whatsapp.service');
               const accessToken = decryptAccessToken(String(waConfig['access_token_encrypted']));
               await sendTextMessage(String(waConfig['phone_number_id']), accessToken, phone, messageContent);
+              observeSend(conv.agent_id, 'whatsapp', null);
             }
           }
         } catch (err) {
+          observeSend(conv.agent_id, 'whatsapp', err);
           console.error(`[conversations] WhatsApp send error:`, (err as Error).message);
           // Non-fatal — message is saved, just couldn't send via WhatsApp
         }
@@ -845,9 +900,11 @@ router.post(
             if (psid) {
               const { sendTextMessage, resolveAccessToken } = await import('../services/messenger.service');
               await sendTextMessage(resolveAccessToken(fbConfig), psid, messageContent);
+              observeSend(conv.agent_id, 'facebook', null);
             }
           }
         } catch (err) {
+          observeSend(conv.agent_id, 'facebook', err);
           console.error(`[conversations] Messenger send error:`, (err as Error).message);
           // Non-fatal — message is saved, just couldn't send via Messenger
         }
@@ -872,9 +929,11 @@ router.post(
             if (chatId) {
               const { sendTelegramMessage, resolveBotToken } = await import('../services/telegram.service');
               await sendTelegramMessage(resolveBotToken(tgConfig), chatId, messageContent);
+              observeSend(conv.agent_id, 'telegram', null);
             }
           }
         } catch (err) {
+          observeSend(conv.agent_id, 'telegram', err);
           console.error(`[conversations] Telegram send error:`, (err as Error).message);
           // Non-fatal — message is saved, just couldn't send via Telegram
         }
@@ -910,6 +969,7 @@ router.post(
             if (igsid) {
               const { sendTextMessage, resolveAccessToken, resolveInstagramId } = await import('../services/instagram.service');
               await sendTextMessage(resolveAccessToken(igConfig), resolveInstagramId(igConfig), igsid, messageContent);
+              observeSend(conv.agent_id, 'instagram', null);
             }
           }
         } catch (err) {
@@ -917,6 +977,7 @@ router.post(
           if (err instanceof InstagramMessagingDisabledError) {
             console.warn(`[conversations] Instagram: cliente no activó "Permitir acceso a mensajes" — conv: ${conversationId}`);
           } else {
+            observeSend(conv.agent_id, 'instagram', err);
             console.error(`[conversations] Instagram send error:`, (err as Error).message);
           }
           // Non-fatal — message is saved, just couldn't send via Instagram

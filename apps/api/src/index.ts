@@ -309,6 +309,8 @@ startMcpWebhookWorker();
 // left untouched so reactivation restores exactly what the org was paying for.
 import { query as dbQuery } from './config/database';
 import { releaseDueSnoozes } from './services/conversation-events.service';
+import { assignPendingAll } from './services/inbox-assignment.service';
+import { sendDueWaitAlerts } from './services/inbox-wait-alert.service';
 async function expireTrials(): Promise<void> {
   try {
     const result = await dbQuery<{ id: string; name: string }>(
@@ -362,6 +364,17 @@ setInterval(() => {
       if (n > 0) console.log(`[snooze-cron] ${n} conversation(s) back from snooze`);
     })
     .catch((err: unknown) => console.error('[snooze-cron] Error:', (err as Error).message))
+    // web-45: the automatic assignment of what is still waiting, and the response goal email
+    .then(() => assignPendingAll())
+    .then((n) => {
+      if (n && n > 0) console.log(`[assign-cron] ${n} conversation(s) assigned`);
+    })
+    .catch((err: unknown) => console.error('[assign-cron] Error:', (err as Error).message))
+    .then(() => sendDueWaitAlerts())
+    .then((n) => {
+      if (n && n > 0) console.log(`[wait-alert-cron] ${n} alert(s) sent`);
+    })
+    .catch((err: unknown) => console.error('[wait-alert-cron] Error:', (err as Error).message))
     .finally(() => {
       snoozeRunning = false;
     });

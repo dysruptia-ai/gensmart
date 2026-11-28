@@ -41,6 +41,8 @@ interface AgentRow {
   name: string;
   description: string | null;
   avatar_url: string | null;
+  inbox_paused_at?: string | null;
+  inbox_paused_by_name?: string | null;
   avatar_initials: string | null;
   system_prompt: string;
   llm_provider: string;
@@ -197,6 +199,9 @@ function formatAgent(row: AgentRow) {
       ? (row.config_variables_schema_overrides as unknown[])
       : [],
     publishedAt: row.published_at,
+    // Bandeja (web-45): pausado en la Bandeja (sigue publicado)
+    inboxPausedAt: row.inbox_paused_at ?? null,
+    inboxPausedByName: row.inbox_paused_by_name ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -240,7 +245,9 @@ export async function getAgents(
 
   params.push(limit, offset);
   const result = await query<AgentRow>(
-    `SELECT * FROM agents a WHERE ${whereClause}
+    `SELECT a.*, pu.name AS inbox_paused_by_name
+     FROM agents a LEFT JOIN users pu ON pu.id = a.inbox_paused_by
+     WHERE ${whereClause}
      ORDER BY a.updated_at DESC
      LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params

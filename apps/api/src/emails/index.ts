@@ -6,6 +6,7 @@ export { accountLinkedEmail, type AccountLinkedEmailData } from './templates/acc
 export { invitationEmail, type InvitationEmailData } from './templates/invitation';
 export { orgAccessEmail, type OrgAccessEmailData } from './templates/org-access';
 export { highScoreLeadEmail, type HighScoreLeadEmailData } from './templates/high-score-lead';
+export { inboxWaitAlertEmail, formatWait, type InboxWaitAlertEmailData } from './templates/inbox-wait-alert';
 export { planLimitEmail, type PlanLimitEmailData } from './templates/plan-limit';
 export { orgSuspendedEmail, type OrgSuspendedEmailData, type SuspensionReason } from './templates/org-suspended';
 export { appointmentNewEmail, type AppointmentNewEmailData } from './templates/appointment-new';

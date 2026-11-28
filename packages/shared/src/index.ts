@@ -5,3 +5,4 @@ export * from './config-variables';
 export * from './handoff';
 export * from './docs';
 export * from './welcome-survey';
+export * from './businessHours';

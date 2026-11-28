@@ -1,6 +1,7 @@
 /**
- * Bandeja (web-44b): cuánto texto lleva la barra del lote en escritorio.
- * Borrar y × son siempre íconos; Asignar, Cerrar y Etiquetar conservan su texto mientras quepan.
+ * Bandeja (web-44b, web-45): cuánto texto lleva la barra del lote en escritorio.
+ * Borrar y × son siempre íconos; Asignar, Cerrar y Etiquetar van solo con su texto (sin ícono)
+ * mientras quepan.
  *   0 = las acciones con texto · 1 = todo con íconos.
  */
 export interface BarMeasure {

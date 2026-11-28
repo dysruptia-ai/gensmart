@@ -33,6 +33,13 @@ export function planAllowsTakeover(plan: string): boolean {
   return !!PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS]?.humanTakeover;
 }
 
+/** Alguien liberó cupo: se reparte lo que esperaba (web-45). Nunca falla a quien lo llama. */
+export function onCapacityFreed(organizationId: string): void {
+  void import('./inbox-assignment.service')
+    .then((m) => m.assignPending(organizationId))
+    .catch((err: unknown) => console.error('[inbox-assignment] assignPending failed:', (err as Error).message));
+}
+
 // ── devolver al agente ──────────────────────────────────────────────────────
 
 export interface ReleasableConversation {
@@ -121,6 +128,8 @@ export async function releaseToAgent(conv: ReleasableConversation, actorUserId: 
     { status: 'active', takenOverBy: null, takeoverUserName: null },
     releasedEvent
   );
+  // Devolver al agente no reparte ESTA conversación (ya quedó atendida); sí lo que esperaba con el cupo libre
+  onCapacityFreed(conv.organization_id);
   return releasedEvent;
 }
 
@@ -146,7 +155,10 @@ export async function findReceiver(organizationId: string, userId: string): Prom
 export interface TransferInput {
   organizationId: string;
   plan: string;
-  actor: Actor;
+  /** null = lo hace el sistema (reparto automático, web-45): sin regla de permisos de una persona. */
+  actor: Actor | null;
+  /** Con actor nulo: la forma de reparto que eligió a la persona (va en el evento `assigned`). */
+  assignMode?: AssignMode;
   conversationId: string;
   /** null = devolver al agente. */
   toUserId: string | null;
@@ -156,6 +168,8 @@ export interface TransferInput {
   /** false en el lote: allí se manda una sola notificación al final. */
   notify?: boolean;
 }
+
+export type AssignMode = 'keep_last' | 'agent' | 'rotating';
 
 export interface TransferResult {
   status: 'active' | 'human_takeover';
@@ -172,8 +186,9 @@ export interface TransferResult {
  */
 export async function transferConversation(input: TransferInput): Promise<TransferResult> {
   const { organizationId, actor, conversationId, toUserId, note } = input;
-  const me = actor.userId;
-  const manager = isManager(actor.role);
+  const system = actor === null;
+  const me = actor?.userId ?? null;
+  const manager = system || isManager(actor.role);
 
   const convResult = await query<{
     id: string;
@@ -193,6 +208,10 @@ export async function transferConversation(input: TransferInput): Promise<Transf
   if (conv.status === 'closed') throw new AppError(400, 'Conversation is closed', 'ALREADY_CLOSED');
 
   const holder = conv.status === 'human_takeover' ? conv.taken_over_by : null;
+  if (system && (holder || toUserId === null)) {
+    // El reparto solo asigna las que no tiene nadie
+    throw new AppError(409, 'Conversation already has someone', 'ALREADY_TAKEN');
+  }
   if (holder !== me && !manager) {
     throw new AppError(403, 'Only whoever has the conversation, an owner or an admin can transfer it', 'FORBIDDEN');
   }
@@ -202,14 +221,14 @@ export async function transferConversation(input: TransferInput): Promise<Transf
     if (conv.status !== 'human_takeover') {
       throw new AppError(400, 'Conversation is not in takeover mode', 'NOT_IN_TAKEOVER');
     }
-    const event = await releaseToAgent(conv, me);
+    const event = await releaseToAgent(conv, me as string);
     return { status: 'active', takenOverBy: null, event, contactName: conv.contact_name, transferred: false };
   }
 
   if (toUserId === holder) {
     throw new AppError(400, 'That person already has the conversation', 'SAME_USER');
   }
-  if (toUserId === me && !manager) {
+  if (!system && toUserId === me && !manager) {
     throw new AppError(400, 'You cannot transfer a conversation to yourself', 'SAME_USER');
   }
   if (!planAllowsTakeover(input.plan)) {
@@ -224,20 +243,39 @@ export async function transferConversation(input: TransferInput): Promise<Transf
     `UPDATE conversations
      SET status = 'human_takeover', taken_over_by = $1, taken_over_at = COALESCE(taken_over_at, NOW()),
          snoozed_until = NULL, handoff_attended_at = NOW(), updated_at = NOW()
-     WHERE id = $2 AND status <> 'closed'`,
-    [toUserId, conversationId]
+     WHERE id = $2 AND status <> 'closed'
+       AND ($3::boolean IS NOT TRUE OR (status <> 'human_takeover' AND taken_over_by IS NULL))`,
+    [toUserId, conversationId, system]
   );
-  if ((updated.rowCount ?? 0) === 0) throw new AppError(400, 'Conversation is closed', 'ALREADY_CLOSED');
+  if ((updated.rowCount ?? 0) === 0) {
+    if (system) throw new AppError(409, 'Conversation already has someone', 'ALREADY_TAKEN');
+    throw new AppError(400, 'Conversation is closed', 'ALREADY_CLOSED');
+  }
 
-  const takingItMyself = toUserId === me;
-  const event = await recordEventSafe({
-    organizationId: conv.organization_id,
-    conversationId,
-    type: takingItMyself ? 'taken' : 'transferred',
-    actorUserId: me,
-    targetUserId: takingItMyself ? null : toUserId,
-    data: takingItMyself ? (holder ? { fromUserId: holder } : {}) : { ...(note ? { note } : {}), ...(holder ? { fromUserId: holder } : {}) },
-  });
+  const takingItMyself = !system && toUserId === me;
+  const event = await recordEventSafe(
+    system
+      ? {
+          organizationId: conv.organization_id,
+          conversationId,
+          type: 'assigned',
+          actorUserId: null,
+          targetUserId: toUserId,
+          data: { mode: input.assignMode ?? 'rotating' },
+        }
+      : {
+          organizationId: conv.organization_id,
+          conversationId,
+          type: takingItMyself ? 'taken' : 'transferred',
+          actorUserId: me,
+          targetUserId: takingItMyself ? null : toUserId,
+          data: takingItMyself
+            ? holder
+              ? { fromUserId: holder }
+              : {}
+            : { ...(note ? { note } : {}), ...(holder ? { fromUserId: holder } : {}) },
+        }
+  );
 
   try {
     getIO().to(`org:${conv.organization_id}`).emit('takeover:status', {
@@ -258,19 +296,37 @@ export async function transferConversation(input: TransferInput): Promise<Transf
   );
 
   if (!takingItMyself && input.notify !== false) {
-    const text = transferNotificationText(receiver.language ?? 'en', event?.actorName ?? null, conv.contact_name, note || null);
+    const text = system
+      ? assignedNotificationText(receiver.language ?? 'en', conv.contact_name)
+      : transferNotificationText(receiver.language ?? 'en', event?.actorName ?? null, conv.contact_name, note || null);
     await createNotification({
       userId: toUserId,
       organizationId: conv.organization_id,
-      type: 'conversation_transferred',
+      type: system ? 'conversation_assigned' : 'conversation_transferred',
       title: text.title,
       message: text.message,
-      data: { conversationId, fromUserId: me },
+      data: system ? { conversationId, mode: input.assignMode ?? 'rotating' } : { conversationId, fromUserId: me },
       sendEmail: false,
     }).catch((err: unknown) => console.error('[conversations] Failed to notify transfer:', (err as Error).message));
   }
 
+  if (holder && holder !== toUserId) onCapacityFreed(conv.organization_id);
   return { status: 'human_takeover', takenOverBy: toUserId, event, contactName: conv.contact_name, transferred: !takingItMyself };
+}
+
+/** La notificación del reparto automático (web-45), en el idioma de quien la recibe. */
+export function assignedNotificationText(language: string, contactName: string | null): { title: string; message: string } {
+  const who = contactName?.trim();
+  if (language === 'es') {
+    return {
+      title: 'Se te asignó una conversación',
+      message: who ? `Ahora atiendes la conversación con ${who}.` : 'Ahora atiendes esta conversación.',
+    };
+  }
+  return {
+    title: 'A conversation was assigned to you',
+    message: who ? `You're now handling the conversation with ${who}.` : "You're now handling this conversation.",
+  };
 }
 
 /** La notificación de "Asignar N": una sola, aunque sean varias. */
@@ -357,6 +413,7 @@ export async function closeConversation(input: {
     },
     closedEvent
   );
+  onCapacityFreed(organizationId);
   return { outcome, closedAt, event: closedEvent };
 }
 

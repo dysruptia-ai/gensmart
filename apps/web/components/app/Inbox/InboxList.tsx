@@ -6,6 +6,7 @@ import { INBOX_LIMITS } from '@gensmart/shared';
 import { useTranslation } from '@/hooks/useTranslation';
 import InboxButton from './InboxButton';
 import InboxRow from './InboxRow';
+import type { GoalConfig } from './inboxGoal';
 import { mineGroup } from './inboxFormat';
 import { CLOSE_OUTCOMES, INBOX_ORDERS, type CloseOutcome, type ConversationRow, type InboxOrder, type InboxView } from './types';
 import styles from './InboxList.module.css';
@@ -63,6 +64,11 @@ export interface InboxListProps {
   onLongPress?: (id: string) => void;
   /** La barra de acciones del lote (flotante dentro de la columna). */
   bulkBar?: React.ReactNode;
+  // ── web-45 ──
+  /** Avisos arriba de la lista: la meta, el canal desconectado o la vista del agente. */
+  notices?: React.ReactNode;
+  /** La meta de respuesta (la fila marca "pasó la meta"). */
+  goal?: GoalConfig | null;
 }
 
 const EMPTY_ICON: Record<InboxView, LucideIcon> = { all: Inbox, needs: CircleCheckBig, mine: User, closed: CircleCheckBig };
@@ -110,6 +116,7 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
           checkDisabled={atLimit}
           onToggle={props.onToggleRow}
           onLongPress={props.onLongPress}
+          goal={props.goal}
         />
       </li>
     ));
@@ -251,6 +258,7 @@ export default function InboxList({ searchRef, onLoadMore, ...props }: InboxList
           </kbd>
         </label>
         {props.chips}
+        {props.notices}
         {searching && (
           <div className={styles.banner} role="status">
             <Info size={14} aria-hidden="true" />
