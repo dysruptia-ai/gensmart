@@ -30,8 +30,8 @@ import SuspendedBanner from '@/components/billing/SuspendedBanner';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import WelcomeTour from '@/components/onboarding/WelcomeTour';
 import { ConversationAlertsProvider, useConversationAlerts } from '@/contexts/ConversationAlertsContext';
-import { api, ApiError } from '@/lib/api';
-import { useToast } from '@/components/ui/Toast';
+import { api } from '@/lib/api';
+import { OPEN_PAY_PLAN_EVENT } from '@/lib/billingEvents';
 import styles from './dashboard.module.css';
 
 const NAV_ITEMS = [
@@ -63,26 +63,12 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, isLoading, isAuthenticated, logout } = useAuth();
   const { t } = useTranslation();
-  const { error: toastError } = useToast();
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const [usageSummary, setUsageSummary] = React.useState<UsageSummary | null>(null);
   const [trialEndsAt, setTrialEndsAt] = React.useState<string | null>(null);
+  const [trialDaysLeft, setTrialDaysLeft] = React.useState(0);
   const [orgPlan, setOrgPlan] = React.useState<string | null>(null);
-  const [openingPortal, setOpeningPortal] = React.useState(false);
-
-  async function handleOpenBillingPortal() {
-    setOpeningPortal(true);
-    try {
-      const { url } = await api.post<{ url: string }>('/api/billing/create-portal');
-      window.open(url, '_blank');
-    } catch (err) {
-      toastError(err instanceof ApiError ? err.message : 'Failed to open billing portal');
-    } finally {
-      setOpeningPortal(false);
-    }
-  }
-
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
@@ -96,7 +82,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       setUsageSummary(data);
     }).catch(() => { /* ignore — non-critical */ });
     api.get<{ plan?: string; trial_ends_at?: string | null }>('/api/organization').then((org) => {
-      if (org.trial_ends_at) setTrialEndsAt(org.trial_ends_at);
+      if (org.trial_ends_at) {
+        setTrialEndsAt(org.trial_ends_at);
+        setTrialDaysLeft(Math.max(0, Math.ceil((new Date(org.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))));
+      }
       if (org.plan) setOrgPlan(org.plan);
     }).catch(() => {});
   }, [isAuthenticated]);
@@ -268,10 +257,20 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         {trialEndsAt && (
           <div className={styles.trialBanner}>
             <span>
-              Your {orgPlan ? orgPlan.charAt(0).toUpperCase() + orgPlan.slice(1) : ''} trial ends in {Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} days
+              {t('billing.trialBanner.endsIn', {
+                plan: orgPlan ? orgPlan.charAt(0).toUpperCase() + orgPlan.slice(1) : '',
+                days: String(trialDaysLeft),
+              })}
               {' '}&mdash;{' '}
-              <button type="button" onClick={handleOpenBillingPortal} disabled={openingPortal}>
-                Add a payment method to keep your agents
+              {/* Never the Stripe portal: without a subscription it only saves a card. */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (pathname === '/dashboard/billing') window.dispatchEvent(new Event(OPEN_PAY_PLAN_EVENT));
+                  else router.push('/dashboard/billing?pay=1');
+                }}
+              >
+                {t('billing.trialBanner.payNow')}
               </button>
             </span>
           </div>

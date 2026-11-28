@@ -13,6 +13,11 @@ interface SubscriptionData {
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
   interval: string | null;
+  subscriptionId: string | null;
+  /** GenSmart trial still running (null once there is a Stripe subscription). */
+  trialEndsAt: string | null;
+  /** Paid during the trial: Stripe 'trialing' until this first charge. */
+  firstChargeAt: string | null;
 }
 
 interface Props {
@@ -20,6 +25,8 @@ interface Props {
   loading: boolean;
   onManage: () => void;
   onChangePlan: () => void;
+  /** Opens the plan modal with the current plan selected. */
+  onPayPlan: () => void;
   isManaging: boolean;
 }
 
@@ -47,10 +54,14 @@ function getStatusIcon(status: string, cancelAtPeriodEnd: boolean) {
   return null;
 }
 
-export default function CurrentPlan({ subscription, loading, onManage, onChangePlan, isManaging }: Props) {
+export default function CurrentPlan({ subscription, loading, onManage, onChangePlan, onPayPlan, isManaging }: Props) {
   const { t, language } = useTranslation();
 
   const plan = subscription?.plan ?? 'solo';
+  const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+  const hasSubscription = !!subscription?.subscriptionId;
+  const inTrial = !!subscription?.trialEndsAt && !hasSubscription;
+  const firstChargeAt = hasSubscription ? subscription?.firstChargeAt ?? null : null;
 
   const priceStr = subscription?.interval
     ? PLAN_PRICES[plan]?.[subscription.interval] ?? ''
@@ -75,7 +86,7 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
         <div className={styles.planInfo}>
           <CreditCard size={20} color="var(--color-primary)" />
           <span className={styles.planName}>
-            {plan.charAt(0).toUpperCase() + plan.slice(1)} Plan
+            {planLabel} Plan
           </span>
           <span className={getPlanBadgeClass(plan)} style={{
             display: 'inline-block',
@@ -90,14 +101,22 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
         </div>
 
         <div className={styles.actions}>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onManage}
-            loading={isManaging}
-          >
-            {t('billing.currentPlan.manageSubscription')}
-          </Button>
+          {inTrial && (
+            <Button variant="primary" size="sm" onClick={onPayPlan}>
+              {t('billing.currentPlan.payPlan', { plan: planLabel })}
+            </Button>
+          )}
+          {/* Without a subscription the Stripe portal only saves a card; it cannot pay. */}
+          {hasSubscription && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onManage}
+              loading={isManaging}
+            >
+              {t('billing.currentPlan.manageSubscription')}
+            </Button>
+          )}
           <Button
             variant="secondary"
             size="sm"
@@ -116,7 +135,21 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
               <span>{priceStr}</span>
             </div>
           )}
-          {subscription?.currentPeriodEnd && (
+          {inTrial && subscription?.trialEndsAt && (
+            <div className={styles.metaRow}>
+              <Calendar size={13} />
+              <span>{t('billing.currentPlan.trialEndsOn', { date: formatDate(subscription.trialEndsAt, language) })}</span>
+            </div>
+          )}
+          {firstChargeAt && (
+            <div className={styles.metaRow}>
+              <CheckCircle2 size={14} className={styles.statusActive} />
+              <span className={styles.statusActive}>
+                {t('billing.currentPlan.subscribedFirstCharge', { date: formatDate(firstChargeAt, language) })}
+              </span>
+            </div>
+          )}
+          {!inTrial && !firstChargeAt && subscription?.currentPeriodEnd && (
             <div className={styles.metaRow}>
               <Calendar size={13} className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined} />
               <span className={subscription.cancelAtPeriodEnd ? styles.cancelsDate : undefined}>
@@ -124,7 +157,12 @@ export default function CurrentPlan({ subscription, loading, onManage, onChangeP
               </span>
             </div>
           )}
-          {subscription && (
+          {inTrial && (
+            <div className={styles.metaRow}>
+              <span className={styles.statusFree}>{t('billing.currentPlan.freeTrial')}</span>
+            </div>
+          )}
+          {subscription && !inTrial && !firstChargeAt && (
             <div className={styles.metaRow}>
               {getStatusIcon(subscription.status, subscription.cancelAtPeriodEnd)}
               <span className={
