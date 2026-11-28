@@ -5,11 +5,17 @@ import { query } from '../config/database';
 import { redis } from '../config/redis';
 import { getIO } from '../config/websocket';
 import { createNotification } from './notification.service';
+import {
+  checkoutSessionParams,
+  subscriptionPlanUpdateParams,
+  type PlanName,
+  type Interval,
+} from './billing-checkout';
+
+export { checkoutTrialEnd } from './billing-checkout';
 
 // ── Price ID resolution ───────────────────────────────────────────────────────
 
-type PlanName = 'solo' | 'starter' | 'pro' | 'enterprise';
-type Interval = 'monthly' | 'quarterly' | 'yearly';
 type AddonKey = 'messages_500' | 'messages_2000' | 'messages_5000';
 
 function getPriceId(plan: PlanName, interval: Interval): string {
@@ -80,29 +86,9 @@ export async function createCheckoutSession(params: {
   interval: Interval;
   successUrl: string;
   cancelUrl: string;
+  trialEnd?: number | null;
 }): Promise<Stripe.Checkout.Session> {
-  return stripe.checkout.sessions.create({
-    customer: params.customerId,
-    mode: 'subscription',
-    line_items: [{ price: params.priceId, quantity: 1 }],
-    success_url: params.successUrl,
-    cancel_url: params.cancelUrl,
-    allow_promotion_codes: true,
-    billing_address_collection: 'auto',
-    metadata: {
-      orgId: params.orgId,
-      plan: params.plan,
-      interval: params.interval,
-      type: 'subscription',
-    },
-    subscription_data: {
-      metadata: {
-        orgId: params.orgId,
-        plan: params.plan,
-        interval: params.interval,
-      },
-    },
-  });
+  return stripe.checkout.sessions.create(checkoutSessionParams(params));
 }
 
 export async function createPortalSession(
@@ -134,12 +120,14 @@ export async function cancelSubscription(
 export async function updateSubscriptionPlan(
   subscriptionId: string,
   itemId: string,
-  newPriceId: string
+  newPriceId: string,
+  plan: PlanName,
+  interval: Interval
 ): Promise<Stripe.Subscription> {
-  return stripe.subscriptions.update(subscriptionId, {
-    items: [{ id: itemId, price: newPriceId }],
-    proration_behavior: 'create_prorations',
-  });
+  return stripe.subscriptions.update(
+    subscriptionId,
+    subscriptionPlanUpdateParams(itemId, newPriceId, plan, interval)
+  );
 }
 
 // ── Add-on payments ───────────────────────────────────────────────────────────

@@ -10,6 +10,9 @@ import { env } from '../config/env';
 import { PLAN_LIMITS } from '@gensmart/shared';
 import * as stripeService from '../services/stripe.service';
 import { getMessageCount } from '../services/usage.service';
+import { stripe } from '../config/stripe';
+import { runCreateCheckout } from '../services/billing-checkout';
+import { visibleTrialEndsAt } from '../services/trial-banner';
 
 type PlanKey = keyof typeof PLAN_LIMITS;
 
@@ -48,8 +51,9 @@ router.post(
         name: string;
         stripe_customer_id: string | null;
         stripe_subscription_id: string | null;
+        trial_ends_at: Date | null;
       }>(
-        'SELECT name, stripe_customer_id, stripe_subscription_id FROM organizations WHERE id = $1',
+        'SELECT name, stripe_customer_id, stripe_subscription_id, trial_ends_at FROM organizations WHERE id = $1',
         [req.user!.orgId]
       );
       const org = orgResult.rows[0];
@@ -69,42 +73,28 @@ router.post(
         return;
       }
 
-      // If org already has an active subscription → update it (no new checkout)
-      if (org.stripe_subscription_id) {
-        const subscription = await stripeService.getSubscription(org.stripe_subscription_id);
-        const itemId = subscription.items.data[0]?.id;
-        if (itemId) {
-          const updated = await stripeService.updateSubscriptionPlan(
-            org.stripe_subscription_id,
-            itemId,
-            priceId
-          );
-          res.json({ success: true, subscription: updated });
-          return;
-        }
-      }
-
-      // No existing subscription → create Stripe Checkout session
-      const customerId = await stripeService.getOrCreateCustomer(
-        req.user!.orgId,
-        req.user!.email,
-        org.name
-      );
-
       const defaultSuccess = `${env.FRONTEND_URL}/dashboard/billing?success=1&plan=${plan}`;
       const defaultCancel = `${env.FRONTEND_URL}/dashboard/billing?cancelled=1`;
 
-      const session = await stripeService.createCheckoutSession({
+      // Existing subscription → price + metadata update. Otherwise Checkout; during the GenSmart
+      // trial the first charge is deferred to trial_ends_at (see billing-checkout.ts).
+      const result = await runCreateCheckout(stripe, {
         orgId: req.user!.orgId,
-        customerId,
-        priceId,
+        org,
         plan,
         interval,
+        priceId,
         successUrl: successUrl ?? defaultSuccess,
         cancelUrl: cancelUrl ?? defaultCancel,
+        getCustomerId: () => stripeService.getOrCreateCustomer(req.user!.orgId, req.user!.email, org.name),
+        now: new Date(),
       });
 
-      res.json({ url: session.url });
+      if (result.kind === 'updated') {
+        res.json({ success: true, subscription: result.subscription });
+        return;
+      }
+      res.json({ url: result.url });
     } catch (err) {
       next(err);
     }
@@ -153,9 +143,10 @@ router.get(
         current_period_start: string | null;
         current_period_end: string | null;
         stripe_customer_id: string | null;
+        trial_ends_at: string | null;
       }>(
         `SELECT plan, stripe_subscription_id, subscription_status,
-                current_period_start, current_period_end, stripe_customer_id
+                current_period_start, current_period_end, stripe_customer_id, trial_ends_at
          FROM organizations WHERE id = $1`,
         [req.user!.orgId]
       );
@@ -167,12 +158,17 @@ router.get(
 
       let cancelAtPeriodEnd = false;
       let interval: string | null = null;
+      let firstChargeAt: string | null = null;
 
       if (org.stripe_subscription_id) {
         try {
           const sub = await stripeService.getSubscription(org.stripe_subscription_id);
           cancelAtPeriodEnd = sub.cancel_at_period_end;
           interval = sub.items.data[0]?.plan?.interval ?? null;
+          // Paid during the GenSmart trial: Stripe trial until the first charge.
+          if (sub.status === 'trialing' && sub.trial_end) {
+            firstChargeAt = new Date(sub.trial_end * 1000).toISOString();
+          }
         } catch {
           // Subscription might not exist in Stripe — ignore
         }
@@ -187,6 +183,15 @@ router.get(
         currentPeriodEnd: org.current_period_end,
         cancelAtPeriodEnd,
         interval,
+        // Same rule as the dashboard trial banner; null once a subscription exists.
+        trialEndsAt: org.stripe_subscription_id
+          ? null
+          : visibleTrialEndsAt({
+              trial_ends_at: org.trial_ends_at,
+              has_stripe_subscription: false,
+              subscription_status: org.subscription_status,
+            }),
+        firstChargeAt,
       });
     } catch (err) {
       next(err);

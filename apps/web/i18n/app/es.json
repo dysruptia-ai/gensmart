@@ -93,7 +93,7 @@
       "many": "Tu prueba gratis termina en {n} días. Elige un plan para que tus agentes sigan respondiendo.",
       "one": "Tu prueba gratis termina en 1 día. Elige un plan para que tus agentes sigan respondiendo.",
       "today": "Tu prueba gratis termina hoy. Elige un plan para que tus agentes sigan respondiendo.",
-      "cta": "Elegir un plan"
+      "cta": "Pagar ahora"
     },
     "palette": {
       "label": "Buscar o ejecutar",
@@ -1108,7 +1108,11 @@
       "paymentPastDue": "Pago vencido",
       "trial": "Prueba",
       "cancels": "Se cancela",
-      "renews": "Se renueva"
+      "renews": "Se renueva",
+      "freeTrial": "Prueba gratis",
+      "trialEndsOn": "Termina el {date}",
+      "payPlan": "Pagar el plan {plan}",
+      "subscribedFirstCharge": "Suscrito · primer cobro el {date}"
     },
     "usage": {
       "title": "Uso este mes",
@@ -1145,7 +1149,10 @@
       "current": "Actual",
       "upgradeTo": "Mejorar a {plan}",
       "selectPlan": "Selecciona un plan",
-      "currentlyOn": "Actualmente en plan {plan} · Con tecnología de Stripe"
+      "currentlyOn": "Actualmente en plan {plan} · Con tecnología de Stripe",
+      "payPlan": "Pagar {plan}",
+      "deferredCharge": "Guardas tu tarjeta hoy. El primer cobro es el {date}, cuando termina tu prueba.",
+      "chargedToday": "Se cobra hoy."
     },
     "banner": {
       "allUsed": "Has usado todos tus {limit} mensajes mensuales. Tus agentes están pausados.",
@@ -1163,6 +1170,14 @@
       "yearly": "Anual",
       "save10": "Ahorra 10%",
       "save20": "Ahorra 20%"
+    },
+    "toast": {
+      "paidDeferred": "Listo. Tu plan sigue activo y el primer cobro es el {date}.",
+      "paidNow": "Listo. Tu plan quedó pagado.",
+      "planUpdated": "Plan actualizado.",
+      "addonPurchased": "Mensajes adicionales comprados.",
+      "portalFailed": "No se pudo abrir el portal de facturación.",
+      "checkoutFailed": "No se pudo iniciar el pago."
     }
   },
   "settings": {

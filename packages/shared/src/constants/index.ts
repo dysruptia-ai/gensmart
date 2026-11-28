@@ -205,3 +205,9 @@ export type HandoffReason = (typeof HANDOFF_REASONS)[number];
 
 /** Atajo de respuesta rápida sin la "/": minúsculas (con tildes), números, "_" y "-". De 2 a 30. */
 export const QUICK_REPLY_SHORTCUT_RE = /^[\p{Ll}\p{N}][\p{Ll}\p{N}_-]{1,29}$/u;
+
+/**
+ * Paying during the GenSmart trial: Stripe requires subscription_data.trial_end to be at least 48 h
+ * in the future. With fewer hours left than this (one hour of margin), Checkout charges right away.
+ */
+export const TRIAL_DEFERRED_CHARGE_MIN_HOURS = 49;

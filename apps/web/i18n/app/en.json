@@ -93,7 +93,7 @@
       "many": "Your free trial ends in {n} days. Choose a plan so your agents keep answering.",
       "one": "Your free trial ends in 1 day. Choose a plan so your agents keep answering.",
       "today": "Your free trial ends today. Choose a plan so your agents keep answering.",
-      "cta": "Choose a plan"
+      "cta": "Pay now"
     },
     "palette": {
       "label": "Search or run",
@@ -1108,7 +1108,11 @@
       "paymentPastDue": "Payment past due",
       "trial": "Trial",
       "cancels": "Cancels",
-      "renews": "Renews"
+      "renews": "Renews",
+      "freeTrial": "Free trial",
+      "trialEndsOn": "Ends on {date}",
+      "payPlan": "Pay the {plan} plan",
+      "subscribedFirstCharge": "Subscribed · first charge on {date}"
     },
     "usage": {
       "title": "Usage This Month",
@@ -1145,7 +1149,10 @@
       "current": "Current",
       "upgradeTo": "Upgrade to {plan}",
       "selectPlan": "Select a Plan",
-      "currentlyOn": "Currently on {plan} plan · Powered by Stripe"
+      "currentlyOn": "Currently on {plan} plan · Powered by Stripe",
+      "payPlan": "Pay {plan}",
+      "deferredCharge": "You save your card today. The first charge is on {date}, when your trial ends.",
+      "chargedToday": "You are charged today."
     },
     "banner": {
       "allUsed": "You've used all {limit} of your monthly messages. Your agents are paused.",
@@ -1163,6 +1170,14 @@
       "yearly": "Yearly",
       "save10": "Save 10%",
       "save20": "Save 20%"
+    },
+    "toast": {
+      "paidDeferred": "Done. Your plan stays active and the first charge is on {date}.",
+      "paidNow": "Done. Your plan is paid.",
+      "planUpdated": "Plan updated successfully.",
+      "addonPurchased": "Add-on messages purchased successfully.",
+      "portalFailed": "Could not open the billing portal.",
+      "checkoutFailed": "Could not start checkout."
     }
   },
   "settings": {

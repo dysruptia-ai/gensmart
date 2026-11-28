@@ -3,8 +3,9 @@
  * Pure: no imports.
  *
  * An org that already pays with Stripe (subscription present and active/trialing) never sees the
- * trial, even if trial_ends_at kept a date (e.g. the 17-Nov trial→paid bug). Checkout never creates
- * Stripe trials (no trial_period_days), so 'trialing' is hidden too. Only a boolean about Stripe is
+ * trial, even if trial_ends_at kept a date (e.g. the 17-Nov trial→paid bug). Paying during the
+ * GenSmart trial creates a Stripe 'trialing' subscription (first charge deferred to the trial end,
+ * see billing-checkout.ts), so 'trialing' is hidden too. Only a boolean about Stripe is
  * used here; no Stripe id leaves the server.
  */
 const LIVE_STRIPE_STATUSES: ReadonlySet<string> = new Set(['active', 'trialing']);
